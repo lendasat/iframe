@@ -149,7 +149,12 @@ async fn notify_borrower_about_expired_application(
         .context("Could not find borrower")?;
 
     notifications
-        .send_expired_loan_application_borrower(borrower, LOAN_APPLICATION_TIMEOUT / 7, loan_url)
+        .send_expired_loan_application_borrower(
+            borrower,
+            LOAN_APPLICATION_TIMEOUT / 7,
+            loan_url,
+            application.application_id.as_str(),
+        )
         .await;
 
     Ok(())

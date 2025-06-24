@@ -393,6 +393,7 @@ impl From<take_loan_application::Error> for Error {
             }
             take_loan_application::Error::MissingFiatLoanDetails => Error::MissingFiatLoanDetails,
             take_loan_application::Error::ZeroLoanDuration => Error::ZeroLoanDuration,
+            take_loan_application::Error::MissingBorrower => Error::MissingBorrower,
         }
     }
 }

@@ -228,6 +228,7 @@ pub enum BorrowerNotificationKind {
     LoanApplicationExpired {
         days: i64,
     },
+    LoanApplicationTaken,
     NewChatMessage {
         name: String,
     },
@@ -394,6 +395,12 @@ impl xtra::Handler<Notification> for TelegramBot {
                 (
                     format!("Unfortunately, we couldn't find a match for your loan application after {days} days. Click below to find current available offers.").to_string(),
                     "Find New Offer".to_string(),
+                )
+            }
+            NotificationTarget::Borrower(BorrowerNotificationKind::LoanApplicationTaken) => {
+                (
+                    "Great news, we found a match for your loan application. Click below to fund it.".to_string().to_string(),
+                    "Contract Details".to_string(),
                 )
             }
 

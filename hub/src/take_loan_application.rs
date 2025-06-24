@@ -42,6 +42,8 @@ pub enum Error {
     MissingFiatLoanDetails,
     #[error("Loan cannot have zero duration")]
     ZeroLoanDuration,
+    #[error("Borrower not found")]
+    MissingBorrower,
 }
 
 /// Takes a loan application and returns the contract id if successful
@@ -52,7 +54,7 @@ pub async fn take_application(
     mempool_actor: &xtra::Address<mempool::Actor>,
     config: &Config,
     lender_id: &str,
-    _notifications: Arc<Notifications>,
+    notifications: Arc<Notifications>,
     take_application_body: TakeLoanApplicationSchema,
     loan_deal_id: &str,
 ) -> Result<String, Error> {
@@ -180,6 +182,19 @@ pub async fn take_application(
         .await
         .map_err(Error::Database)?;
     }
+
+    let loan_url = config
+        .borrower_frontend_origin
+        .join(format!("/my-contracts/{}", contract_id).as_str())
+        .expect("to be a correct URL");
+    let borrower = db::borrowers::get_user_by_id(db, contract.borrower_id.as_str())
+        .await
+        .map_err(Error::Database)?
+        .ok_or(Error::MissingBorrower)?;
+
+    notifications
+        .send_loan_application_taken_borrower(contract_id.to_string().as_str(), borrower, loan_url)
+        .await;
 
     mempool_actor
         .send(TrackContractFunding::new(
