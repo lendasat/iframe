@@ -880,6 +880,33 @@ impl Notifications {
             }
         }
     }
+    pub async fn send_loan_application_taken_borrower(
+        &self,
+        contract_id: &str,
+        borrower: Borrower,
+        contract_url: Url,
+    ) {
+        let settings = load_borrower_notification_settings(&self.db, borrower.id.as_str()).await;
+
+        if settings.contract_status_changed_telegram {
+            self.send_tg_notification_borrower(
+                borrower.id.as_str(),
+                contract_url.clone(),
+                crate::telegram_bot::BorrowerNotificationKind::LoanApplicationTaken,
+            )
+            .await;
+        }
+
+        if settings.contract_status_changed_email {
+            if let Err(e) = self
+                .email
+                .send_loan_application_taken_borrower(contract_id, borrower, contract_url)
+                .await
+            {
+                tracing::error!("Could not send loan application expired borrower {e:#}");
+            }
+        }
+    }
 
     pub async fn send_expired_loan_request_lender(
         &self,

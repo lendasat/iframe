@@ -910,6 +910,36 @@ impl Email {
         Ok(())
     }
 
+    pub async fn send_loan_application_taken_borrower(
+        &self,
+        contract_id: &str,
+        borrower: Borrower,
+        offers_url: Url,
+    ) -> Result<()> {
+        let template_name = "loan_application_taken_borrower";
+        let handlebars = Self::prepare_template(template_name)?;
+
+        let data = serde_json::json!({
+            "first_name": &borrower.name,
+            "subject": &template_name,
+            "url": offers_url,
+        });
+
+        let content_template = handlebars.render(template_name, &data)?;
+
+        if let Some(email) = borrower.email {
+            self.send_email(
+                format!("Your loan application was taken - {contract_id}").as_str(),
+                borrower.name.as_str(),
+                email.as_str(),
+                content_template,
+            )
+            .await?;
+        }
+
+        Ok(())
+    }
+
     pub async fn send_expired_loan_request_lender(
         &self,
         lender: &Lender,
