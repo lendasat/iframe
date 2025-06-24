@@ -4,7 +4,7 @@ version = "0.1.0"
 edition = "2021"
 
 [dependencies]
-teloxide = { version = "0.13", default-features = false, features = ["macros", "native-tls"] }
+teloxide = { version = "0.16", default-features = false, features = ["macros", "native-tls"] }
 tokio = { version = "1", default-features = false }
 tracing = "0.1.37"
 url = "2.5.2"
