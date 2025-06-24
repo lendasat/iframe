@@ -248,7 +248,7 @@ const CreateLoanOffer = () => {
                                   e.target.value === ""
                                     ? 0
                                     : Number(e.target.value);
-                                if (!isNaN(value)) {
+                                if (!Number.isNaN(value)) {
                                   form.setValue("loanAmount.min", value);
                                 }
                               }}
@@ -268,7 +268,7 @@ const CreateLoanOffer = () => {
                                   e.target.value === ""
                                     ? 0
                                     : Number(e.target.value);
-                                if (!isNaN(value)) {
+                                if (!Number.isNaN(value)) {
                                   form.setValue("loanAmount.max", value);
                                 }
                               }}
@@ -300,7 +300,7 @@ const CreateLoanOffer = () => {
                                   e.target.value === ""
                                     ? 0
                                     : Number(e.target.value);
-                                if (!isNaN(value)) {
+                                if (!Number.isNaN(value)) {
                                   field.onChange(value);
                                   form.setValue("autoAccept", true);
                                 }
@@ -416,7 +416,7 @@ const CreateLoanOffer = () => {
                                     e.target.value === ""
                                       ? 0
                                       : Number(e.target.value);
-                                  if (!isNaN(value)) {
+                                  if (!Number.isNaN(value)) {
                                     field.onChange(value);
                                   }
                                 }}
@@ -526,7 +526,7 @@ const CreateLoanOffer = () => {
                                     e.target.value === ""
                                       ? 0
                                       : Number(e.target.value);
-                                  if (!isNaN(value)) {
+                                  if (!Number.isNaN(value)) {
                                     field.onChange(value);
                                   }
                                 }}
@@ -617,7 +617,7 @@ const CreateLoanOffer = () => {
                                     e.target.value === ""
                                       ? 0
                                       : Number(e.target.value);
-                                  if (!isNaN(value)) {
+                                  if (!Number.isNaN(value)) {
                                     field.onChange(value);
                                   }
                                 }}
@@ -671,7 +671,7 @@ const CreateLoanOffer = () => {
                                     e.target.value === ""
                                       ? 0
                                       : Number(e.target.value);
-                                  if (!isNaN(value)) {
+                                  if (!Number.isNaN(value)) {
                                     field.onChange(value);
                                   }
                                 }}
