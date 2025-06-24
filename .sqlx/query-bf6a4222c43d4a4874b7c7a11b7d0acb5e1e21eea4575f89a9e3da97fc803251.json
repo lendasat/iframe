@@ -1,0 +1,44 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "\n        SELECT \n            b.id as \"id!\",\n            b.name as \"name!\",\n            b.email as email,\n            COALESCE(bns.new_loan_offer_email, true) as new_loan_offer_email,\n            COALESCE(bns.new_loan_offer_telegram, true) as new_loan_offer_telegram\n        FROM borrowers b\n        LEFT JOIN borrower_notification_settings bns ON b.id = bns.borrower_id\n        LEFT JOIN borrowers_password_auth bpa ON b.id = bpa.borrower_id\n        where bpa.verified = true\n        ",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "id!",
+        "type_info": "Bpchar"
+      },
+      {
+        "ordinal": 1,
+        "name": "name!",
+        "type_info": "Varchar"
+      },
+      {
+        "ordinal": 2,
+        "name": "email",
+        "type_info": "Varchar"
+      },
+      {
+        "ordinal": 3,
+        "name": "new_loan_offer_email",
+        "type_info": "Bool"
+      },
+      {
+        "ordinal": 4,
+        "name": "new_loan_offer_telegram",
+        "type_info": "Bool"
+      }
+    ],
+    "parameters": {
+      "Left": []
+    },
+    "nullable": [
+      false,
+      false,
+      true,
+      null,
+      null
+    ]
+  },
+  "hash": "bf6a4222c43d4a4874b7c7a11b7d0acb5e1e21eea4575f89a9e3da97fc803251"
+}

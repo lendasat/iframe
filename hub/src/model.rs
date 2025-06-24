@@ -24,6 +24,7 @@ use serde::Deserialize;
 use serde::Deserializer;
 use serde::Serialize;
 use sqlx::FromRow;
+use std::fmt;
 use std::str::FromStr;
 use time::macros::datetime;
 use time::OffsetDateTime;
@@ -518,6 +519,27 @@ impl LoanAsset {
             | LoanAsset::UsdtSol
             | LoanAsset::UsdtLiquid => false,
         }
+    }
+}
+
+impl fmt::Display for LoanAsset {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        let string = match self {
+            LoanAsset::UsdcPol => "Usdc on Polygon",
+            LoanAsset::UsdtPol => "Usdt on Polygon",
+            LoanAsset::UsdcEth => "Usdc on Ethereum",
+            LoanAsset::UsdtEth => "Usdt on Ethereum",
+            LoanAsset::UsdcStrk => "Usdc on Starknet",
+            LoanAsset::UsdtStrk => "Usdt on Starknet",
+            LoanAsset::UsdcSol => "Usdc on Solana",
+            LoanAsset::UsdtSol => "Usdt on Solana",
+            LoanAsset::Usd => "USD",
+            LoanAsset::Eur => "EUR",
+            LoanAsset::Chf => "CHF",
+            LoanAsset::Mxn => "MXN",
+            LoanAsset::UsdtLiquid => "USDT on Liquid",
+        };
+        write!(f, "{}", string)
     }
 }
 

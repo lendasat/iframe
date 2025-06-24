@@ -335,3 +335,66 @@ pub async fn update_borrower_notification_settings(
 
     Ok(result)
 }
+
+#[derive(Debug, Clone)]
+pub struct BorrowerContact {
+    pub id: String,
+    pub name: String,
+    pub email: Option<String>,
+    pub new_loan_offer_email: Option<bool>,
+    pub new_loan_offer_telegram: Option<bool>,
+}
+
+pub async fn get_borrowers_for_loan_offer_notifications(
+    pool: &PgPool,
+) -> Result<Vec<BorrowerContact>> {
+    let result = sqlx::query_as!(
+        BorrowerContact,
+        r#"
+        SELECT 
+            b.id as "id!",
+            b.name as "name!",
+            b.email as email,
+            COALESCE(bns.new_loan_offer_email, true) as new_loan_offer_email,
+            COALESCE(bns.new_loan_offer_telegram, true) as new_loan_offer_telegram
+        FROM borrowers b
+        LEFT JOIN borrower_notification_settings bns ON b.id = bns.borrower_id
+        LEFT JOIN borrowers_password_auth bpa ON b.id = bpa.borrower_id
+        where bpa.verified = true
+        "#
+    )
+    .fetch_all(pool)
+    .await?;
+
+    Ok(result)
+}
+
+#[derive(Debug, Clone)]
+pub struct LenderContact {
+    pub id: String,
+    pub name: String,
+    pub email: Option<String>,
+    pub new_loan_applications_email: Option<bool>,
+    pub new_loan_applications_telegram: Option<bool>,
+}
+
+pub async fn get_lenders_for_loan_loan_application(pool: &PgPool) -> Result<Vec<LenderContact>> {
+    let result = sqlx::query_as!(
+        LenderContact,
+        r#"
+        SELECT 
+            l.id as "id!",
+            l.name as "name!",
+            l.email as email,
+            COALESCE(lns.new_loan_applications_email, true) as new_loan_applications_email,
+            COALESCE(lns.new_loan_applications_telegram, true) as new_loan_applications_telegram
+        FROM lenders l
+        LEFT JOIN lender_notification_settings lns ON l.id = lns.lender_id
+        where l.verified = true
+        "#
+    )
+    .fetch_all(pool)
+    .await?;
+
+    Ok(result)
+}

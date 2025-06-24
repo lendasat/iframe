@@ -1,6 +1,8 @@
 use crate::db;
+use crate::model::LoanAsset;
 use anyhow::anyhow;
 use anyhow::Result;
+use rust_decimal::Decimal;
 use sqlx::Pool;
 use sqlx::Postgres;
 use std::sync::Arc;
@@ -202,6 +204,13 @@ pub enum LenderNotificationKind {
         ip_address: String,
         login_time: OffsetDateTime,
     },
+    NewApplicationAvailable {
+        name: String,
+        loan_amount: Decimal,
+        asset: LoanAsset,
+        interest_rate: Decimal,
+        duration: i32,
+    },
 }
 
 pub enum BorrowerNotificationKind {
@@ -229,6 +238,15 @@ pub enum BorrowerNotificationKind {
     },
     ContractExtensionEnabled {
         name: String,
+    },
+    NewLoanOfferAvailable {
+        name: String,
+        min_loan_amount: Decimal,
+        max_loan_amount: Decimal,
+        asset: LoanAsset,
+        interest_rate: Decimal,
+        min_duration: i32,
+        max_duration: i32,
     },
 }
 
@@ -293,6 +311,14 @@ impl xtra::Handler<Notification> for TelegramBot {
 
                     format!("Hi, {name}. A new login has been registered from IP {ip_address} on {login_time}. If this was not you, log in and change your password immediately."),
                     "Go to my profile".to_string(),
+                )
+            }
+            NotificationTarget::Lender(LenderNotificationKind::NewApplicationAvailable { name, loan_amount, asset, interest_rate, duration }) => {
+                let loan_amount = loan_amount.round_dp(0).to_string();
+                let interest_rate = (interest_rate * Decimal::from(100)).round_dp(1).to_string();
+                (
+                    format!("Hi, {name}. A new loan request is availablegs: \nA borrower is looking to borrow {loan_amount} of {asset} for {interest_rate}% for {duration} days. \n You can disable these messages in your settings.", ),
+                    "Details".to_string(),
                 )
             }
 
@@ -388,6 +414,16 @@ impl xtra::Handler<Notification> for TelegramBot {
                 (
                     format!("Hi, {name}. The lender enabled contract extensions for this contract. You can now log in and extend it."),
                     "Go to contract".to_string(),
+                )
+            }
+            NotificationTarget::Borrower(BorrowerNotificationKind::NewLoanOfferAvailable { name, min_loan_amount, max_loan_amount, asset, interest_rate, min_duration, max_duration }) => {
+                let min_loan_amount = min_loan_amount.round_dp(0).to_string();
+                let max_loan_amount = max_loan_amount.round_dp(0).to_string();
+                let interest_rate = (interest_rate * Decimal::from(100)).round_dp(1).to_string();
+                (
+                    format!("Hi, {name}. A new loan offer is available. \
+                    You can borrow {min_loan_amount}-{max_loan_amount} {asset} for {interest_rate}% for between {min_duration} days to {max_duration} days. \n You can disable these messages in your settings."),
+                    "Go to offer".to_string(),
                 )
             }
         };

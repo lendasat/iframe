@@ -6,6 +6,7 @@ use crate::model;
 use crate::model::Borrower;
 use crate::model::Contract;
 use crate::model::Lender;
+use crate::model::LoanAsset;
 use crate::model::NotificationMessage;
 use crate::notifications::websocket::NotificationCenter;
 use crate::telegram_bot::TelegramBot;
@@ -74,7 +75,7 @@ impl Notifications {
         }
         if settings.on_login_telegram {
             self.send_tg_notification_borrower(
-                &borrower,
+                borrower.id.as_str(),
                 profile_url,
                 crate::telegram_bot::BorrowerNotificationKind::LoginNotification {
                     name: borrower.name.clone(),
@@ -118,7 +119,7 @@ impl Notifications {
         }
         if settings.on_login_telegram {
             self.send_tg_notification_lender(
-                lender,
+                lender.id.as_str(),
                 profile_url,
                 crate::telegram_bot::LenderNotificationKind::LoginNotification {
                     name: lender.name.clone(),
@@ -224,7 +225,7 @@ impl Notifications {
         // TODO: introduce margin call events
 
         self.send_tg_notification_borrower(
-            &borrower,
+            borrower.id.as_str(),
             contract_url.clone(),
             crate::telegram_bot::BorrowerNotificationKind::MarginCall,
         )
@@ -264,7 +265,7 @@ impl Notifications {
         .await;
 
         self.send_tg_notification_borrower(
-            &borrower,
+            borrower.id.as_str(),
             contract_url.clone(),
             crate::telegram_bot::BorrowerNotificationKind::LiquidationNotice,
         )
@@ -301,7 +302,7 @@ impl Notifications {
         .await;
 
         self.send_tg_notification_lender(
-            &lender,
+            lender.id.as_str(),
             contract_url.clone(),
             crate::telegram_bot::LenderNotificationKind::LiquidationNotice,
         )
@@ -335,7 +336,7 @@ impl Notifications {
 
         if settings.contract_status_changed_telegram {
             self.send_tg_notification_lender(
-                &lender,
+                lender.id.as_str(),
                 url.clone(),
                 crate::telegram_bot::LenderNotificationKind::NewLoanRequest,
             )
@@ -372,7 +373,7 @@ impl Notifications {
 
         if settings.contract_status_changed_telegram {
             self.send_tg_notification_borrower(
-                &borrower,
+                borrower.id.as_str(),
                 contract_url.clone(),
                 crate::telegram_bot::BorrowerNotificationKind::RequestApproved,
             )
@@ -415,7 +416,7 @@ impl Notifications {
 
         if settings.contract_status_changed_telegram {
             self.send_tg_notification_lender(
-                &lender,
+                lender.id.as_str(),
                 url.clone(),
                 crate::telegram_bot::LenderNotificationKind::RequestAutoApproved,
             )
@@ -457,7 +458,7 @@ impl Notifications {
 
         if settings.contract_status_changed_telegram {
             self.send_tg_notification_borrower(
-                &borrower,
+                borrower.id.as_str(),
                 contract_url.clone(),
                 crate::telegram_bot::BorrowerNotificationKind::RequestRejected,
             )
@@ -500,7 +501,7 @@ impl Notifications {
 
         if settings.contract_status_changed_telegram {
             self.send_tg_notification_lender(
-                &lender,
+                lender.id.as_str(),
                 url.clone(),
                 crate::telegram_bot::LenderNotificationKind::Collateralized,
             )
@@ -538,7 +539,7 @@ impl Notifications {
 
         if settings.contract_status_changed_telegram {
             self.send_tg_notification_borrower(
-                &borrower,
+                borrower.id.as_str(),
                 contract_url.clone(),
                 crate::telegram_bot::BorrowerNotificationKind::LoanPaidOut,
             )
@@ -578,7 +579,7 @@ impl Notifications {
 
         if settings.contract_status_changed_telegram {
             self.send_tg_notification_borrower(
-                &borrower,
+                borrower.id.as_str(),
                 contract_url.clone(),
                 crate::telegram_bot::BorrowerNotificationKind::InstallmentDueSoon,
             )
@@ -601,7 +602,7 @@ impl Notifications {
 
         if settings.contract_status_changed_telegram {
             self.send_tg_notification_borrower(
-                &borrower,
+                borrower.id.as_str(),
                 contract_url.clone(),
                 crate::telegram_bot::BorrowerNotificationKind::MoonCardReady,
             )
@@ -640,7 +641,7 @@ impl Notifications {
 
         if settings.contract_status_changed_telegram {
             self.send_tg_notification_lender(
-                &lender,
+                lender.id.as_str(),
                 url.clone(),
                 crate::telegram_bot::LenderNotificationKind::InstallmentPaid,
             )
@@ -679,7 +680,7 @@ impl Notifications {
 
         if settings.contract_status_changed_telegram {
             self.send_tg_notification_borrower(
-                &borrower,
+                borrower.id.as_str(),
                 url.clone(),
                 crate::telegram_bot::BorrowerNotificationKind::InstallmentConfirmed,
             )
@@ -712,7 +713,7 @@ impl Notifications {
 
         if settings.contract_status_changed_telegram {
             self.send_tg_notification_borrower(
-                &borrower,
+                borrower.id.as_str(),
                 contract_url.clone(),
                 crate::telegram_bot::BorrowerNotificationKind::LiquidatedAfterDefault,
             )
@@ -755,7 +756,7 @@ impl Notifications {
 
         if settings.contract_status_changed_telegram {
             self.send_tg_notification_lender(
-                &lender,
+                lender.id.as_str(),
                 url.clone(),
                 crate::telegram_bot::LenderNotificationKind::Defaulted,
             )
@@ -794,7 +795,7 @@ impl Notifications {
 
         if settings.contract_status_changed_telegram {
             self.send_tg_notification_borrower(
-                &borrower,
+                borrower.id.as_str(),
                 contract_url.clone(),
                 crate::telegram_bot::BorrowerNotificationKind::LoanDefaulted,
             )
@@ -837,7 +838,7 @@ impl Notifications {
 
         if settings.contract_status_changed_telegram {
             self.send_tg_notification_borrower(
-                &borrower,
+                borrower.id.as_str(),
                 contract_url.clone(),
                 crate::telegram_bot::BorrowerNotificationKind::LoanRequestExpired,
             )
@@ -872,7 +873,7 @@ impl Notifications {
 
         if settings.contract_status_changed_telegram {
             self.send_tg_notification_borrower(
-                &borrower,
+                borrower.id.as_str(),
                 contract_url.clone(),
                 crate::telegram_bot::BorrowerNotificationKind::LoanApplicationExpired { days },
             )
@@ -909,7 +910,7 @@ impl Notifications {
 
         if settings.contract_status_changed_telegram {
             self.send_tg_notification_lender(
-                &lender,
+                lender.id.as_str(),
                 url.clone(),
                 crate::telegram_bot::LenderNotificationKind::RequestExpired,
             )
@@ -947,7 +948,7 @@ impl Notifications {
 
         if settings.new_chat_message_telegram {
             self.send_tg_notification_lender(
-                &lender,
+                lender.id.as_str(),
                 contract_url.clone(),
                 crate::telegram_bot::LenderNotificationKind::NewChatMessage {
                     name: lender.name.clone(),
@@ -981,7 +982,7 @@ impl Notifications {
 
         if settings.new_chat_message_telegram {
             self.send_tg_notification_borrower(
-                &borrower,
+                borrower.id.as_str(),
                 contract_url.clone(),
                 crate::telegram_bot::BorrowerNotificationKind::NewChatMessage {
                     name: borrower.name.clone(),
@@ -1011,7 +1012,7 @@ impl Notifications {
 
         if settings.contract_status_changed_telegram {
             self.send_tg_notification_borrower(
-                &borrower,
+                borrower.id.as_str(),
                 contract_url.clone(),
                 crate::telegram_bot::BorrowerNotificationKind::ContractExtensionEnabled {
                     name: borrower.name.clone(),
@@ -1037,16 +1038,151 @@ impl Notifications {
         }
     }
 
+    #[allow(clippy::too_many_arguments)]
+    pub async fn send_new_loan_offer_available(
+        &self,
+        pool: &PgPool,
+        offer_url: Url,
+        min_loan_amount: Decimal,
+        max_loan_amount: Decimal,
+        asset: LoanAsset,
+        interest_rate: Decimal,
+        min_duration: i32,
+        max_duration: i32,
+    ) {
+        match db::notification_settings::get_borrowers_for_loan_offer_notifications(pool).await {
+            Ok(contact_details) => {
+                let filtered_users = contact_details
+                    .iter()
+                    .filter(|details| details.new_loan_offer_telegram.unwrap_or_default())
+                    .collect::<Vec<_>>();
+                for borrower in filtered_users {
+                    self.send_tg_notification_borrower(
+                        borrower.id.as_str(),
+                        offer_url.clone(),
+                        crate::telegram_bot::BorrowerNotificationKind::NewLoanOfferAvailable {
+                            name: borrower.name.clone(),
+                            min_loan_amount,
+                            max_loan_amount,
+                            asset,
+                            interest_rate,
+                            min_duration,
+                            max_duration,
+                        },
+                    )
+                    .await
+                }
+
+                let filtered_users = contact_details
+                    .iter()
+                    .filter(|details| details.new_loan_offer_email.unwrap_or_default())
+                    .filter_map(|details| {
+                        details
+                            .email
+                            .clone()
+                            .map(|email| (details.name.clone(), email))
+                    })
+                    .collect::<Vec<_>>();
+
+                if let Err(e) = self
+                    .email
+                    .send_new_loan_offer(
+                        filtered_users,
+                        offer_url,
+                        min_loan_amount,
+                        max_loan_amount,
+                        asset,
+                        interest_rate,
+                        min_duration,
+                        max_duration,
+                    )
+                    .await
+                {
+                    tracing::error!("Could not send email notification borrower {e:#}");
+                }
+            }
+            Err(error) => {
+                tracing::error!(
+                    "Failed loading borrowers for new loan offer notifications {error:#}"
+                )
+            }
+        }
+    }
+
+    pub async fn send_new_loan_application_available(
+        &self,
+        pool: &PgPool,
+        offer_url: Url,
+        loan_amount: Decimal,
+        asset: LoanAsset,
+        interest_rate: Decimal,
+        duration: i32,
+    ) {
+        match db::notification_settings::get_lenders_for_loan_loan_application(pool).await {
+            Ok(contact_details) => {
+                let filtered_users = contact_details
+                    .iter()
+                    .filter(|details| details.new_loan_applications_telegram.unwrap_or_default())
+                    .collect::<Vec<_>>();
+                for lender in filtered_users {
+                    self.send_tg_notification_lender(
+                        lender.id.as_str(),
+                        offer_url.clone(),
+                        crate::telegram_bot::LenderNotificationKind::NewApplicationAvailable {
+                            name: lender.name.clone(),
+                            loan_amount,
+                            asset,
+                            interest_rate,
+                            duration,
+                        },
+                    )
+                    .await
+                }
+
+                let filtered_users = contact_details
+                    .iter()
+                    .filter(|details| details.new_loan_applications_email.unwrap_or_default())
+                    .filter_map(|details| {
+                        details
+                            .email
+                            .clone()
+                            .map(|email| (details.name.clone(), email))
+                    })
+                    .collect::<Vec<_>>();
+
+                if let Err(e) = self
+                    .email
+                    .send_new_loan_applications(
+                        filtered_users,
+                        offer_url,
+                        loan_amount,
+                        asset,
+                        interest_rate,
+                        duration,
+                    )
+                    .await
+                {
+                    tracing::error!("Could not send email notification lenders {e:#}");
+                }
+            }
+            Err(error) => {
+                tracing::error!(
+                    "Failed loading lenders for new loan application notifications {error:#}"
+                )
+            }
+        }
+    }
+
     async fn send_tg_notification_lender(
         &self,
-        lender: &Lender,
+        lender_id: &str,
         url: Url,
         kind: crate::telegram_bot::LenderNotificationKind,
     ) {
         if let Some(tgb) = &self.telegram_bot {
             if let Err(e) = tgb
                 .send(crate::telegram_bot::Notification {
-                    user_id: lender.id.clone(),
+                    user_id: lender_id.to_string(),
                     url,
                     kind: crate::telegram_bot::NotificationTarget::Lender(kind),
                 })
@@ -1059,14 +1195,14 @@ impl Notifications {
 
     async fn send_tg_notification_borrower(
         &self,
-        borrower: &Borrower,
+        user_id: &str,
         contract_url: Url,
         kind: crate::telegram_bot::BorrowerNotificationKind,
     ) {
         if let Some(tgb) = &self.telegram_bot {
             if let Err(e) = tgb
                 .send(crate::telegram_bot::Notification {
-                    user_id: borrower.id.clone(),
+                    user_id: user_id.to_string(),
                     url: contract_url,
                     kind: crate::telegram_bot::NotificationTarget::Borrower(kind),
                 })
