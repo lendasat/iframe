@@ -69,7 +69,7 @@ security(
     )
 )
 ]
-#[instrument(skip_all, fields(borrower_id = user.id, ?body), ret, err(Debug))]
+#[instrument(skip_all, fields(borrower_id = user.id, body = ?body), ret, err(Debug))]
 async fn create_loan_application(
     State(data): State<Arc<AppState>>,
     Extension(user): Extension<Borrower>,
@@ -218,7 +218,7 @@ security(
     )
 )
 ]
-#[instrument(skip_all, fields(borrower_id = user.id, loan_deal_id), ret, err(Debug))]
+#[instrument(skip_all, fields(borrower_id = user.id, loan_deal_id = loan_deal_id), ret, err(Debug))]
 async fn put_mark_loan_application_as_deleted(
     State(data): State<Arc<AppState>>,
     Extension(user): Extension<Borrower>,
@@ -283,7 +283,7 @@ security(
     )
 )
 ]
-#[instrument(skip_all, fields(borrower_id = user.id, loan_deal_id), ret, err(Debug))]
+#[instrument(skip_all, fields(borrower_id = user.id, loan_deal_id = loan_deal_id), ret, err(Debug))]
 async fn put_edit_loan_application(
     State(data): State<Arc<AppState>>,
     Extension(user): Extension<Borrower>,
