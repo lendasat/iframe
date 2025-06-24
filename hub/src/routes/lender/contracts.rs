@@ -222,7 +222,7 @@ async fn put_update_extension_policy(
                 .join(format!("/my-contracts/{}", contract_id).as_str())?;
 
             data.notifications
-                .send_contract_extension_enabled(&data.db, borrower, loan_url)
+                .send_contract_extension_enabled(borrower, loan_url)
                 .await;
             anyhow::Ok(())
         }
@@ -374,7 +374,7 @@ async fn delete_reject_contract(
             .context("Borrower not found")?;
 
         data.notifications
-            .send_loan_request_rejected(&data.db, contract_id.as_str(), borrower, loan_url)
+            .send_loan_request_rejected(contract_id.as_str(), borrower, loan_url)
             .await;
 
         anyhow::Ok(())
@@ -460,7 +460,6 @@ async fn put_confirm_installment_payment(
         .send_installment_confirmed(
             borrower,
             loan_url,
-            &data.db,
             body.installment_id,
             contract_id.as_str(),
         )
@@ -810,7 +809,7 @@ async fn post_liquidation_tx(
         }
 
         data.notifications
-            .send_loan_liquidated_after_default(&data.db, contract_id.as_str(), borrower, loan_url)
+            .send_loan_liquidated_after_default(contract_id.as_str(), borrower, loan_url)
             .await;
 
         // Not actually used, but required. I think the compiler is tripping here.

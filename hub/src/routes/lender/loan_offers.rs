@@ -140,7 +140,6 @@ async fn create_loan_offer(
         .map_err(|e| Error::InvalidUrl(e.to_string()))?;
     data.notifications
         .send_new_loan_offer_available(
-            &data.db,
             offer_url,
             offer.loan_amount_min,
             offer.loan_amount_max,

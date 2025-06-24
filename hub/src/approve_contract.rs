@@ -139,7 +139,7 @@ pub async fn approve_contract(
     // approved.
     if let Err(e) = async {
         notifications
-            .send_loan_request_approved(db, contract_id.as_str(), borrower, loan_url)
+            .send_loan_request_approved(contract_id.as_str(), borrower, loan_url)
             .await;
 
         anyhow::Ok(())

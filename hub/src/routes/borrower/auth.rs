@@ -498,7 +498,6 @@ async fn post_pake_verify(
 
     data.notifications
         .send_login_information_borrower(
-            &data.db,
             user,
             profile_url,
             ip_address.as_str(),

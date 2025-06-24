@@ -10,8 +10,6 @@ use crate::notifications::websocket::NotificationCenter;
 use crate::telegram_bot::TelegramBot;
 use rust_decimal::Decimal;
 use sqlx::PgPool;
-use sqlx::Pool;
-use sqlx::Postgres;
 use time::OffsetDateTime;
 use url::Url;
 use uuid::Uuid;
@@ -21,6 +19,7 @@ mod email;
 pub mod websocket;
 
 pub struct Notifications {
+    db: PgPool,
     email: email::Email,
     telegram_bot: Option<Address<TelegramBot>>,
     pub(crate) websocket: NotificationCenter,
@@ -31,8 +30,10 @@ impl Notifications {
         config: Config,
         maybe_telegram_bot: Option<Address<TelegramBot>>,
         center: NotificationCenter,
+        db: PgPool,
     ) -> Self {
         Self {
+            db,
             email: email::Email::new(config),
             telegram_bot: maybe_telegram_bot,
             websocket: center,
@@ -42,7 +43,6 @@ impl Notifications {
     #[allow(clippy::too_many_arguments)]
     pub async fn send_login_information_borrower(
         &self,
-        db: &PgPool,
         borrower: Borrower,
         profile_url: Url,
         ip_address: &str,
@@ -50,7 +50,7 @@ impl Notifications {
         location: Option<String>,
         device: &str,
     ) {
-        let settings = load_borrower_notification_settings(db, borrower.id.as_str()).await;
+        let settings = load_borrower_notification_settings(&self.db, borrower.id.as_str()).await;
 
         if settings.on_login_email {
             if let Some(email) = borrower.email.as_ref() {
@@ -88,7 +88,6 @@ impl Notifications {
     #[allow(clippy::too_many_arguments)]
     pub async fn send_login_information_lender(
         &self,
-        db: &PgPool,
         lender: &Lender,
         profile_url: Url,
         ip_address: &str,
@@ -96,7 +95,7 @@ impl Notifications {
         location: Option<String>,
         device: &str,
     ) {
-        let settings = load_lender_notification_settings(db, lender.id.as_str()).await;
+        let settings = load_lender_notification_settings(&self.db, lender.id.as_str()).await;
 
         if settings.on_login_email {
             if let Err(e) = self
@@ -247,7 +246,6 @@ impl Notifications {
 
     pub async fn send_liquidation_notice_borrower(
         &self,
-        pool: &PgPool,
         borrower: Borrower,
         contract: Contract,
         price: Decimal,
@@ -255,7 +253,6 @@ impl Notifications {
         contract_url: Url,
     ) {
         self.notify_borrower_frontend_contract_status(
-            pool,
             contract.id.as_str(),
             borrower.id.as_str(),
             model::db::ContractStatus::Undercollateralized,
@@ -289,10 +286,8 @@ impl Notifications {
         lender: Lender,
         contract: Contract,
         contract_url: Url,
-        pool: &Pool<Postgres>,
     ) {
         self.notify_lender_frontend_contract_status(
-            pool,
             contract.id.as_str(),
             lender.id.as_str(),
             model::db::ContractStatus::Undercollateralized,
@@ -315,17 +310,10 @@ impl Notifications {
         }
     }
 
-    pub async fn send_new_loan_request(
-        &self,
-        lender: Lender,
-        url: Url,
-        contract_id: &str,
-        pool: &PgPool,
-    ) {
-        let settings = load_lender_notification_settings(pool, lender.id.as_str()).await;
+    pub async fn send_new_loan_request(&self, lender: Lender, url: Url, contract_id: &str) {
+        let settings = load_lender_notification_settings(&self.db, lender.id.as_str()).await;
 
         self.notify_lender_frontend_contract_status(
-            pool,
             contract_id,
             lender.id.as_str(),
             model::db::ContractStatus::Requested,
@@ -347,22 +335,21 @@ impl Notifications {
             }
         }
 
-        if let Err(e) = db::contract_emails::mark_loan_request_as_sent(pool, contract_id).await {
+        if let Err(e) = db::contract_emails::mark_loan_request_as_sent(&self.db, contract_id).await
+        {
             tracing::error!("Failed to mark loan-request email as sent: {e:#}");
         }
     }
 
     pub async fn send_loan_request_approved(
         &self,
-        pool: &PgPool,
         contract_id: &str,
         borrower: Borrower,
         contract_url: Url,
     ) {
-        let settings = load_borrower_notification_settings(pool, borrower.id.as_str()).await;
+        let settings = load_borrower_notification_settings(&self.db, borrower.id.as_str()).await;
 
         self.notify_borrower_frontend_contract_status(
-            pool,
             contract_id,
             borrower.id.as_str(),
             model::db::ContractStatus::Approved,
@@ -389,7 +376,7 @@ impl Notifications {
         }
 
         if let Err(e) =
-            db::contract_emails::mark_loan_request_approved_as_sent(pool, contract_id).await
+            db::contract_emails::mark_loan_request_approved_as_sent(&self.db, contract_id).await
         {
             tracing::error!("Failed to mark loan-request-approved email as sent: {e:#}");
         }
@@ -400,12 +387,10 @@ impl Notifications {
         lender: Lender,
         url: Url,
         contract_id: &str,
-        pool: &PgPool,
     ) {
-        let settings = load_lender_notification_settings(pool, lender.id.as_str()).await;
+        let settings = load_lender_notification_settings(&self.db, lender.id.as_str()).await;
 
         self.notify_lender_frontend_contract_status(
-            pool,
             contract_id,
             lender.id.as_str(),
             model::db::ContractStatus::Approved,
@@ -431,7 +416,8 @@ impl Notifications {
             }
         }
 
-        if let Err(e) = db::contract_emails::mark_auto_accept_email_as_sent(pool, contract_id).await
+        if let Err(e) =
+            db::contract_emails::mark_auto_accept_email_as_sent(&self.db, contract_id).await
         {
             tracing::error!("Failed to mark auto-accept email as sent: {e:#}");
         }
@@ -439,15 +425,13 @@ impl Notifications {
 
     pub async fn send_loan_request_rejected(
         &self,
-        pool: &PgPool,
         contract_id: &str,
         borrower: Borrower,
         contract_url: Url,
     ) {
-        let settings = load_borrower_notification_settings(pool, borrower.id.as_str()).await;
+        let settings = load_borrower_notification_settings(&self.db, borrower.id.as_str()).await;
 
         self.notify_borrower_frontend_contract_status(
-            pool,
             contract_id,
             borrower.id.as_str(),
             model::db::ContractStatus::Rejected,
@@ -474,23 +458,16 @@ impl Notifications {
         }
 
         if let Err(e) =
-            db::contract_emails::mark_loan_request_rejected_as_sent(pool, contract_id).await
+            db::contract_emails::mark_loan_request_rejected_as_sent(&self.db, contract_id).await
         {
             tracing::error!("Failed to mark loan-request-rejected email as sent: {e:#}");
         }
     }
 
-    pub async fn send_loan_collateralized(
-        &self,
-        lender: Lender,
-        url: Url,
-        pool: &PgPool,
-        contract_id: &str,
-    ) {
-        let settings = load_lender_notification_settings(pool, lender.id.as_str()).await;
+    pub async fn send_loan_collateralized(&self, lender: Lender, url: Url, contract_id: &str) {
+        let settings = load_lender_notification_settings(&self.db, lender.id.as_str()).await;
 
         self.notify_lender_frontend_contract_status(
-            pool,
             contract_id,
             lender.id.as_str(),
             model::db::ContractStatus::CollateralConfirmed,
@@ -512,7 +489,8 @@ impl Notifications {
             }
         }
 
-        if let Err(e) = db::contract_emails::mark_collateral_funded_as_sent(pool, contract_id).await
+        if let Err(e) =
+            db::contract_emails::mark_collateral_funded_as_sent(&self.db, contract_id).await
         {
             tracing::error!("Failed to mark collateral-funded email as sent: {e:#}");
         }
@@ -520,15 +498,13 @@ impl Notifications {
 
     pub async fn send_loan_paid_out(
         &self,
-        pool: &PgPool,
         contract_id: &str,
         borrower: Borrower,
         contract_url: Url,
     ) {
-        let settings = load_borrower_notification_settings(pool, borrower.id.as_str()).await;
+        let settings = load_borrower_notification_settings(&self.db, borrower.id.as_str()).await;
 
         self.notify_borrower_frontend_contract_status(
-            pool,
             contract_id,
             borrower.id.as_str(),
             model::db::ContractStatus::PrincipalGiven,
@@ -550,24 +526,23 @@ impl Notifications {
             }
         }
 
-        if let Err(e) = db::contract_emails::mark_loan_paid_out_as_sent(pool, contract_id).await {
+        if let Err(e) = db::contract_emails::mark_loan_paid_out_as_sent(&self.db, contract_id).await
+        {
             tracing::error!("Failed to mark loan-paid-out email as sent: {e:#}");
         }
     }
 
     pub async fn send_installment_due_soon(
         &self,
-        pool: &PgPool,
         contract_id: &str,
         installment_id: Uuid,
         borrower: Borrower,
         expiry_date: &str,
         contract_url: Url,
     ) {
-        let settings = load_borrower_notification_settings(pool, borrower.id.as_str()).await;
+        let settings = load_borrower_notification_settings(&self.db, borrower.id.as_str()).await;
 
         self.notify_borrower_frontend_installment(
-            pool,
             contract_id,
             borrower.id.as_str(),
             installment_id,
@@ -595,8 +570,8 @@ impl Notifications {
         }
     }
 
-    pub async fn send_moon_card_ready(&self, pool: &PgPool, borrower: Borrower, contract_url: Url) {
-        let settings = load_borrower_notification_settings(pool, borrower.id.as_str()).await;
+    pub async fn send_moon_card_ready(&self, borrower: Borrower, contract_url: Url) {
+        let settings = load_borrower_notification_settings(&self.db, borrower.id.as_str()).await;
 
         if settings.contract_status_changed_telegram {
             self.send_tg_notification_borrower(
@@ -622,14 +597,12 @@ impl Notifications {
         &self,
         lender: Lender,
         url: Url,
-        pool: &PgPool,
         installment_id: Uuid,
         contract_id: &str,
     ) {
-        let settings = load_lender_notification_settings(pool, lender.id.as_str()).await;
+        let settings = load_lender_notification_settings(&self.db, lender.id.as_str()).await;
 
         self.notify_lender_frontend_installment(
-            pool,
             contract_id,
             lender.id.as_str(),
             installment_id,
@@ -652,7 +625,7 @@ impl Notifications {
             }
         }
 
-        if let Err(e) = db::contract_emails::mark_loan_repaid_as_sent(pool, contract_id).await {
+        if let Err(e) = db::contract_emails::mark_loan_repaid_as_sent(&self.db, contract_id).await {
             tracing::error!("Failed to mark loan-repaid email as sent: {e:#}");
         }
     }
@@ -661,14 +634,12 @@ impl Notifications {
         &self,
         borrower: Borrower,
         url: Url,
-        pool: &PgPool,
         installment_id: Uuid,
         contract_id: &str,
     ) {
-        let settings = load_borrower_notification_settings(pool, borrower.id.as_str()).await;
+        let settings = load_borrower_notification_settings(&self.db, borrower.id.as_str()).await;
 
         self.notify_borrower_frontend_installment(
-            pool,
             contract_id,
             borrower.id.as_str(),
             installment_id,
@@ -694,15 +665,13 @@ impl Notifications {
 
     pub async fn send_loan_liquidated_after_default(
         &self,
-        pool: &PgPool,
         contract_id: &str,
         borrower: Borrower,
         contract_url: Url,
     ) {
-        let settings = load_borrower_notification_settings(pool, borrower.id.as_str()).await;
+        let settings = load_borrower_notification_settings(&self.db, borrower.id.as_str()).await;
 
         self.notify_borrower_frontend_contract_status(
-            pool,
             contract_id,
             borrower.id.as_str(),
             model::db::ContractStatus::ClosedByDefaulting,
@@ -729,23 +698,16 @@ impl Notifications {
         }
 
         if let Err(e) =
-            db::contract_emails::mark_defaulted_loan_liquidated_as_sent(pool, contract_id).await
+            db::contract_emails::mark_defaulted_loan_liquidated_as_sent(&self.db, contract_id).await
         {
             tracing::error!("Failed to mark defaulted-loan-liquidated email as sent: {e:#}");
         }
     }
 
-    pub async fn send_loan_defaulted_lender(
-        &self,
-        lender: Lender,
-        url: Url,
-        pool: &PgPool,
-        contract_id: &str,
-    ) {
-        let settings = load_lender_notification_settings(pool, lender.id.as_str()).await;
+    pub async fn send_loan_defaulted_lender(&self, lender: Lender, url: Url, contract_id: &str) {
+        let settings = load_lender_notification_settings(&self.db, lender.id.as_str()).await;
 
         self.notify_lender_frontend_contract_status(
-            pool,
             contract_id,
             lender.id.as_str(),
             model::db::ContractStatus::Defaulted,
@@ -768,7 +730,7 @@ impl Notifications {
         }
 
         if let Err(e) =
-            db::contract_emails::mark_defaulted_loan_lender_as_sent(pool, contract_id).await
+            db::contract_emails::mark_defaulted_loan_lender_as_sent(&self.db, contract_id).await
         {
             tracing::error!("Failed to mark defaulted-loan-lender email as sent: {e:#}");
         }
@@ -776,15 +738,13 @@ impl Notifications {
 
     pub async fn send_loan_defaulted_borrower(
         &self,
-        pool: &PgPool,
         contract_id: &str,
         borrower: Borrower,
         contract_url: Url,
     ) {
-        let settings = load_borrower_notification_settings(pool, borrower.id.as_str()).await;
+        let settings = load_borrower_notification_settings(&self.db, borrower.id.as_str()).await;
 
         self.notify_borrower_frontend_contract_status(
-            pool,
             contract_id,
             borrower.id.as_str(),
             model::db::ContractStatus::Defaulted,
@@ -811,7 +771,7 @@ impl Notifications {
         }
 
         if let Err(e) =
-            db::contract_emails::mark_defaulted_loan_borrower_as_sent(pool, contract_id).await
+            db::contract_emails::mark_defaulted_loan_borrower_as_sent(&self.db, contract_id).await
         {
             tracing::error!("Failed to mark defaulted-loan-borrower email as sent: {e:#}");
         }
@@ -819,15 +779,13 @@ impl Notifications {
 
     pub async fn send_expired_loan_request_borrower(
         &self,
-        pool: &PgPool,
         contract_id: &str,
         borrower: Borrower,
         contract_url: Url,
     ) {
-        let settings = load_borrower_notification_settings(pool, borrower.id.as_str()).await;
+        let settings = load_borrower_notification_settings(&self.db, borrower.id.as_str()).await;
 
         self.notify_borrower_frontend_contract_status(
-            pool,
             contract_id,
             borrower.id.as_str(),
             model::db::ContractStatus::RequestExpired,
@@ -854,7 +812,8 @@ impl Notifications {
         }
 
         if let Err(e) =
-            db::contract_emails::mark_loan_request_expired_borrower_as_sent(pool, contract_id).await
+            db::contract_emails::mark_loan_request_expired_borrower_as_sent(&self.db, contract_id)
+                .await
         {
             tracing::error!("Failed to mark loan-request-expired-borrower email as sent: {e:#}");
         }
@@ -862,12 +821,11 @@ impl Notifications {
 
     pub async fn send_expired_loan_application_borrower(
         &self,
-        pool: &PgPool,
         borrower: Borrower,
         days: i64,
         contract_url: Url,
     ) {
-        let settings = load_borrower_notification_settings(pool, borrower.id.as_str()).await;
+        let settings = load_borrower_notification_settings(&self.db, borrower.id.as_str()).await;
 
         if settings.contract_status_changed_telegram {
             self.send_tg_notification_borrower(
@@ -893,13 +851,11 @@ impl Notifications {
         &self,
         lender: Lender,
         url: Url,
-        pool: &PgPool,
         contract_id: &str,
     ) {
-        let settings = load_lender_notification_settings(pool, lender.id.as_str()).await;
+        let settings = load_lender_notification_settings(&self.db, lender.id.as_str()).await;
 
         self.notify_lender_frontend_contract_status(
-            pool,
             contract_id,
             lender.id.as_str(),
             model::db::ContractStatus::RequestExpired,
@@ -926,7 +882,8 @@ impl Notifications {
         }
 
         if let Err(e) =
-            db::contract_emails::mark_loan_request_expired_lender_as_sent(pool, contract_id).await
+            db::contract_emails::mark_loan_request_expired_lender_as_sent(&self.db, contract_id)
+                .await
         {
             tracing::error!("Failed to mark loan-request-expired-lender email as sent: {e:#}");
         }
@@ -936,12 +893,11 @@ impl Notifications {
         &self,
         lender: Lender,
         contract_url: Url,
-        pool: &PgPool,
         contract_id: &str,
     ) {
-        let settings = load_lender_notification_settings(pool, lender.id.as_str()).await;
+        let settings = load_lender_notification_settings(&self.db, lender.id.as_str()).await;
 
-        self.notify_lender_frontend_chat_message(pool, contract_id, lender.id.as_str())
+        self.notify_lender_frontend_chat_message(contract_id, lender.id.as_str())
             .await;
 
         if settings.new_chat_message_telegram {
@@ -968,14 +924,13 @@ impl Notifications {
 
     pub async fn send_chat_notification_borrower(
         &self,
-        pool: &PgPool,
         contract_id: &str,
         borrower: Borrower,
         contract_url: Url,
     ) {
-        let settings = load_borrower_notification_settings(pool, borrower.id.as_str()).await;
+        let settings = load_borrower_notification_settings(&self.db, borrower.id.as_str()).await;
 
-        self.notify_borrower_frontend_chat_message(pool, contract_id, borrower.id.as_str())
+        self.notify_borrower_frontend_chat_message(contract_id, borrower.id.as_str())
             .await;
 
         if settings.new_chat_message_telegram {
@@ -1000,13 +955,8 @@ impl Notifications {
         }
     }
 
-    pub async fn send_contract_extension_enabled(
-        &self,
-        pool: &PgPool,
-        borrower: Borrower,
-        contract_url: Url,
-    ) {
-        let settings = load_borrower_notification_settings(pool, borrower.id.as_str()).await;
+    pub async fn send_contract_extension_enabled(&self, borrower: Borrower, contract_url: Url) {
+        let settings = load_borrower_notification_settings(&self.db, borrower.id.as_str()).await;
 
         if settings.contract_status_changed_telegram {
             self.send_tg_notification_borrower(
@@ -1039,7 +989,6 @@ impl Notifications {
     #[allow(clippy::too_many_arguments)]
     pub async fn send_new_loan_offer_available(
         &self,
-        pool: &PgPool,
         offer_url: Url,
         min_loan_amount: Decimal,
         max_loan_amount: Decimal,
@@ -1048,7 +997,8 @@ impl Notifications {
         min_duration: i32,
         max_duration: i32,
     ) {
-        match db::notification_settings::get_borrowers_for_loan_offer_notifications(pool).await {
+        match db::notification_settings::get_borrowers_for_loan_offer_notifications(&self.db).await
+        {
             Ok(contact_details) => {
                 let filtered_users = contact_details
                     .iter()
@@ -1109,14 +1059,13 @@ impl Notifications {
 
     pub async fn send_new_loan_application_available(
         &self,
-        pool: &PgPool,
         offer_url: Url,
         loan_amount: Decimal,
         asset: LoanAsset,
         interest_rate: Decimal,
         duration: i32,
     ) {
-        match db::notification_settings::get_lenders_for_loan_loan_application(pool).await {
+        match db::notification_settings::get_lenders_for_loan_loan_application(&self.db).await {
             Ok(contact_details) => {
                 let filtered_users = contact_details
                     .iter()
@@ -1213,13 +1162,12 @@ impl Notifications {
 
     async fn notify_lender_frontend_contract_status(
         &self,
-        pool: &Pool<Postgres>,
         contract_id: &str,
         lender_id: &str,
         status: model::db::ContractStatus,
     ) {
         match db::notifications::lender::insert_contract_update_notification(
-            pool,
+            &self.db,
             contract_id,
             status,
         )
@@ -1237,14 +1185,13 @@ impl Notifications {
 
     async fn notify_lender_frontend_installment(
         &self,
-        pool: &Pool<Postgres>,
         contract_id: &str,
         lender_id: &str,
         installment_id: Uuid,
         status: model::InstallmentStatus,
     ) {
         match db::notifications::lender::insert_installment_update_notification(
-            pool,
+            &self.db,
             installment_id,
             contract_id,
             status,
@@ -1261,13 +1208,10 @@ impl Notifications {
         }
     }
 
-    async fn notify_lender_frontend_chat_message(
-        &self,
-        pool: &Pool<Postgres>,
-        contract_id: &str,
-        lender_id: &str,
-    ) {
-        match db::notifications::lender::insert_chat_message_notification(pool, contract_id).await {
+    async fn notify_lender_frontend_chat_message(&self, contract_id: &str, lender_id: &str) {
+        match db::notifications::lender::insert_chat_message_notification(&self.db, contract_id)
+            .await
+        {
             Ok(notification) => {
                 self.notify_lender_frontend(lender_id, notification.into())
                     .await;
@@ -1286,13 +1230,12 @@ impl Notifications {
 
     async fn notify_borrower_frontend_contract_status(
         &self,
-        pool: &Pool<Postgres>,
         contract_id: &str,
         borrower_id: &str,
         status: model::db::ContractStatus,
     ) {
         match db::notifications::borrower::insert_contract_update_notification(
-            pool,
+            &self.db,
             contract_id,
             status,
         )
@@ -1310,14 +1253,13 @@ impl Notifications {
 
     async fn notify_borrower_frontend_installment(
         &self,
-        pool: &Pool<Postgres>,
         contract_id: &str,
         borrower_id: &str,
         installment_id: Uuid,
         status: model::InstallmentStatus,
     ) {
         match db::notifications::borrower::insert_installment_update_notification(
-            pool,
+            &self.db,
             installment_id,
             contract_id,
             status,
@@ -1336,13 +1278,9 @@ impl Notifications {
         }
     }
 
-    async fn notify_borrower_frontend_chat_message(
-        &self,
-        pool: &Pool<Postgres>,
-        contract_id: &str,
-        borrower_id: &str,
-    ) {
-        match db::notifications::borrower::insert_chat_message_notification(pool, contract_id).await
+    async fn notify_borrower_frontend_chat_message(&self, contract_id: &str, borrower_id: &str) {
+        match db::notifications::borrower::insert_chat_message_notification(&self.db, contract_id)
+            .await
         {
             Ok(notification) => {
                 self.notify_borrower_frontend(borrower_id, notification.into())

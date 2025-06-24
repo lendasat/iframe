@@ -301,7 +301,7 @@ impl Manager {
         let card_details_url = self.config.borrower_frontend_origin.join("/cards")?;
 
         self.notifications
-            .send_moon_card_ready(&self.db, borrower, card_details_url)
+            .send_moon_card_ready(borrower, card_details_url)
             .await;
 
         Ok(())

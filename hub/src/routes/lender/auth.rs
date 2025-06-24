@@ -435,7 +435,6 @@ async fn post_pake_verify(
 
     data.notifications
         .send_login_information_lender(
-            &data.db,
             &user,
             profile_url,
             ip_address.as_str(),

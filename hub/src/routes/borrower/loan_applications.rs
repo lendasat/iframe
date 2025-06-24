@@ -103,7 +103,6 @@ async fn create_loan_application(
 
     data.notifications
         .send_new_loan_application_available(
-            &data.db,
             application_url,
             loan.loan_amount,
             loan.loan_asset,

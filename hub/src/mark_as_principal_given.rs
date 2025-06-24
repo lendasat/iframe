@@ -44,7 +44,7 @@ pub async fn mark_as_principal_given(
 
         // TODO: Send a custom email for indirect (e-commerce) loans.
         notifications
-            .send_loan_paid_out(pool, contract_id, borrower, loan_url)
+            .send_loan_paid_out(contract_id, borrower, loan_url)
             .await;
 
         anyhow::Ok(())
