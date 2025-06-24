@@ -23,7 +23,7 @@ function Settings() {
   const currentPath = location.pathname.split("/").pop();
 
   return (
-    <div className="bg-white px-6 py-6 dark:bg-black">
+    <div className="px-6 py-6">
       <Card>
         <CardHeader className="border-b px-6 py-4">
           <Tabs value={currentPath || "profile"} className="w-full">
@@ -53,8 +53,8 @@ function Settings() {
           </Tabs>
         </CardHeader>
 
-        <ScrollArea className="bg-white px-6 py-6 dark:bg-black w-full">
-          <CardContent className="p-6 h-[70vh]">
+        <ScrollArea className="w-full px-6 py-6">
+          <CardContent className="h-[70vh]">
             <Routes>
               <Route path="/" element={<Navigate to="profile" replace />} />
               <Route path="profile" element={<Profile />} />

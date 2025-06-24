@@ -1,0 +1,50 @@
+{{#> base}}
+  <table role="presentation" class="main">
+    <!-- START MAIN CONTENT AREA -->
+    <tr>
+      <td class="wrapper">
+        <table role="presentation" border="0" cellpadding="0" cellspacing="0">
+          <tr>
+            <td>
+              <p>Hi,</p>
+
+              <p>We thought you might be interested in this loan request</p>
+
+              <p><strong>Request Details:</strong></p>
+              <ul>
+                <li><strong>Loan Amount:</strong> {{loan_amount}} {{asset}}</li>
+                <li><strong>Interest Rate:</strong> {{interest_rate}}%</li>
+                <li><strong>Loan Duration:</strong> {{duration}} days</li>
+              </ul>
+
+              <p>Don't miss out on this opportunity. Click below to view the full details and apply.</p>
+
+              <table role="presentation" border="0" cellpadding="0" cellspacing="0" class="btn btn-primary">
+                <tbody>
+                <tr>
+                  <td align="left">
+                    <table role="presentation" border="0" cellpadding="0" cellspacing="0">
+                      <tbody>
+                      <tr>
+                        <td>
+                          <a href="{{application_url}}" target="_blank">View Loan Application</a>
+                        </td>
+                      </tr>
+                      </tbody>
+                    </table>
+                  </td>
+                </tr>
+                </tbody>
+              </table>
+              <p>Thank you,</p>
+
+              <p>The Lendasat Team</p>
+            </td>
+          </tr>
+        </table>
+      </td>
+    </tr>
+
+    <!-- END MAIN CONTENT AREA -->
+  </table>
+{{/base}}

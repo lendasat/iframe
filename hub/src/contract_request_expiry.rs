@@ -186,7 +186,7 @@ async fn notify_borrower_about_expired_contracts(
         .context("Could not find borrower")?;
 
     notifications
-        .send_expired_loan_request_borrower(db, contract.contract_id.as_str(), borrower, loan_url)
+        .send_expired_loan_request_borrower(contract.contract_id.as_str(), borrower, loan_url)
         .await;
 
     Ok(())
@@ -234,7 +234,7 @@ async fn notify_lender_about_expired_offer(
         .context("Could not find lender")?;
 
     notifications
-        .send_expired_loan_request_lender(lender, loan_url, db, contract.contract_id.as_str())
+        .send_expired_loan_request_lender(lender, loan_url, contract.contract_id.as_str())
         .await;
 
     Ok(())

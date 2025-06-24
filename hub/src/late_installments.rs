@@ -202,7 +202,7 @@ async fn notify_borrower_about_late_installment(
         .context("Could not find borrower")?;
 
     notifications
-        .send_loan_defaulted_borrower(db, contract.id.as_str(), borrower, loan_url)
+        .send_loan_defaulted_borrower(contract.id.as_str(), borrower, loan_url)
         .await;
 
     Ok(())
@@ -230,7 +230,7 @@ async fn notify_lender_about_late_installment(
         .context("Could not find lender")?;
 
     notifications
-        .send_loan_defaulted_lender(lender, loan_url, db, &contract.id)
+        .send_loan_defaulted_lender(lender, loan_url, &contract.id)
         .await;
 
     Ok(())

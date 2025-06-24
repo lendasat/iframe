@@ -1,0 +1,96 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "\n        INSERT INTO borrower_notification_settings (\n            borrower_id,\n            on_login_email,\n            on_login_telegram,\n            new_loan_offer_email,\n            new_loan_offer_telegram,\n            contract_status_changed_email,\n            contract_status_changed_telegram,\n            new_chat_message_email,\n            new_chat_message_telegram,\n            updated_at\n        ) VALUES (\n            $1, $2, $3, $4, $5, $6, $7, $8, $9, CURRENT_TIMESTAMP\n        )\n        ON CONFLICT (borrower_id) DO UPDATE SET\n            on_login_email = EXCLUDED.on_login_email,\n            on_login_telegram = EXCLUDED.on_login_telegram,\n            new_loan_offer_email = EXCLUDED.new_loan_offer_email,\n            new_loan_offer_telegram = EXCLUDED.new_loan_offer_telegram,\n            contract_status_changed_email = EXCLUDED.contract_status_changed_email,\n            contract_status_changed_telegram = EXCLUDED.contract_status_changed_telegram,\n            new_chat_message_email = EXCLUDED.new_chat_message_email,\n            new_chat_message_telegram = EXCLUDED.new_chat_message_telegram,\n            updated_at = CURRENT_TIMESTAMP\n        RETURNING \n            id,\n            borrower_id,\n            on_login_email,\n            on_login_telegram,\n            new_loan_offer_email,\n            new_loan_offer_telegram,\n            contract_status_changed_email,\n            contract_status_changed_telegram,\n            new_chat_message_email,\n            new_chat_message_telegram,\n            created_at,\n            updated_at\n        ",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "id",
+        "type_info": "Int4"
+      },
+      {
+        "ordinal": 1,
+        "name": "borrower_id",
+        "type_info": "Bpchar"
+      },
+      {
+        "ordinal": 2,
+        "name": "on_login_email",
+        "type_info": "Bool"
+      },
+      {
+        "ordinal": 3,
+        "name": "on_login_telegram",
+        "type_info": "Bool"
+      },
+      {
+        "ordinal": 4,
+        "name": "new_loan_offer_email",
+        "type_info": "Bool"
+      },
+      {
+        "ordinal": 5,
+        "name": "new_loan_offer_telegram",
+        "type_info": "Bool"
+      },
+      {
+        "ordinal": 6,
+        "name": "contract_status_changed_email",
+        "type_info": "Bool"
+      },
+      {
+        "ordinal": 7,
+        "name": "contract_status_changed_telegram",
+        "type_info": "Bool"
+      },
+      {
+        "ordinal": 8,
+        "name": "new_chat_message_email",
+        "type_info": "Bool"
+      },
+      {
+        "ordinal": 9,
+        "name": "new_chat_message_telegram",
+        "type_info": "Bool"
+      },
+      {
+        "ordinal": 10,
+        "name": "created_at",
+        "type_info": "Timestamptz"
+      },
+      {
+        "ordinal": 11,
+        "name": "updated_at",
+        "type_info": "Timestamptz"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Bpchar",
+        "Bool",
+        "Bool",
+        "Bool",
+        "Bool",
+        "Bool",
+        "Bool",
+        "Bool",
+        "Bool"
+      ]
+    },
+    "nullable": [
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false
+    ]
+  },
+  "hash": "9d6a227494c0c73f9b6d6912ca8337cec775d719b49fe26b11c51dd5acf42da2"
+}

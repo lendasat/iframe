@@ -428,7 +428,6 @@ async fn post_contract_request(
                     lender,
                     lender_loan_url,
                     contract.id.as_str(),
-                    &data.db,
                 )
                 .await;
 
@@ -440,7 +439,7 @@ async fn post_contract_request(
             );
         } else {
             data.notifications
-                .send_new_loan_request(lender, lender_loan_url, contract.id.as_str(), &data.db)
+                .send_new_loan_request(lender, lender_loan_url, contract.id.as_str())
                 .await;
 
             tracing::info!(
@@ -690,13 +689,7 @@ async fn put_installment_paid(
             .context("Failed to find lender")?;
 
         data.notifications
-            .send_installment_paid(
-                lender,
-                loan_url,
-                &data.db,
-                body.installment_id,
-                contract_id.as_str(),
-            )
+            .send_installment_paid(lender, loan_url, body.installment_id, contract_id.as_str())
             .await;
 
         anyhow::Ok(())

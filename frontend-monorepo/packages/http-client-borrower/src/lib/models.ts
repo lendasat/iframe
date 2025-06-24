@@ -778,3 +778,14 @@ export interface PaginatedNotificationResponse {
   total: number;
   total_pages: number;
 }
+
+export interface BorrowerNotificationSettings {
+  on_login_email: boolean;
+  on_login_telegram: boolean;
+  new_loan_offer_email: boolean;
+  new_loan_offer_telegram: boolean;
+  contract_status_changed_email: boolean;
+  contract_status_changed_telegram: boolean;
+  new_chat_message_email: boolean;
+  new_chat_message_telegram: boolean;
+}

@@ -49,13 +49,6 @@ export function Profile() {
 
   return (
     <Box className="md:pl-8">
-      <Heading
-        as="h4"
-        className="text-font dark:text-font-dark font-semibold"
-        size={"5"}
-      >
-        Profile
-      </Heading>
       <Box mt={"6"} className="space-y-4">
         <Box
           p={"4"}

@@ -123,6 +123,7 @@ async fn main() -> Result<()> {
         config.clone(),
         maybe_telegram_bot_addr,
         NotificationCenter::default(),
+        db.clone(),
     ));
 
     let (mempool_addr, mempool_mailbox) = xtra::Mailbox::unbounded();

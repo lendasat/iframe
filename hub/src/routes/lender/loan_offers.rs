@@ -133,6 +133,23 @@ async fn create_loan_offer(
         } => (max_duration_days, Some(interest_rate)),
     };
 
+    let offer_url = data
+        .config
+        .borrower_frontend_origin
+        .join(format!("/requests?offer={}", offer.loan_deal_id).as_str())
+        .map_err(|e| Error::InvalidUrl(e.to_string()))?;
+    data.notifications
+        .send_new_loan_offer_available(
+            offer_url,
+            offer.loan_amount_min,
+            offer.loan_amount_max,
+            offer.loan_asset,
+            offer.interest_rate,
+            offer.duration_days_min,
+            offer.duration_days_max,
+        )
+        .await;
+
     let offer = LoanOffer {
         id: offer.loan_deal_id,
         lender: lender_stats,
@@ -596,6 +613,8 @@ enum Error {
     KycOffersNotEnabled,
     /// Indirect payouts require auto-accept to be enabled.
     IndirectPayoutRequiresAutoAccept,
+    /// Invalid url, e.g. couldn't parse an url
+    InvalidUrl(#[allow(dead_code)] String),
 }
 
 impl Error {
@@ -650,6 +669,10 @@ impl IntoResponse for Error {
                     "Interest rate needs to be between 0.00 and 1.00 but was {}",
                     rate
                 ),
+            ),
+            Error::InvalidUrl(_) => (
+                StatusCode::INTERNAL_SERVER_ERROR,
+                "Something went wrong".to_owned(),
             ),
         };
 

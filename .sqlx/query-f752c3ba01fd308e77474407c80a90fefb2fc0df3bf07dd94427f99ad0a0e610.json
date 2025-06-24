@@ -1,0 +1,88 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "\n        SELECT \n            id,\n            borrower_id,\n            on_login_email,\n            on_login_telegram,\n            new_loan_offer_email,\n            new_loan_offer_telegram,\n            contract_status_changed_email,\n            contract_status_changed_telegram,\n            new_chat_message_email,\n            new_chat_message_telegram,\n            created_at,\n            updated_at\n        FROM borrower_notification_settings \n        WHERE borrower_id = $1\n        ",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "id",
+        "type_info": "Int4"
+      },
+      {
+        "ordinal": 1,
+        "name": "borrower_id",
+        "type_info": "Bpchar"
+      },
+      {
+        "ordinal": 2,
+        "name": "on_login_email",
+        "type_info": "Bool"
+      },
+      {
+        "ordinal": 3,
+        "name": "on_login_telegram",
+        "type_info": "Bool"
+      },
+      {
+        "ordinal": 4,
+        "name": "new_loan_offer_email",
+        "type_info": "Bool"
+      },
+      {
+        "ordinal": 5,
+        "name": "new_loan_offer_telegram",
+        "type_info": "Bool"
+      },
+      {
+        "ordinal": 6,
+        "name": "contract_status_changed_email",
+        "type_info": "Bool"
+      },
+      {
+        "ordinal": 7,
+        "name": "contract_status_changed_telegram",
+        "type_info": "Bool"
+      },
+      {
+        "ordinal": 8,
+        "name": "new_chat_message_email",
+        "type_info": "Bool"
+      },
+      {
+        "ordinal": 9,
+        "name": "new_chat_message_telegram",
+        "type_info": "Bool"
+      },
+      {
+        "ordinal": 10,
+        "name": "created_at",
+        "type_info": "Timestamptz"
+      },
+      {
+        "ordinal": 11,
+        "name": "updated_at",
+        "type_info": "Timestamptz"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Bpchar"
+      ]
+    },
+    "nullable": [
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false
+    ]
+  },
+  "hash": "f752c3ba01fd308e77474407c80a90fefb2fc0df3bf07dd94427f99ad0a0e610"
+}

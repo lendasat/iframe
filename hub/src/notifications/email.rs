@@ -2,6 +2,7 @@ use crate::config::Config;
 use crate::model::Borrower;
 use crate::model::Contract;
 use crate::model::Lender;
+use crate::model::LoanAsset;
 use anyhow::bail;
 use anyhow::Context;
 use anyhow::Result;
@@ -115,6 +116,51 @@ impl Email {
                 );
             } else {
                 tracing::info!(subject, user_email, "Email sent");
+            }
+        });
+        Ok(())
+    }
+
+    async fn send_mass_emails_bcc(
+        &self,
+        subject: &str,
+        user_name_and_emails: Vec<(String, String)>,
+        html_template: String,
+    ) -> Result<()> {
+        let mut builder = Message::builder()
+            .to(self.from.as_str().parse()?)
+            .reply_to(self.from.as_str().parse()?)
+            .from(self.from.as_str().parse()?)
+            .subject(subject)
+            .header(ContentType::TEXT_HTML);
+        for (user_name, user_email) in &user_name_and_emails {
+            let addr = format!("{} <{}>", user_name, user_email)
+                .parse()
+                .with_context(|| format!("Invalid email format: {} <{}>", user_name, user_email))?;
+            builder = builder.bcc(addr);
+        }
+
+        let email = builder.body(html_template.clone())?;
+
+        let transport = self.new_transport()?;
+
+        if self.smtp_disabled {
+            tracing::info!("Sending smtp is disabled.");
+            return Ok(());
+        }
+
+        let subject = subject.to_string();
+        let html_template = html_template.clone();
+
+        tokio::spawn(async move {
+            if let Err(err) = transport.send(email).await {
+                tracing::error!(
+                    subject,
+                    template_name = html_template,
+                    "Failed at sending mass email {err:#}"
+                );
+            } else {
+                tracing::info!(subject, "Mass email sent");
             }
         });
         Ok(())
@@ -877,4 +923,101 @@ impl Email {
 
         Ok(())
     }
+
+    #[allow(clippy::too_many_arguments)]
+    pub async fn send_new_loan_offer(
+        &self,
+        names_and_emails: Vec<(String, String)>,
+        offer_url: Url,
+        min_loan_amount: Decimal,
+        max_loan_amount: Decimal,
+        asset: LoanAsset,
+        interest_rate: Decimal,
+        min_duration: i32,
+        max_duration: i32,
+    ) -> Result<()> {
+        let template_name = "new_loan_offer";
+        let handlebars =
+            Self::prepare_template(template_name).context("failed preparing template")?;
+
+        let data = serde_json::json!({
+            "offer_url": offer_url,
+            "min_loan_amount": format!("{}", format_decimal_with_commas(min_loan_amount, 0)),
+            "max_loan_amount": format!("{}", format_decimal_with_commas(max_loan_amount, 0)),
+            "asset": format!("{}", asset),
+            "interest_rate": format!("{:.1}", interest_rate * Decimal::from(100)),
+            "min_duration": min_duration,
+            "max_duration": max_duration,
+        });
+
+        let content_template = handlebars
+            .render(template_name, &data)
+            .context("failed rendering template")?;
+
+        self.send_mass_emails_bcc(
+            "New loan offer available",
+            names_and_emails,
+            content_template,
+        )
+        .await
+    }
+
+    #[allow(clippy::too_many_arguments)]
+    pub async fn send_new_loan_applications(
+        &self,
+        names_and_emails: Vec<(String, String)>,
+        application_url: Url,
+        loan_amount: Decimal,
+        asset: LoanAsset,
+        interest_rate: Decimal,
+        duration: i32,
+    ) -> Result<()> {
+        let template_name = "new_loan_application";
+        let handlebars =
+            Self::prepare_template(template_name).context("failed preparing template")?;
+
+        let data = serde_json::json!({
+            "application_url": application_url,
+            "loan_amount": format!("{}", format_decimal_with_commas(loan_amount, 0)),
+            "asset": format!("{}", asset),
+            "interest_rate": format!("{:.1}", interest_rate * Decimal::from(100)),
+            "duration": duration,
+        });
+
+        let content_template = handlebars
+            .render(template_name, &data)
+            .context("failed rendering template")?;
+
+        self.send_mass_emails_bcc(
+            "New loan application available",
+            names_and_emails,
+            content_template,
+        )
+        .await
+    }
+}
+
+fn format_decimal_with_commas(number: Decimal, decimals: u32) -> String {
+    let s = number.round_dp(decimals).to_string();
+    let parts: Vec<&str> = s.split('.').collect();
+    let integer_part = parts[0];
+
+    // Add commas to integer part
+    let mut result = String::new();
+    let chars: Vec<char> = integer_part.chars().collect();
+
+    for (i, ch) in chars.iter().enumerate() {
+        if i > 0 && (chars.len() - i) % 3 == 0 {
+            result.push(',');
+        }
+        result.push(*ch);
+    }
+
+    // Add decimal part if it exists
+    if parts.len() > 1 {
+        result.push('.');
+        result.push_str(parts[1]);
+    }
+
+    result
 }

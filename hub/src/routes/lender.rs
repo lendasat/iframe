@@ -36,6 +36,7 @@ pub(crate) mod health_check;
 pub(crate) mod kyc;
 pub(crate) mod loan_applications;
 pub(crate) mod loan_offers;
+pub(crate) mod notification_settings;
 pub(crate) mod notifications;
 pub(crate) mod profile;
 pub(crate) mod version;
@@ -48,6 +49,7 @@ const API_KEYS_TAG: &str = "api-keys";
 const LOAN_APPLICATIONS_TAG: &str = "loan-applications";
 const KYC_TAG: &str = "kyc";
 const VERSION_TAG: &str = "version";
+const NOTIFICATION_SETTINGS_TAG: &str = "Notification Settings";
 
 #[derive(OpenApi)]
 #[openapi(
@@ -87,6 +89,9 @@ Interact with the lendasat server to
         ),
         (
             name = KYC_TAG, description = "Approve or reject KYC applications from borrowers.",
+        ),
+        (
+            name = NOTIFICATION_SETTINGS_TAG, description = "Manage notifications.",
         )
     ),
 )]
@@ -121,6 +126,10 @@ pub async fn spawn_lender_server(
             loan_applications::router(app_state.clone()),
         )
         .nest("/api/kyc", kyc::router(app_state.clone()))
+        .nest(
+            "/api/notification-settings",
+            notification_settings::router(app_state.clone()),
+        )
         .split_for_parts();
 
     let router =

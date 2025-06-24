@@ -32,6 +32,7 @@ pub mod loan_offers;
 pub mod manual_collateral_recovery;
 pub mod migrate_pks;
 pub mod moon;
+pub mod notification_settings;
 pub mod notifications;
 pub mod transactions;
 pub mod user_logins;
