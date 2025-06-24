@@ -149,9 +149,11 @@ async fn post_contract_request(
         });
     };
 
-    if !offer.is_valid_loan_amount(body.loan_amount) {
+    let loan_amount = body.loan_amount.round_dp(2);
+
+    if !offer.is_valid_loan_amount(loan_amount) {
         return Err(Error::InvalidLoanAmount {
-            amount: body.loan_amount,
+            amount: loan_amount,
             loan_amount_min: offer.loan_amount_min,
             loan_amount_max: offer.loan_amount_max,
         });
@@ -193,8 +195,6 @@ async fn post_contract_request(
             let card_id = match body.moon_card_id {
                 // This is a top-up.
                 Some(card_id) => {
-                    let loan_amount = body.loan_amount;
-
                     let card = db::moon::get_card_by_id(&data.db, &card_id.to_string())
                         .await
                         .map_err(Error::database)?
@@ -238,7 +238,7 @@ async fn post_contract_request(
             let invoice = data
                 .moon
                 .generate_invoice(
-                    body.loan_amount,
+                    loan_amount,
                     contract_id.to_string(),
                     card_id,
                     lender_id.clone(),
@@ -273,7 +273,7 @@ async fn post_contract_request(
                 offer.loan_asset,
                 &user.id,
                 &ip_address,
-                body.loan_amount,
+                loan_amount,
             )
             .await
             .map_err(Error::from)?;
@@ -288,7 +288,7 @@ async fn post_contract_request(
 
     let min_ltv = offer.min_ltv;
     let initial_collateral = contract_requests::calculate_initial_collateral(
-        body.loan_amount,
+        loan_amount,
         offer.interest_rate,
         body.duration_days as u32,
         min_ltv,
@@ -315,7 +315,7 @@ async fn post_contract_request(
         .map_err(Error::from)?;
 
     let origination_fee_amount = contract_requests::calculate_origination_fee(
-        body.loan_amount,
+        loan_amount,
         origination_fee_rate,
         initial_price,
     )
@@ -330,7 +330,7 @@ async fn post_contract_request(
         min_ltv,
         initial_collateral.to_sat(),
         origination_fee_amount.to_sat(),
-        body.loan_amount,
+        loan_amount,
         body.duration_days,
         body.borrower_pk,
         body.borrower_derivation_path,
@@ -357,7 +357,7 @@ async fn post_contract_request(
         offer.repayment_plan,
         non_zero_duration_days,
         offer.interest_rate,
-        body.loan_amount,
+        loan_amount,
     );
 
     db::installments::insert(&data.db, installments)

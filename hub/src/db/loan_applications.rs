@@ -216,6 +216,8 @@ pub async fn insert_loan_application(
 
     let loan_type = db::LoanType::from(application.loan_type);
 
+    let loan_amount = application.loan_amount.round_dp(2);
+
     // First, insert the loan deal.
     sqlx::query!(
         r#"
@@ -279,7 +281,7 @@ pub async fn insert_loan_application(
         borrower_id,
         application.ltv,
         application.interest_rate,
-        application.loan_amount,
+        loan_amount,
         application.duration_days,
         application.loan_asset as LoanAsset,
         loan_type as db::LoanType,
