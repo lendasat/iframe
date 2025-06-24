@@ -16,7 +16,7 @@ import {
   ONE_YEAR,
   parseLoanAsset,
 } from "@frontend/ui-shared";
-import { useCallback, useState } from "react";
+import { useCallback, useState, useEffect } from "react";
 import { MdOutlineSwapCalls } from "react-icons/md";
 import { FaInfoCircle } from "react-icons/fa";
 import { PiInfo, PiWarningCircle } from "react-icons/pi";
@@ -194,6 +194,11 @@ const CreateLoanOffer = () => {
   const watchIsKycRequired = form.watch("isKycRequired");
   const watchLoanRepaymentAddress = form.watch("loanRepaymentAddress");
 
+  // Sync extension_interest_rate with interest
+  useEffect(() => {
+    form.setValue("extension_interest_rate", watchInterest);
+  }, [watchInterest, form]);
+
   const isRepaymentAddressRequired = LoanAssetHelper.isStableCoin(
     watchLoanAsset as LoanAsset,
   );
@@ -212,7 +217,7 @@ const CreateLoanOffer = () => {
     <div className="flex w-full">
       <ScrollArea className="max-h-[90vh] overflow-y-auto">
         <div className="grid w-full grid-cols-1 lg:grid-cols-7 xl:grid-cols-6">
-          <div className="border-r border-border/10 bg-gradient-to-br from-background/0 to-background py-7 md:col-span-4 lg:pb-14">
+          <div className="border-border/10 from-background/0 to-background border-r bg-gradient-to-br py-7 md:col-span-4 lg:pb-14">
             <div className="px-6 md:px-8">
               <Card className="border-border/10 px-6 py-10 md:px-8">
                 <Form {...form}>
@@ -233,12 +238,19 @@ const CreateLoanOffer = () => {
                             <Input
                               type="number"
                               placeholder="Min Amount"
-                              value={form.watch("loanAmount.min")}
+                              value={
+                                form.watch("loanAmount.min") === 0
+                                  ? ""
+                                  : form.watch("loanAmount.min")
+                              }
                               onChange={(e) => {
-                                form.setValue(
-                                  "loanAmount.min",
-                                  Number(e.target.value),
-                                );
+                                const value =
+                                  e.target.value === ""
+                                    ? 0
+                                    : Number(e.target.value);
+                                if (!Number.isNaN(value)) {
+                                  form.setValue("loanAmount.min", value);
+                                }
                               }}
                               className="flex-1"
                             />
@@ -246,12 +258,19 @@ const CreateLoanOffer = () => {
                             <Input
                               type="number"
                               placeholder="Max Amount"
-                              value={form.watch("loanAmount.max")}
+                              value={
+                                form.watch("loanAmount.max") === 0
+                                  ? ""
+                                  : form.watch("loanAmount.max")
+                              }
                               onChange={(e) => {
-                                form.setValue(
-                                  "loanAmount.max",
-                                  Number(e.target.value),
-                                );
+                                const value =
+                                  e.target.value === ""
+                                    ? 0
+                                    : Number(e.target.value);
+                                if (!Number.isNaN(value)) {
+                                  form.setValue("loanAmount.max", value);
+                                }
                               }}
                               className="flex-1"
                             />
@@ -275,11 +294,16 @@ const CreateLoanOffer = () => {
                             <Input
                               type="number"
                               placeholder="Loan Reserve"
-                              {...field}
-                              value={field.value}
+                              value={field.value === 0 ? "" : field.value}
                               onChange={(e) => {
-                                field.onChange(Number(e.target.value));
-                                form.setValue("autoAccept", true);
+                                const value =
+                                  e.target.value === ""
+                                    ? 0
+                                    : Number(e.target.value);
+                                if (!Number.isNaN(value)) {
+                                  field.onChange(value);
+                                  form.setValue("autoAccept", true);
+                                }
                               }}
                               min={form.watch("loanAmount.max")}
                               disabled={!autoApproveEnabled}
@@ -366,7 +390,7 @@ const CreateLoanOffer = () => {
                                   <FormLabel className="text-muted-foreground">
                                     Loan to value (LTV)
                                   </FormLabel>
-                                  <FaInfoCircle className="h-4 w-4 text-muted-foreground" />
+                                  <FaInfoCircle className="text-muted-foreground h-4 w-4" />
                                 </div>
                               </TooltipTrigger>
                               <TooltipContent className="w-80">
@@ -386,11 +410,16 @@ const CreateLoanOffer = () => {
                                 min={1}
                                 max={70}
                                 step={1}
-                                {...field}
-                                value={field.value}
-                                onChange={(e) =>
-                                  field.onChange(Number(e.target.value))
-                                }
+                                value={field.value === 0 ? "" : field.value}
+                                onChange={(e) => {
+                                  const value =
+                                    e.target.value === ""
+                                      ? 0
+                                      : Number(e.target.value);
+                                  if (!Number.isNaN(value)) {
+                                    field.onChange(value);
+                                  }
+                                }}
                               />
                             </FormControl>
                             <span className="text-sm font-medium">
@@ -417,8 +446,8 @@ const CreateLoanOffer = () => {
                               aria-label="Bullet loan"
                               className={
                                 repaymentPlan === "bullet"
-                                  ? "bg-primary text-white border-primary hover:bg-primary hover:border-primary hover:text-white"
-                                  : "bg-white text-black border-gray-300 hover:bg-gray-100 hover:border-gray-400"
+                                  ? "bg-primary border-primary hover:bg-primary hover:border-primary text-white hover:text-white"
+                                  : "border-gray-300 bg-white text-black hover:border-gray-400 hover:bg-gray-100"
                               }
                             >
                               Bullet
@@ -438,11 +467,11 @@ const CreateLoanOffer = () => {
                               aria-label="Monthly interest loan"
                               className={
                                 repaymentPlan === "interest-only"
-                                  ? "bg-primary text-white border-primary hover:bg-primary hover:border-primary hover:text-white"
-                                  : "bg-white text-black border-gray-300 hover:bg-gray-100 hover:border-gray-400"
+                                  ? "bg-primary border-primary hover:bg-primary hover:border-primary text-white hover:text-white"
+                                  : "border-gray-300 bg-white text-black hover:border-gray-400 hover:bg-gray-100"
                               }
                             >
-                              <span className="whitespace-normal leading-tight block w-full min-w-[135px]">
+                              <span className="block w-full min-w-[135px] whitespace-normal leading-tight">
                                 Monthly interest
                               </span>
                             </ToggleGroupItem>
@@ -471,7 +500,7 @@ const CreateLoanOffer = () => {
                                   <FormLabel className="text-muted-foreground">
                                     Interest Rate
                                   </FormLabel>
-                                  <FaInfoCircle className="h-4 w-4 text-muted-foreground" />
+                                  <FaInfoCircle className="text-muted-foreground h-4 w-4" />
                                 </div>
                               </TooltipTrigger>
                               <TooltipContent className="w-80">
@@ -491,11 +520,16 @@ const CreateLoanOffer = () => {
                                 min={0}
                                 max={100}
                                 step={0.5}
-                                {...field}
-                                value={field.value}
-                                onChange={(e) =>
-                                  field.onChange(Number(e.target.value))
-                                }
+                                value={field.value === 0 ? "" : field.value}
+                                onChange={(e) => {
+                                  const value =
+                                    e.target.value === ""
+                                      ? 0
+                                      : Number(e.target.value);
+                                  if (!Number.isNaN(value)) {
+                                    field.onChange(value);
+                                  }
+                                }}
                               />
                             </FormControl>
                             <span className="text-sm font-medium">
@@ -527,7 +561,7 @@ const CreateLoanOffer = () => {
                                     <FormLabel className="text-muted-foreground">
                                       Enable Loan Extension
                                     </FormLabel>
-                                    <FaInfoCircle className="h-4 w-4 text-muted-foreground" />
+                                    <FaInfoCircle className="text-muted-foreground h-4 w-4" />
                                   </div>
                                 </TooltipTrigger>
                                 <TooltipContent className="w-80">
@@ -558,7 +592,7 @@ const CreateLoanOffer = () => {
                                   <FormLabel className="text-muted-foreground">
                                     Max allowed extension duration (Days)
                                   </FormLabel>
-                                  <FaInfoCircle className="h-4 w-4 text-muted-foreground" />
+                                  <FaInfoCircle className="text-muted-foreground h-4 w-4" />
                                 </div>
                               </TooltipTrigger>
                               <TooltipContent className="w-80">
@@ -576,12 +610,17 @@ const CreateLoanOffer = () => {
                                 placeholder="Extension Duration (Days)"
                                 min={1}
                                 max={ONE_YEAR}
-                                {...field}
-                                value={field.value}
+                                value={field.value === 0 ? "" : field.value}
                                 disabled={!form.watch("extension_enabled")}
-                                onChange={(e) =>
-                                  field.onChange(Number(e.target.value))
-                                }
+                                onChange={(e) => {
+                                  const value =
+                                    e.target.value === ""
+                                      ? 0
+                                      : Number(e.target.value);
+                                  if (!Number.isNaN(value)) {
+                                    field.onChange(value);
+                                  }
+                                }}
                               />
                             </FormControl>
                             <span className="text-sm font-medium">
@@ -605,7 +644,7 @@ const CreateLoanOffer = () => {
                                   <FormLabel className="text-muted-foreground">
                                     Extension Interest Rate
                                   </FormLabel>
-                                  <FaInfoCircle className="h-4 w-4 text-muted-foreground" />
+                                  <FaInfoCircle className="text-muted-foreground h-4 w-4" />
                                 </div>
                               </TooltipTrigger>
                               <TooltipContent className="w-80">
@@ -626,11 +665,16 @@ const CreateLoanOffer = () => {
                                 max={100}
                                 step={0.5}
                                 disabled={!form.watch("extension_enabled")}
-                                {...field}
-                                value={field.value}
-                                onChange={(e) =>
-                                  field.onChange(Number(e.target.value))
-                                }
+                                value={field.value === 0 ? "" : field.value}
+                                onChange={(e) => {
+                                  const value =
+                                    e.target.value === ""
+                                      ? 0
+                                      : Number(e.target.value);
+                                  if (!Number.isNaN(value)) {
+                                    field.onChange(value);
+                                  }
+                                }}
                               />
                             </FormControl>
                             <span className="text-sm font-medium">
@@ -656,7 +700,7 @@ const CreateLoanOffer = () => {
                         </TabsList>
                         <TabsContent value="stablecoins" className="pt-3">
                           <div className="flex flex-col gap-3">
-                            <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+                            <div className="grid grid-cols-2 gap-3 md:grid-cols-3">
                               {LoanAssetHelper.allStableCoins().map((asset) => (
                                 <Button
                                   key={asset}
@@ -708,7 +752,7 @@ const CreateLoanOffer = () => {
                         </TabsContent>
                         <TabsContent value="fiat" className="pt-3">
                           <div className="flex flex-col gap-3">
-                            <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+                            <div className="grid grid-cols-2 gap-3 md:grid-cols-3">
                               {LoanAssetHelper.allFiatCoins().map((asset) => (
                                 <Button
                                   key={asset}
@@ -793,7 +837,7 @@ const CreateLoanOffer = () => {
             <p className="text-muted-foreground text-center text-sm font-medium">
               Offer Summary
             </p>
-            <h2 className="text-2xl font-bold text-center">
+            <h2 className="text-center text-2xl font-bold">
               Borrowers will see
             </h2>
 
@@ -803,25 +847,25 @@ const CreateLoanOffer = () => {
               </h3>
               <Separator className="my-4 opacity-50" />
 
-              <div className="flex justify-between items-center my-4">
+              <div className="my-4 flex items-center justify-between">
                 <span className="text-muted-foreground text-sm">Amount</span>
-                <span className="text-foreground/80 font-semibold text-sm">
+                <span className="text-foreground/80 text-sm font-semibold">
                   {formatCurrency(watchLoanAmount.min)} -{" "}
                   {formatCurrency(watchLoanAmount.max)}
                 </span>
               </div>
               <Separator className="opacity-50" />
 
-              <div className="flex justify-between items-center my-4">
+              <div className="my-4 flex items-center justify-between">
                 <span className="text-muted-foreground text-sm">Duration</span>
-                <span className="text-foreground/80 font-semibold text-sm">
+                <span className="text-foreground/80 text-sm font-semibold">
                   {getFormatedStringFromDays(watchLoanDuration.min)} -{" "}
                   {getFormatedStringFromDays(watchLoanDuration.max)}
                 </span>
               </div>
               <Separator className="opacity-50" />
 
-              <div className="flex justify-between items-center my-4">
+              <div className="my-4 flex items-center justify-between">
                 <TooltipProvider>
                   <Tooltip>
                     <TooltipTrigger asChild>
@@ -829,7 +873,7 @@ const CreateLoanOffer = () => {
                         <span className="text-muted-foreground text-sm">
                           LTV
                         </span>
-                        <FaInfoCircle className="h-3 w-3 text-muted-foreground" />
+                        <FaInfoCircle className="text-muted-foreground h-3 w-3" />
                       </div>
                     </TooltipTrigger>
                     <TooltipContent className="w-80">
@@ -841,13 +885,13 @@ const CreateLoanOffer = () => {
                     </TooltipContent>
                   </Tooltip>
                 </TooltipProvider>
-                <span className="text-foreground/80 font-semibold text-sm">
+                <span className="text-foreground/80 text-sm font-semibold">
                   {watchLtv.toFixed(2)}%
                 </span>
               </div>
               <Separator className="opacity-50" />
 
-              <div className="flex justify-between items-center my-4">
+              <div className="my-4 flex items-center justify-between">
                 <TooltipProvider>
                   <Tooltip>
                     <TooltipTrigger asChild>
@@ -855,7 +899,7 @@ const CreateLoanOffer = () => {
                         <span className="text-muted-foreground text-sm">
                           Interest Rate
                         </span>
-                        <FaInfoCircle className="h-3 w-3 text-muted-foreground" />
+                        <FaInfoCircle className="text-muted-foreground h-3 w-3" />
                       </div>
                     </TooltipTrigger>
                     <TooltipContent className="w-80">
@@ -867,17 +911,17 @@ const CreateLoanOffer = () => {
                     </TooltipContent>
                   </Tooltip>
                 </TooltipProvider>
-                <span className="text-foreground/80 font-semibold text-sm">
+                <span className="text-foreground/80 text-sm font-semibold">
                   {watchInterest.toFixed(2)}%
                 </span>
               </div>
               <Separator className="opacity-50" />
 
-              <div className="flex justify-between items-center my-4">
+              <div className="my-4 flex items-center justify-between">
                 <span className="text-muted-foreground text-sm">
                   Loan Asset
                 </span>
-                <span className="text-foreground/80 font-semibold text-sm">
+                <span className="text-foreground/80 text-sm font-semibold">
                   {watchLoanAsset
                     ? LoanAssetHelper.print(watchLoanAsset as LoanAsset)
                     : ""}
@@ -886,9 +930,9 @@ const CreateLoanOffer = () => {
 
               <Separator className="opacity-50" />
 
-              <div className="flex justify-between items-center my-4">
+              <div className="my-4 flex items-center justify-between">
                 <span className="text-muted-foreground text-sm">Loan Type</span>
-                <span className="text-foreground/80 font-semibold text-sm">
+                <span className="text-foreground/80 text-sm font-semibold">
                   {repaymentPlan === "bullet" ? "Bullet" : "Monthly Interest"}
                 </span>
               </div>
@@ -896,11 +940,11 @@ const CreateLoanOffer = () => {
               {kycOffersEnabled && (
                 <>
                   <Separator className="opacity-50" />
-                  <div className="flex justify-between items-center my-4">
+                  <div className="my-4 flex items-center justify-between">
                     <span className="text-muted-foreground text-sm">
                       KYC Required
                     </span>
-                    <span className="text-foreground/80 font-semibold text-sm">
+                    <span className="text-foreground/80 text-sm font-semibold">
                       {watchIsKycRequired ? "Yes" : "No"}
                     </span>
                   </div>
@@ -913,9 +957,9 @@ const CreateLoanOffer = () => {
                 Repayment
               </h3>
               <Separator className="my-4 opacity-50" />
-              <div className="flex justify-between items-center my-4">
+              <div className="my-4 flex items-center justify-between">
                 <span className="text-muted-foreground text-sm">Address</span>
-                <span className="text-foreground/80 font-semibold text-xs capitalize">
+                <span className="text-foreground/80 text-xs font-semibold capitalize">
                   {watchLoanRepaymentAddress
                     ? watchLoanRepaymentAddress.slice(0, 14) + "..."
                     : ""}
