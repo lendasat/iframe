@@ -227,6 +227,10 @@ async fn create_contract_request(
     let duration_days = offer.duration_days_max;
     let interest_rate = offer.interest_rate;
 
+    // Generated with this mnemonic:
+    // pencil say next pact puzzle praise fringe amateur slim attend desk unknown
+    let borrower_loan_address = "0x7Df138d358Bf4Fd5737F1eab95Bd80dBBddb3618";
+
     let contract = db::contracts::insert_new_contract_request(
         pool,
         contract_id,
@@ -244,8 +248,8 @@ async fn create_contract_request(
         offer.lender_derivation_path.clone(),
         Address::from_str("tb1qtsasnju08gh7ptqg7260qujgasvtexkf9t3yj3")
             .expect("to be valid address"),
-        "0x4838b106fce9647bdf1e7877bf73ce8b0bad5f97".to_string(),
-        Some("0x34e3f03F5efFaF7f70Bb1FfC50274697096ebe9d"),
+        offer.loan_repayment_address.clone(),
+        Some(borrower_loan_address),
         LoanType::StableCoin,
         ContractVersion::TwoOfThree,
         interest_rate,
@@ -284,6 +288,10 @@ async fn create_loan_offers(
 
     let lender_npub = "npub1x398pgcpwdnexq2zs84t9ru35l88h4txqy8586cksg45fta4ukvqqnd7tg".parse()?;
 
+    // Generated with this mnemonic:
+    // expose diagram minimum remind ribbon mushroom expect bone just theme car donate
+    let loan_repayment_address = "0xd835111864Eb1Ce2Cc961fBb1ba3B8f2ce5E6fF2";
+
     let (pk, path) = lender_wallet.next_hardened_pk()?;
 
     let euro_offer = db::loan_offers::insert_loan_offer(
@@ -299,7 +307,7 @@ async fn create_loan_offers(
             duration_days_max: ONE_YEAR as i32,
             loan_asset: LoanAsset::Eur,
             loan_payout: LoanPayout::Direct,
-            loan_repayment_address: "0x34e3f03F5efFaF7f70Bb1FfC50274697096ebe9d".to_string(),
+            loan_repayment_address: loan_repayment_address.to_string(),
             lender_pk: pk,
             lender_derivation_path: path,
             auto_accept: true,
@@ -328,7 +336,7 @@ async fn create_loan_offers(
             duration_days_max: ONE_YEAR as i32,
             loan_asset: LoanAsset::UsdcPol,
             loan_payout: LoanPayout::Direct,
-            loan_repayment_address: "0x7ceB23fD6bC0adD59E62ac25578270cFf1b9f619".to_string(),
+            loan_repayment_address: loan_repayment_address.to_string(),
             lender_pk: pk,
             lender_derivation_path: path,
             auto_accept: true,
@@ -357,7 +365,7 @@ async fn create_loan_offers(
             duration_days_max: ONE_YEAR as i32,
             loan_asset: LoanAsset::UsdcPol,
             loan_payout: LoanPayout::Indirect,
-            loan_repayment_address: "0x7ceB23fD6bC0adD59E62ac25578270cFf1b9f619".to_string(),
+            loan_repayment_address: "0xd835111864Eb1Ce2Cc961fBb1ba3B8f2ce5E6fF2".to_string(),
             lender_pk: pk,
             lender_derivation_path: path,
             auto_accept: true,
