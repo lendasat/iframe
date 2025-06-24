@@ -16,7 +16,7 @@ import {
   ONE_YEAR,
   parseLoanAsset,
 } from "@frontend/ui-shared";
-import { useCallback, useState } from "react";
+import { useCallback, useState, useEffect } from "react";
 import { MdOutlineSwapCalls } from "react-icons/md";
 import { FaInfoCircle } from "react-icons/fa";
 import { PiInfo, PiWarningCircle } from "react-icons/pi";
@@ -193,6 +193,11 @@ const CreateLoanOffer = () => {
   const watchInterest = form.watch("interest");
   const watchIsKycRequired = form.watch("isKycRequired");
   const watchLoanRepaymentAddress = form.watch("loanRepaymentAddress");
+
+  // Sync extension_interest_rate with interest
+  useEffect(() => {
+    form.setValue("extension_interest_rate", watchInterest);
+  }, [watchInterest, form]);
 
   const isRepaymentAddressRequired = LoanAssetHelper.isStableCoin(
     watchLoanAsset as LoanAsset,
