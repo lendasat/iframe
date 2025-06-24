@@ -18,6 +18,22 @@ pub struct LenderNotificationSettings {
     pub updated_at: OffsetDateTime,
 }
 
+impl From<LenderNotificationSettings> for crate::model::notifications::LenderNotificationSettings {
+    fn from(value: LenderNotificationSettings) -> Self {
+        crate::model::notifications::LenderNotificationSettings {
+            lender_id: value.lender_id.clone(),
+            on_login_email: value.on_login_email,
+            on_login_telegram: value.on_login_telegram,
+            new_loan_applications_email: value.new_loan_applications_email,
+            new_loan_applications_telegram: value.new_loan_applications_telegram,
+            contract_status_changed_email: value.contract_status_changed_email,
+            contract_status_changed_telegram: value.contract_status_changed_telegram,
+            new_chat_message_email: value.new_chat_message_email,
+            new_chat_message_telegram: value.new_chat_message_telegram,
+        }
+    }
+}
+
 #[derive(Debug, Clone)]
 pub struct BorrowerNotificationSettings {
     pub id: i32,
@@ -34,82 +50,20 @@ pub struct BorrowerNotificationSettings {
     pub updated_at: OffsetDateTime,
 }
 
-impl Default for LenderNotificationSettings {
-    fn default() -> Self {
-        let now = OffsetDateTime::now_utc();
-        Self {
-            id: 0,
-            lender_id: String::new(),
-            on_login_email: true,
-            on_login_telegram: true,
-            new_loan_applications_email: true,
-            new_loan_applications_telegram: true,
-            contract_status_changed_email: true,
-            contract_status_changed_telegram: true,
-            new_chat_message_email: true,
-            new_chat_message_telegram: true,
-            created_at: now,
-            updated_at: now,
-        }
-    }
-}
-
-impl LenderNotificationSettings {
-    pub fn new(lender_id: String) -> Self {
-        let now = OffsetDateTime::now_utc();
-        Self {
-            id: 0,
-            lender_id,
-            on_login_email: true,
-            on_login_telegram: true,
-            new_loan_applications_email: true,
-            new_loan_applications_telegram: true,
-            contract_status_changed_email: true,
-            contract_status_changed_telegram: true,
-            new_chat_message_email: true,
-            new_chat_message_telegram: true,
-            created_at: now,
-            updated_at: now,
-        }
-    }
-}
-
-impl Default for BorrowerNotificationSettings {
-    fn default() -> Self {
-        let now = OffsetDateTime::now_utc();
-        Self {
-            id: 0,
-            borrower_id: String::new(),
-            on_login_email: true,
-            on_login_telegram: true,
-            new_loan_offer_email: true,
-            new_loan_offer_telegram: true,
-            contract_status_changed_email: true,
-            contract_status_changed_telegram: true,
-            new_chat_message_email: true,
-            new_chat_message_telegram: true,
-            created_at: now,
-            updated_at: now,
-        }
-    }
-}
-
-impl BorrowerNotificationSettings {
-    pub fn new(borrower_id: String) -> Self {
-        let now = OffsetDateTime::now_utc();
-        Self {
-            id: 0,
-            borrower_id,
-            on_login_email: true,
-            on_login_telegram: true,
-            new_loan_offer_email: true,
-            new_loan_offer_telegram: true,
-            contract_status_changed_email: true,
-            contract_status_changed_telegram: true,
-            new_chat_message_email: true,
-            new_chat_message_telegram: true,
-            created_at: now,
-            updated_at: now,
+impl From<BorrowerNotificationSettings>
+    for crate::model::notifications::BorrowerNotificationSettings
+{
+    fn from(value: BorrowerNotificationSettings) -> Self {
+        crate::model::notifications::BorrowerNotificationSettings {
+            borrower_id: value.borrower_id.clone(),
+            on_login_email: value.on_login_email,
+            on_login_telegram: value.on_login_telegram,
+            new_loan_offer_email: value.new_loan_offer_email,
+            new_loan_offer_telegram: value.new_loan_offer_telegram,
+            contract_status_changed_email: value.contract_status_changed_email,
+            contract_status_changed_telegram: value.contract_status_changed_telegram,
+            new_chat_message_email: value.new_chat_message_email,
+            new_chat_message_telegram: value.new_chat_message_telegram,
         }
     }
 }
@@ -117,7 +71,7 @@ impl BorrowerNotificationSettings {
 pub async fn get_lender_notification_settings(
     pool: &PgPool,
     lender_id: &str,
-) -> Result<LenderNotificationSettings> {
+) -> Result<crate::model::notifications::LenderNotificationSettings> {
     let result = sqlx::query_as!(
         LenderNotificationSettings,
         r#"
@@ -143,7 +97,7 @@ pub async fn get_lender_notification_settings(
     .await?;
 
     match result {
-        Some(settings) => Ok(settings),
+        Some(settings) => Ok(settings.into()),
         None => {
             // Check if lender exists
             let lender_exists = sqlx::query_scalar!(
@@ -155,7 +109,11 @@ pub async fn get_lender_notification_settings(
             .unwrap_or_default();
 
             if lender_exists {
-                Ok(LenderNotificationSettings::new(lender_id.to_string()))
+                Ok(
+                    crate::model::notifications::LenderNotificationSettings::new(
+                        lender_id.to_string(),
+                    ),
+                )
             } else {
                 anyhow::bail!("Lender not found")
             }
@@ -166,7 +124,7 @@ pub async fn get_lender_notification_settings(
 pub async fn get_borrower_notification_settings(
     pool: &PgPool,
     borrower_id: &str,
-) -> Result<BorrowerNotificationSettings> {
+) -> Result<crate::model::notifications::BorrowerNotificationSettings> {
     let result = sqlx::query_as!(
         BorrowerNotificationSettings,
         r#"
@@ -192,7 +150,7 @@ pub async fn get_borrower_notification_settings(
     .await?;
 
     match result {
-        Some(settings) => Ok(settings),
+        Some(settings) => Ok(settings.into()),
         None => {
             // Check if borrower exists
             let borrower_exists = sqlx::query_scalar!(
@@ -204,7 +162,11 @@ pub async fn get_borrower_notification_settings(
             .unwrap_or_default();
 
             if borrower_exists {
-                Ok(BorrowerNotificationSettings::new(borrower_id.to_string()))
+                Ok(
+                    crate::model::notifications::BorrowerNotificationSettings::new(
+                        borrower_id.to_string(),
+                    ),
+                )
             } else {
                 anyhow::bail!("Borrower not found")
             }
@@ -215,8 +177,8 @@ pub async fn get_borrower_notification_settings(
 pub async fn update_lender_notification_settings(
     pool: &PgPool,
     lender_id: &str,
-    settings: &LenderNotificationSettings,
-) -> Result<LenderNotificationSettings> {
+    settings: &crate::model::notifications::LenderNotificationSettings,
+) -> Result<crate::model::notifications::LenderNotificationSettings> {
     let result = sqlx::query_as!(
         LenderNotificationSettings,
         r#"
@@ -271,14 +233,14 @@ pub async fn update_lender_notification_settings(
     .fetch_one(pool)
     .await?;
 
-    Ok(result)
+    Ok(result.into())
 }
 
 pub async fn update_borrower_notification_settings(
     pool: &PgPool,
     borrower_id: &str,
-    settings: &BorrowerNotificationSettings,
-) -> Result<BorrowerNotificationSettings> {
+    settings: &crate::model::notifications::BorrowerNotificationSettings,
+) -> Result<crate::model::notifications::BorrowerNotificationSettings> {
     let result = sqlx::query_as!(
         BorrowerNotificationSettings,
         r#"
@@ -333,7 +295,7 @@ pub async fn update_borrower_notification_settings(
     .fetch_one(pool)
     .await?;
 
-    Ok(result)
+    Ok(result.into())
 }
 
 #[derive(Debug, Clone)]

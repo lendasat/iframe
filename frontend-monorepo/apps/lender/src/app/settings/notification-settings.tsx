@@ -256,7 +256,7 @@ export function NotificationSettings() {
 
               <div>
                 <h3 className="text-sm font-medium">
-                  Loan Offer Notifications
+                  Loan Application Notifications
                 </h3>
                 <p className="text-muted-foreground mb-4 text-sm">
                   Get notified when a new loan application is available

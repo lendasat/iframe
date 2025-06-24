@@ -81,3 +81,61 @@ impl From<crate::db::notifications::ContractChatMessageNotification> for Notific
         }
     }
 }
+
+#[derive(Debug, Clone)]
+pub struct LenderNotificationSettings {
+    pub lender_id: String,
+    pub on_login_email: bool,
+    pub on_login_telegram: bool,
+    pub new_loan_applications_email: bool,
+    pub new_loan_applications_telegram: bool,
+    pub contract_status_changed_email: bool,
+    pub contract_status_changed_telegram: bool,
+    pub new_chat_message_email: bool,
+    pub new_chat_message_telegram: bool,
+}
+
+impl LenderNotificationSettings {
+    pub fn new(lender_id: String) -> Self {
+        Self {
+            lender_id,
+            on_login_email: true,
+            on_login_telegram: true,
+            new_loan_applications_email: true,
+            new_loan_applications_telegram: true,
+            contract_status_changed_email: true,
+            contract_status_changed_telegram: true,
+            new_chat_message_email: true,
+            new_chat_message_telegram: true,
+        }
+    }
+}
+
+#[derive(Debug, Clone)]
+pub struct BorrowerNotificationSettings {
+    pub borrower_id: String,
+    pub on_login_email: bool,
+    pub on_login_telegram: bool,
+    pub new_loan_offer_email: bool,
+    pub new_loan_offer_telegram: bool,
+    pub contract_status_changed_email: bool,
+    pub contract_status_changed_telegram: bool,
+    pub new_chat_message_email: bool,
+    pub new_chat_message_telegram: bool,
+}
+
+impl BorrowerNotificationSettings {
+    pub fn new(borrower_id: String) -> Self {
+        Self {
+            borrower_id,
+            on_login_email: true,
+            on_login_telegram: true,
+            new_loan_offer_email: true,
+            new_loan_offer_telegram: true,
+            contract_status_changed_email: true,
+            contract_status_changed_telegram: true,
+            new_chat_message_email: true,
+            new_chat_message_telegram: true,
+        }
+    }
+}

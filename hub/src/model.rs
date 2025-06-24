@@ -33,7 +33,7 @@ use utoipa::ToSchema;
 use uuid::Uuid;
 
 mod installment;
-mod notifications;
+pub mod notifications;
 mod npub;
 
 pub use installment::*;

@@ -51,10 +51,10 @@ pub struct BorrowerNotificationSettingsResponse {
     pub new_chat_message_telegram: bool,
 }
 
-impl From<notification_settings::BorrowerNotificationSettings>
+impl From<crate::model::notifications::BorrowerNotificationSettings>
     for BorrowerNotificationSettingsResponse
 {
-    fn from(settings: notification_settings::BorrowerNotificationSettings) -> Self {
+    fn from(settings: crate::model::notifications::BorrowerNotificationSettings) -> Self {
         Self {
             on_login_email: settings.on_login_email,
             on_login_telegram: settings.on_login_telegram,
@@ -126,7 +126,7 @@ async fn put_notification_settings(
     Extension(_connection_details): Extension<UserConnectionDetails>,
     AppJson(body): AppJson<BorrowerNotificationSettingsResponse>,
 ) -> Result<AppJson<BorrowerNotificationSettingsResponse>, Error> {
-    let settings = notification_settings::BorrowerNotificationSettings {
+    let settings = crate::model::notifications::BorrowerNotificationSettings {
         borrower_id: user.id.clone(),
         on_login_email: body.on_login_email,
         on_login_telegram: body.on_login_telegram,
@@ -136,7 +136,6 @@ async fn put_notification_settings(
         contract_status_changed_telegram: body.contract_status_changed_telegram,
         new_chat_message_email: body.new_chat_message_email,
         new_chat_message_telegram: body.new_chat_message_telegram,
-        ..Default::default()
     };
 
     let updated_settings =

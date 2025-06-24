@@ -1,7 +1,5 @@
 use crate::config::Config;
 use crate::db;
-use crate::db::notification_settings::BorrowerNotificationSettings;
-use crate::db::notification_settings::LenderNotificationSettings;
 use crate::model;
 use crate::model::Borrower;
 use crate::model::Contract;
@@ -1368,22 +1366,25 @@ impl Notifications {
 async fn load_borrower_notification_settings(
     db: &PgPool,
     id: &str,
-) -> BorrowerNotificationSettings {
+) -> model::notifications::BorrowerNotificationSettings {
     match db::notification_settings::get_borrower_notification_settings(db, id).await {
         Ok(settings) => settings,
         Err(err) => {
             tracing::error!("Failed loading borrower notification settings {err:#}");
-            BorrowerNotificationSettings::new(id.to_string())
+            model::notifications::BorrowerNotificationSettings::new(id.to_string())
         }
     }
 }
 
-async fn load_lender_notification_settings(db: &PgPool, id: &str) -> LenderNotificationSettings {
+async fn load_lender_notification_settings(
+    db: &PgPool,
+    id: &str,
+) -> model::notifications::LenderNotificationSettings {
     match db::notification_settings::get_lender_notification_settings(db, id).await {
         Ok(settings) => settings,
         Err(err) => {
             tracing::error!("Failed loading borrower notification settings {err:#}");
-            LenderNotificationSettings::new(id.to_string())
+            model::notifications::LenderNotificationSettings::new(id.to_string())
         }
     }
 }
