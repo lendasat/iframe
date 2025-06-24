@@ -525,14 +525,14 @@ impl LoanAsset {
 impl fmt::Display for LoanAsset {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         let string = match self {
-            LoanAsset::UsdcPol => "Usdc on Polygon",
-            LoanAsset::UsdtPol => "Usdt on Polygon",
-            LoanAsset::UsdcEth => "Usdc on Ethereum",
-            LoanAsset::UsdtEth => "Usdt on Ethereum",
-            LoanAsset::UsdcStrk => "Usdc on Starknet",
-            LoanAsset::UsdtStrk => "Usdt on Starknet",
-            LoanAsset::UsdcSol => "Usdc on Solana",
-            LoanAsset::UsdtSol => "Usdt on Solana",
+            LoanAsset::UsdcPol => "USDC on Polygon",
+            LoanAsset::UsdtPol => "USDT on Polygon",
+            LoanAsset::UsdcEth => "USDC on Ethereum",
+            LoanAsset::UsdtEth => "USDT on Ethereum",
+            LoanAsset::UsdcStrk => "USDC on Starknet",
+            LoanAsset::UsdtStrk => "USDT on Starknet",
+            LoanAsset::UsdcSol => "USDC on Solana",
+            LoanAsset::UsdtSol => "USDT on Solana",
             LoanAsset::Usd => "USD",
             LoanAsset::Eur => "EUR",
             LoanAsset::Chf => "CHF",
