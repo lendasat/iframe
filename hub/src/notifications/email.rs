@@ -243,6 +243,7 @@ impl Email {
         name: &str,
         email: &str,
         contract_url: Url,
+        contract_id: &str,
     ) -> Result<()> {
         let template_name = "loan_extension_enabled.hbs";
         let handlebars =
@@ -257,8 +258,13 @@ impl Email {
             .render(template_name, &data)
             .context("failed rendering template")?;
 
-        self.send_email("Contract extension enabled", name, email, content_template)
-            .await
+        self.send_email(
+            format!("Contract extension enabled - {contract_id}").as_str(),
+            name,
+            email,
+            content_template,
+        )
+        .await
     }
 
     pub async fn send_password_reset_token(
@@ -290,12 +296,12 @@ impl Email {
         &self,
         name: &str,
         email: &str,
-        dispute_id: &str,
+        contract_id: &str,
     ) -> Result<()> {
         let template_name = "start_dispute";
         let handlebars = Self::prepare_template(template_name)?;
 
-        let subject = format!("You have started a dispute - {}", dispute_id);
+        let subject = format!("You have started a dispute - {}", contract_id);
 
         let data = serde_json::json!({
             "first_name": name,
@@ -332,7 +338,7 @@ impl Email {
         let html_template = handlebars.render(template_name, &data)?;
 
         self.send_email(
-            format!("Dispute started {} ", dispute_id).as_str(),
+            format!("Dispute started - {} ", contract_id).as_str(),
             "admin",
             DISPUTE_ADMIN_EMAIL,
             html_template,
@@ -388,7 +394,7 @@ impl Email {
 
         if let Some(email) = user.email {
             self.send_email(
-                "You have received a margin call",
+                format!("You have received a margin call {}", contract.id).as_str(),
                 user.name.as_str(),
                 email.as_str(),
                 content_template,
@@ -427,7 +433,7 @@ impl Email {
 
         if let Some(email) = borrower.email {
             self.send_email(
-                "Your contract has been liquidated",
+                format!("Your contract has been liquidated - {}", contract.id).as_str(),
                 borrower.name.as_str(),
                 email.as_str(),
                 content_template,
@@ -459,7 +465,11 @@ impl Email {
         let content_template = handlebars.render(template_name, &data)?;
 
         self.send_email(
-            "Time to liquidate the borrower's collateral",
+            format!(
+                "Time to liquidate the borrower's collateral - {}",
+                contract.id
+            )
+            .as_str(),
             lender.name.as_str(),
             lender.email.as_str(),
             content_template,
@@ -467,7 +477,12 @@ impl Email {
         .await
     }
 
-    pub async fn send_new_loan_request(&self, lender: &Lender, url: Url) -> Result<()> {
+    pub async fn send_new_loan_request(
+        &self,
+        lender: &Lender,
+        url: Url,
+        contract_id: &str,
+    ) -> Result<()> {
         let template_name = "loan_requested";
         let handlebars = Self::prepare_template(template_name)?;
         let url = url.as_str();
@@ -481,7 +496,7 @@ impl Email {
         let content_template = handlebars.render(template_name, &data)?;
 
         self.send_email(
-            "You have received a new loan request",
+            format!("You have received a new loan request - {contract_id}").as_str(),
             lender.name.as_str(),
             lender.email.as_str(),
             content_template,
@@ -489,7 +504,12 @@ impl Email {
         .await
     }
 
-    pub async fn send_loan_request_approved(&self, borrower: Borrower, url: Url) -> Result<()> {
+    pub async fn send_loan_request_approved(
+        &self,
+        borrower: Borrower,
+        url: Url,
+        contract_id: &str,
+    ) -> Result<()> {
         let template_name = "loan_request_approved";
         let handlebars = Self::prepare_template(template_name)?;
 
@@ -503,7 +523,7 @@ impl Email {
 
         if let Some(email) = borrower.email {
             self.send_email(
-                "Your loan request has been approved",
+                format!("Your loan request has been approved - {contract_id}").as_str(),
                 borrower.name.as_str(),
                 email.as_str(),
                 content_template,
@@ -518,6 +538,7 @@ impl Email {
         &self,
         lender: &Lender,
         url: Url,
+        contract_id: &str,
     ) -> Result<()> {
         let template_name = "loan_request_auto_approved";
         let handlebars = Self::prepare_template(template_name)?;
@@ -532,7 +553,7 @@ impl Email {
         let content_template = handlebars.render(template_name, &data)?;
 
         self.send_email(
-            "Your loan request has been approved",
+            format!("Your loan request has been approved - {contract_id}").as_str(),
             lender.name.as_str(),
             lender.email.as_str(),
             content_template,
@@ -540,7 +561,12 @@ impl Email {
         .await
     }
 
-    pub async fn send_loan_request_rejected(&self, borrower: Borrower, url: Url) -> Result<()> {
+    pub async fn send_loan_request_rejected(
+        &self,
+        borrower: Borrower,
+        url: Url,
+        contract_id: &str,
+    ) -> Result<()> {
         let template_name = "loan_request_rejected";
         let handlebars = Self::prepare_template(template_name)?;
 
@@ -554,7 +580,7 @@ impl Email {
 
         if let Some(email) = borrower.email {
             self.send_email(
-                "Your loan request has been declined",
+                format!("Your loan request has been declined - {contract_id}").as_str(),
                 borrower.name.as_str(),
                 email.as_str(),
                 content_template,
@@ -565,7 +591,12 @@ impl Email {
         Ok(())
     }
 
-    pub async fn send_loan_collateralized(&self, user: &Lender, url: Url) -> Result<()> {
+    pub async fn send_loan_collateralized(
+        &self,
+        user: &Lender,
+        url: Url,
+        contract_id: &str,
+    ) -> Result<()> {
         let template_name = "loan_collateralized";
         let handlebars = Self::prepare_template(template_name)?;
 
@@ -580,7 +611,7 @@ impl Email {
         let content_template = handlebars.render(template_name, &data)?;
 
         self.send_email(
-            "The borrower has deposited the collateral",
+            format!("The borrower has deposited the collateral - {contract_id}").as_str(),
             user.name.as_str(),
             user.email.as_str(),
             content_template,
@@ -588,7 +619,12 @@ impl Email {
         .await
     }
 
-    pub async fn send_loan_paid_out(&self, user: Borrower, url: Url) -> Result<()> {
+    pub async fn send_loan_paid_out(
+        &self,
+        user: Borrower,
+        url: Url,
+        contract_id: &str,
+    ) -> Result<()> {
         let template_name = "loan_paid_out";
         let handlebars = Self::prepare_template(template_name)?;
 
@@ -602,7 +638,7 @@ impl Email {
 
         if let Some(email) = user.email {
             self.send_email(
-                "Your loan has been paid out",
+                format!("Your loan has been paid out - {contract_id}").as_str(),
                 user.name.as_str(),
                 email.as_str(),
                 content_template,
@@ -618,6 +654,7 @@ impl Email {
         user: Borrower,
         expiry_date: &str,
         url: Url,
+        contract_id: &str,
     ) -> Result<()> {
         let template_name = "installment_due_soon";
         let handlebars = Self::prepare_template(template_name)?;
@@ -633,7 +670,7 @@ impl Email {
 
         if let Some(email) = user.email {
             self.send_email(
-                "Time to make an installment",
+                format!("Time to make an installment - {contract_id}").as_str(),
                 user.name.as_str(),
                 email.as_str(),
                 content_template,
@@ -668,7 +705,12 @@ impl Email {
         Ok(())
     }
 
-    pub async fn send_installment_paid(&self, user: &Lender, url: Url) -> Result<()> {
+    pub async fn send_installment_paid(
+        &self,
+        user: &Lender,
+        url: Url,
+        contract_id: &str,
+    ) -> Result<()> {
         let template_name = "installment_paid";
         let handlebars = Self::prepare_template(template_name)?;
 
@@ -681,7 +723,7 @@ impl Email {
         let content_template = handlebars.render(template_name, &data)?;
 
         self.send_email(
-            "The borrower has repaid the loan",
+            format!("The borrower has repaid the loan - {contract_id}").as_str(),
             user.name.as_str(),
             user.email.as_str(),
             content_template,
@@ -689,7 +731,12 @@ impl Email {
         .await
     }
 
-    pub async fn send_installment_confirmed(&self, user: &Borrower, url: Url) -> Result<()> {
+    pub async fn send_installment_confirmed(
+        &self,
+        user: &Borrower,
+        url: Url,
+        contract_id: &str,
+    ) -> Result<()> {
         let template_name = "installment_confirmed";
         let handlebars = Self::prepare_template(template_name)?;
 
@@ -703,7 +750,7 @@ impl Email {
 
         if let Some(email) = &user.email {
             self.send_email(
-                "The lender has confirmed the payment",
+                format!("The lender has confirmed the payment - {contract_id}").as_str(),
                 user.name.as_str(),
                 email.as_str(),
                 content_template,
@@ -714,7 +761,12 @@ impl Email {
         Ok(())
     }
 
-    pub async fn send_loan_liquidated_after_default(&self, user: Borrower, url: Url) -> Result<()> {
+    pub async fn send_loan_liquidated_after_default(
+        &self,
+        user: Borrower,
+        url: Url,
+        contract_id: &str,
+    ) -> Result<()> {
         let template_name = "loan_liquidated_default";
         let handlebars = Self::prepare_template(template_name)?;
 
@@ -728,7 +780,7 @@ impl Email {
 
         if let Some(email) = user.email {
             self.send_email(
-                "Your defaulted loan was liquidated",
+                format!("Your defaulted loan was liquidated - {contract_id}").as_str(),
                 user.name.as_str(),
                 email.as_str(),
                 content_template,
@@ -739,7 +791,12 @@ impl Email {
         Ok(())
     }
 
-    pub async fn send_loan_defaulted_lender(&self, user: &Lender, url: Url) -> Result<()> {
+    pub async fn send_loan_defaulted_lender(
+        &self,
+        user: &Lender,
+        url: Url,
+        contract_id: &str,
+    ) -> Result<()> {
         let template_name = "loan_defaulted_lender";
         let handlebars = Self::prepare_template(template_name)?;
 
@@ -752,7 +809,7 @@ impl Email {
         let content_template = handlebars.render(template_name, &data)?;
 
         self.send_email(
-            "Your borrower missed an installment",
+            format!("Your borrower missed an installment - {contract_id}").as_str(),
             user.name.as_str(),
             user.email.as_str(),
             content_template,
@@ -760,7 +817,12 @@ impl Email {
         .await
     }
 
-    pub async fn send_loan_defaulted_borrower(&self, user: Borrower, url: Url) -> Result<()> {
+    pub async fn send_loan_defaulted_borrower(
+        &self,
+        user: Borrower,
+        url: Url,
+        contract_id: &str,
+    ) -> Result<()> {
         let template_name = "loan_defaulted_borrower";
         let handlebars = Self::prepare_template(template_name)?;
 
@@ -774,7 +836,7 @@ impl Email {
 
         if let Some(email) = user.email {
             self.send_email(
-                "Your loan expired without repayment",
+                format!("Your loan expired without repayment - {contract_id}").as_str(),
                 user.name.as_str(),
                 email.as_str(),
                 content_template,
@@ -789,6 +851,7 @@ impl Email {
         &self,
         borrower: Borrower,
         offers_url: Url,
+        contract_id: &str,
     ) -> Result<()> {
         let template_name = "loan_request_expired_borrower";
         let handlebars = Self::prepare_template(template_name)?;
@@ -803,7 +866,7 @@ impl Email {
 
         if let Some(email) = borrower.email {
             self.send_email(
-                "Your loan request expired without response",
+                format!("Your loan request expired without response - {contract_id}").as_str(),
                 borrower.name.as_str(),
                 email.as_str(),
                 content_template,
@@ -819,6 +882,7 @@ impl Email {
         borrower: Borrower,
         days: i64,
         offers_url: Url,
+        application_id: &str,
     ) -> Result<()> {
         let template_name = "loan_application_expired_borrower";
         let handlebars = Self::prepare_template(template_name)?;
@@ -834,7 +898,8 @@ impl Email {
 
         if let Some(email) = borrower.email {
             self.send_email(
-                "Your loan application expired without response",
+                format!("Your loan application expired without response - {application_id}")
+                    .as_str(),
                 borrower.name.as_str(),
                 email.as_str(),
                 content_template,
@@ -849,6 +914,7 @@ impl Email {
         &self,
         lender: &Lender,
         create_new_offer_url: Url,
+        contract_id: &str,
     ) -> Result<()> {
         let template_name = "loan_request_expired_lender";
         let handlebars = Self::prepare_template(template_name)?;
@@ -862,7 +928,7 @@ impl Email {
         let content_template = handlebars.render(template_name, &data)?;
 
         self.send_email(
-            "A contract request expired without response",
+            format!("A contract request expired without response - {contract_id}").as_str(),
             lender.name.as_str(),
             lender.email.as_str(),
             content_template,
@@ -874,6 +940,7 @@ impl Email {
         &self,
         lender: &Lender,
         contract_url: Url,
+        contract_id: &str,
     ) -> Result<()> {
         let template_name = "new_chat_notification";
         let handlebars = Self::prepare_template(template_name)?;
@@ -887,7 +954,7 @@ impl Email {
         let content_template = handlebars.render(template_name, &data)?;
 
         self.send_email(
-            "New chat message",
+            format!("New chat message - {contract_id}").as_str(),
             lender.name.as_str(),
             lender.email.as_str(),
             content_template,
@@ -899,6 +966,7 @@ impl Email {
         &self,
         borrower: Borrower,
         contract_url: Url,
+        contract_id: &str,
     ) -> Result<()> {
         let template_name = "new_chat_notification";
         let handlebars = Self::prepare_template(template_name)?;
@@ -913,7 +981,7 @@ impl Email {
 
         if let Some(email) = borrower.email {
             self.send_email(
-                "New chat message",
+                format!("New chat message - {contract_id}").as_str(),
                 borrower.name.as_str(),
                 email.as_str(),
                 content_template,

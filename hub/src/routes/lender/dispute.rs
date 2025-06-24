@@ -118,7 +118,7 @@ async fn create_dispute(
         .send_start_dispute(
             user.name.as_str(),
             user.email.as_str(),
-            dispute.id.to_string().as_str(),
+            dispute.contract_id.to_string().as_str(),
         )
         .await;
 

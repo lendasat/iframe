@@ -156,8 +156,12 @@ impl Notifications {
         }
     }
 
-    pub async fn send_start_dispute(&self, name: &str, email: &str, dispute_id: &str) {
-        if let Err(e) = self.email.send_start_dispute(name, email, dispute_id).await {
+    pub async fn send_start_dispute(&self, name: &str, email: &str, contract_id: &str) {
+        if let Err(e) = self
+            .email
+            .send_start_dispute(name, email, contract_id)
+            .await
+        {
             {
                 tracing::error!("Could not send email to start dispute {e:#}");
             }
@@ -330,7 +334,11 @@ impl Notifications {
         }
 
         if settings.contract_status_changed_email {
-            if let Err(e) = self.email.send_new_loan_request(&lender, url).await {
+            if let Err(e) = self
+                .email
+                .send_new_loan_request(&lender, url, contract_id)
+                .await
+            {
                 tracing::error!("Could not send new loan request {e:#}");
             }
         }
@@ -368,7 +376,7 @@ impl Notifications {
         if settings.contract_status_changed_email {
             if let Err(e) = self
                 .email
-                .send_loan_request_approved(borrower, contract_url)
+                .send_loan_request_approved(borrower, contract_url, contract_id)
                 .await
             {
                 tracing::error!("Could not send loan request approved {e:#}");
@@ -409,7 +417,7 @@ impl Notifications {
         if settings.contract_status_changed_email {
             if let Err(e) = self
                 .email
-                .send_notification_about_auto_accepted_loan(&lender, url)
+                .send_notification_about_auto_accepted_loan(&lender, url, contract_id)
                 .await
             {
                 tracing::error!("Could not send auto accept notification {e:#}");
@@ -450,7 +458,7 @@ impl Notifications {
         if settings.contract_status_changed_email {
             if let Err(e) = self
                 .email
-                .send_loan_request_rejected(borrower, contract_url)
+                .send_loan_request_rejected(borrower, contract_url, contract_id)
                 .await
             {
                 tracing::error!("Could not send request rejected {e:#}");
@@ -484,7 +492,11 @@ impl Notifications {
         }
 
         if settings.contract_status_changed_email {
-            if let Err(e) = self.email.send_loan_collateralized(&lender, url).await {
+            if let Err(e) = self
+                .email
+                .send_loan_collateralized(&lender, url, contract_id)
+                .await
+            {
                 tracing::error!("Could not send loan collateralized {e:#}");
             }
         }
@@ -521,7 +533,11 @@ impl Notifications {
         }
 
         if settings.contract_status_changed_email {
-            if let Err(e) = self.email.send_loan_paid_out(borrower, contract_url).await {
+            if let Err(e) = self
+                .email
+                .send_loan_paid_out(borrower, contract_url, contract_id)
+                .await
+            {
                 tracing::error!("Could not send loan paid out {e:#}");
             }
         }
@@ -562,7 +578,7 @@ impl Notifications {
         if settings.contract_status_changed_email {
             if let Err(e) = self
                 .email
-                .send_installment_due_soon(borrower, expiry_date, contract_url)
+                .send_installment_due_soon(borrower, expiry_date, contract_url, contract_id)
                 .await
             {
                 tracing::error!("Could not send installment due soon: {e:#}");
@@ -620,7 +636,11 @@ impl Notifications {
         }
 
         if settings.contract_status_changed_email {
-            if let Err(e) = self.email.send_installment_paid(&lender, url).await {
+            if let Err(e) = self
+                .email
+                .send_installment_paid(&lender, url, contract_id)
+                .await
+            {
                 tracing::error!("Could not send installment paid {e:#}");
             }
         }
@@ -657,7 +677,11 @@ impl Notifications {
         }
 
         if settings.contract_status_changed_email {
-            if let Err(e) = self.email.send_installment_confirmed(&borrower, url).await {
+            if let Err(e) = self
+                .email
+                .send_installment_confirmed(&borrower, url, contract_id)
+                .await
+            {
                 tracing::error!("Could not send installment confirmed {e:#}");
             }
         }
@@ -690,7 +714,7 @@ impl Notifications {
         if settings.contract_status_changed_email {
             if let Err(e) = self
                 .email
-                .send_loan_liquidated_after_default(borrower, contract_url)
+                .send_loan_liquidated_after_default(borrower, contract_url, contract_id)
                 .await
             {
                 tracing::error!("Could not send loan liquidated after default {e:#}");
@@ -724,7 +748,11 @@ impl Notifications {
         }
 
         if settings.contract_status_changed_email {
-            if let Err(e) = self.email.send_loan_defaulted_lender(&lender, url).await {
+            if let Err(e) = self
+                .email
+                .send_loan_defaulted_lender(&lender, url, contract_id)
+                .await
+            {
                 tracing::error!("Could not send loan defaulted lender notification {e:#}");
             }
         }
@@ -763,7 +791,7 @@ impl Notifications {
         if settings.contract_status_changed_email {
             if let Err(e) = self
                 .email
-                .send_loan_defaulted_borrower(borrower, contract_url)
+                .send_loan_defaulted_borrower(borrower, contract_url, contract_id)
                 .await
             {
                 tracing::error!("Could not send loan defaulted borrower {e:#}");
@@ -804,7 +832,7 @@ impl Notifications {
         if settings.contract_status_changed_email {
             if let Err(e) = self
                 .email
-                .send_expired_loan_request_borrower(borrower, contract_url)
+                .send_expired_loan_request_borrower(borrower, contract_url, contract_id)
                 .await
             {
                 tracing::error!("Could not send loan request expired borrower {e:#}");
@@ -824,6 +852,7 @@ impl Notifications {
         borrower: Borrower,
         days: i64,
         contract_url: Url,
+        application_id: &str,
     ) {
         let settings = load_borrower_notification_settings(&self.db, borrower.id.as_str()).await;
 
@@ -839,7 +868,12 @@ impl Notifications {
         if settings.contract_status_changed_email {
             if let Err(e) = self
                 .email
-                .send_expired_loan_application_borrower(borrower, days, contract_url)
+                .send_expired_loan_application_borrower(
+                    borrower,
+                    days,
+                    contract_url,
+                    application_id,
+                )
                 .await
             {
                 tracing::error!("Could not send loan application expired borrower {e:#}");
@@ -874,7 +908,7 @@ impl Notifications {
         if settings.contract_status_changed_email {
             if let Err(e) = self
                 .email
-                .send_expired_loan_request_lender(&lender, url)
+                .send_expired_loan_request_lender(&lender, url, contract_id)
                 .await
             {
                 tracing::error!("Could not send loan request expired lender {e:#}");
@@ -914,7 +948,7 @@ impl Notifications {
         if settings.new_chat_message_email {
             if let Err(e) = self
                 .email
-                .send_new_chat_message_notification_lender(&lender, contract_url)
+                .send_new_chat_message_notification_lender(&lender, contract_url, contract_id)
                 .await
             {
                 tracing::error!("Could not send chat notification email lender {e:#}");
@@ -947,7 +981,7 @@ impl Notifications {
         if settings.new_chat_message_email {
             if let Err(e) = self
                 .email
-                .send_new_chat_message_notification_borrower(borrower, contract_url)
+                .send_new_chat_message_notification_borrower(borrower, contract_url, contract_id)
                 .await
             {
                 tracing::error!("Could not send chat notification borrower {e:#}");
@@ -955,7 +989,12 @@ impl Notifications {
         }
     }
 
-    pub async fn send_contract_extension_enabled(&self, borrower: Borrower, contract_url: Url) {
+    pub async fn send_contract_extension_enabled(
+        &self,
+        borrower: Borrower,
+        contract_url: Url,
+        contract_id: &str,
+    ) {
         let settings = load_borrower_notification_settings(&self.db, borrower.id.as_str()).await;
 
         if settings.contract_status_changed_telegram {
@@ -977,6 +1016,7 @@ impl Notifications {
                         borrower.name.as_str(),
                         email.as_str(),
                         contract_url,
+                        contract_id,
                     )
                     .await
                 {
