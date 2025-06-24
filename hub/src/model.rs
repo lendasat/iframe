@@ -1420,8 +1420,9 @@ pub fn calculate_interest_usd(
     duration_days: u32,
 ) -> Decimal {
     let daily_interest_rate = daily_interest_rate(yearly_interest_rate);
+    let interest_usd = loan_amount_usd * daily_interest_rate * Decimal::from(duration_days);
 
-    loan_amount_usd * daily_interest_rate * Decimal::from(duration_days)
+    interest_usd.round_dp(2)
 }
 
 fn daily_interest_rate(yearly_interest_rate: Decimal) -> Decimal {
@@ -1484,7 +1485,7 @@ mod tests {
         let duration_days = ONE_YEAR;
         let amount = calculate_interest_usd(loan_amount_usd, yearly_interest_rate, duration_days);
 
-        let diff = amount - dec!(119.9999);
+        let diff = amount - dec!(120);
         assert!(diff < dec!(0.0001), "was {amount}");
     }
 
@@ -1496,7 +1497,7 @@ mod tests {
         let duration_days = ONE_MONTH * 15;
         let amount = calculate_interest_usd(loan_amount_usd, yearly_interest_rate, duration_days);
 
-        let diff = amount - dec!(149.9999);
+        let diff = amount - dec!(150);
         assert!(
             diff < dec!(0.0001),
             "interest was {amount} but it was {diff} too high"

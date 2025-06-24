@@ -7,7 +7,7 @@ expression: installments
         id: [UUID],
         contract_id: [UUID],
         principal: 1000,
-        interest: 1.8055555555555555555555557000,
+        interest: 1.81,
         due_date: 2025-06-04 0:00:00.0 +00:00:00,
         status: Pending,
         paid_date: None,
