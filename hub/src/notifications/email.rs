@@ -34,11 +34,21 @@ pub(crate) struct Email {
     smtp_host: String,
     smtp_port: u16,
     smtp_disabled: bool,
+    borrower_notification_settings: Url,
+    lender_notification_settings: Url,
 }
 
 impl Email {
     pub fn new(config: Config) -> Self {
         let from = format!("Lendasat <{}>", config.smtp_from.to_owned());
+        let borrower_notification_settings = config
+            .borrower_frontend_origin
+            .join("/settings/notifications")
+            .expect("to be valid url");
+        let lender_notification_settings = config
+            .lender_frontend_origin
+            .join("/settings/notifications")
+            .expect("to be valid url");
 
         Self {
             from,
@@ -47,6 +57,8 @@ impl Email {
             smtp_host: config.smtp_host,
             smtp_port: config.smtp_port,
             smtp_disabled: config.smtp_disabled,
+            borrower_notification_settings,
+            lender_notification_settings,
         }
     }
 
@@ -172,6 +184,8 @@ impl Email {
         handlebars.register_template_string(template_name, content)?;
         let content = Self::get_template_content("partials/styles.hbs")?;
         handlebars.register_template_string("styles", content)?;
+        let content = Self::get_template_content("partials/footer.hbs")?;
+        handlebars.register_template_string("footer", content)?;
         let content = Self::get_template_content("layouts/base.hbs")?;
         handlebars.register_template_string("base", content)?;
         Ok(handlebars)
@@ -252,6 +266,7 @@ impl Email {
         let data = serde_json::json!({
             "first_name": name,
             "contract_url": contract_url,
+            "notification_settings_url": self.borrower_notification_settings
         });
 
         let content_template = handlebars
@@ -387,7 +402,8 @@ impl Email {
             "collateral_value_usd": collateral_value_usd,
             "current_ltv": current_ltv,
             "liquidation_price": liquidation_price,
-            "contract_url": contract_url
+            "contract_url": contract_url,
+            "notification_settings_url": self.borrower_notification_settings
         });
 
         let content_template = handlebars.render(template_name, &data)?;
@@ -426,7 +442,8 @@ impl Email {
             "contract_id": contract.id,
             "latest_price": price,
             "liquidation_price": liquidation_price,
-            "contract_url": contract_url
+            "contract_url": contract_url,
+            "notification_settings_url": self.borrower_notification_settings
         });
 
         let content_template = handlebars.render(template_name, &data)?;
@@ -459,7 +476,8 @@ impl Email {
         let data = serde_json::json!({
             "first_name": lender.name.as_str(),
             "contract_id": contract.id,
-            "contract_url": contract_url
+            "contract_url": contract_url,
+            "notification_settings_url": self.lender_notification_settings
         });
 
         let content_template = handlebars.render(template_name, &data)?;
@@ -490,7 +508,8 @@ impl Email {
         let data = serde_json::json!({
             "first_name": &lender.name,
             "subject": &template_name,
-            "url": url
+            "url": url,
+            "notification_settings_url": self.lender_notification_settings
         });
 
         let content_template = handlebars.render(template_name, &data)?;
@@ -516,7 +535,8 @@ impl Email {
         let data = serde_json::json!({
             "first_name": &borrower.name,
             "subject": &template_name,
-            "url": url
+            "url": url,
+            "notification_settings_url": self.borrower_notification_settings
         });
 
         let content_template = handlebars.render(template_name, &data)?;
@@ -547,7 +567,8 @@ impl Email {
         let data = serde_json::json!({
             "first_name": &lender.name,
             "subject": &template_name,
-            "url": url
+            "url": url,
+            "notification_settings_url": self.lender_notification_settings
         });
 
         let content_template = handlebars.render(template_name, &data)?;
@@ -573,7 +594,8 @@ impl Email {
         let data = serde_json::json!({
             "first_name": &borrower.name,
             "subject": &template_name,
-            "url": url
+            "url": url,
+            "notification_settings_url": self.borrower_notification_settings
         });
 
         let content_template = handlebars.render(template_name, &data)?;
@@ -605,7 +627,8 @@ impl Email {
         let data = serde_json::json!({
             "first_name": &user.name,
             "subject": &template_name,
-            "url": url
+            "url": url,
+            "notification_settings_url": self.lender_notification_settings
         });
 
         let content_template = handlebars.render(template_name, &data)?;
@@ -631,7 +654,8 @@ impl Email {
         let data = serde_json::json!({
             "first_name": &user.name,
             "subject": &template_name,
-            "url": url
+            "url": url,
+            "notification_settings_url": self.borrower_notification_settings
         });
 
         let content_template = handlebars.render(template_name, &data)?;
@@ -663,7 +687,8 @@ impl Email {
             "first_name": &user.name,
             "subject": &template_name,
             "expiry_date": &expiry_date,
-            "url": url
+            "url": url,
+            "notification_settings_url": self.borrower_notification_settings
         });
 
         let content_template = handlebars.render(template_name, &data)?;
@@ -688,7 +713,8 @@ impl Email {
         let data = serde_json::json!({
             "first_name": &user.name,
             "subject": &template_name,
-            "url": url
+            "url": url,
+            "notification_settings_url": self.borrower_notification_settings
         });
 
         let content_template = handlebars.render(template_name, &data)?;
@@ -717,7 +743,8 @@ impl Email {
         let data = serde_json::json!({
             "first_name": &user.name,
             "subject": &template_name,
-            "url": url
+            "url": url,
+            "notification_settings_url": self.lender_notification_settings
         });
 
         let content_template = handlebars.render(template_name, &data)?;
@@ -743,7 +770,8 @@ impl Email {
         let data = serde_json::json!({
             "first_name": &user.name,
             "subject": &template_name,
-            "url": url
+            "url": url,
+            "notification_settings_url": self.borrower_notification_settings
         });
 
         let content_template = handlebars.render(template_name, &data)?;
@@ -773,7 +801,8 @@ impl Email {
         let data = serde_json::json!({
             "first_name": &user.name,
             "subject": &template_name,
-            "url": url
+            "url": url,
+            "notification_settings_url": self.borrower_notification_settings
         });
 
         let content_template = handlebars.render(template_name, &data)?;
@@ -803,7 +832,8 @@ impl Email {
         let data = serde_json::json!({
             "first_name": &user.name,
             "subject": &template_name,
-            "url": url
+            "url": url,
+            "notification_settings_url": self.lender_notification_settings
         });
 
         let content_template = handlebars.render(template_name, &data)?;
@@ -829,7 +859,8 @@ impl Email {
         let data = serde_json::json!({
             "first_name": &user.name,
             "subject": &template_name,
-            "url": url
+            "url": url,
+            "notification_settings_url": self.borrower_notification_settings
         });
 
         let content_template = handlebars.render(template_name, &data)?;
@@ -859,7 +890,8 @@ impl Email {
         let data = serde_json::json!({
             "first_name": &borrower.name,
             "subject": &template_name,
-            "url": offers_url
+            "url": offers_url,
+            "notification_settings_url": self.borrower_notification_settings
         });
 
         let content_template = handlebars.render(template_name, &data)?;
@@ -891,7 +923,8 @@ impl Email {
             "first_name": &borrower.name,
             "subject": &template_name,
             "url": offers_url,
-            "days": days
+            "days": days,
+            "notification_settings_url": self.borrower_notification_settings
         });
 
         let content_template = handlebars.render(template_name, &data)?;
@@ -923,6 +956,7 @@ impl Email {
             "first_name": &borrower.name,
             "subject": &template_name,
             "url": offers_url,
+            "notification_settings_url": self.borrower_notification_settings
         });
 
         let content_template = handlebars.render(template_name, &data)?;
@@ -952,7 +986,8 @@ impl Email {
         let data = serde_json::json!({
             "first_name": &lender.name,
             "subject": &template_name,
-            "url": create_new_offer_url
+            "url": create_new_offer_url,
+            "notification_settings_url": self.lender_notification_settings
         });
 
         let content_template = handlebars.render(template_name, &data)?;
@@ -978,7 +1013,8 @@ impl Email {
         let data = serde_json::json!({
             "first_name": &lender.name,
             "subject": &template_name,
-            "contract_url": contract_url
+            "contract_url": contract_url,
+            "notification_settings_url": self.lender_notification_settings
         });
 
         let content_template = handlebars.render(template_name, &data)?;
@@ -1004,7 +1040,8 @@ impl Email {
         let data = serde_json::json!({
             "first_name": &borrower.name,
             "subject": &template_name,
-            "contract_url": contract_url
+            "contract_url": contract_url,
+            "notification_settings_url": self.borrower_notification_settings
         });
 
         let content_template = handlebars.render(template_name, &data)?;
