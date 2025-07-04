@@ -111,7 +111,7 @@ export function StablecoinPayout({
               <strong>
                 {formatCurrency(
                   loanAmount,
-                  LoanAssetHelper.toCurrency(contract?.loan_amount),
+                  LoanAssetHelper.toCurrency(contract?.loan_asset),
                 )}
               </strong>{" "}
               <strong>{assetCoin}</strong> on <strong>{assetNetwork}</strong> to

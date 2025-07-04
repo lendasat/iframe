@@ -31,7 +31,6 @@ import LenderProfile from "./lenderProfile";
 import { LoanOffersOverview } from "./loan-offers/LoanOffersOverview";
 import MyLoanOfferDetails from "./my-offers/my-loan-offer-details";
 import MyLoanOffersOverview from "./my-offers/my-loan-offers-overview";
-
 import init from "browser-wallet";
 import browserWalletUrl from "browser-wallet/browser_wallet_bg.wasm?url";
 import { useEffect } from "react";

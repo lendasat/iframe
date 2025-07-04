@@ -20,6 +20,7 @@ import {
   formatCurrency,
   formatSatsToBitcoin,
   getFormatedStringFromDays,
+  LoanAsset,
   LoanAssetHelper,
 } from "@frontend/ui-shared";
 import { format, formatDistanceToNow } from "date-fns";
@@ -222,7 +223,7 @@ const LoanDetails: React.FC<LoanDetailsProps> = ({
                 <p className="text-xs text-gray-500">
                   {formatCurrency(
                     interestAmount,
-                    LoanAssetHelper.toCurrency(loanAsset),
+                    LoanAssetHelper.toCurrency(loanAsset as LoanAsset),
                   )}
                 </p>
               ) : (
@@ -309,7 +310,7 @@ const LoanDetails: React.FC<LoanDetailsProps> = ({
                 <p className="text-xs text-gray-500">
                   {formatCurrency(
                     interestAmount,
-                    LoanAssetHelper.toCurrency(loanAsset),
+                    LoanAssetHelper.toCurrency(loanAsset as LoanAsset),
                   )}
                 </p>
               ) : (

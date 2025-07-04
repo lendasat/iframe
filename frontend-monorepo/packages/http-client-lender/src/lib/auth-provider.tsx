@@ -16,6 +16,7 @@ interface AuthContextType {
   loading: boolean;
   login: (email: string, password: string) => Promise<LoginResponseOrUpgrade>;
   logout: () => Promise<void>;
+  refreshUser: () => Promise<void>;
   backendVersion: Version;
   enabledFeatures: LenderFeatureFlags[];
 }
@@ -223,9 +224,36 @@ export const AuthProvider: FC<AuthProviderProps> = ({
     }
   };
 
+  const refreshUser = async () => {
+    try {
+      const userData = await httpClient.me();
+      if (userData) {
+        setUser(userData.user);
+        const featureFlags = FeatureMapper.mapEnabledFeatures(
+          userData.enabled_features,
+        );
+        setEnabledFeatures(featureFlags);
+      } else {
+        setUser(null);
+        setEnabledFeatures([]);
+      }
+    } catch (error) {
+      console.error("Failed to refresh user data:", error);
+      throw error;
+    }
+  };
+
   return (
     <AuthContext.Provider
-      value={{ user, loading, login, logout, backendVersion, enabledFeatures }}
+      value={{
+        user,
+        loading,
+        login,
+        logout,
+        refreshUser,
+        backendVersion,
+        enabledFeatures,
+      }}
     >
       <HttpClientLenderContext.Provider value={httpClient}>
         {children}
