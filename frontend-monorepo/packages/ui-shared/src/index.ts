@@ -184,5 +184,5 @@ export * from "./lib/header-component";
 export * from "./lib/ltv-progress-bar/ltv-progress-bar";
 export * from "./lib/models";
 export * from "./lib/price-context";
-export * from "./lib/usd";
+export * from "./lib/currency";
 export * from "./lib/UserStats";

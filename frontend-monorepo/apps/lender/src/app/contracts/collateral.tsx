@@ -18,7 +18,8 @@ import { Contract, LiquidationStatus } from "@frontend/http-client-lender";
 import {
   formatCurrency,
   formatSatsToBitcoin,
-  usePrice,
+  LoanAssetHelper,
+  usePriceForCurrency,
 } from "@frontend/ui-shared";
 
 const shortenAddress = (address?: string) => {
@@ -44,10 +45,10 @@ interface LtvHealthInfoProps {
 function LtvHealthInfo({ contract, funded }: LtvHealthInfoProps) {
   if (contract === undefined) {
     return (
-      <div className="bg-gray-50 p-4 rounded-md border border-gray-200 flex items-start">
-        <Skeleton className="h-5 w-5 rounded-full mx-4" />
+      <div className="flex items-start rounded-md border border-gray-200 bg-gray-50 p-4">
+        <Skeleton className="mx-4 h-5 w-5 rounded-full" />
         <div>
-          <Skeleton className="h-6 w-[150px] mb-2" />
+          <Skeleton className="mb-2 h-6 w-[150px]" />
           <Skeleton className="h-4 w-[450px]" />
         </div>
       </div>
@@ -58,8 +59,8 @@ function LtvHealthInfo({ contract, funded }: LtvHealthInfoProps) {
 
   if (!funded) {
     return (
-      <div className="bg-gray-50 p-4 rounded-md border border-gray-200 flex items-start">
-        <LuCircleAlert className="h-5 w-5 text-gray-500 mr-2 mt-0.5" />
+      <div className="flex items-start rounded-md border border-gray-200 bg-gray-50 p-4">
+        <LuCircleAlert className="mr-2 mt-0.5 h-5 w-5 text-gray-500" />
         <div>
           <p className="text-sm font-medium text-gray-800">Unfunded Contract</p>
           <p className="text-sm text-gray-600">
@@ -72,8 +73,8 @@ function LtvHealthInfo({ contract, funded }: LtvHealthInfoProps) {
 
   if (liquidationStatus === LiquidationStatus.Healthy) {
     return (
-      <div className="bg-green-50 p-4 rounded-md border border-green-200 flex items-start">
-        <LuCircleCheck className="h-5 w-5 text-green-500 mr-2 mt-0.5" />
+      <div className="flex items-start rounded-md border border-green-200 bg-green-50 p-4">
+        <LuCircleCheck className="mr-2 mt-0.5 h-5 w-5 text-green-500" />
         <div>
           <p className="text-sm font-medium text-green-800">
             Healthy Collateral Ratio
@@ -88,8 +89,8 @@ function LtvHealthInfo({ contract, funded }: LtvHealthInfoProps) {
 
   if (liquidationStatus === LiquidationStatus.FirstMarginCall) {
     return (
-      <div className="bg-yellow-50 p-4 rounded-md border border-yellow-200 flex items-start">
-        <LuTriangleAlert className="h-5 w-5 text-yellow-500 mr-2 mt-0.5" />
+      <div className="flex items-start rounded-md border border-yellow-200 bg-yellow-50 p-4">
+        <LuTriangleAlert className="mr-2 mt-0.5 h-5 w-5 text-yellow-500" />
         <div>
           <p className="text-sm font-medium text-yellow-800">
             Warning: Approaching Margin Call
@@ -104,8 +105,8 @@ function LtvHealthInfo({ contract, funded }: LtvHealthInfoProps) {
   }
   if (liquidationStatus === LiquidationStatus.SecondMarginCall) {
     return (
-      <div className="bg-orange-50 p-4 rounded-md border border-orange-200 flex items-start">
-        <LuCircleAlert className="h-5 w-5 text-orange-500 mr-2 mt-0.5" />
+      <div className="flex items-start rounded-md border border-orange-200 bg-orange-50 p-4">
+        <LuCircleAlert className="mr-2 mt-0.5 h-5 w-5 text-orange-500" />
         <div>
           <p className="text-sm font-medium text-orange-800">
             Urgent: Second Margin Call
@@ -121,8 +122,8 @@ function LtvHealthInfo({ contract, funded }: LtvHealthInfoProps) {
 
   if (liquidationStatus === LiquidationStatus.Liquidated) {
     return (
-      <div className="bg-red-50 p-4 rounded-md border border-red-200 flex items-start">
-        <LuCircleX className="h-5 w-5 text-red-500 mr-2 mt-0.5" />
+      <div className="flex items-start rounded-md border border-red-200 bg-red-50 p-4">
+        <LuCircleX className="mr-2 mt-0.5 h-5 w-5 text-red-500" />
         <div>
           <p className="text-sm font-medium text-red-800">
             Collateral Liquidated
@@ -137,7 +138,10 @@ function LtvHealthInfo({ contract, funded }: LtvHealthInfoProps) {
 }
 
 export const Collateral = ({ contract }: CollateralProps) => {
-  const { latestPrice } = usePrice();
+  const latestPrice = usePriceForCurrency(
+    LoanAssetHelper.toCurrency(contract?.loan_asset),
+  );
+
   const [contractAddressCopied, setContractAddressCopied] = useState(false);
 
   const contractAddress = contract?.contract_address;
@@ -145,8 +149,11 @@ export const Collateral = ({ contract }: CollateralProps) => {
   const collateralAmountUsd =
     contract?.collateral_sats != null && latestPrice
       ? contract.collateral_sats === 0
-        ? formatCurrency(0)
-        : formatCurrency((contract.collateral_sats / 100000000) * latestPrice)
+        ? formatCurrency(0, LoanAssetHelper.toCurrency(contract.loan_asset))
+        : formatCurrency(
+            (contract.collateral_sats / 100000000) * latestPrice,
+            LoanAssetHelper.toCurrency(contract.loan_asset),
+          )
       : undefined;
 
   const collateralBtc = contract?.collateral_sats
@@ -212,18 +219,18 @@ export const Collateral = ({ contract }: CollateralProps) => {
   return (
     <Card className={"border-none shadow-none"}>
       <CardContent className="pt-2">
-        <div className="border rounded-md p-4 mb-4">
-          <div className="flex justify-between items-center">
+        <div className="mb-4 rounded-md border p-4">
+          <div className="flex items-center justify-between">
             <span>Current Collateral</span>
             <span className="font-mono">{collateralAmount} BTC</span>
           </div>
           <Separator className="my-3" />
-          <div className="flex justify-between items-center">
+          <div className="flex items-center justify-between">
             <span className="text-sm text-gray-500">USD Value</span>
             <span className="font-medium">{collateralAmountUsd}</span>
           </div>
           <Separator className="my-3" />
-          <div className="flex justify-between items-center">
+          <div className="flex items-center justify-between">
             <span className="text-sm text-gray-500">Contract Address</span>
             <div className="flex items-center">
               {contractAddress ? (
@@ -235,7 +242,7 @@ export const Collateral = ({ contract }: CollateralProps) => {
               <Button
                 variant="ghost"
                 size="icon"
-                className="h-6 w-6 ml-1"
+                className="ml-1 h-6 w-6"
                 onClick={() => handleCopy(contractAddress || "")}
               >
                 {contractAddressCopied ? (
@@ -248,7 +255,7 @@ export const Collateral = ({ contract }: CollateralProps) => {
                 asChild
                 size={"icon"}
                 variant={"ghost"}
-                className="h-6 w-6 ml-1"
+                className="ml-1 h-6 w-6"
               >
                 <a
                   href={mempoolLinkToAddress}
@@ -263,8 +270,8 @@ export const Collateral = ({ contract }: CollateralProps) => {
           </div>
         </div>
 
-        <div className="space-y-3 mb-11">
-          <div className="flex justify-between items-center">
+        <div className="mb-11 space-y-3">
+          <div className="flex items-center justify-between">
             <p className="text-sm text-gray-500">Loan-to-Value (LTV) Ratio</p>
             {ltvRatio ? (
               <p className={`font-bold ${ltvRatioStop.textcolor} `}>
@@ -274,8 +281,8 @@ export const Collateral = ({ contract }: CollateralProps) => {
               <Skeleton className="h-6 w-[150px]" />
             )}
           </div>
-          <div className="w-full bg-gray-200 rounded-full h-2.5 overflow-hidden relative">
-            <div className="flex w-full h-full">
+          <div className="relative h-2.5 w-full overflow-hidden rounded-full bg-gray-200">
+            <div className="flex h-full w-full">
               <div
                 className={`${ltvRatioStop.color} h-full`}
                 style={{ width: ltvRatioStop.percent + "%" }}
@@ -302,14 +309,14 @@ export const Collateral = ({ contract }: CollateralProps) => {
 
             {/* Current LTV marker */}
             <div
-              className="absolute top-0 bg-black h-full w-1 rounded-full"
+              className="absolute top-0 h-full w-1 rounded-full bg-black"
               style={{
                 left: `${Math.min(ltvRatio || 0, 100)}%`,
                 display: ltvRatio ? "block" : "none",
               }}
             ></div>
           </div>
-          <div className="relative w-full pt-1 mb">
+          <div className="mb relative w-full pt-1">
             <span className="absolute left-0 text-xs text-gray-500">0%</span>
             <span
               className={`absolute left-[35%] -translate-x-1/2 text-xs text-green-600`}
@@ -317,20 +324,20 @@ export const Collateral = ({ contract }: CollateralProps) => {
               Healthy
             </span>
             <span
-              className={`absolute left-[70%] -translate-x-1/2 text-xs text-yellow-600 text-center`}
+              className={`absolute left-[70%] -translate-x-1/2 text-center text-xs text-yellow-600`}
             >
               {firstMarginCallThreshold}%
               <br />
               <span className="hidden sm:inline">Warning</span>
             </span>
             <span
-              className={`absolute left-[80%] -translate-x-1/2 text-xs text-orange-600 text-center`}
+              className={`absolute left-[80%] -translate-x-1/2 text-center text-xs text-orange-600`}
             >
               {secondMarginCallThreshold}% <br />
               <span className="hidden sm:inline">Margin Call</span>
             </span>
             <span
-              className={`absolute left-[90%] -translate-x-1/2 text-xs text-red-600 text-center`}
+              className={`absolute left-[90%] -translate-x-1/2 text-center text-xs text-red-600`}
             >
               {liquidationThreshold}% <br />
               <span className="hidden sm:inline">Liquidation</span>

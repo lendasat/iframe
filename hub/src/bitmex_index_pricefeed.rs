@@ -1,5 +1,7 @@
 use crate::bitmex_ws_client;
+use crate::bitmex_ws_client::ContractSymbol;
 use crate::bitmex_ws_client::Event;
+use crate::model::Currency;
 use anyhow::Result;
 use futures::TryStreamExt;
 use rust_decimal::Decimal;
@@ -14,6 +16,16 @@ pub struct BitmexIndexPrice {
     pub market_price: Decimal,
     #[serde(with = "time::serde::rfc3339")]
     pub timestamp: OffsetDateTime,
+    pub currency: Currency,
+}
+
+impl From<ContractSymbol> for Currency {
+    fn from(value: ContractSymbol) -> Self {
+        match value {
+            ContractSymbol::BXBT => Currency::Usd,
+            ContractSymbol::BxbtEur => Currency::Eur,
+        }
+    }
 }
 
 const RECONNECTION_TIMEOUT_SECONDS: u64 = 5;
@@ -32,6 +44,7 @@ pub async fn subscribe_index_price(txs: [mpsc::Sender<BitmexIndexPrice>; 2]) -> 
                                         .send(BitmexIndexPrice {
                                             market_price,
                                             timestamp: instrument.timestamp,
+                                            currency: instrument.symbol.into(),
                                         })
                                         .await
                                     {

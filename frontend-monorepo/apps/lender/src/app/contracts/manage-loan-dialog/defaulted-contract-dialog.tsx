@@ -36,8 +36,8 @@ import {
   formatBitcoin,
   getTxUrl,
   LoanAssetHelper,
-  usePrice,
   formatCurrency,
+  usePriceForCurrency,
 } from "@frontend/ui-shared";
 import { Network, validate } from "bitcoin-address-validation";
 import { z } from "zod";
@@ -87,7 +87,9 @@ const DefaultedOrUndercollateralizedContractDialog = ({
     getLiquidationToBitcoinPsbt,
     postLiquidationTx,
   } = useLenderHttpClient();
-  const { latestPrice } = usePrice();
+  const latestPrice = usePriceForCurrency(
+    LoanAssetHelper.toCurrency(contract.loan_asset),
+  );
 
   const [payAsBitcoin, setPayAsBitcoin] = useState("true");
   const [selectedFeerate, setSelectedFeerate] = useState(1);
@@ -96,7 +98,7 @@ const DefaultedOrUndercollateralizedContractDialog = ({
 
   // For this estimate, we only consider pending and late. In theory, a paid payment that is not
   // confirmed may also be included in the final payout.
-  const outstandingBalanceUsd = contract.installments
+  const outstandingBalanceAmount = contract.installments
     .filter(
       (i) =>
         i.status === InstallmentStatus.Pending ||
@@ -107,7 +109,7 @@ const DefaultedOrUndercollateralizedContractDialog = ({
 
   const collateralAsset = contract.loan_asset;
   const outstandingBalanceBitcoin =
-    latestPrice !== undefined ? outstandingBalanceUsd / latestPrice : 0.0;
+    latestPrice !== undefined ? outstandingBalanceAmount / latestPrice : 0.0;
 
   const form = useForm<z.infer<typeof addressSchema>>({
     resolver: zodResolver(addressSchema),
@@ -205,11 +207,15 @@ const DefaultedOrUndercollateralizedContractDialog = ({
                   <AlertTriangle className="h-4 w-4" />
                   <AlertTitle>Heads up!</AlertTitle>
                   <AlertDescription>
-                    You will receive {formatCurrency(outstandingBalanceUsd)} in{" "}
-                    {LoanAssetHelper.print(collateralAsset)}, or the equivalent
-                    in Bitcoin if you prefer. At the current rate this is
-                    approximately {formatBitcoin(outstandingBalanceBitcoin)}{" "}
-                    BTC.
+                    You will receive{" "}
+                    {formatCurrency(
+                      outstandingBalanceAmount,
+                      LoanAssetHelper.toCurrency(contract.loan_asset),
+                    )}{" "}
+                    in {LoanAssetHelper.print(collateralAsset)}, or the
+                    equivalent in Bitcoin if you prefer. At the current rate
+                    this is approximately{" "}
+                    {formatBitcoin(outstandingBalanceBitcoin)} BTC.
                   </AlertDescription>
                 </Alert>
               </div>

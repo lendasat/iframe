@@ -1,7 +1,9 @@
 import type { FC } from "react";
+import { Currency } from "./models";
 
 export const formatCurrency = (
   value: number,
+  currency: Currency = Currency.USD,
   minFraction?: number,
   maxFraction?: number,
 ) => {
@@ -14,9 +16,15 @@ export const formatCurrency = (
     minimumFractionDigits = 0;
   }
 
-  return new Intl.NumberFormat("en-US", {
+  // Map Currency enum to Intl currency codes
+  const currencyCode = currency === Currency.EUR ? "EUR" : "USD";
+
+  // We make use of system locals
+  // - On a US system: "€1,000.00"
+  // - On a German system:  "1.000,00 €"
+  return new Intl.NumberFormat(undefined, {
     style: "currency",
-    currency: "USD",
+    currency: currencyCode,
     minimumFractionDigits,
     maximumFractionDigits,
   }).format(value);
@@ -24,6 +32,7 @@ export const formatCurrency = (
 
 interface formatCurrencyProps {
   value: number;
+  currency?: Currency;
   minFraction: number;
   maxFraction: number;
 }
@@ -32,16 +41,19 @@ export const newFormatCurrency = ({
   maxFraction,
   minFraction,
   value,
+  currency = Currency.USD,
 }: formatCurrencyProps) => {
   let minFractionDigits = minFraction;
   if (minFraction > maxFraction) {
     minFractionDigits = maxFraction;
   }
 
-  return new Intl.NumberFormat("en-US", {
-    style: "currency",
-    currency: "USD",
+  // Map Currency enum to Intl currency codes
+  const currencyCode = currency === Currency.EUR ? "EUR" : "USD";
 
+  return new Intl.NumberFormat(undefined, {
+    style: "currency",
+    currency: currencyCode,
     minimumFractionDigits: minFractionDigits,
     maximumFractionDigits: maxFraction,
   }).format(value);
@@ -49,16 +61,20 @@ export const newFormatCurrency = ({
 
 interface CurrencyFormatterProps {
   value: number;
+  currency?: Currency;
   minFraction?: number;
   maxFraction?: number;
 }
 
 export const CurrencyFormatter: FC<CurrencyFormatterProps> = ({
   value,
+  currency = Currency.USD,
   maxFraction,
   minFraction,
 }) => {
-  return <span>{formatCurrency(value, minFraction, maxFraction)}</span>;
+  return (
+    <span>{formatCurrency(value, currency, minFraction, maxFraction)}</span>
+  );
 };
 
 export default CurrencyFormatter;

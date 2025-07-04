@@ -1,9 +1,5 @@
 import { LoanOffer } from "@frontend/http-client-lender";
-import {
-  CurrencyFormatter,
-  KycBadge,
-  LoanAssetHelper,
-} from "@frontend/ui-shared";
+import { formatCurrency, KycBadge, LoanAssetHelper } from "@frontend/ui-shared";
 import { InfoCircledIcon } from "@radix-ui/react-icons";
 import { Box, Button, Callout, Flex, Table, Text } from "@radix-ui/themes";
 import { useState } from "react";
@@ -258,8 +254,15 @@ export const LoanOffersTable = ({ offers }: ContractDetailsTableProps) => {
                     size={"1"}
                     weight={"medium"}
                   >
-                    <CurrencyFormatter value={offer.loan_amount_min} /> -{" "}
-                    <CurrencyFormatter value={offer.loan_amount_max} />
+                    {formatCurrency(
+                      offer.loan_amount_min,
+                      LoanAssetHelper.toCurrency(offer.loan_asset),
+                    )}
+                    -{" "}
+                    {formatCurrency(
+                      offer.loan_amount_max,
+                      LoanAssetHelper.toCurrency(offer.loan_asset),
+                    )}
                   </Text>
                 </Table.RowHeaderCell>
                 <Table.Cell>

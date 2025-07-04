@@ -43,7 +43,10 @@ export const Details = ({ contract }: DetailsProps) => {
   const contractId = contract?.id;
   const borrower = contract?.borrower;
   const loanAmount = contract?.loan_amount
-    ? formatCurrency(contract.loan_amount)
+    ? formatCurrency(
+        contract.loan_amount,
+        LoanAssetHelper.toCurrency(contract.loan_asset),
+      )
     : undefined;
   const loanAsset = contract?.loan_asset
     ? LoanAssetHelper.print(contract.loan_asset)
@@ -81,7 +84,7 @@ export const Details = ({ contract }: DetailsProps) => {
 
   // Simple skeleton component for loading state
   const Skeleton = ({ className }: { className: string }) => (
-    <div className={`bg-gray-200 rounded animate-pulse ${className}`}></div>
+    <div className={`animate-pulse rounded bg-gray-200 ${className}`}></div>
   );
 
   const downloadBackupFn = () => {
@@ -100,7 +103,7 @@ export const Details = ({ contract }: DetailsProps) => {
 
   return (
     <CardContent className="pt-2">
-      <div className="flex justify-between items-center my-2">
+      <div className="my-2 flex items-center justify-between">
         <div>
           <p className="text-sm text-gray-500">Contract ID</p>
           <div className="flex items-center">
@@ -113,7 +116,7 @@ export const Details = ({ contract }: DetailsProps) => {
             <Button
               variant="ghost"
               size="icon"
-              className="h-6 w-6 ml-1"
+              className="ml-1 h-6 w-6"
               onClick={() => handleCopy(contractId || "")}
             >
               {contractIdCopied ? (
@@ -135,7 +138,7 @@ export const Details = ({ contract }: DetailsProps) => {
             </div>
           ) : (
             <div className="flex items-center justify-end">
-              <Skeleton className="h-4 w-[150px] mr-2" />
+              <Skeleton className="mr-2 h-4 w-[150px]" />
               <Skeleton className="h-6 w-6 rounded-full" />
             </div>
           )}
@@ -200,12 +203,12 @@ const LoanDetails: React.FC<LoanDetailsProps> = ({
               {loanAmount ? (
                 <p className={"text-xl font-bold"}>{loanAmount}</p>
               ) : (
-                <Skeleton className="h-4 w-[80px] mb-2" />
+                <Skeleton className="mb-2 h-4 w-[80px]" />
               )}
               {loanAsset ? (
                 <p className="text-xs text-gray-500">{loanAsset}</p>
               ) : (
-                <Skeleton className="h-4 w-[150px] mb-2" />
+                <Skeleton className="mb-2 h-4 w-[150px]" />
               )}
             </div>
             <div className="text-right">
@@ -213,14 +216,17 @@ const LoanDetails: React.FC<LoanDetailsProps> = ({
               {interestRate ? (
                 <p>{interestRate} p.a.</p>
               ) : (
-                <Skeleton className="h-4 w-[80px] mb-2 ml-auto" />
+                <Skeleton className="mb-2 ml-auto h-4 w-[80px]" />
               )}
               {interestAmount ? (
                 <p className="text-xs text-gray-500">
-                  {formatCurrency(interestAmount)}
+                  {formatCurrency(
+                    interestAmount,
+                    LoanAssetHelper.toCurrency(loanAsset),
+                  )}
                 </p>
               ) : (
-                <Skeleton className="h-4 w-[150px] mb-2 ml-auto" />
+                <Skeleton className="mb-2 ml-auto h-4 w-[150px]" />
               )}
             </div>
           </div>
@@ -232,10 +238,10 @@ const LoanDetails: React.FC<LoanDetailsProps> = ({
               {loanExpiryFormatted ? (
                 <p className="whitespace-nowrap">{loanExpiryFormatted}</p>
               ) : (
-                <Skeleton className="h-4 w-[150px] mb-2" />
+                <Skeleton className="mb-2 h-4 w-[150px]" />
               )}
               <div className="flex items-center text-xs text-gray-500">
-                <LuClock className="h-3 w-3 mr-1" />
+                <LuClock className="mr-1 h-3 w-3" />
                 {loanDurationRemaining ? (
                   <span>{loanDurationRemaining}</span>
                 ) : (
@@ -248,7 +254,7 @@ const LoanDetails: React.FC<LoanDetailsProps> = ({
               {loanDuration ? (
                 <p>{loanDuration}</p>
               ) : (
-                <Skeleton className="h-4 w-[80px] mb-2 ml-auto" />
+                <Skeleton className="mb-2 ml-auto h-4 w-[80px]" />
               )}
             </div>
           </div>
@@ -262,7 +268,7 @@ const LoanDetails: React.FC<LoanDetailsProps> = ({
                   <p className="font-mono">{originationFee}</p>
                 </div>
               ) : (
-                <Skeleton className="h-4 w-[150px] mb-2" />
+                <Skeleton className="mb-2 h-4 w-[150px]" />
               )}
             </div>
             <div className="text-right">
@@ -282,52 +288,55 @@ const LoanDetails: React.FC<LoanDetailsProps> = ({
             {loanAmount ? (
               <p className="text-xl font-bold">{loanAmount}</p>
             ) : (
-              <Skeleton className="h-4 w-[150px] mb-2" />
+              <Skeleton className="mb-2 h-4 w-[150px]" />
             )}
 
             {loanAsset ? (
               <p className="text-xs text-gray-500">{loanAsset}</p>
             ) : (
-              <Skeleton className="h-4 w-[150px] mb-2" />
+              <Skeleton className="mb-2 h-4 w-[150px]" />
             )}
           </div>
-          <div className="text-right md:col-span-1 col-span-2">
+          <div className="col-span-2 text-right md:col-span-1">
             <div className="text-right">
               <p className="text-sm text-gray-500">Interest Rate</p>
               {interestRate ? (
                 <p>{interestRate} p.a.</p>
               ) : (
-                <Skeleton className="h-4 w-[80px] mb-2 ml-auto" />
+                <Skeleton className="mb-2 ml-auto h-4 w-[80px]" />
               )}
               {interestAmount ? (
                 <p className="text-xs text-gray-500">
-                  {formatCurrency(interestAmount)}
+                  {formatCurrency(
+                    interestAmount,
+                    LoanAssetHelper.toCurrency(loanAsset),
+                  )}
                 </p>
               ) : (
-                <Skeleton className="h-4 w-[150px] mb-2 ml-auto" />
+                <Skeleton className="mb-2 ml-auto h-4 w-[150px]" />
               )}
             </div>
           </div>
         </div>
 
-        <div className="grid grid-cols-2 gap-4 mt-4">
+        <div className="mt-4 grid grid-cols-2 gap-4">
           <div>
             <p className="text-sm text-gray-500">Duration</p>
             {loanDuration ? (
               <p>{loanDuration}</p>
             ) : (
-              <Skeleton className="h-4 w-[150px] mb-2" />
+              <Skeleton className="mb-2 h-4 w-[150px]" />
             )}
           </div>
-          <div className="text-right md:col-span-1 col-span-2">
+          <div className="col-span-2 text-right md:col-span-1">
             <p className="text-sm text-gray-500">Expiry</p>
             {loanExpiryFormatted ? (
               <p>{loanExpiryFormatted}</p>
             ) : (
-              <Skeleton className="h-4 w-[150px] mb-2 ml-auto" />
+              <Skeleton className="mb-2 ml-auto h-4 w-[150px]" />
             )}
-            <div className="flex justify-end items-center text-xs text-gray-500">
-              <LuClock className="h-3 w-3 mr-1" />
+            <div className="flex items-center justify-end text-xs text-gray-500">
+              <LuClock className="mr-1 h-3 w-3" />
               {loanDurationRemaining ? (
                 <span>{loanDurationRemaining}</span>
               ) : (
@@ -337,7 +346,7 @@ const LoanDetails: React.FC<LoanDetailsProps> = ({
           </div>
         </div>
 
-        <div className="grid grid-cols-2 md:grid-cols-2 gap-4 mt-4">
+        <div className="mt-4 grid grid-cols-2 gap-4 md:grid-cols-2">
           <div>
             <p className="text-sm text-gray-500">Origination Fee</p>
             {originationFee ? (
@@ -345,10 +354,10 @@ const LoanDetails: React.FC<LoanDetailsProps> = ({
                 <p className="font-mono">BTC {originationFee}</p>
               </div>
             ) : (
-              <Skeleton className="h-4 w-[150px] mb-2" />
+              <Skeleton className="mb-2 h-4 w-[150px]" />
             )}
           </div>
-          <div className="text-right md:col-span-1 col-span-2">
+          <div className="col-span-2 text-right md:col-span-1">
             <Button variant="ghost" onClick={downloadBackup}>
               <LuDownload /> Download backup
             </Button>

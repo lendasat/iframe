@@ -1,12 +1,14 @@
 use crate::db::contract_emails;
+use crate::db::loan_deals;
 use crate::db::map_to_db_extension_policy;
 use crate::expiry::expiry_date;
 use crate::model::db;
 use crate::model::Contract;
 use crate::model::ContractStatus;
 use crate::model::ContractVersion;
+use crate::model::Currency;
 use crate::model::ExtensionPolicy;
-use crate::model::LiquidationStatus;
+use crate::model::LoanAsset;
 use crate::model::LoanType;
 use crate::model::Npub;
 use anyhow::bail;
@@ -62,6 +64,7 @@ pub async fn load_contracts_by_borrower_id(
             client_contract_id,
             extension_duration_days,
             extension_interest_rate,
+            asset as "asset: crate::model::LoanAsset",
             created_at,
             updated_at
         FROM contracts
@@ -118,6 +121,7 @@ pub async fn load_contracts_by_lender_id(
             client_contract_id,
             extension_duration_days,
             extension_interest_rate,
+            asset as "asset: crate::model::LoanAsset",
             created_at,
             updated_at
         FROM contracts
@@ -171,6 +175,7 @@ pub async fn load_contract(pool: &Pool<Postgres>, contract_id: &str) -> Result<C
             client_contract_id,
             extension_duration_days,
             extension_interest_rate,
+            asset as "asset: crate::model::LoanAsset",
             created_at,
             updated_at
         FROM contracts
@@ -223,6 +228,7 @@ pub async fn load_contract_by_contract_id_and_borrower_id(
             client_contract_id,
             extension_duration_days,
             extension_interest_rate,
+            asset as "asset: crate::model::LoanAsset",
             created_at,
             updated_at
         FROM contracts
@@ -277,6 +283,7 @@ pub async fn load_contract_by_contract_id_and_lender_id(
             client_contract_id,
             extension_duration_days,
             extension_interest_rate,
+            asset as "asset: crate::model::LoanAsset",
             created_at,
             updated_at
         FROM contracts
@@ -326,6 +333,7 @@ pub async fn load_open_contracts(pool: &Pool<Postgres>) -> Result<Vec<Contract>>
             interest_rate as "interest_rate!",
             extension_duration_days as "extension_duration_days!",
             extension_interest_rate as "extension_interest_rate!",
+            asset as "asset!: crate::model::LoanAsset",
             created_at as "created_at!",
             updated_at as "updated_at!",
             client_contract_id
@@ -369,6 +377,10 @@ pub async fn insert_new_contract_request(
     client_contract_id: Option<Uuid>,
     extension_policy: ExtensionPolicy,
 ) -> Result<Contract> {
+    // TODO: maybe better to provide this as an argument
+    let loan_deal = loan_deals::get_loan_deal_by_id(pool, loan_deal_id).await?;
+    let asset = loan_deal.loan_asset();
+
     let mut db_tx = pool
         .begin()
         .await
@@ -417,6 +429,7 @@ pub async fn insert_new_contract_request(
         lender_npub,
         client_contract_id,
         extension_policy,
+        asset,
     )
     .await?;
 
@@ -479,6 +492,7 @@ pub async fn insert_extension_contract_request(
         original_contract.client_contract_id,
         // An extended contract inherits the extension policy of the parent contract.
         original_contract.extension_policy,
+        original_contract.asset,
     )
     .await
 }
@@ -515,6 +529,7 @@ async fn insert_contract_request(
     lender_npub: Npub,
     client_contract_id: Option<Uuid>,
     extension_policy: ExtensionPolicy,
+    asset: LoanAsset,
 ) -> Result<Contract, Error> {
     let (extension_duration_days, extension_interest_rate) =
         map_to_db_extension_policy(extension_policy);
@@ -553,8 +568,9 @@ async fn insert_contract_request(
             interest_rate,
             client_contract_id,
             extension_duration_days,
-            extension_interest_rate
-        ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21, $22, $23, $24, $25, $26, $27, $28, $29, $30, $31)
+            extension_interest_rate,
+            asset
+        ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21, $22, $23, $24, $25, $26, $27, $28, $29, $30, $31, $32)
         RETURNING
             id,
             lender_id,
@@ -586,6 +602,7 @@ async fn insert_contract_request(
             client_contract_id,
             extension_duration_days,
             extension_interest_rate,
+            asset as "asset: crate::model::LoanAsset",
             created_at,
             updated_at
         "#,
@@ -619,7 +636,8 @@ async fn insert_contract_request(
         interest_rate,
         client_contract_id,
         extension_duration_days,
-        extension_interest_rate
+        extension_interest_rate,
+        asset as LoanAsset
     )
         .fetch_one(&mut **db_tx)
         .await?;
@@ -677,6 +695,7 @@ pub async fn accept_contract_request(
             client_contract_id,
             extension_duration_days,
             extension_interest_rate,
+            asset as "asset: crate::model::LoanAsset",
             created_at,
             updated_at
         "#,
@@ -829,6 +848,7 @@ pub async fn reject_contract_request(
             client_contract_id,
             extension_duration_days,
             extension_interest_rate,
+            asset as "asset: crate::model::LoanAsset",
             created_at,
             updated_at
         "#,
@@ -887,6 +907,7 @@ pub(crate) async fn mark_liquidation_state_as(
             client_contract_id,
             extension_duration_days,
             extension_interest_rate,
+            asset as "asset: crate::model::LoanAsset",
             created_at,
             updated_at
         "#,
@@ -925,21 +946,71 @@ where
 
     Ok(())
 }
-pub(crate) async fn load_open_not_liquidated_contracts(
+
+pub(crate) async fn load_open_not_liquidated_contracts_by_currency(
     pool: &Pool<Postgres>,
+    currency: Currency,
 ) -> Result<Vec<Contract>> {
-    let open_contracts = load_open_contracts(pool).await?;
+    let currency = currency.to_string();
+    let contracts = sqlx::query_as!(
+        db::Contract,
+        r#"
+        SELECT
+            id as "id!",
+            lender_id as "lender_id!",
+            borrower_id as "borrower_id!",
+            loan_deal_id as "loan_deal_id!",
+            initial_ltv as "initial_ltv!",
+            initial_collateral_sats as "initial_collateral_sats!",
+            origination_fee_sats as "origination_fee_sats!",
+            collateral_sats as "collateral_sats!",
+            loan_amount as "loan_amount!",
+            borrower_btc_address as "borrower_btc_address!",
+            borrower_pk as "borrower_pk!",
+            borrower_derivation_path,
+            lender_pk as "lender_pk!",
+            lender_derivation_path as "lender_derivation_path!",
+            borrower_loan_address,
+            lender_loan_repayment_address,
+            loan_type as "loan_type!: crate::model::db::LoanType",
+            contract_address,
+            contract_index,
+            borrower_npub as "borrower_npub!",
+            lender_npub as "lender_npub!",
+            status as "status!: crate::model::db::ContractStatus",
+            liquidation_status as "liquidation_status!: crate::model::db::LiquidationStatus",
+            duration_days as "duration_days!",
+            expiry_date as "expiry_date!",
+            contract_version as "contract_version!",
+            interest_rate as "interest_rate!",
+            extension_duration_days as "extension_duration_days!",
+            extension_interest_rate as "extension_interest_rate!",
+            asset as "asset!: crate::model::LoanAsset",
+            created_at as "created_at!",
+            updated_at as "updated_at!",
+            client_contract_id
+        FROM contracts_to_be_watched
+        WHERE (
+            CASE 
+                WHEN $1 = 'Usd' THEN asset != 'Eur'
+                WHEN $1 = 'Eur' THEN asset = 'Eur'
+                ELSE FALSE
+            END
+        )
+          AND status NOT IN ('Defaulted', 'Undercollateralized')
+          AND liquidation_status != 'Liquidated'
+        "#,
+        currency
+    )
+    .fetch_all(pool)
+    .await?;
 
-    let open_not_liquidated = open_contracts
+    let contracts = contracts
         .into_iter()
-        .filter(|c| {
-            c.status != ContractStatus::Defaulted
-                && c.status != ContractStatus::Undercollateralized
-                && c.liquidation_status != LiquidationStatus::Liquidated
-        })
-        .collect::<Vec<_>>();
+        .map(Contract::from)
+        .collect::<Vec<Contract>>();
 
-    Ok(open_not_liquidated)
+    Ok(contracts)
 }
 
 #[derive(Clone)]
@@ -1111,6 +1182,7 @@ pub async fn update_collateral(
             client_contract_id,
             extension_duration_days,
             extension_interest_rate,
+            asset as "asset: crate::model::LoanAsset",
             created_at,
             updated_at
         "#,
@@ -1356,6 +1428,10 @@ pub async fn insert_new_taken_contract_application(
     lender_npub: Npub,
     client_contract_id: Option<Uuid>,
 ) -> Result<Contract> {
+    // TODO: we should probably provide this as argument
+    let loan_deal = loan_deals::get_loan_deal_by_id(pool, loan_deal_id).await?;
+    let asset = loan_deal.loan_asset();
+
     let mut db_tx = pool
         .begin()
         .await
@@ -1410,6 +1486,7 @@ pub async fn insert_new_taken_contract_application(
         client_contract_id,
         // By default, contracts created from a loan application are set to do-not-extend.
         ExtensionPolicy::DoNotExtend,
+        asset,
     )
     .await?;
 

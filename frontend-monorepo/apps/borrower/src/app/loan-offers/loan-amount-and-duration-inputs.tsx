@@ -15,6 +15,7 @@ import {
 import { Label } from "@frontend/shadcn";
 import { Input } from "@frontend/shadcn";
 import { Info } from "lucide-react";
+import { LoanAsset, LoanAssetHelper, Currency } from "@frontend/ui-shared";
 
 interface LoanAmountAndDurationInputsProps {
   setLoanAmount: (amount: string) => void;
@@ -23,6 +24,7 @@ interface LoanAmountAndDurationInputsProps {
   onLoanDurationChange: (days: number) => void;
   onLoanProductSelect: (productOption: LoanProductOption) => void;
   selectedOption?: LoanProductOption;
+  selectedLoanAsset: LoanAsset;
 }
 
 interface LoanProductRadioCardItemProps {
@@ -43,16 +45,16 @@ function LoanProductRadioCardItem({
       <RadioGroupItem value={value} id={value} className="peer sr-only" />
       <Label
         htmlFor={value}
-        className="flex flex-col items-center justify-center rounded-lg border-2 border-muted bg-popover p-4 hover:bg-accent hover:text-accent-foreground peer-data-[state=checked]:border-primary [&:has([data-state=checked])]:border-primary cursor-pointer"
+        className="border-muted bg-popover hover:bg-accent hover:text-accent-foreground peer-data-[state=checked]:border-primary [&:has([data-state=checked])]:border-primary flex cursor-pointer flex-col items-center justify-center rounded-lg border-2 p-4"
       >
         <div className="flex flex-col items-center space-y-2">
-          <span className="text-sm font-bold text-foreground shrink-0">
+          <span className="text-foreground shrink-0 text-sm font-bold">
             {header}
           </span>
-          <span className="text-xs font-light text-muted-foreground shrink-0">
+          <span className="text-muted-foreground shrink-0 text-xs font-light">
             {subHeader}
           </span>
-          <div className="rounded-2xl mt-2 w-[180px]">{img}</div>
+          <div className="mt-2 w-[180px] rounded-2xl">{img}</div>
         </div>
       </Label>
     </div>
@@ -66,6 +68,7 @@ export function LoanAmountAndDurationInputs({
   onLoanDurationChange,
   onLoanProductSelect,
   selectedOption,
+  selectedLoanAsset,
 }: LoanAmountAndDurationInputsProps) {
   const { enabledFeatures } = useAuth();
   const isBringinEnabled = enabledFeatures.includes(LoanProductOption.Bringin);
@@ -120,9 +123,9 @@ export function LoanAmountAndDurationInputs({
   return (
     <div className="space-y-4">
       {/* Loan Amount */}
-      <div className="flex flex-col gap-1 w-full">
+      <div className="flex w-full flex-col gap-1">
         <Label
-          className="text-sm font-medium text-foreground"
+          className="text-foreground text-sm font-medium"
           htmlFor="loan-amount"
         >
           How much do you wish to borrow?
@@ -133,20 +136,22 @@ export function LoanAmountAndDurationInputs({
             type="number"
             min={1}
             onChange={onLoanAmountChange}
-            className="pl-8 w-full"
+            className="w-full pl-8"
             value={loanAmount}
             placeholder="Enter amount"
           />
-          <span className="absolute left-3 top-1/2 transform -translate-y-1/2 text-sm font-medium text-muted-foreground">
-            $
+          <span className="text-muted-foreground absolute left-3 top-1/2 -translate-y-1/2 transform text-sm font-medium">
+            {LoanAssetHelper.toCurrency(selectedLoanAsset) === Currency.EUR
+              ? "€"
+              : "$"}
           </span>
         </div>
       </div>
 
       {/* Loan Duration */}
-      <div className="flex flex-col gap-1 w-full">
+      <div className="flex w-full flex-col gap-1">
         <Label
-          className="text-sm font-medium text-foreground"
+          className="text-foreground text-sm font-medium"
           htmlFor="loan-duration"
         >
           For how long do you want to borrow?
@@ -164,9 +169,9 @@ export function LoanAmountAndDurationInputs({
       </div>
 
       {/* Loan product */}
-      <div className="flex flex-col gap-1 w-full">
+      <div className="flex w-full flex-col gap-1">
         <Label
-          className="text-sm font-medium text-foreground"
+          className="text-foreground text-sm font-medium"
           htmlFor="loan-product"
         >
           How would you like to receive the loan?
@@ -217,7 +222,7 @@ export function LoanAmountAndDurationInputs({
             />
           </RadioGroup>
         </div>
-        <div className={"mt-4 -mb-2"}>{disclaimer}</div>
+        <div className={"-mb-2 mt-4"}>{disclaimer}</div>
       </div>
     </div>
   );

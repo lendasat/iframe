@@ -282,7 +282,7 @@ async fn post_contract_request(
         }
     };
 
-    let initial_price = get_bitmex_index_price(&data.config, now)
+    let initial_price = get_bitmex_index_price(&data.config, now, offer.loan_asset)
         .await
         .map_err(Error::bitmex_price)?;
 
@@ -940,9 +940,11 @@ async fn post_extend_contract_request(
     Path(contract_id): Path<String>,
     AppJson(body): AppJson<ExtendContractRequestSchema>,
 ) -> Result<AppJson<Contract>, Error> {
-    let current_price = get_bitmex_index_price(&data.config, OffsetDateTime::now_utc())
-        .await
-        .map_err(Error::bitmex_price)?;
+    // FIXME: get the asset from contract
+    let current_price =
+        get_bitmex_index_price(&data.config, OffsetDateTime::now_utc(), LoanAsset::Usd)
+            .await
+            .map_err(Error::bitmex_price)?;
 
     let new_contract = crate::contract_extension::request_contract_extension(
         &data.db,

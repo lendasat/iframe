@@ -47,8 +47,11 @@ const PayoutPrincipalDialog = ({
           <div className="flex flex-row items-center gap-2">
             <Label>Principal Amount:</Label>
             {loanAmount ? (
-              <p className="text-lg font-bold my-0">
-                {formatCurrency(loanAmount)}
+              <p className="my-0 text-lg font-bold">
+                {formatCurrency(
+                  loanAmount,
+                  LoanAssetHelper.toCurrency(contract?.loan_asset),
+                )}
               </p>
             ) : (
               <Skeleton className="h-4 w-[150px]" />

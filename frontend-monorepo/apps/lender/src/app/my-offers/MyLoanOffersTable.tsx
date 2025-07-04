@@ -3,11 +3,7 @@ import {
   LoanOfferStatus,
   repaymentPlanLabel,
 } from "@frontend/http-client-lender";
-import {
-  CurrencyFormatter,
-  KycBadge,
-  LoanAssetHelper,
-} from "@frontend/ui-shared";
+import { formatCurrency, KycBadge, LoanAssetHelper } from "@frontend/ui-shared";
 import {
   ScrollArea,
   Table,
@@ -95,8 +91,15 @@ export const MyLoanOffersTable = ({ offers }: MyLoanOffersTableProps) => {
         ),
         cell: ({ row }) => (
           <div className="font-medium">
-            <CurrencyFormatter value={row.original.loan_amount_min} /> -{" "}
-            <CurrencyFormatter value={row.original.loan_amount_max} />
+            {formatCurrency(
+              row.original.loan_amount_min,
+              LoanAssetHelper.toCurrency(row.original.loan_asset),
+            )}
+            -{" "}
+            {formatCurrency(
+              row.original.loan_amount_max,
+              LoanAssetHelper.toCurrency(row.original.loan_asset),
+            )}
           </div>
         ),
       },
@@ -107,7 +110,7 @@ export const MyLoanOffersTable = ({ offers }: MyLoanOffersTableProps) => {
           <Button
             variant="ghost"
             onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
-            className="h-auto p-0 font-medium hidden md:flex"
+            className="hidden h-auto p-0 font-medium md:flex"
           >
             Duration (days)
             {column.getIsSorted() === "asc" ? (
@@ -120,7 +123,7 @@ export const MyLoanOffersTable = ({ offers }: MyLoanOffersTableProps) => {
           </Button>
         ),
         cell: ({ row }) => (
-          <div className="font-medium hidden md:block">
+          <div className="hidden font-medium md:block">
             {row.original.duration_days_min} - {row.original.duration_days_max}
           </div>
         ),
@@ -133,7 +136,7 @@ export const MyLoanOffersTable = ({ offers }: MyLoanOffersTableProps) => {
           <Button
             variant="ghost"
             onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
-            className="h-auto p-0 font-medium hidden md:flex"
+            className="hidden h-auto p-0 font-medium md:flex"
           >
             Interest
             {column.getIsSorted() === "asc" ? (
@@ -146,7 +149,7 @@ export const MyLoanOffersTable = ({ offers }: MyLoanOffersTableProps) => {
           </Button>
         ),
         cell: ({ row }) => (
-          <div className="font-medium hidden md:block">
+          <div className="hidden font-medium md:block">
             {(row.original.interest_rate * 100).toFixed(2)}%
           </div>
         ),
@@ -159,7 +162,7 @@ export const MyLoanOffersTable = ({ offers }: MyLoanOffersTableProps) => {
           <Button
             variant="ghost"
             onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
-            className="h-auto p-0 font-medium hidden md:flex"
+            className="hidden h-auto p-0 font-medium md:flex"
           >
             Coin
             {column.getIsSorted() === "asc" ? (
@@ -172,7 +175,7 @@ export const MyLoanOffersTable = ({ offers }: MyLoanOffersTableProps) => {
           </Button>
         ),
         cell: ({ row }) => (
-          <div className="font-medium hidden md:block">
+          <div className="hidden font-medium md:block">
             {LoanAssetHelper.print(row.original.loan_asset)}
           </div>
         ),
@@ -185,7 +188,7 @@ export const MyLoanOffersTable = ({ offers }: MyLoanOffersTableProps) => {
           <Button
             variant="ghost"
             onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
-            className="h-auto p-0 font-medium hidden md:flex"
+            className="hidden h-auto p-0 font-medium md:flex"
           >
             Loan Type
             {column.getIsSorted() === "asc" ? (
@@ -198,7 +201,7 @@ export const MyLoanOffersTable = ({ offers }: MyLoanOffersTableProps) => {
           </Button>
         ),
         cell: ({ row }) => (
-          <div className="font-medium hidden md:block">
+          <div className="hidden font-medium md:block">
             {repaymentPlanLabel(row.original.repayment_plan)}
           </div>
         ),
@@ -211,7 +214,7 @@ export const MyLoanOffersTable = ({ offers }: MyLoanOffersTableProps) => {
           <Button
             variant="ghost"
             onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
-            className="h-auto p-0 font-medium hidden md:flex"
+            className="hidden h-auto p-0 font-medium md:flex"
           >
             Requirements
             {column.getIsSorted() === "asc" ? (
@@ -269,7 +272,7 @@ export const MyLoanOffersTable = ({ offers }: MyLoanOffersTableProps) => {
           <Button
             variant="ghost"
             onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
-            className="h-auto p-0 font-medium hidden md:flex"
+            className="hidden h-auto p-0 font-medium md:flex"
           >
             Created At
             {column.getIsSorted() === "asc" ? (
@@ -282,7 +285,7 @@ export const MyLoanOffersTable = ({ offers }: MyLoanOffersTableProps) => {
           </Button>
         ),
         cell: ({ row }) => (
-          <div className="font-medium hidden md:block">
+          <div className="hidden font-medium md:block">
             {row.original.created_at.toLocaleDateString([], {
               day: "numeric",
               month: "short",
@@ -341,7 +344,7 @@ export const MyLoanOffersTable = ({ offers }: MyLoanOffersTableProps) => {
     <ScrollArea className="h-[80vh]">
       <div>
         {/* Filter Controls */}
-        <div className="flex items-center gap-4 flex-wrap">
+        <div className="flex flex-wrap items-center gap-4">
           <div className="flex items-center gap-2">
             <span className="text-sm font-medium">Filter by status:</span>
             <Select value={statusFilter} onValueChange={handleStatusFilter}>

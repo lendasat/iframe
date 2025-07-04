@@ -79,7 +79,12 @@ export function FiatPayout({ contract, refreshContract }: FiatPayoutProps) {
           {totalPaymentAmount ? (
             <>
               Send the exact amount of{" "}
-              <strong>{formatCurrency(totalPaymentAmount)}</strong>{" "}
+              <strong>
+                {formatCurrency(
+                  totalPaymentAmount,
+                  LoanAssetHelper.toCurrency(contract.loan_asset),
+                )}
+              </strong>{" "}
               <strong>{assetCoin}</strong> to the bank account below.
             </>
           ) : (
@@ -100,9 +105,9 @@ export function FiatPayout({ contract, refreshContract }: FiatPayoutProps) {
       </div>
 
       {/* Transaction ID input section */}
-      <div className="space-y-2 pt-4 border-t mt-4">
+      <div className="mt-4 space-y-2 border-t pt-4">
         <h3 className="font-medium">Confirm Your Payment</h3>
-        <p className="text-sm text-muted-foreground">
+        <p className="text-muted-foreground text-sm">
           After sending your payment, please enter the description you provided
           when doing the transfer below to confirm your payment.
         </p>

@@ -108,7 +108,12 @@ export function StablecoinPayout({
           {loanAmount ? (
             <>
               Send the exact amount of{" "}
-              <strong>{formatCurrency(loanAmount)}</strong>{" "}
+              <strong>
+                {formatCurrency(
+                  loanAmount,
+                  LoanAssetHelper.toCurrency(contract?.loan_amount),
+                )}
+              </strong>{" "}
               <strong>{assetCoin}</strong> on <strong>{assetNetwork}</strong> to
               the address below.
             </>
@@ -122,9 +127,9 @@ export function StablecoinPayout({
         </AlertDescription>
       </Alert>
 
-      <div className="flex justify-center my-4">
+      <div className="my-4 flex justify-center">
         <div
-          className={`bg-white p-4 rounded-lg border shadow-sm  ${borrowerAddress ? "cursor-copy hover:bg-gray-50" : ""} transition-colors`}
+          className={`rounded-lg border bg-white p-4 shadow-sm ${borrowerAddress ? "cursor-copy hover:bg-gray-50" : ""} transition-colors`}
           onClick={
             borrowerAddress ? () => onCopyAddress(borrowerAddress) : undefined
           }
@@ -137,7 +142,7 @@ export function StablecoinPayout({
         </div>
       </div>
 
-      <div className="flex items-center space-x-2 mb-4">
+      <div className="mb-4 flex items-center space-x-2">
         <div className="grid flex-1 gap-2">
           <Label htmlFor="payment-address" className="sr-only">
             Payment Address
@@ -187,9 +192,9 @@ export function StablecoinPayout({
       </Alert>
 
       {/* Transaction ID input section */}
-      <div className="space-y-2 pt-4 border-t mt-4">
+      <div className="mt-4 space-y-2 border-t pt-4">
         <h3 className="font-medium">Confirm Your Payment</h3>
-        <p className="text-sm text-muted-foreground">
+        <p className="text-muted-foreground text-sm">
           After sending your payment, please enter the transaction ID below to
           confirm your repayment.
         </p>

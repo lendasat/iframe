@@ -20,7 +20,7 @@ import {
   formatCurrency,
   LoanAssetHelper,
   ONE_YEAR,
-  usePrice,
+  usePriceForCurrency,
 } from "@frontend/ui-shared";
 import { useNavigate } from "react-router-dom";
 import SingleDurationSelector, { AllowedDurations } from "./duration-selector";
@@ -51,7 +51,9 @@ export function ExtendContract({ contract, onSubmitted }: ExtendContractProps) {
   const [error, setError] = useState("");
   const navigate = useNavigate();
   const { postExtendLoanRequest } = useHttpClientBorrower();
-  const { latestPrice } = usePrice();
+  const latestPrice = usePriceForCurrency(
+    LoanAssetHelper.toCurrency(contract?.loan_asset),
+  );
 
   // Contract values
   const currentExpiryDate = contract?.expiry;
@@ -96,11 +98,11 @@ export function ExtendContract({ contract, onSubmitted }: ExtendContractProps) {
   const totalInterestUsd =
     contract && contract.loan_amount * actualInterestRate;
 
-  const extensionFeeUsd =
+  const extensionFee =
     contract &&
     contract.extension_origination_fee[0].fee * contract.loan_amount;
   const extensionFeeBtc =
-    extensionFeeUsd && latestPrice && extensionFeeUsd / latestPrice;
+    extensionFee && latestPrice && extensionFee / latestPrice;
 
   const notAllowedDurations =
     contract &&
@@ -186,7 +188,11 @@ export function ExtendContract({ contract, onSubmitted }: ExtendContractProps) {
                 <span className="text-sm">Total Interest</span>
                 {totalInterestUsd ? (
                   <span className="font-medium">
-                    {formatCurrency(totalInterestUsd)} {loanCurrency}
+                    {formatCurrency(
+                      totalInterestUsd,
+                      LoanAssetHelper.toCurrency(contract.loan_asset),
+                    )}{" "}
+                    {loanCurrency}
                   </span>
                 ) : (
                   <Skeleton className="h-4 w-[50px]" />
@@ -198,9 +204,13 @@ export function ExtendContract({ contract, onSubmitted }: ExtendContractProps) {
                   <div className="flex items-center">
                     <span className="text-sm">Extension Fee</span>
                   </div>
-                  {extensionFeeUsd !== undefined ? (
+                  {extensionFee !== undefined ? (
                     <span className="font-medium">
-                      {formatCurrency(extensionFeeUsd)} {loanCurrency}
+                      {formatCurrency(
+                        extensionFee,
+                        LoanAssetHelper.toCurrency(contract.loan_asset),
+                      )}{" "}
+                      {loanCurrency}
                     </span>
                   ) : (
                     <Skeleton className="h-4 w-[50px]" />

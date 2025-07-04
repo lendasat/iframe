@@ -20,7 +20,7 @@ import {
 } from "@frontend/http-client-lender";
 import { AlertCircle, Check } from "lucide-react";
 import { LuCheck, LuClipboard, LuExternalLink } from "react-icons/lu";
-import { formatCurrency, getTxUrl } from "@frontend/ui-shared";
+import { formatCurrency, getTxUrl, LoanAssetHelper } from "@frontend/ui-shared";
 import { toast } from "sonner";
 import { format } from "date-fns";
 
@@ -115,7 +115,12 @@ const RepaymentConfirmationDialog = ({
               <div className="text-muted-foreground">
                 Total Installment Amount:
               </div>
-              <div className="font-medium">{formatCurrency(totalAmount)}</div>
+              <div className="font-medium">
+                {formatCurrency(
+                  totalAmount,
+                  LoanAssetHelper.toCurrency(contract.loan_asset),
+                )}
+              </div>
 
               <div className="text-muted-foreground">Transaction ID:</div>
               <div className="flex items-center">

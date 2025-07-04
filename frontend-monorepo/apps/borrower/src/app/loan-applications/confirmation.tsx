@@ -44,7 +44,7 @@ import {
   LoanAssetHelper,
   newFormatCurrency,
   ONE_YEAR,
-  usePrice,
+  usePriceForCurrency,
 } from "@frontend/ui-shared";
 import { ToS } from "../loan-offers/tos";
 
@@ -94,10 +94,11 @@ export const Confirmation = ({
   const navigate = useNavigate();
   const { getNpub, getPkAndDerivationPath } = useWallet();
   const { postLoanApplication } = useHttpClientBorrower();
-  const { latestPrice: maybeLatestPrice } = usePrice();
   const { user } = useAuth();
   // TODO: we should be using skeletons while the price is loading
-  const latestPrice = maybeLatestPrice || 0;
+  const latestPrice = usePriceForCurrency(
+    LoanAssetHelper.toCurrency(selectedAssetType),
+  );
 
   const [createRequestError, setCreateRequestError] = useState("");
   const [isCreatingRequest, setIsCreatingRequest] = useState(false);
@@ -113,9 +114,8 @@ export const Confirmation = ({
   const actualInterestUsdAmount = (selectedLoanAmount * actualInterest) / 100.0;
 
   // Collataral and its value
-  const collateralUsdAmount =
-    (selectedLoanAmount + actualInterestUsdAmount) / ltv;
-  const collateralAmountBtc = collateralUsdAmount / latestPrice;
+  const collateralAmount = (selectedLoanAmount + actualInterestUsdAmount) / ltv;
+  const collateralAmountBtc = collateralAmount / latestPrice;
 
   // Calculate fees
   const discountedFee = user?.first_time_discount_rate || 0.0;
@@ -128,7 +128,7 @@ export const Confirmation = ({
 
   // How much the user needs to deposit
   const totalDepositAmountBTC = collateralAmountBtc + originationFeeBtc;
-  const totalDepositAmountUsd = collateralUsdAmount + originationFeeUsd;
+  const totalDepositAmount = collateralAmount + originationFeeUsd;
 
   // The total amount the user will owe
   const outstandingBalanceUsd = selectedLoanAmount + actualInterestUsdAmount;
@@ -209,18 +209,23 @@ export const Confirmation = ({
   };
 
   return (
-    <div className="grid grid-cols-1 md:grid-cols-2 gap-6 w-full">
+    <div className="grid w-full grid-cols-1 gap-6 md:grid-cols-2">
       <Card className="h-full">
         <CardHeader>
           <CardTitle className="text-lg">
             Conditions to borrow{" "}
-            <strong>{formatCurrency(selectedLoanAmount || 0)}</strong>{" "}
+            <strong>
+              {formatCurrency(
+                selectedLoanAmount || 0,
+                LoanAssetHelper.toCurrency(selectedAssetType),
+              )}
+            </strong>{" "}
             {LoanAssetHelper.print(selectedAssetType)} for{" "}
             {getFormatedStringFromDays(selectedLoanDuration)}
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
-          <div className="flex justify-between items-start">
+          <div className="flex items-start justify-between">
             <div className="flex items-center gap-1">
               <span>Liquidation price</span>
               <TooltipProvider>
@@ -237,21 +242,22 @@ export const Confirmation = ({
               </TooltipProvider>
             </div>
             <span
-              className={`font-semibold text-sm capitalize ${
+              className={`text-sm font-semibold capitalize ${
                 discountedFee === 1 ? "line-through" : ""
               }`}
             >
               {newFormatCurrency({
                 value: liquidationPrice,
+                currency: LoanAssetHelper.toCurrency(selectedAssetType),
                 maxFraction: 0,
-                minFraction: 1,
+                minFraction: 0,
               })}
             </span>
           </div>
 
           <Separator />
 
-          <div className="flex justify-between items-start">
+          <div className="flex items-start justify-between">
             <div className="flex items-center gap-1">
               <span>Interest</span>
               <TooltipProvider>
@@ -270,29 +276,36 @@ export const Confirmation = ({
             <div className="flex flex-col items-end">
               {selectedLoanDuration !== ONE_YEAR && (
                 <div className="flex gap-2">
-                  <span className="font-semibold text-sm">
+                  <span className="text-sm font-semibold">
                     {actualInterest.toFixed(2)}%
                   </span>
-                  <span className="text-xs text-muted-foreground">
+                  <span className="text-muted-foreground text-xs">
                     ({interestRate.toFixed(1)}% p.a.)
                   </span>
                 </div>
               )}
               {selectedLoanDuration === ONE_YEAR && (
-                <span className="font-semibold text-sm">
+                <span className="text-sm font-semibold">
                   {actualInterest.toFixed(2)}% p.a.
                 </span>
               )}
-              <span className="text-xs text-muted-foreground">
-                ≈ {formatCurrency(actualInterestUsdAmount, 1, 1)} in total
+              <span className="text-muted-foreground text-xs">
+                ≈{" "}
+                {formatCurrency(
+                  actualInterestUsdAmount,
+                  LoanAssetHelper.toCurrency(selectedAssetType),
+                  1,
+                  1,
+                )}{" "}
+                in total
               </span>
             </div>
           </div>
 
           <Separator />
-          <div className="flex justify-between items-start">
+          <div className="flex items-start justify-between">
             <div className="flex flex-row items-center gap-1">
-              <div className={"flex gap-2 items-center"}>
+              <div className={"flex items-center gap-2"}>
                 <p>Collateral</p>
 
                 <Badge variant="outline">{(ltv * 100).toFixed(0)}% LTV</Badge>
@@ -315,49 +328,57 @@ export const Confirmation = ({
               </div>
             </div>
             <div className="flex flex-col items-end">
-              <span className="font-semibold text-sm capitalize">
+              <span className="text-sm font-semibold capitalize">
                 {collateralAmountBtc.toFixed(8)} BTC
               </span>
-              <span className="text-xs text-muted-foreground">
-                ≈ {formatCurrency(collateralUsdAmount)}
+              <span className="text-muted-foreground text-xs">
+                ≈{" "}
+                {formatCurrency(
+                  collateralAmount,
+                  LoanAssetHelper.toCurrency(selectedAssetType),
+                )}
               </span>
             </div>
           </div>
 
           <Separator />
-          <div className="flex justify-between items-start">
+          <div className="flex items-start justify-between">
             <div className="flex flex-col">
               <span>Origination fee</span>
               {isDiscountedFeeApplied && (
-                <span className="text-xs text-muted-foreground">
+                <span className="text-muted-foreground text-xs">
                   {-(discountedFee * 100).toFixed(2)}% discount applied
                 </span>
               )}
             </div>
             <div className="flex flex-col items-end">
               <span
-                className={`font-semibold text-sm capitalize ${
+                className={`text-sm font-semibold capitalize ${
                   discountedFee === 1 ? "line-through" : ""
                 }`}
               >
                 {originationFeeBtc.toFixed(8)} BTC
               </span>
               <span
-                className={`text-xs text-muted-foreground ${
+                className={`text-muted-foreground text-xs ${
                   discountedFee === 1 ? "line-through" : ""
                 }`}
               >
-                ≈ {formatCurrency(originationFeeUsd)}
+                ≈{" "}
+                {formatCurrency(
+                  originationFeeUsd,
+                  LoanAssetHelper.toCurrency(selectedAssetType),
+                )}
               </span>
             </div>
           </div>
 
           <Separator />
 
-          <div className="flex justify-between items-start">
+          <div className="flex items-start justify-between">
             <div className="flex items-center gap-1">
               <div>
-                <div className={"flex gap-2 items-center"}>
+                <div className={"flex items-center gap-2"}>
                   <p>Total funding amount</p>
                   <TooltipProvider>
                     <Tooltip>
@@ -382,11 +403,15 @@ export const Confirmation = ({
               </div>
             </div>
             <div className="flex flex-col items-end">
-              <span className="font-semibold text-sm capitalize">
+              <span className="text-sm font-semibold capitalize">
                 {totalDepositAmountBTC.toFixed(8)} BTC
               </span>
-              <span className="text-xs text-muted-foreground">
-                ≈ {formatCurrency(totalDepositAmountUsd)}
+              <span className="text-muted-foreground text-xs">
+                ≈{" "}
+                {formatCurrency(
+                  totalDepositAmount,
+                  LoanAssetHelper.toCurrency(selectedAssetType),
+                )}
               </span>
             </div>
           </div>
@@ -394,7 +419,7 @@ export const Confirmation = ({
       </Card>
 
       <Card className="h-full">
-        <CardContent className="pt-6 space-y-6">
+        <CardContent className="space-y-6 pt-6">
           <Form {...form}>
             <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
               <FormField

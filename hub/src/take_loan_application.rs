@@ -8,6 +8,7 @@ use crate::mempool;
 use crate::mempool::TrackContractFunding;
 use crate::model::generate_installments;
 use crate::model::ContractVersion;
+use crate::model::LoanAsset;
 use crate::notifications::Notifications;
 use crate::routes::lender::loan_applications::TakeLoanApplicationSchema;
 use crate::wallet::Wallet;
@@ -62,7 +63,8 @@ pub async fn take_application(
 
     let contract_id = Uuid::new_v4();
 
-    let current_price = get_bitmex_index_price(config, now)
+    // FIXME: get the asset from contract
+    let current_price = get_bitmex_index_price(config, now, LoanAsset::Usd)
         .await
         .map_err(Error::BitMexPrice)?;
 

@@ -16,7 +16,7 @@ pub async fn stream(network: Network) -> impl Stream<Item = Result<Event>> + Unp
     let stream = stream! {
         let timeout = Duration::from_secs(10);
         let mut stream = bitmex_stream::subscribe(
-            ["instrument:.BXBT".to_owned()],
+            ["instrument:.BXBT".to_owned(), "instrument:.BXBTEUR".to_owned()],
             network,
             timeout,
         ).boxed();
@@ -95,8 +95,8 @@ impl From<wire::InstrumentData> for Instrument {
 impl From<wire::ContractSymbol> for ContractSymbol {
     fn from(value: wire::ContractSymbol) -> Self {
         match value {
-            wire::ContractSymbol::XbtUsd => ContractSymbol::XbtUsd,
             wire::ContractSymbol::Bxbt => ContractSymbol::BXBT,
+            wire::ContractSymbol::BxbtEur => ContractSymbol::BxbtEur,
         }
     }
 }
@@ -130,10 +130,10 @@ pub struct Instrument {
 
 #[derive(Debug, Clone, Copy, PartialEq, Serialize, Deserialize, Hash, Eq)]
 pub enum ContractSymbol {
-    #[serde(rename = "XBTUSD")]
-    XbtUsd,
     #[serde(rename = ".BXBT")]
     BXBT,
+    #[serde(rename = ".BXBTEUR")]
+    BxbtEur,
 }
 
 mod wire {
@@ -176,10 +176,10 @@ mod wire {
 
     #[derive(Debug, Clone, Deserialize, PartialEq, Eq)]
     pub enum ContractSymbol {
-        #[serde(rename = "XBTUSD")]
-        XbtUsd,
         #[serde(rename = ".BXBT")]
         Bxbt,
+        #[serde(rename = ".BXBTEUR")]
+        BxbtEur,
     }
 
     impl<'de> Deserialize<'de> for TableUpdate {
@@ -282,6 +282,49 @@ mod wire {
             }
 
             deserializer.deserialize_map(Visitor)
+        }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use bitmex_stream::Network;
+    use futures::StreamExt;
+
+    #[tokio::test]
+    #[ignore]
+    async fn test_real_bitmex_websocket_stream() {
+        let mut ws_stream = stream(Network::Mainnet).await;
+
+        match tokio::time::timeout(Duration::from_secs(30), ws_stream.next()).await {
+            Ok(Some(Ok(event))) => {
+                match event {
+                    Event::Instrument { action: _, data } => {
+                        assert!(!data.is_empty(), "Should receive instrument data");
+                        // Verify we got data for expected symbols
+                        for instrument in data {
+                            assert!(
+                                matches!(
+                                    instrument.symbol,
+                                    ContractSymbol::BXBT | ContractSymbol::BxbtEur
+                                ),
+                                "Unexpected symbol: {:?}",
+                                instrument.symbol
+                            );
+                        }
+                    }
+                }
+            }
+            Ok(Some(Err(e))) => {
+                panic!("Stream error: {:?}", e);
+            }
+            Ok(None) => {
+                panic!("Stream ended unexpectedly");
+            }
+            Err(_) => {
+                panic!("Timeout waiting for WebSocket data");
+            }
         }
     }
 }

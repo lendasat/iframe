@@ -1,13 +1,18 @@
 import type { ReactNode } from "react";
 import type { FC } from "react";
 import { createContext, useContext, useEffect, useRef, useState } from "react";
+import { Currency } from "./models";
 
 interface PriceContextProps {
-  latestPrice: number | undefined;
+  latestPrices: {
+    [Currency.USD]: number;
+    [Currency.EUR]: number;
+  };
 }
 
 interface RawPriceUpdate {
   market_price: number;
+  currency: Currency;
 }
 
 const PriceContext = createContext<PriceContextProps | undefined>(undefined);
@@ -36,7 +41,13 @@ export const PriceProvider: FC<{ url: string; children: ReactNode }> = ({
   children,
   url,
 }) => {
-  const [latestPrice, setLatestPrice] = useState<number | undefined>();
+  const [latestPrices, setLatestPrices] = useState<{
+    [Currency.USD]: number;
+    [Currency.EUR]: number;
+  }>({
+    [Currency.USD]: 0,
+    [Currency.EUR]: 0,
+  });
   const ws = useRef<WebSocket | null>(null);
   const websocketUrl = changeProtocolToWSS(url);
 
@@ -57,8 +68,11 @@ export const PriceProvider: FC<{ url: string; children: ReactNode }> = ({
 
       ws.current.onmessage = (event: MessageEvent) => {
         const data: RawPriceUpdate = JSON.parse(event.data);
-        if (data.market_price) {
-          setLatestPrice(data.market_price);
+        if (data.market_price && data.currency) {
+          setLatestPrices((prev) => ({
+            ...prev,
+            [data.currency]: data.market_price,
+          }));
         }
       };
 
@@ -84,16 +98,16 @@ export const PriceProvider: FC<{ url: string; children: ReactNode }> = ({
   }, [url, websocketUrl]);
 
   return (
-    <PriceContext.Provider value={{ latestPrice }}>
+    <PriceContext.Provider value={{ latestPrices }}>
       {children}
     </PriceContext.Provider>
   );
 };
 
-export const usePrice = () => {
+export const usePriceForCurrency = (currency: Currency): number => {
   const context = useContext(PriceContext);
   if (context === undefined) {
-    throw new Error("usePrice must be used within a PriceProvider");
+    throw new Error("usePriceForCurrency must be used within a PriceProvider");
   }
-  return context;
+  return context.latestPrices[currency];
 };

@@ -7,7 +7,12 @@ import {
   SheetHeader,
   SheetTitle,
 } from "@frontend/shadcn";
-import { formatCurrency, LoanAsset, getTxUrl } from "@frontend/ui-shared";
+import {
+  formatCurrency,
+  LoanAsset,
+  getTxUrl,
+  LoanAssetHelper,
+} from "@frontend/ui-shared";
 
 export function InstallmentSheetContent({
   installment,
@@ -20,8 +25,14 @@ export function InstallmentSheetContent({
 }) {
   const today = new Date();
 
-  const principal = formatCurrency(installment.principal);
-  const interest = formatCurrency(installment.interest);
+  const principal = formatCurrency(
+    installment.principal,
+    LoanAssetHelper.toCurrency(loanAsset),
+  );
+  const interest = formatCurrency(
+    installment.interest,
+    LoanAssetHelper.toCurrency(loanAsset),
+  );
 
   return (
     <SheetContent>
@@ -32,7 +43,7 @@ export function InstallmentSheetContent({
         </SheetDescription>
       </SheetHeader>
       <div className="space-y-6 px-6">
-        <dl className="divide-y divide-muted">
+        <dl className="divide-muted divide-y">
           <DetailRow
             label="ID"
             value={<span className="font-mono text-xs">{installment.id}</span>}
@@ -69,7 +80,7 @@ export function InstallmentSheetContent({
                       href={txUrl}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className={`${commonClasses} text-blue-600 hover:text-blue-800 underline cursor-pointer`}
+                      className={`${commonClasses} cursor-pointer text-blue-600 underline hover:text-blue-800`}
                       title={installment.payment_id}
                     >
                       {installment.payment_id}

@@ -552,7 +552,8 @@ async fn get_liquidation_to_bitcoin_psbt(
         return Err(Error::Database("Missing collateral outputs".to_string()));
     }
 
-    let price = get_bitmex_index_price(&data.config, OffsetDateTime::now_utc())
+    // FIXME: get the asset from contract
+    let price = get_bitmex_index_price(&data.config, OffsetDateTime::now_utc(), LoanAsset::Usd)
         .await
         .map_err(Error::bitmex_price)?;
 

@@ -4,6 +4,7 @@ use crate::db;
 use crate::model;
 use crate::model::db::LiquidationStatus;
 use crate::model::Contract;
+use crate::model::Currency;
 use crate::notifications::Notifications;
 use crate::LTV_THRESHOLD_MARGIN_CALL_1;
 use crate::LTV_THRESHOLD_MARGIN_CALL_2;
@@ -14,6 +15,7 @@ use rust_decimal::prelude::Zero;
 use rust_decimal::Decimal;
 use sqlx::Pool;
 use sqlx::Postgres;
+use std::collections::HashMap;
 use std::sync::Arc;
 use time::Duration;
 use time::OffsetDateTime;
@@ -33,28 +35,69 @@ pub async fn monitor_positions(
     tokio::spawn({
         let config = config.clone();
         async move {
-            let mut last_update = OffsetDateTime::now_utc();
-            let mut last_prices = vec![];
-            while let Some(price) = bitmex_rx.recv().await {
-                tracing::trace!(price = price.market_price.to_string(), "Received new price");
-                last_prices.push(price.market_price);
+            // Maintain separate price collections for each currency
+            let mut currency_prices: HashMap<Currency, Vec<Decimal>> = HashMap::new();
+            // Maintain separate last update times for each currency
+            let mut currency_last_updates: HashMap<Currency, OffsetDateTime> = HashMap::new();
 
-                if price.timestamp - last_update > Duration::minutes(TIME_BETWEEN_PRICE_CHECKS) {
-                    let config = config.clone();
-                    let total_updates = last_prices.len();
-                    let average_price_in_last_five_minutes =
-                        last_prices.iter().fold(Decimal::zero(), |acc, e| acc + e)
+            while let Some(price) = bitmex_rx.recv().await {
+                tracing::trace!(
+                    price = price.market_price.to_string(),
+                    currency = ?price.currency,
+                    "Received new price"
+                );
+
+                // Add price to the appropriate currency collection, maintaining max 10 entries
+                let prices = currency_prices.entry(price.currency).or_default();
+
+                prices.push(price.market_price);
+
+                // Keep only the latest 10 prices (drop oldest if we exceed 10)
+                if prices.len() > 10 {
+                    prices.remove(0); // Remove the oldest (first) price
+                }
+
+                let config = config.clone();
+
+                // Calculate average price only for the currency that just updated
+                let current_currency = price.currency;
+
+                // Get the last update time for this currency, or use a time far in the past
+                let last_update_for_currency =
+                    *currency_last_updates.get(&current_currency).unwrap_or(
+                        &(OffsetDateTime::now_utc()
+                            - Duration::minutes(TIME_BETWEEN_PRICE_CHECKS + 1)),
+                    );
+
+                if let Some(prices) = currency_prices.get(&current_currency) {
+                    if !prices.is_empty() {
+                        let total_updates = prices.len();
+                        let average_price = prices.iter().fold(Decimal::zero(), |acc, e| acc + e)
                             / Decimal::from_usize(total_updates).expect("to fit");
 
-                    check_margin_call_or_liquidation(
-                        &db,
-                        average_price_in_last_five_minutes,
-                        config.clone(),
-                        notifications.clone(),
-                    )
-                    .await;
-                    last_prices.clear();
-                    last_update = price.timestamp;
+                        tracing::trace!(
+                            currency = ?current_currency,
+                            average_price = average_price.to_string(),
+                            sample_count = total_updates,
+                            "Calculated average price for currency"
+                        );
+
+                        if price.timestamp - last_update_for_currency
+                            > Duration::minutes(TIME_BETWEEN_PRICE_CHECKS)
+                        {
+                            check_margin_call_or_liquidation(
+                                &db,
+                                current_currency,
+                                average_price,
+                                config.clone(),
+                                notifications.clone(),
+                            )
+                            .await;
+
+                            // Update the last check time for this currency
+                            currency_last_updates.insert(current_currency, price.timestamp);
+                        }
+                    }
                 }
             }
         }
@@ -64,14 +107,21 @@ pub async fn monitor_positions(
 
 async fn check_margin_call_or_liquidation(
     db: &Pool<Postgres>,
+    currency: Currency,
     latest_price: Decimal,
     config: Config,
     notifications: Arc<Notifications>,
 ) {
     // TODO: For performance reasons, we should not constantly load from the DB but use some form of
     // in-memory cache instead.
-    match db::contracts::load_open_not_liquidated_contracts(db).await {
+    match db::contracts::load_open_not_liquidated_contracts_by_currency(db, currency).await {
         Ok(contracts) => {
+            tracing::trace!(
+                currency = ?currency,
+                contract_count = contracts.len(),
+                "Checking contracts for margin call/liquidation"
+            );
+
             for contract in contracts {
                 if contract.collateral_sats == 0 {
                     // Contracts which have not been funded do not have a collateral set, hence we
@@ -98,6 +148,7 @@ async fn check_margin_call_or_liquidation(
                     Ok(current_ltv) => {
                         tracing::trace!(
                             contract_id = contract.id,
+                            currency = ?currency,
                             latest_price = latest_price.to_string(),
                             current_ltv = current_ltv.to_string(),
                             "Checking for margin call"

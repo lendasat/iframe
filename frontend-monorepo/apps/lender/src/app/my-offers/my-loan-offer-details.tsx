@@ -48,10 +48,10 @@ function MyLoanOfferDetails() {
   if (loadingError || !offer) {
     return (
       <div className="flex h-[calc(100vh-130px)] flex-col items-center justify-center gap-y-4 px-5 text-center">
-        <div className="flex h-52 w-52 items-center justify-center overflow-hidden rounded-full bg-background">
+        <div className="bg-background flex h-52 w-52 items-center justify-center overflow-hidden rounded-full">
           <img src={ReceipImg} alt="error card" className="max-w-52" />
         </div>
-        <p className="text-sm text-muted-foreground">
+        <p className="text-muted-foreground text-sm">
           An Error Occurred... {JSON.stringify(loadingError) || ""}
         </p>
       </div>
@@ -81,7 +81,7 @@ function MyLoanOfferDetails() {
       <div className="container mx-auto max-w-3xl py-8">
         <Card className="border-border/10">
           <CardContent className="p-6">
-            <div className="flex items-center gap-2 mb-6">
+            <div className="mb-6 flex items-center gap-2">
               <FaPenNib className="text-foreground" />
               <h2 className="text-xl font-bold">Loan Details</h2>
             </div>
@@ -95,7 +95,10 @@ function MyLoanOfferDetails() {
                     className="flex-1 rounded-lg text-sm"
                     type="text"
                     placeholder="Min Amount"
-                    value={formatCurrency(offer.loan_amount_min)}
+                    value={formatCurrency(
+                      offer.loan_amount_min,
+                      LoanAssetHelper.toCurrency(offer.loan_asset),
+                    )}
                     disabled={true}
                   />
 
@@ -105,7 +108,10 @@ function MyLoanOfferDetails() {
                     className="flex-1 rounded-lg text-sm"
                     type="text"
                     placeholder="Max Amount"
-                    value={formatCurrency(offer.loan_amount_max)}
+                    value={formatCurrency(
+                      offer.loan_amount_max,
+                      LoanAssetHelper.toCurrency(offer.loan_asset),
+                    )}
                     disabled={true}
                   />
                 </div>
@@ -121,11 +127,18 @@ function MyLoanOfferDetails() {
                     className="flex-1 rounded-lg text-sm"
                     type="text"
                     placeholder="Loan Reserve"
-                    value={formatCurrency(offer.loan_amount_reserve)}
+                    value={formatCurrency(
+                      offer.loan_amount_reserve,
+                      LoanAssetHelper.toCurrency(offer.loan_asset),
+                    )}
                     disabled={true}
                   />
-                  <span className="text-sm font-medium text-muted-foreground">
-                    ({formatCurrency(offer.loan_amount_reserve_remaining)}{" "}
+                  <span className="text-muted-foreground text-sm font-medium">
+                    (
+                    {formatCurrency(
+                      offer.loan_amount_reserve_remaining,
+                      LoanAssetHelper.toCurrency(offer.loan_asset),
+                    )}{" "}
                     remaining)
                   </span>
                 </div>
@@ -141,7 +154,7 @@ function MyLoanOfferDetails() {
                   />
                   <Label
                     htmlFor="auto-accept"
-                    className="text-sm font-normal text-muted-foreground"
+                    className="text-muted-foreground text-sm font-normal"
                   >
                     Auto accept requests within Loan Reserve
                   </Label>
@@ -152,7 +165,7 @@ function MyLoanOfferDetails() {
               <div className="space-y-1">
                 <div className="flex items-center gap-1">
                   <Label className="text-muted-foreground">Duration</Label>
-                  <span className="text-xs font-medium text-muted-foreground/50">
+                  <span className="text-muted-foreground/50 text-xs font-medium">
                     (days)
                   </span>
                 </div>
@@ -188,7 +201,7 @@ function MyLoanOfferDetails() {
                     value={(offer.interest_rate * 100).toFixed(2)}
                     disabled={true}
                   />
-                  <span className="text-sm font-medium text-muted-foreground">
+                  <span className="text-muted-foreground text-sm font-medium">
                     1 - 100
                   </span>
                 </div>
@@ -209,7 +222,7 @@ function MyLoanOfferDetails() {
                     }
                     disabled={true}
                   />
-                  <span className="text-sm font-medium text-muted-foreground">
+                  <span className="text-muted-foreground text-sm font-medium">
                     1 - {ONE_YEAR}
                   </span>
                 </div>
@@ -229,7 +242,7 @@ function MyLoanOfferDetails() {
                       value={(offer.extension_interest_rate * 100).toFixed(2)}
                       disabled={true}
                     />
-                    <span className="text-sm font-medium text-muted-foreground">
+                    <span className="text-muted-foreground text-sm font-medium">
                       1 - {ONE_YEAR}
                     </span>
                   </div>
@@ -249,7 +262,7 @@ function MyLoanOfferDetails() {
                     value={(offer.min_ltv * 100).toFixed(2)}
                     disabled={true}
                   />
-                  <span className="text-sm font-medium text-muted-foreground">
+                  <span className="text-muted-foreground text-sm font-medium">
                     1% - 70%
                   </span>
                 </div>
@@ -292,10 +305,10 @@ function MyLoanOfferDetails() {
               <Separator className="my-6" />
 
               {/* Dates and Action Buttons */}
-              <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+              <div className="flex flex-col justify-between gap-4 md:flex-row md:items-center">
                 <div className="space-y-2">
                   <div className="flex items-center gap-2">
-                    <span className="text-sm font-medium text-muted-foreground">
+                    <span className="text-muted-foreground text-sm font-medium">
                       Created on:
                     </span>
                     <span className="text-sm font-medium">
@@ -303,7 +316,7 @@ function MyLoanOfferDetails() {
                     </span>
                   </div>
                   <div className="flex items-center gap-2">
-                    <span className="text-sm font-medium text-muted-foreground">
+                    <span className="text-muted-foreground text-sm font-medium">
                       Last Edited:
                     </span>
                     <span className="text-sm font-medium">
@@ -350,7 +363,7 @@ function MyLoanOfferDetails() {
                         >
                           {loading ? (
                             <>
-                              <span className="h-4 w-4 animate-spin rounded-full border-2 border-current border-t-transparent mr-2"></span>
+                              <span className="mr-2 h-4 w-4 animate-spin rounded-full border-2 border-current border-t-transparent"></span>
                               Retracting...
                             </>
                           ) : (

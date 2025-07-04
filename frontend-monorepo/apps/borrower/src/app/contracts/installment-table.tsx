@@ -12,7 +12,11 @@ import {
 import { Installment } from "@frontend/http-client-borrower";
 import { InstallmentStatusBadge } from "./installment-status-badge";
 import { InstallmentSheetContent } from "./installment-sheet-content";
-import { formatCurrency, LoanAsset } from "@frontend/ui-shared";
+import {
+  formatCurrency,
+  LoanAsset,
+  LoanAssetHelper,
+} from "@frontend/ui-shared";
 import { compareAsc, format } from "date-fns";
 
 interface Props {
@@ -50,8 +54,18 @@ export function InstallmentTable({
               onClick={() => setSelected(inst)}
               className="cursor-pointer"
             >
-              <TableCell>{formatCurrency(inst.principal)}</TableCell>
-              <TableCell>{formatCurrency(inst.interest)}</TableCell>
+              <TableCell>
+                {formatCurrency(
+                  inst.principal,
+                  LoanAssetHelper.toCurrency(loanAsset),
+                )}
+              </TableCell>
+              <TableCell>
+                {formatCurrency(
+                  inst.interest,
+                  LoanAssetHelper.toCurrency(loanAsset),
+                )}
+              </TableCell>
               <TableCell>{format(inst.due_date, "MMM, dd yyyy")}</TableCell>
               <TableCell>
                 <InstallmentStatusBadge

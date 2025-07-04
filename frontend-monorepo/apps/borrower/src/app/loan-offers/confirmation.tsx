@@ -15,9 +15,10 @@ import {
   formatCurrency,
   getFormatedStringFromDays,
   LoanAddressInputField,
+  LoanAsset,
   LoanAssetHelper,
   ONE_YEAR,
-  usePrice,
+  usePriceForCurrency,
 } from "@frontend/ui-shared";
 import {
   Button,
@@ -67,6 +68,7 @@ interface ConfirmationProps {
   selectedOfferId?: string;
   selectedLoanAmount?: string;
   selectedLoanDuration?: string;
+  selectedLoanAsset: LoanAsset;
 }
 
 export const Confirmation = ({
@@ -74,6 +76,7 @@ export const Confirmation = ({
   selectedOfferId,
   selectedLoanAmount: selectedLoanAmountString,
   selectedLoanDuration: selectedLoanDurationString,
+  selectedLoanAsset,
 }: ConfirmationProps) => {
   const navigate = useNavigate();
   const { getNpub, getPkAndDerivationPath, encryptFiatLoanDetailsBorrower } =
@@ -88,8 +91,10 @@ export const Confirmation = ({
 
   const { getLoanOffer, getUserCards, postContractRequest } =
     useHttpClientBorrower();
-  const { latestPrice: maybeLatestPrice } = usePrice();
-  const latestPrice = maybeLatestPrice || 0;
+  const latestPrice = usePriceForCurrency(
+    LoanAssetHelper.toCurrency(selectedLoanAsset),
+  );
+  // TODO: we should be using skeletons while the price is loading
   const { user } = useAuth();
 
   const [bitcoinAddressInputError, setBitcoinAddressInputError] = useState("");
@@ -348,7 +353,12 @@ export const Confirmation = ({
             {isStillLoading ? (
               <Skeleton className="inline-block h-5 w-20" />
             ) : (
-              <strong>{formatCurrency(selectedLoanAmount || 0)}</strong>
+              <strong>
+                {formatCurrency(
+                  selectedLoanAmount || 0,
+                  LoanAssetHelper.toCurrency(loanAsset),
+                )}
+              </strong>
             )}{" "}
             for{" "}
             {isStillLoading ? (
@@ -404,7 +414,12 @@ export const Confirmation = ({
                   </span>
                 )}
                 <div className="text-muted-foreground mt-1 text-xs">
-                  ≈ {formatCurrency(actualInterestUsdAmount)} in total
+                  ≈{" "}
+                  {formatCurrency(
+                    actualInterestUsdAmount,
+                    LoanAssetHelper.toCurrency(loanAsset),
+                  )}{" "}
+                  in total
                 </div>
               </div>
             }
@@ -451,10 +466,10 @@ export const Confirmation = ({
               }
               value={
                 <span className="text-muted-foreground text-sm font-semibold">
-                  {selectedOffer.repayment_plan ===
-                  RepaymentPlan.InterestOnlyMonthly
-                    ? `${formatCurrency(estimatedInstallment)}`
-                    : `${formatCurrency(estimatedInstallment)}`}
+                  {formatCurrency(
+                    estimatedInstallment,
+                    LoanAssetHelper.toCurrency(loanAsset),
+                  )}
                 </span>
               }
               loading={isStillLoading}
@@ -475,7 +490,10 @@ export const Confirmation = ({
             value={
               <div className="text-right">
                 <div className="text-muted-foreground text-sm font-semibold">
-                  {formatCurrency(collateralUsdAmount)}
+                  {formatCurrency(
+                    collateralUsdAmount,
+                    LoanAssetHelper.toCurrency(loanAsset),
+                  )}
                 </div>
                 <div className="text-muted-foreground mt-1 text-xs">
                   ≈ {collateralAmountBtc.toFixed(8)} BTC
@@ -501,7 +519,10 @@ export const Confirmation = ({
                 <div
                   className={`text-muted-foreground text-sm font-semibold ${discountedFee === 1 ? "line-through" : ""}`}
                 >
-                  {formatCurrency(originationFeeUsd)}
+                  {formatCurrency(
+                    originationFeeUsd,
+                    LoanAssetHelper.toCurrency(loanAsset),
+                  )}
                 </div>
                 <div
                   className={`text-muted-foreground mt-1 text-xs ${discountedFee === 1 ? "line-through" : ""}`}

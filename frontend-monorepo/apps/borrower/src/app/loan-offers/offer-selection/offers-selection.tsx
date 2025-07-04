@@ -11,6 +11,7 @@ import { LoanAsset, LoanAssetHelper } from "@frontend/ui-shared";
 interface OffersTableProps {
   selectedProduct?: LoanProductOption;
   onOfferSelect: (offerId: string) => void;
+  setSelectedLoanAsset?: (loanAsset: LoanAsset) => void;
   selectedOfferId?: string;
   columnFilters: ColumnFiltersState;
   setColumnFilters: OnChangeFn<ColumnFiltersState>;
@@ -19,6 +20,7 @@ interface OffersTableProps {
 export const OffersSelectionTable = ({
   selectedProduct,
   onOfferSelect,
+  setSelectedLoanAsset,
   selectedOfferId,
   columnFilters,
   setColumnFilters,
@@ -82,6 +84,7 @@ export const OffersSelectionTable = ({
           onColumnFiltersChange={setColumnFilters}
           enableRowSelection={true}
           onOfferSelect={onOfferSelect}
+          setSelectedLoanAsset={setSelectedLoanAsset}
           selectedOfferId={selectedOfferId}
         />
       </Box>

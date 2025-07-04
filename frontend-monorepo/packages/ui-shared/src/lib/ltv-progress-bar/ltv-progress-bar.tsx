@@ -1,17 +1,23 @@
 import type { FC } from "react";
-import { usePrice } from "../price-context";
+import { usePriceForCurrency } from "../price-context";
 import { Progress, Skeleton } from "@frontend/shadcn";
+import { LoanAsset, LoanAssetHelper } from "../models";
 
 interface LtvProgressBarNewProps {
   loanAmount: number;
   collateralBtc: number | undefined;
+  loanAsset: LoanAsset;
 }
 
 export const LtvProgressBar: FC<LtvProgressBarNewProps> = ({
   loanAmount,
   collateralBtc,
+  loanAsset,
 }) => {
-  const { latestPrice } = usePrice();
+  // TODO: the latest price should probably be passed down for a better performance
+  const latestPrice = usePriceForCurrency(
+    LoanAssetHelper.toCurrency(loanAsset),
+  );
 
   const ltvRatio =
     collateralBtc && latestPrice
@@ -30,10 +36,7 @@ export const LtvProgressBar: FC<LtvProgressBarNewProps> = ({
       ) : (
         <>
           <Progress value={ltvRatio} className={"hidden md:block"} />
-          <div
-            className="text-font dark:text-font-dark w-full text-right text-xs font-medium
-      flex justify-center items-center"
-          >
+          <div className="text-font dark:text-font-dark flex w-full items-center justify-center text-right text-xs font-medium">
             {formattedValue}%
           </div>
         </>
