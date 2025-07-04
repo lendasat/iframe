@@ -23,6 +23,7 @@ pub struct Borrower {
     pub used_referral_code: Option<String>,
     pub first_time_discount_rate_referee: Option<Decimal>,
     pub timezone: Option<String>,
+    pub locale: Option<String>,
     pub created_at: OffsetDateTime,
     pub updated_at: OffsetDateTime,
 }
@@ -39,6 +40,7 @@ fn new_model_borrower(
         personal_referral_codes,
         first_time_discount_rate_referee: borrower.first_time_discount_rate_referee,
         timezone: borrower.timezone,
+        locale: borrower.locale,
         created_at: borrower.created_at,
         updated_at: borrower.updated_at,
     }
@@ -99,6 +101,7 @@ pub async fn register_password_auth_user(
         used_referral_code: row.used_referral_code,
         first_time_discount_rate_referee: row.first_time_discount_rate_referee,
         timezone: row.timezone,
+        locale: row.locale,
         created_at: row.created_at,
         updated_at: row.updated_at,
     };
@@ -175,6 +178,7 @@ pub async fn register_api_account(
         used_referral_code: None,
         first_time_discount_rate_referee: None,
         timezone: row.timezone,
+        locale: row.locale,
         created_at: row.created_at,
         updated_at: row.updated_at,
     };
@@ -315,6 +319,7 @@ pub async fn get_user_by_email(
            b.used_referral_code,
            b.first_time_discount_rate_referee,
            b.timezone,
+           b.locale,
            b_auth.salt,
            b_auth.email as auth_email,
            b_auth.verifier,
@@ -344,6 +349,7 @@ pub async fn get_user_by_email(
                 used_referral_code: row.used_referral_code,
                 first_time_discount_rate_referee: row.first_time_discount_rate_referee,
                 timezone: row.timezone,
+                locale: row.locale,
                 created_at: row.created_at,
                 updated_at: row.updated_at,
             };
@@ -377,6 +383,7 @@ pub async fn get_user_by_id(pool: &Pool<Postgres>, id: &str) -> Result<Option<mo
            b.used_referral_code,
            b.first_time_discount_rate_referee,
            b.timezone,
+           b.locale,
            b.created_at as "created_at!",
            b.updated_at as "updated_at!"
            FROM borrower_discount_info b
@@ -398,6 +405,7 @@ pub async fn get_user_by_id(pool: &Pool<Postgres>, id: &str) -> Result<Option<mo
                 used_referral_code: row.used_referral_code,
                 first_time_discount_rate_referee: row.first_time_discount_rate_referee,
                 timezone: row.timezone,
+                locale: row.locale,
                 created_at: row.created_at,
                 updated_at: row.updated_at,
             };
@@ -592,6 +600,28 @@ pub async fn update_borrower_timezone(
         WHERE id = $2
         "#,
         timezone,
+        borrower_id,
+    )
+    .execute(pool)
+    .await?;
+
+    Ok(())
+}
+
+pub async fn update_borrower_locale(
+    pool: &PgPool,
+    borrower_id: &str,
+    locale: Option<&str>,
+) -> Result<()> {
+    sqlx::query!(
+        r#"
+        UPDATE borrowers
+        SET
+            locale = $1,
+            updated_at = CURRENT_TIMESTAMP
+        WHERE id = $2
+        "#,
+        locale,
         borrower_id,
     )
     .execute(pool)

@@ -1,6 +1,6 @@
 {
   "db_name": "PostgreSQL",
-  "query": "SELECT\n            id,\n            name,\n            email,\n            salt,\n            verifier,\n            password,\n            verified,\n            verification_code,\n            invite_code,\n            password_reset_token,\n            timezone,\n            password_reset_at,\n            created_at,\n            updated_at\n        FROM lenders\n            WHERE password_reset_token = $1\n          AND password_reset_at > $2",
+  "query": "SELECT\n            id,\n            name,\n            email,\n            salt,\n            verifier,\n            password,\n            verified,\n            verification_code,\n            invite_code,\n            password_reset_token,\n            timezone,\n            locale,\n            password_reset_at,\n            created_at,\n            updated_at\n        FROM lenders\n            WHERE password_reset_token = $1\n          AND password_reset_at > $2",
   "describe": {
     "columns": [
       {
@@ -60,16 +60,21 @@
       },
       {
         "ordinal": 11,
+        "name": "locale",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 12,
         "name": "password_reset_at",
         "type_info": "Timestamptz"
       },
       {
-        "ordinal": 12,
+        "ordinal": 13,
         "name": "created_at",
         "type_info": "Timestamptz"
       },
       {
-        "ordinal": 13,
+        "ordinal": 14,
         "name": "updated_at",
         "type_info": "Timestamptz"
       }
@@ -93,9 +98,10 @@
       true,
       true,
       true,
+      true,
       false,
       false
     ]
   },
-  "hash": "b6a6304d6ea6d6b5a0080da3de3a17e55ad5bc0a0f6ead8cd6c26c21d542b6a2"
+  "hash": "8bbfcbb915ccaf1d56d1f82377c2bbd8d1fbd60426e149701bff4189aa7d895e"
 }

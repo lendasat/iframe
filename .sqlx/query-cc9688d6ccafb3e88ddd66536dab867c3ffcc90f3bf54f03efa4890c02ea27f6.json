@@ -72,6 +72,11 @@
         "ordinal": 13,
         "name": "timezone",
         "type_info": "Varchar"
+      },
+      {
+        "ordinal": 14,
+        "name": "locale",
+        "type_info": "Text"
       }
     ],
     "parameters": {
@@ -93,6 +98,7 @@
       false,
       false,
       false,
+      true,
       true
     ]
   },

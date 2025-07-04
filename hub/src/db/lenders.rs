@@ -189,6 +189,7 @@ pub async fn get_user_by_rest_token(
             invite_code,
             password_reset_token,
             timezone,
+            locale,
             password_reset_at,
             created_at,
             updated_at
@@ -227,6 +228,28 @@ pub async fn update_lender_timezone(pool: &PgPool, lender_id: &str, timezone: &s
         "#,
         timezone,
         lender_id.to_string(),
+    )
+    .execute(pool)
+    .await?;
+
+    Ok(())
+}
+
+pub async fn update_lender_locale(
+    pool: &PgPool,
+    lender_id: &str,
+    locale: Option<&str>,
+) -> Result<()> {
+    sqlx::query!(
+        r#"
+        UPDATE lenders
+        SET
+            locale = $1,
+            updated_at = CURRENT_TIMESTAMP
+        WHERE id = $2
+        "#,
+        locale,
+        lender_id,
     )
     .execute(pool)
     .await?;

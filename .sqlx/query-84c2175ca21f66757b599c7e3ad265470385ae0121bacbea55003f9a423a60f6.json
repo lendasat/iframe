@@ -32,6 +32,11 @@
         "ordinal": 5,
         "name": "timezone",
         "type_info": "Varchar"
+      },
+      {
+        "ordinal": 6,
+        "name": "locale",
+        "type_info": "Text"
       }
     ],
     "parameters": {
@@ -48,6 +53,7 @@
       true,
       false,
       false,
+      true,
       true
     ]
   },

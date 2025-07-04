@@ -27,6 +27,13 @@ pub(crate) fn router(app_state: Arc<AppState>) -> Router {
                 jwt_auth::auth,
             )),
         )
+        .route(
+            "/api/users/locale",
+            put(update_locale).route_layer(middleware::from_fn_with_state(
+                app_state.clone(),
+                jwt_auth::auth,
+            )),
+        )
         .layer(
             tower::ServiceBuilder::new().layer(middleware::from_fn_with_state(
                 app_state.clone(),
@@ -34,6 +41,11 @@ pub(crate) fn router(app_state: Arc<AppState>) -> Router {
             )),
         )
         .with_state(app_state)
+}
+
+#[derive(Debug, Deserialize, Serialize)]
+struct UpdateProfile {
+    timezone: String,
 }
 
 #[instrument(skip_all, fields(lender_id), err(Debug))]
@@ -62,8 +74,23 @@ async fn update_profile(
 }
 
 #[derive(Debug, Deserialize, Serialize)]
-struct UpdateProfile {
-    timezone: String,
+struct UpdateLocale {
+    locale: Option<String>,
+}
+
+#[instrument(skip_all, fields(lender_id), err(Debug))]
+async fn update_locale(
+    State(data): State<Arc<AppState>>,
+    Extension(user): Extension<Lender>,
+    Json(body): Json<UpdateLocale>,
+) -> Result<(), Error> {
+    let lender_id = user.id;
+
+    db::lenders::update_lender_locale(&data.db, lender_id.as_str(), body.locale.as_deref())
+        .await
+        .map_err(Error::database)?;
+
+    Ok(())
 }
 
 // Create our own JSON extractor by wrapping `axum::Json`. This makes it easy to override the

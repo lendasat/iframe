@@ -899,6 +899,7 @@ struct FilteredUser {
     updated_at: OffsetDateTime,
     personal_telegram_token: String,
     timezone: Option<String>,
+    locale: Option<String>,
 }
 
 impl FilteredUser {
@@ -914,6 +915,7 @@ impl FilteredUser {
             updated_at: updated_at_utc,
             personal_telegram_token: personal_telegram_token.token,
             timezone: user.timezone.clone(),
+            locale: user.locale.clone(),
         }
     }
 }
