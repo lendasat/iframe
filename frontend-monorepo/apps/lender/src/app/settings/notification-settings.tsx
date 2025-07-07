@@ -256,30 +256,43 @@ export function NotificationSettings() {
 
               <div>
                 <h3 className="text-sm font-medium">
-                  Loan Application Notifications
+                  Daily Loan Application Digest
                 </h3>
                 <p className="text-muted-foreground mb-4 text-sm">
-                  Get notified when a new loan application is available
+                  Get a daily digest of new loan applications available in the
+                  last 24 hours
                 </p>
                 <div className="flex gap-6">
                   <div className="flex items-center gap-2">
                     <Checkbox
-                      id="new_loan_applications_email"
-                      checked={localSettings.new_loan_applications_email}
+                      id="daily_application_digest_email"
+                      checked={localSettings.daily_application_digest_email}
                       onCheckedChange={(checked) =>
                         handleSettingChange(
-                          "new_loan_applications_email",
+                          "daily_application_digest_email",
                           checked as boolean,
                         )
                       }
                     />
                     <Label
-                      htmlFor="new_loan_applications_email"
+                      htmlFor="daily_application_digest_email"
                       className="text-sm"
                     >
                       Email
                     </Label>
                   </div>
+                </div>
+              </div>
+
+              <div>
+                <h3 className="text-sm font-medium">
+                  Instant Loan Application Notifications
+                </h3>
+                <p className="text-muted-foreground mb-4 text-sm">
+                  Get notified immediately when a new loan application is
+                  available
+                </p>
+                <div className="flex gap-6">
                   <div className="flex items-center gap-2">
                     <Checkbox
                       id="new_loan_applications_telegram"

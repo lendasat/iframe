@@ -2,7 +2,6 @@ use crate::config::Config;
 use crate::model::Borrower;
 use crate::model::Contract;
 use crate::model::Lender;
-use crate::model::LoanAsset;
 use anyhow::bail;
 use anyhow::Context;
 use anyhow::Result;
@@ -1059,76 +1058,99 @@ impl Email {
         Ok(())
     }
 
-    #[allow(clippy::too_many_arguments)]
-    pub async fn send_new_loan_offer(
+    pub async fn send_daily_offer_digest(
         &self,
         names_and_emails: Vec<(String, String)>,
-        offer_url: Url,
-        min_loan_amount: Decimal,
-        max_loan_amount: Decimal,
-        asset: LoanAsset,
-        interest_rate: Decimal,
-        min_duration: i32,
-        max_duration: i32,
+        offers: Vec<crate::db::notification_settings::DailyDigestOffer>,
+        digest_date: time::Date,
+        borrower_url: Url,
     ) -> Result<()> {
-        let template_name = "new_loan_offer";
+        let template_name = "daily_offer_digest";
         let handlebars =
             Self::prepare_template(template_name).context("failed preparing template")?;
 
+        let formatted_offers: Vec<serde_json::Value> = offers
+            .iter()
+            .map(|offer| {
+                serde_json::json!({
+                    "min_loan_amount": format_decimal_with_commas(offer.loan_amount_min, 0),
+                    "max_loan_amount": format_decimal_with_commas(offer.loan_amount_max, 0),
+                    "interest_rate": format!("{:.1}", offer.interest_rate * Decimal::from(100)),
+                    "min_duration": offer.duration_days_min,
+                    "max_duration": offer.duration_days_max,
+                    "loan_asset": offer.loan_asset
+                })
+            })
+            .collect();
+
         let data = serde_json::json!({
-            "offer_url": offer_url,
-            "min_loan_amount": format!("{}", format_decimal_with_commas(min_loan_amount, 0)),
-            "max_loan_amount": format!("{}", format_decimal_with_commas(max_loan_amount, 0)),
-            "asset": format!("{}", asset),
-            "interest_rate": format!("{:.1}", interest_rate * Decimal::from(100)),
-            "min_duration": min_duration,
-            "max_duration": max_duration,
+            "offers": formatted_offers,
+            "offer_count": offers.len(),
+            "digest_date": digest_date.format(&format_description::parse("[day] [month repr:long] [year]").expect("format string should be valid")).expect("date formatting should succeed"),
+            "borrower_url": borrower_url,
+            "unsubscribe_url": self.borrower_notification_settings
         });
 
         let content_template = handlebars
             .render(template_name, &data)
             .context("failed rendering template")?;
 
-        self.send_mass_emails_bcc(
-            "New loan offer available",
-            names_and_emails,
-            content_template,
-        )
-        .await
+        let subject = if offers.len() == 1 {
+            "1 new loan offer available today"
+        } else {
+            &format!("{} new loan offers available today", offers.len())
+        };
+
+        self.send_mass_emails_bcc(subject, names_and_emails, content_template)
+            .await
     }
 
-    #[allow(clippy::too_many_arguments)]
-    pub async fn send_new_loan_applications(
+    pub async fn send_daily_application_digest(
         &self,
         names_and_emails: Vec<(String, String)>,
-        application_url: Url,
-        loan_amount: Decimal,
-        asset: LoanAsset,
-        interest_rate: Decimal,
-        duration: i32,
+        applications: Vec<crate::db::notification_settings::DailyDigestApplication>,
+        digest_date: time::Date,
+        lender_url: Url,
     ) -> Result<()> {
-        let template_name = "new_loan_application";
+        let template_name = "daily_application_digest";
         let handlebars =
             Self::prepare_template(template_name).context("failed preparing template")?;
 
+        let formatted_applications: Vec<serde_json::Value> = applications
+            .iter()
+            .map(|app| {
+                serde_json::json!({
+                    "loan_amount": format_decimal_with_commas(app.loan_amount, 0),
+                    "interest_rate": format!("{:.1}", app.interest_rate * Decimal::from(100)),
+                    "duration_days": app.duration_days,
+                    "loan_asset": app.loan_asset
+                })
+            })
+            .collect();
+
         let data = serde_json::json!({
-            "application_url": application_url,
-            "loan_amount": format!("{}", format_decimal_with_commas(loan_amount, 0)),
-            "asset": format!("{}", asset),
-            "interest_rate": format!("{:.1}", interest_rate * Decimal::from(100)),
-            "duration": duration,
+            "applications": formatted_applications,
+            "application_count": applications.len(),
+            "digest_date": digest_date.format(&format_description::parse("[day] [month repr:long] [year]").expect("format string should be valid")).expect("date formatting should succeed"),
+            "lender_url": lender_url,
+            "unsubscribe_url": self.lender_notification_settings
         });
 
         let content_template = handlebars
             .render(template_name, &data)
             .context("failed rendering template")?;
 
-        self.send_mass_emails_bcc(
-            "New loan application available",
-            names_and_emails,
-            content_template,
-        )
-        .await
+        let subject = if applications.len() == 1 {
+            "1 new loan application available today"
+        } else {
+            &format!(
+                "{} new loan applications available today",
+                applications.len()
+            )
+        };
+
+        self.send_mass_emails_bcc(subject, names_and_emails, content_template)
+            .await
     }
 }
 

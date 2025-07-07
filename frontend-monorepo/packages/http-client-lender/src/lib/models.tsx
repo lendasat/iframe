@@ -773,7 +773,7 @@ export interface PaginatedNotificationResponse {
 export interface LenderNotificationSettings {
   on_login_email: boolean;
   on_login_telegram: boolean;
-  new_loan_applications_email: boolean;
+  daily_application_digest_email: boolean;
   new_loan_applications_telegram: boolean;
   new_contracts_email: boolean;
   new_contracts_telegram: boolean;

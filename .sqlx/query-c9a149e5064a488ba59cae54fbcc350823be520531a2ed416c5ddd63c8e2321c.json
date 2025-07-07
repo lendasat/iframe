@@ -1,6 +1,6 @@
 {
   "db_name": "PostgreSQL",
-  "query": "\n        SELECT \n            id,\n            lender_id,\n            on_login_email,\n            on_login_telegram,\n            new_loan_applications_email,\n            new_loan_applications_telegram,\n            contract_status_changed_email,\n            contract_status_changed_telegram,\n            new_chat_message_email,\n            new_chat_message_telegram,\n            created_at,\n            updated_at\n        FROM lender_notification_settings \n        WHERE lender_id = $1\n        ",
+  "query": "\n        SELECT\n            id,\n            borrower_id,\n            on_login_email,\n            on_login_telegram,\n            daily_offer_digest_email,\n            new_loan_offer_telegram,\n            contract_status_changed_email,\n            contract_status_changed_telegram,\n            new_chat_message_email,\n            new_chat_message_telegram,\n            created_at,\n            updated_at\n        FROM borrower_notification_settings\n        WHERE borrower_id = $1\n        ",
   "describe": {
     "columns": [
       {
@@ -10,7 +10,7 @@
       },
       {
         "ordinal": 1,
-        "name": "lender_id",
+        "name": "borrower_id",
         "type_info": "Bpchar"
       },
       {
@@ -25,12 +25,12 @@
       },
       {
         "ordinal": 4,
-        "name": "new_loan_applications_email",
+        "name": "daily_offer_digest_email",
         "type_info": "Bool"
       },
       {
         "ordinal": 5,
-        "name": "new_loan_applications_telegram",
+        "name": "new_loan_offer_telegram",
         "type_info": "Bool"
       },
       {
@@ -84,5 +84,5 @@
       false
     ]
   },
-  "hash": "d421756cf95138ef89e73f257d4be5aac88e637f8520118f958c1b12b86d132f"
+  "hash": "c9a149e5064a488ba59cae54fbcc350823be520531a2ed416c5ddd63c8e2321c"
 }

@@ -1,0 +1,16 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "\n        INSERT INTO daily_offer_digest_sent (borrower_id, digest_date, offer_count)\n        VALUES ($1, $2, $3)\n        ON CONFLICT (borrower_id, digest_date) DO UPDATE SET\n            sent_at = CURRENT_TIMESTAMP,\n            offer_count = EXCLUDED.offer_count\n        ",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Bpchar",
+        "Date",
+        "Int4"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "09d8ce4a83f023bc8fa18f3219d433de533968075b31d48f70b61cf262572ee4"
+}
