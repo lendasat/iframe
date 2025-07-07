@@ -1,5 +1,4 @@
 import { useAuth } from "@frontend/http-client-lender";
-import { LoginForm } from "@frontend/ui-shared";
 import { md5CaseInsensitive } from "@frontend/browser-wallet";
 import {
   does_wallet_exist,
@@ -8,6 +7,8 @@ import {
   restore_wallet,
 } from "browser-wallet";
 import { useLocation, useNavigate, useParams } from "react-router-dom";
+import { ReactComponent as Logo } from "./../../assets/lendasat_svg_logo_long.svg";
+import { LoginForm } from "@frontend/shadcn";
 
 function Login() {
   const { login } = useAuth();
@@ -93,26 +94,37 @@ function Login() {
   }
 
   return (
-    <LoginForm
-      handleLogin={handleLogin}
-      registrationLink={"/registration"}
-      forgotPasswordLink={"/forgotpassword"}
-      waitlistLink={"/waitlist"}
-      initialUserEmail={defaultUsername}
-      initialUserPassword={defaultPassword}
-      infoMessage={message}
-      loginDescription={
-        <>
-          Welcome to lending! If you are a borrower, please go to{" "}
-          <a
-            href="https://borrow.lendasat.com"
-            className={"underline underline-offset-4"}
-          >
-            https://borrow.lendasat.com
-          </a>
-        </>
-      }
-    />
+    <div className="bg-muted flex min-h-svh flex-col items-center justify-center gap-6 p-6 md:p-10">
+      <div className="flex w-full max-w-sm flex-col gap-6">
+        <div className="flex w-full items-center justify-center">
+          <Logo
+            height={40}
+            width={"auto"}
+            className="w-fit invert dark:invert-0"
+          />
+        </div>
+        <LoginForm
+          forgotPasswordLink={"/forgotpassword"}
+          initialUserEmail={defaultUsername}
+          initialUserPassword={defaultPassword}
+          registrationLink={"/registration"}
+          infoMessage={message}
+          handleLogin={handleLogin}
+          waitlistLink={"/waitlist"}
+          cardDescription={
+            <>
+              Welcome to lending! If you are a borrower, please go to{" "}
+              <a
+                href="https://borrow.lendasat.com"
+                className={"underline underline-offset-4"}
+              >
+                https://borrow.lendasat.com
+              </a>
+            </>
+          }
+        />
+      </div>
+    </div>
   );
 }
 

@@ -154,9 +154,7 @@ export const changeProtocolToWSS = (url: string): string => {
   return url.replace(/^http(s?):\/\//i, "ws$1://");
 };
 
-export * from "./lib/auth/email-verification-form";
 export * from "./lib/auth/forgot-password-form";
-export * from "./lib/auth/login-form";
 export * from "./lib/auth/registration-form";
 export * from "./lib/auth/reset-password-form";
 export * from "./lib/auth/upgrade-to-pake-form";
