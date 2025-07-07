@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useAuth, useHttpClientBorrower } from "@frontend/http-client-borrower";
-import { EditableTimezoneField } from "@frontend/ui-shared";
+import { EditableTimezoneField, i18n } from "@frontend/ui-shared";
 import {
   Card,
   CardHeader,
@@ -127,16 +127,17 @@ export function Profile() {
 
             <div className="flex flex-col gap-0.5">
               <div className="text-xs font-medium text-gray-500">
-                Currency Formatting
+                Preferred Language
               </div>
               <Select
                 value={user.locale || "system"}
                 onValueChange={async (value) => {
-                  const locale = value === "system" ? null : value;
+                  const locale = value === "system" ? undefined : value;
                   try {
                     setError("");
                     await putUpdateLocale(locale);
                     await refreshUser();
+                    await i18n.changeLanguage(locale);
                     setSuccess("Language updated successfully!");
                     setTimeout(() => setSuccess(""), 3000);
                   } catch (err) {

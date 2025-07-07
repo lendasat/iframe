@@ -149,7 +149,7 @@ export const Details = ({ contract }: DetailsProps) => {
       <Separator className="my-4" />
 
       <LoanDetails
-        loanAsset={loanAsset}
+        loanAssetString={loanAsset}
         originationFee={originationFee}
         loanAmount={loanAmount}
         loanDuration={loanDuration}
@@ -158,6 +158,7 @@ export const Details = ({ contract }: DetailsProps) => {
         interestAmount={interestAmount}
         loanExpiryFormatted={loanExpiryFormatted}
         downloadBackup={downloadBackupFn}
+        loanAsset={contract?.loan_asset}
       />
 
       <Separator className="my-4" />
@@ -169,7 +170,7 @@ export const Details = ({ contract }: DetailsProps) => {
 
 interface LoanDetailsProps {
   loanAmount?: string;
-  loanAsset?: string;
+  loanAssetString?: string;
   loanDuration?: string;
   loanExpiryFormatted?: string;
   loanDurationRemaining?: string;
@@ -177,12 +178,13 @@ interface LoanDetailsProps {
   interestRate?: string;
   interestAmount?: number;
   downloadBackup: () => void;
+  loanAsset?: LoanAsset | undefined;
 }
 
 // Main component with typed props
 const LoanDetails: React.FC<LoanDetailsProps> = ({
   loanAmount,
-  loanAsset,
+  loanAssetString,
   loanDuration,
   loanExpiryFormatted,
   loanDurationRemaining,
@@ -190,6 +192,7 @@ const LoanDetails: React.FC<LoanDetailsProps> = ({
   interestRate,
   interestAmount,
   downloadBackup,
+  loanAsset,
 }) => {
   // Component now split into mobile and desktop layouts
   return (
@@ -206,8 +209,8 @@ const LoanDetails: React.FC<LoanDetailsProps> = ({
               ) : (
                 <Skeleton className="mb-2 h-4 w-[80px]" />
               )}
-              {loanAsset ? (
-                <p className="text-xs text-gray-500">{loanAsset}</p>
+              {loanAssetString ? (
+                <p className="text-xs text-gray-500">{loanAssetString}</p>
               ) : (
                 <Skeleton className="mb-2 h-4 w-[150px]" />
               )}
@@ -223,7 +226,7 @@ const LoanDetails: React.FC<LoanDetailsProps> = ({
                 <p className="text-xs text-gray-500">
                   {formatCurrency(
                     interestAmount,
-                    LoanAssetHelper.toCurrency(loanAsset as LoanAsset),
+                    LoanAssetHelper.toCurrency(loanAssetString as LoanAsset),
                   )}
                 </p>
               ) : (
@@ -292,8 +295,8 @@ const LoanDetails: React.FC<LoanDetailsProps> = ({
               <Skeleton className="mb-2 h-4 w-[150px]" />
             )}
 
-            {loanAsset ? (
-              <p className="text-xs text-gray-500">{loanAsset}</p>
+            {loanAssetString ? (
+              <p className="text-xs text-gray-500">{loanAssetString}</p>
             ) : (
               <Skeleton className="mb-2 h-4 w-[150px]" />
             )}
@@ -306,11 +309,11 @@ const LoanDetails: React.FC<LoanDetailsProps> = ({
               ) : (
                 <Skeleton className="mb-2 ml-auto h-4 w-[80px]" />
               )}
-              {interestAmount ? (
+              {interestAmount !== undefined ? (
                 <p className="text-xs text-gray-500">
                   {formatCurrency(
                     interestAmount,
-                    LoanAssetHelper.toCurrency(loanAsset as LoanAsset),
+                    LoanAssetHelper.toCurrency(loanAsset),
                   )}
                 </p>
               ) : (

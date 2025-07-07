@@ -185,7 +185,7 @@ export interface HttpClient {
   // Profile methods
   getLenderProfile: (id: string) => Promise<LenderStats>;
   getBorrowerProfile: (id: string) => Promise<BorrowerStats>;
-  putUpdateLocale: (locale: string | null) => Promise<void>;
+  putUpdateLocale: (locale?: string) => Promise<void>;
 
   // Card methods
   getUserCards: () => Promise<UserCardDetail[]>;
@@ -981,9 +981,9 @@ export const createHttpClient = (
     }
   };
 
-  const putUpdateLocale = async (locale: string | null): Promise<void> => {
+  const putUpdateLocale = async (localeString?: string): Promise<void> => {
     try {
-      await axiosClient.put("/api/users/locale", { locale });
+      await axiosClient.put("/api/users/locale", { locale: localeString });
     } catch (error) {
       handleError(error, "updating locale");
     }

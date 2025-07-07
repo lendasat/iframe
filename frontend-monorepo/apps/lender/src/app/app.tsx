@@ -38,6 +38,7 @@ import AvailableLoanApplications from "./loan-applications/available-loan-applic
 import TakeLoanApplication from "./loan-applications/loan-applications";
 import { Layout } from "./layout";
 import { Toaster } from "sonner";
+import "@frontend/ui-shared";
 
 function MainLayoutComponents() {
   const { backendVersion, user: lenderUser, logout } = useAuth();

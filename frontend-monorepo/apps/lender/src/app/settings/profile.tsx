@@ -15,7 +15,7 @@ import { MdEdit } from "react-icons/md";
 import { BiSolidError } from "react-icons/bi";
 import { IoIosUnlock } from "react-icons/io";
 import { useAuth, useLenderHttpClient } from "@frontend/http-client-lender";
-import { EditableTimezoneField } from "@frontend/ui-shared";
+import { EditableTimezoneField, i18n } from "@frontend/ui-shared";
 
 export function Profile() {
   const { user, refreshUser } = useAuth();
@@ -192,16 +192,17 @@ export function Profile() {
                   size={"2"}
                   className="text-font/50 dark:text-font-dark/50"
                 >
-                  Currency Formatting
+                  Preferred Language
                 </Text>
                 <Select.Root
                   value={user.locale || "system"}
                   onValueChange={async (value) => {
-                    const locale = value === "system" ? null : value;
+                    const locale = value === "system" ? undefined : value;
                     try {
                       setError("");
                       await putUpdateLocale(locale);
                       await refreshUser();
+                      await i18n.changeLanguage(locale);
                       setSuccess("Language updated successfully!");
                       setTimeout(() => setSuccess(""), 3000);
                     } catch (err) {

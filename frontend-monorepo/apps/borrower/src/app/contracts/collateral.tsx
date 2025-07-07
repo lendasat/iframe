@@ -145,7 +145,7 @@ export const Collateral = ({ contract, refreshContract }: CollateralProps) => {
   const contractAddress = contract?.contract_address;
   const refundAddress = contract?.borrower_btc_address;
   const collateralAmount = formatSatsToBitcoin(contract?.collateral_sats);
-  const collateralAmountUsd =
+  const collateralAmountFiat =
     contract?.collateral_sats != null && latestPrice
       ? contract.collateral_sats === 0
         ? formatCurrency(0, LoanAssetHelper.toCurrency(contract?.loan_asset))
@@ -244,8 +244,11 @@ export const Collateral = ({ contract, refreshContract }: CollateralProps) => {
           </div>
           <Separator className="my-3" />
           <div className="flex items-center justify-between">
-            <span className="text-sm text-gray-500">USD Value</span>
-            <span className="font-medium">{collateralAmountUsd}</span>
+            <span className="text-sm text-gray-500">
+              {LoanAssetHelper.toCurrency(contract?.loan_asset).toUpperCase()}
+              {" value"}
+            </span>
+            <span className="font-medium">{collateralAmountFiat}</span>
           </div>
           <Separator className="my-3" />
           <div className="flex items-center justify-between">

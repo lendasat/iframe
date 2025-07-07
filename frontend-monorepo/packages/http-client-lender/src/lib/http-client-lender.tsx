@@ -185,7 +185,7 @@ export interface HttpClientLender {
   getLenderProfile: (id: string) => Promise<LenderStats>;
   getBorrowerProfile: (id: string) => Promise<BorrowerStats>;
   putUpdateProfile: (request: PutUpdateProfile) => Promise<void>;
-  putUpdateLocale: (locale: string | null) => Promise<void>;
+  putUpdateLocale: (locale?: string) => Promise<void>;
 
   // Dispute methods
   startDispute: (
@@ -908,9 +908,9 @@ export const createHttpClientLender = (
     }
   };
 
-  const putUpdateLocale = async (locale: string | null): Promise<void> => {
+  const putUpdateLocale = async (localeString?: string): Promise<void> => {
     try {
-      await axiosClient.put("/api/users/locale", { locale });
+      await axiosClient.put("/api/users/locale", { locale: localeString });
     } catch (error) {
       handleError(error, "updating locale");
     }

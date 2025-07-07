@@ -314,7 +314,7 @@ const LoanDetails: React.FC<LoanDetailsProps> = ({
                 <p className="text-xs text-gray-500">
                   {formatCurrency(
                     interestAmount,
-                    LoanAssetHelper.toCurrency(loanAssetString as LoanAsset),
+                    LoanAssetHelper.toCurrency(loanAsset),
                   )}
                 </p>
               ) : (

@@ -1,5 +1,6 @@
 import type { FC } from "react";
 import { Currency } from "./models";
+import i18n from "./i18n";
 
 export const formatCurrency = (
   value: number,
@@ -19,15 +20,18 @@ export const formatCurrency = (
   // Map Currency enum to Intl currency codes
   const currencyCode = currency === Currency.EUR ? "EUR" : "USD";
 
-  // We make use of system locals
-  // - On a US system: "€1,000.00"
-  // - On a German system:  "1.000,00 €"
-  return new Intl.NumberFormat(undefined, {
-    style: "currency",
-    currency: currencyCode,
-    minimumFractionDigits,
-    maximumFractionDigits,
-  }).format(value);
+  return i18n.t("intlCurrencyWithOptions", {
+    val: value,
+    formatParams: {
+      val: {
+        style: "currency",
+        currency: currencyCode,
+        currencyDisplay: "narrowSymbol",
+        minimumFractionDigits,
+        maximumFractionDigits,
+      },
+    },
+  });
 };
 
 interface formatCurrencyProps {
@@ -51,12 +55,18 @@ export const newFormatCurrency = ({
   // Map Currency enum to Intl currency codes
   const currencyCode = currency === Currency.EUR ? "EUR" : "USD";
 
-  return new Intl.NumberFormat(undefined, {
-    style: "currency",
-    currency: currencyCode,
-    minimumFractionDigits: minFractionDigits,
-    maximumFractionDigits: maxFraction,
-  }).format(value);
+  return i18n.t("intlCurrencyWithOptions", {
+    val: value,
+    formatParams: {
+      val: {
+        style: "currency",
+        currency: currencyCode,
+        currencyDisplay: "narrowSymbol",
+        minimumFractionDigits: minFractionDigits,
+        maximumFractionDigits: maxFraction,
+      },
+    },
+  });
 };
 
 interface CurrencyFormatterProps {

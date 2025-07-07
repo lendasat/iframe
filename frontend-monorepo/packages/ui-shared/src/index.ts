@@ -186,3 +186,4 @@ export * from "./lib/models";
 export * from "./lib/price-context";
 export * from "./lib/currency";
 export * from "./lib/UserStats";
+export { default as i18n } from "./lib/i18n";

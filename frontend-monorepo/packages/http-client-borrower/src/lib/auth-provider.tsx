@@ -12,6 +12,7 @@ import {
 } from "./models";
 import { process_login_response, verify_server } from "browser-wallet";
 import { isAllowedPageWithoutLogin } from "./utils";
+import { i18n } from "@frontend/ui-shared";
 
 interface AuthContextType {
   user: User | null;
@@ -191,6 +192,7 @@ export const AuthProvider: FC<AuthProviderProps> = ({
         setEnabledFeatures([]);
       }
       if (currentUser) {
+        await i18n.changeLanguage(currentUser.locale);
         setUser(currentUser);
       } else {
         setUser(null);
