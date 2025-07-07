@@ -2,12 +2,21 @@ import type { ReactNode } from "react";
 import type { FC } from "react";
 import { createContext, useContext, useEffect, useRef, useState } from "react";
 
+enum Currency {
+  USD = "Usd",
+  EUR = "Eur",
+}
+
 interface PriceContextProps {
-  latestPrice: number;
+  latestPrices: {
+    [Currency.USD]: number;
+    [Currency.EUR]: number;
+  };
 }
 
 interface RawPriceUpdate {
   market_price: number;
+  currency: Currency;
 }
 
 const PriceContext = createContext<PriceContextProps | undefined>(undefined);
@@ -36,7 +45,13 @@ export const PriceProvider: FC<{ url: string; children: ReactNode }> = ({
   children,
   url,
 }) => {
-  const [latestPrice, setLatestPrice] = useState<number | undefined>();
+  const [latestPrices, setLatestPrices] = useState<{
+    [Currency.USD]: number;
+    [Currency.EUR]: number;
+  }>({
+    [Currency.USD]: 0,
+    [Currency.EUR]: 0,
+  });
   const ws = useRef<WebSocket | null>(null);
   const websocketUrl = changeProtocolToWSS(url);
 
@@ -57,8 +72,11 @@ export const PriceProvider: FC<{ url: string; children: ReactNode }> = ({
 
       ws.current.onmessage = (event: MessageEvent) => {
         const data: RawPriceUpdate = JSON.parse(event.data);
-        if (data.market_price) {
-          setLatestPrice(data.market_price);
+        if (data.market_price && data.currency) {
+          setLatestPrices((prev) => ({
+            ...prev,
+            [data.currency]: data.market_price,
+          }));
         }
       };
 
@@ -84,7 +102,7 @@ export const PriceProvider: FC<{ url: string; children: ReactNode }> = ({
   }, [websocketUrl]);
 
   return (
-    <PriceContext.Provider value={{ latestPrice }}>
+    <PriceContext.Provider value={{ latestPrices }}>
       {children}
     </PriceContext.Provider>
   );

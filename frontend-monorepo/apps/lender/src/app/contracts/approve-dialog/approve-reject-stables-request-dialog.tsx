@@ -36,8 +36,14 @@ const ApproveOrRejectStablesDialog = ({
   const { approveContract, rejectContract } = useLenderHttpClient();
 
   const contractId = contract.id;
-  const loanAmount = formatCurrency(contract.loan_amount);
-  const interestAmount = formatCurrency(contract.interest);
+  const loanAmount = formatCurrency(
+    contract.loan_amount,
+    LoanAssetHelper.toCurrency(contract.loan_asset),
+  );
+  const interestAmount = formatCurrency(
+    contract.interest,
+    LoanAssetHelper.toCurrency(contract.loan_asset),
+  );
   const durationDays = contract.duration_days;
   const loanAsset = contract.loan_asset;
   const isKycLoan =
@@ -123,18 +129,18 @@ const ApproveOrRejectStablesDialog = ({
           </Alert>
 
           {rejectError && (
-            <div className="mt-4 p-2 bg-red-50 text-red-600 rounded-md">
+            <div className="mt-4 rounded-md bg-red-50 p-2 text-red-600">
               <p className="text-sm">{rejectError}</p>
             </div>
           )}
           {approveError && (
-            <div className="mt-4 p-2 bg-red-50 text-red-600 rounded-md">
+            <div className="mt-4 rounded-md bg-red-50 p-2 text-red-600">
               <p className="text-sm">{approveError}</p>
             </div>
           )}
         </div>
 
-        <DialogFooter className="flex sm:justify-between gap-2">
+        <DialogFooter className="flex gap-2 sm:justify-between">
           <Button
             variant="outline"
             onClick={() => setOpen(false)}

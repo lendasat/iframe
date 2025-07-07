@@ -157,7 +157,7 @@ export default function TakeLoanApplication() {
 
   // Helper component for data list items
   const DataItem = ({ label, value, icon }: DataItemProps) => (
-    <div className="flex justify-between items-center py-2">
+    <div className="flex items-center justify-between py-2">
       <div className="flex items-center gap-2">
         {icon && icon}
         {label}
@@ -168,24 +168,29 @@ export default function TakeLoanApplication() {
 
   return (
     <ScrollArea className="h-full w-full">
-      <div className="p-4 space-y-4">
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+      <div className="space-y-4 p-4">
+        <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
           <Card>
             <CardContent className="p-6">
-              <div className="flex items-center gap-2 mb-4">
+              <div className="mb-4 flex items-center gap-2">
                 <h4 className="text-lg font-medium">
                   You will lend{" "}
                   {loading ? (
-                    <Skeleton className="inline-block w-24 h-5" />
+                    <Skeleton className="inline-block h-5 w-24" />
                   ) : (
                     <strong>
                       {loanApplication &&
-                        formatCurrency(loanApplication.loan_amount)}
+                        formatCurrency(
+                          loanApplication.loan_amount,
+                          LoanAssetHelper.toCurrency(
+                            loanApplication.loan_asset,
+                          ),
+                        )}
                     </strong>
                   )}{" "}
                   for{" "}
                   {loading ? (
-                    <Skeleton className="inline-block w-24 h-5" />
+                    <Skeleton className="inline-block h-5 w-24" />
                   ) : (
                     loanApplication &&
                     getFormatedStringFromDays(loanApplication.duration_days)
@@ -200,7 +205,7 @@ export default function TakeLoanApplication() {
                 icon={<Info size={16} />}
                 value={
                   loading ? (
-                    <Skeleton className="w-24 h-5" />
+                    <Skeleton className="h-5 w-24" />
                   ) : (
                     <div className="flex flex-col items-end">
                       {loanApplication?.duration_days !== ONE_YEAR && (
@@ -210,7 +215,7 @@ export default function TakeLoanApplication() {
                               (actualInterest * 100).toFixed(2)}
                             %
                           </span>
-                          <span className="text-xs text-muted-foreground">
+                          <span className="text-muted-foreground text-xs">
                             ({interestRate && (interestRate * 100).toFixed(1)}%
                             p.a.)
                           </span>
@@ -222,10 +227,17 @@ export default function TakeLoanApplication() {
                           p.a.
                         </span>
                       )}
-                      <span className="text-xs text-muted-foreground">
+                      <span className="text-muted-foreground text-xs">
                         ≈{" "}
                         {actualInterestUsdAmount &&
-                          formatCurrency(actualInterestUsdAmount, 1, 1)}{" "}
+                          formatCurrency(
+                            actualInterestUsdAmount,
+                            LoanAssetHelper.toCurrency(
+                              loanApplication?.loan_asset,
+                            ),
+                            1,
+                            1,
+                          )}{" "}
                         in total
                       </span>
                     </div>
@@ -240,14 +252,17 @@ export default function TakeLoanApplication() {
                 icon={<Info size={16} />}
                 value={
                   loading ? (
-                    <Skeleton className="w-24 h-5" />
+                    <Skeleton className="h-5 w-24" />
                   ) : (
                     <span className="text-sm font-semibold">
                       {liquidationPrice &&
                         newFormatCurrency({
                           value: liquidationPrice,
+                          currency: LoanAssetHelper.toCurrency(
+                            loanApplication?.loan_asset,
+                          ),
                           maxFraction: 0,
-                          minFraction: 1,
+                          minFraction: 0,
                         })}
                     </span>
                   )
@@ -260,7 +275,7 @@ export default function TakeLoanApplication() {
                 label="Expiry Date"
                 value={
                   loading ? (
-                    <Skeleton className="w-24 h-5" />
+                    <Skeleton className="h-5 w-24" />
                   ) : (
                     <span className="text-sm font-semibold">
                       {expiry?.toLocaleDateString([], {
@@ -279,7 +294,7 @@ export default function TakeLoanApplication() {
                 label="Loan Asset"
                 value={
                   loading ? (
-                    <Skeleton className="w-24 h-5" />
+                    <Skeleton className="h-5 w-24" />
                   ) : (
                     <span className="text-sm font-semibold">
                       {loanApplication &&
@@ -292,14 +307,14 @@ export default function TakeLoanApplication() {
           </Card>
 
           <Card>
-            <CardContent className="p-6 flex flex-col gap-4">
+            <CardContent className="flex flex-col gap-4 p-6">
               {/* Right side card content with loading states */}
               {loading ? (
                 // Skeleton loading state for the right card
                 <div className="space-y-4">
-                  <Skeleton className="w-full h-10" />
-                  <Skeleton className="w-full h-20" />
-                  <Skeleton className="w-full h-10" />
+                  <Skeleton className="h-10 w-full" />
+                  <Skeleton className="h-20 w-full" />
+                  <Skeleton className="h-10 w-full" />
                 </div>
               ) : (
                 // Actual content when loaded
@@ -316,14 +331,14 @@ export default function TakeLoanApplication() {
                         }
                         renderWarning={true}
                       />
-                      <p className="text-sm text-muted-foreground">
+                      <p className="text-muted-foreground text-sm">
                         This address will be used to transfer the loan amount
                       </p>
                     </div>
                   )}
 
                   {loanApplication && isFiatLoanApplication && lenderPubkey && (
-                    <div className={"w-full flex flex-col gap-2"}>
+                    <div className={"flex w-full flex-col gap-2"}>
                       <Alert>
                         <Info className="h-4 w-4" />
                         <AlertTitle>Heads up!</AlertTitle>
@@ -331,7 +346,12 @@ export default function TakeLoanApplication() {
                           <div>
                             <p>
                               You are lending USD{" "}
-                              {formatCurrency(loanApplication.loan_amount)}{" "}
+                              {formatCurrency(
+                                loanApplication.loan_amount,
+                                LoanAssetHelper.toCurrency(
+                                  loanApplication.loan_asset,
+                                ),
+                              )}{" "}
                               worth of{" "}
                               {LoanAssetHelper.print(
                                 loanApplication.loan_asset,
@@ -369,7 +389,7 @@ export default function TakeLoanApplication() {
                       >
                         <Button
                           size="default"
-                          className="w-full -px-4"
+                          className="-px-4 w-full"
                           disabled={buttonDisabled}
                         >
                           {isTaking ? "Processing..." : "Take loan application"}
@@ -380,7 +400,7 @@ export default function TakeLoanApplication() {
 
                   {!isFiatLoanApplication && (
                     <Button
-                      className="w-full -px-4"
+                      className="-px-4 w-full"
                       onClick={async (
                         e: React.MouseEvent<HTMLButtonElement>,
                       ) => {

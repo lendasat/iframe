@@ -25,7 +25,8 @@ import { Contract } from "@frontend/http-client-borrower";
 import {
   encodeBip21,
   formatSatsToBitcoin,
-  usePrice,
+  LoanAssetHelper,
+  usePriceForCurrency,
 } from "@frontend/ui-shared";
 import QRCode from "qrcode.react";
 
@@ -43,7 +44,9 @@ const AddCollateralDialog = ({
   const [open, setOpen] = useState(false);
   const [copiedAddress, setCopiedAddress] = useState(false);
   const [copiedAmount, setCopiedAmount] = useState(false);
-  const { latestPrice } = usePrice();
+  const latestPrice = usePriceForCurrency(
+    LoanAssetHelper.toCurrency(contract?.loan_asset),
+  );
 
   const collateralBtc = contract?.initial_collateral_sats
     ? contract.initial_collateral_sats / 100000000
@@ -107,7 +110,7 @@ const AddCollateralDialog = ({
           <>
             <div className="flex justify-center">
               <div
-                className="bg-white p-4 rounded-lg border shadow-sm cursor-copy hover:bg-gray-50 transition-colors"
+                className="cursor-copy rounded-lg border bg-white p-4 shadow-sm transition-colors hover:bg-gray-50"
                 onClick={
                   bip21Url ? () => handleCopyAddress(bip21Url) : undefined
                 }
@@ -189,13 +192,13 @@ const AddCollateralDialog = ({
           </>
         ) : (
           <div className="space-y-4 py-4">
-            <Skeleton className="h-48 w-48 rounded-lg mx-auto" />
+            <Skeleton className="mx-auto h-48 w-48 rounded-lg" />
             <Skeleton className="h-10 w-full" />
             <Skeleton className="h-10 w-full" />
           </div>
         )}
 
-        <DialogFooter className="flex sm:justify-between gap-2">
+        <DialogFooter className="flex gap-2 sm:justify-between">
           <Button
             variant="outline"
             onClick={() => setOpen(false)}

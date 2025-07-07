@@ -71,7 +71,10 @@ const MobileLoanApplicationCard = ({
           <DataList.Label minWidth="88px">Amount</DataList.Label>
           <DataList.Value className="flex flex-1 justify-end">
             <Skeleton loading={loading}>
-              {formatCurrency(application.loan_amount)}
+              {formatCurrency(
+                application.loan_amount,
+                LoanAssetHelper.toCurrency(application.loan_asset),
+              )}
             </Skeleton>
           </DataList.Value>
         </DataList.Item>
@@ -185,7 +188,15 @@ export function LoanApplicationTable({
       },
       cell: ({ cell }) => {
         const value = cell.getValue() as number;
-        return <>{formatCurrency(value)}</>;
+        const loanApplication = cell.row.original;
+        return (
+          <>
+            {formatCurrency(
+              value,
+              LoanAssetHelper.toCurrency(loanApplication.loan_asset),
+            )}
+          </>
+        );
       },
       filterFn: (
         row: Row<LoanApplication>,
@@ -497,7 +508,7 @@ export function LoanApplicationTable({
                 />
               ))
           ) : (
-            <Box className="p-4 text-center text-font dark:text-font-dark">
+            <Box className="text-font dark:text-font-dark p-4 text-center">
               No results.
             </Box>
           )}

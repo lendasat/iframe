@@ -99,7 +99,12 @@ export function FiatRepayment({
           {totalRepaymentAmount ? (
             <>
               Send the exact amount of{" "}
-              <strong>{formatCurrency(totalRepaymentAmount)}</strong>{" "}
+              <strong>
+                {formatCurrency(
+                  totalRepaymentAmount,
+                  LoanAssetHelper.toCurrency(contract?.loan_asset),
+                )}
+              </strong>{" "}
               <strong>{assetCoin}</strong> to the bank account below.
             </>
           ) : (
@@ -120,9 +125,9 @@ export function FiatRepayment({
       </div>
 
       {/* Transaction ID input section */}
-      <div className="space-y-2 pt-4 border-t mt-4">
+      <div className="mt-4 space-y-2 border-t pt-4">
         <h3 className="font-medium">Confirm Your Payment</h3>
-        <p className="text-sm text-muted-foreground">
+        <p className="text-muted-foreground text-sm">
           After completing your payment, please provide the transfer description
           for confirmation.
         </p>

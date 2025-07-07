@@ -34,7 +34,7 @@ export function ConfigureLoan({
   }).format(loanAmount);
 
   const { getIndirectLoanOffersByLender } = useHttpClientBorrower();
-  const { latestPrice } = usePrice();
+  const { latestPrices } = usePrice();
 
   const {
     value: loanOffers,
@@ -63,6 +63,8 @@ export function ConfigureLoan({
   const computeLoanDetails = useMemo(() => {
     if (!loanOffer) return {};
 
+    // FIXME: use the correct price depending on the asset
+    const latestPrice = latestPrices.Usd;
     const yearlyInterestRate = loanOffer.interest_rate;
     const collateralAmount = loanAmount / latestPrice / loanOffer.min_ltv;
     const interest = yearlyInterestRate * (days / 360) * loanAmount;
@@ -87,15 +89,15 @@ export function ConfigureLoan({
         maximumFractionDigits: 8,
       }).format(collateralAmount),
     };
-  }, [loanOffer, loanAmount, latestPrice, days]);
+  }, [loanOffer, loanAmount, latestPrices, days]);
 
   if (loading) {
     return (
       <div className="mx-auto max-w-md">
-        <Skeleton className="h-24 mb-4" />
-        <Skeleton className="h-12 mb-4" />
-        <Skeleton className="h-12 mb-4" />
-        <Skeleton className="h-12 mb-4" />
+        <Skeleton className="mb-4 h-24" />
+        <Skeleton className="mb-4 h-12" />
+        <Skeleton className="mb-4 h-12" />
+        <Skeleton className="mb-4 h-12" />
       </div>
     );
   }
@@ -122,7 +124,7 @@ export function ConfigureLoan({
           <div className="flex justify-between px-2">
             <Label>Collateral amount</Label>
             {computeLoanDetails.collateralAmountString === "NaN" ? (
-              <Skeleton className="h-4 w-25" />
+              <Skeleton className="w-25 h-4" />
             ) : (
               <Label>{computeLoanDetails.collateralAmountString} BTC</Label>
             )}

@@ -38,19 +38,22 @@ export function SectionCards({ isLoading, contracts }: SectionCardsProps) {
   const lockedSats = totalActiveContracts
     .map((c) => c.collateral_sats)
     .reduce((sum, amount) => sum + amount, 0);
+
+  // FIXME: this is not 100% correct as some loans might be in USD
   const lockedUsd = totalActiveContracts
     .map((c) => c.loan_amount)
     .reduce((sum, amount) => sum + amount, 0);
 
+  // FIXME: this is not 100% correct as some loans might be in USD
   const openInterest = totalActiveContracts
     .map((c) => c.interest)
     .reduce((sum, amount) => sum + amount, 0);
 
   return (
-    <div className="flex flex-col gap-4 mt-4 md:gap-6">
+    <div className="mt-4 flex flex-col gap-4 md:gap-6">
       <div
         className={
-          "grid gap-4 xs:grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 px-6"
+          "xs:grid-cols-1 grid gap-4 px-6 sm:grid-cols-2 xl:grid-cols-4"
         }
       >
         <Card className="@container/card">

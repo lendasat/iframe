@@ -1,6 +1,6 @@
 {
   "db_name": "PostgreSQL",
-  "query": "\n        UPDATE contracts\n        SET status = $1,\n            updated_at = $2\n        WHERE lender_id = $3\n          AND id = $4\n        RETURNING\n            id,\n            lender_id,\n            borrower_id,\n            loan_deal_id,\n            initial_ltv,\n            initial_collateral_sats,\n            origination_fee_sats,\n            collateral_sats,\n            loan_amount,\n            borrower_btc_address,\n            borrower_pk,\n            borrower_derivation_path,\n            lender_pk,\n            lender_derivation_path,\n            borrower_loan_address,\n            lender_loan_repayment_address,\n            loan_type as \"loan_type: crate::model::db::LoanType\",\n            contract_address,\n            contract_index,\n            borrower_npub,\n            lender_npub,\n            status as \"status: crate::model::db::ContractStatus\",\n            liquidation_status as \"liquidation_status: crate::model::db::LiquidationStatus\",\n            duration_days,\n            expiry_date,\n            contract_version,\n            interest_rate,\n            client_contract_id,\n            extension_duration_days,\n            extension_interest_rate,\n            created_at,\n            updated_at\n        ",
+  "query": "\n        SELECT\n            id,\n            lender_id,\n            borrower_id,\n            loan_deal_id,\n            initial_ltv,\n            initial_collateral_sats,\n            origination_fee_sats,\n            collateral_sats,\n            loan_amount,\n            borrower_btc_address,\n            borrower_pk,\n            borrower_derivation_path,\n            lender_pk,\n            lender_derivation_path,\n            borrower_loan_address,\n            lender_loan_repayment_address,\n            loan_type as \"loan_type: crate::model::db::LoanType\",\n            contract_address,\n            contract_index,\n            borrower_npub,\n            lender_npub,\n            status as \"status: crate::model::db::ContractStatus\",\n            liquidation_status as \"liquidation_status: crate::model::db::LiquidationStatus\",\n            duration_days,\n            expiry_date,\n            contract_version,\n            interest_rate,\n            client_contract_id,\n            extension_duration_days,\n            extension_interest_rate,\n            asset as \"asset: crate::model::LoanAsset\",\n            created_at,\n            updated_at\n        FROM contracts\n        where id = $1 AND\n        borrower_id = $2\n        ",
   "describe": {
     "columns": [
       {
@@ -210,50 +210,44 @@
       },
       {
         "ordinal": 30,
+        "name": "asset: crate::model::LoanAsset",
+        "type_info": {
+          "Custom": {
+            "name": "loan_asset",
+            "kind": {
+              "Enum": [
+                "UsdcPol",
+                "UsdtPol",
+                "UsdcEth",
+                "UsdtEth",
+                "UsdcStrk",
+                "UsdtStrk",
+                "UsdcSol",
+                "UsdtSol",
+                "Usd",
+                "Eur",
+                "Chf",
+                "Unknown",
+                "UsdtLiquid",
+                "Mxn"
+              ]
+            }
+          }
+        }
+      },
+      {
+        "ordinal": 31,
         "name": "created_at",
         "type_info": "Timestamptz"
       },
       {
-        "ordinal": 31,
+        "ordinal": 32,
         "name": "updated_at",
         "type_info": "Timestamptz"
       }
     ],
     "parameters": {
       "Left": [
-        {
-          "Custom": {
-            "name": "contract_status",
-            "kind": {
-              "Enum": [
-                "Requested",
-                "Approved",
-                "CollateralSeen",
-                "CollateralConfirmed",
-                "PrincipalGiven",
-                "RepaymentProvided",
-                "RepaymentConfirmed",
-                "Closing",
-                "Closed",
-                "Rejected",
-                "DisputeBorrowerStarted",
-                "DisputeLenderStarted",
-                "DisputeBorrowerResolved",
-                "DisputeLenderResolved",
-                "Cancelled",
-                "RequestExpired",
-                "Defaulted",
-                "Undercollateralized",
-                "RenewalRequested",
-                "Extended",
-                "ApprovalExpired",
-                "ClosedByLiquidation",
-                "ClosedByDefaulting"
-              ]
-            }
-          }
-        },
-        "Timestamptz",
         "Bpchar",
         "Bpchar"
       ]
@@ -290,8 +284,9 @@
       false,
       false,
       false,
+      false,
       false
     ]
   },
-  "hash": "2e8b87cdef9abc6c348d034bbe92db0b511942eb9d7a8481542ca31945d047bf"
+  "hash": "52bccba8b0e006359de8d9b1886c2dbcd0f642c18880362675a11f5bcd224cc1"
 }

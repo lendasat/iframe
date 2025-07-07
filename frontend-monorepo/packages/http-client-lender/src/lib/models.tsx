@@ -6,6 +6,7 @@ export interface User {
   email: string;
   verified: boolean;
   timezone?: string;
+  locale?: string;
   first_time_discount_rate: number;
   created_at: Date;
   personal_telegram_token?: string;
@@ -716,6 +717,7 @@ export interface UpgradeToPakeResponse {
 export type LoginResponseOrUpgrade = LoginResponse | MustUpgradeToPake;
 
 export type PakeLoginResponseOrUpgrade = PakeLoginResponse | MustUpgradeToPake;
+
 export interface PakeVerifyResponse {
   server_proof: string;
   token: string;

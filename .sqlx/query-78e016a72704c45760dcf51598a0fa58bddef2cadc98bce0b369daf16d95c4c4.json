@@ -1,6 +1,6 @@
 {
   "db_name": "PostgreSQL",
-  "query": "\n        SELECT\n            id as \"id!\",\n            lender_id as \"lender_id!\",\n            borrower_id as \"borrower_id!\",\n            loan_deal_id as \"loan_deal_id!\",\n            initial_ltv as \"initial_ltv!\",\n            initial_collateral_sats as \"initial_collateral_sats!\",\n            origination_fee_sats as \"origination_fee_sats!\",\n            collateral_sats as \"collateral_sats!\",\n            loan_amount as \"loan_amount!\",\n            borrower_btc_address as \"borrower_btc_address!\",\n            borrower_pk as \"borrower_pk!\",\n            borrower_derivation_path,\n            lender_pk as \"lender_pk!\",\n            lender_derivation_path as \"lender_derivation_path!\",\n            borrower_loan_address,\n            lender_loan_repayment_address,\n            loan_type as \"loan_type!: crate::model::db::LoanType\",\n            contract_address,\n            contract_index,\n            borrower_npub as \"borrower_npub!\",\n            lender_npub as \"lender_npub!\",\n            status as \"status!: crate::model::db::ContractStatus\",\n            liquidation_status as \"liquidation_status!: crate::model::db::LiquidationStatus\",\n            duration_days as \"duration_days!\",\n            expiry_date as \"expiry_date!\",\n            contract_version as \"contract_version!\",\n            interest_rate as \"interest_rate!\",\n            extension_duration_days as \"extension_duration_days!\",\n            extension_interest_rate as \"extension_interest_rate!\",\n            created_at as \"created_at!\",\n            updated_at as \"updated_at!\",\n            client_contract_id\n        FROM contracts_to_be_watched",
+  "query": "\n        SELECT\n            id as \"id!\",\n            lender_id as \"lender_id!\",\n            borrower_id as \"borrower_id!\",\n            loan_deal_id as \"loan_deal_id!\",\n            initial_ltv as \"initial_ltv!\",\n            initial_collateral_sats as \"initial_collateral_sats!\",\n            origination_fee_sats as \"origination_fee_sats!\",\n            collateral_sats as \"collateral_sats!\",\n            loan_amount as \"loan_amount!\",\n            borrower_btc_address as \"borrower_btc_address!\",\n            borrower_pk as \"borrower_pk!\",\n            borrower_derivation_path,\n            lender_pk as \"lender_pk!\",\n            lender_derivation_path as \"lender_derivation_path!\",\n            borrower_loan_address,\n            lender_loan_repayment_address,\n            loan_type as \"loan_type!: crate::model::db::LoanType\",\n            contract_address,\n            contract_index,\n            borrower_npub as \"borrower_npub!\",\n            lender_npub as \"lender_npub!\",\n            status as \"status!: crate::model::db::ContractStatus\",\n            liquidation_status as \"liquidation_status!: crate::model::db::LiquidationStatus\",\n            duration_days as \"duration_days!\",\n            expiry_date as \"expiry_date!\",\n            contract_version as \"contract_version!\",\n            interest_rate as \"interest_rate!\",\n            extension_duration_days as \"extension_duration_days!\",\n            extension_interest_rate as \"extension_interest_rate!\",\n            asset as \"asset!: crate::model::LoanAsset\",\n            created_at as \"created_at!\",\n            updated_at as \"updated_at!\",\n            client_contract_id\n        FROM contracts_to_be_watched\n        WHERE (\n            CASE \n                WHEN $1 = 'Usd' THEN asset != 'Eur'\n                WHEN $1 = 'Eur' THEN asset = 'Eur'\n                ELSE FALSE\n            END\n        )\n          AND status NOT IN ('Defaulted', 'Undercollateralized')\n          AND liquidation_status != 'Liquidated'\n        ",
   "describe": {
     "columns": [
       {
@@ -205,24 +205,54 @@
       },
       {
         "ordinal": 29,
+        "name": "asset!: crate::model::LoanAsset",
+        "type_info": {
+          "Custom": {
+            "name": "loan_asset",
+            "kind": {
+              "Enum": [
+                "UsdcPol",
+                "UsdtPol",
+                "UsdcEth",
+                "UsdtEth",
+                "UsdcStrk",
+                "UsdtStrk",
+                "UsdcSol",
+                "UsdtSol",
+                "Usd",
+                "Eur",
+                "Chf",
+                "Unknown",
+                "UsdtLiquid",
+                "Mxn"
+              ]
+            }
+          }
+        }
+      },
+      {
+        "ordinal": 30,
         "name": "created_at!",
         "type_info": "Timestamptz"
       },
       {
-        "ordinal": 30,
+        "ordinal": 31,
         "name": "updated_at!",
         "type_info": "Timestamptz"
       },
       {
-        "ordinal": 31,
+        "ordinal": 32,
         "name": "client_contract_id",
         "type_info": "Uuid"
       }
     ],
     "parameters": {
-      "Left": []
+      "Left": [
+        "Text"
+      ]
     },
     "nullable": [
+      true,
       true,
       true,
       true,
@@ -257,5 +287,5 @@
       true
     ]
   },
-  "hash": "35a0b3d7b50d873a39bec8c2f5b71399474f45151e93f98c9a7859ca8ba51ba6"
+  "hash": "78e016a72704c45760dcf51598a0fa58bddef2cadc98bce0b369daf16d95c4c4"
 }

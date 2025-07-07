@@ -6,6 +6,7 @@ import {
   Callout,
   Flex,
   Heading,
+  Select,
   Spinner,
   Text,
 } from "@radix-ui/themes";
@@ -14,12 +15,12 @@ import { MdEdit } from "react-icons/md";
 import { BiSolidError } from "react-icons/bi";
 import { IoIosUnlock } from "react-icons/io";
 import { useAuth, useLenderHttpClient } from "@frontend/http-client-lender";
-import { EditableTimezoneField } from "@frontend/ui-shared";
+import { EditableTimezoneField, i18n } from "@frontend/ui-shared";
 
 export function Profile() {
-  const { user } = useAuth();
-  const { forgotPassword } = useLenderHttpClient();
-  const { putUpdateProfile } = useLenderHttpClient();
+  const { user, refreshUser } = useAuth();
+  const { forgotPassword, putUpdateProfile, putUpdateLocale } =
+    useLenderHttpClient();
   const [isLoading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
@@ -181,6 +182,42 @@ export function Profile() {
                   }}
                   initialValue={user.timezone}
                 />
+              </Flex>
+            </Box>
+            <Box>
+              <Flex direction={"column"} gap={"1"}>
+                <Text
+                  as="label"
+                  weight={"medium"}
+                  size={"2"}
+                  className="text-font/50 dark:text-font-dark/50"
+                >
+                  Preferred Language
+                </Text>
+                <Select.Root
+                  value={user.locale || "system"}
+                  onValueChange={async (value) => {
+                    const locale = value === "system" ? undefined : value;
+                    try {
+                      setError("");
+                      await putUpdateLocale(locale);
+                      await refreshUser();
+                      await i18n.changeLanguage(locale);
+                      setSuccess("Language updated successfully!");
+                      setTimeout(() => setSuccess(""), 3000);
+                    } catch (err) {
+                      console.error("Failed updating locale: ", err);
+                      setError(`Failed updating language. ${err}`);
+                    }
+                  }}
+                >
+                  <Select.Trigger placeholder="Select language" />
+                  <Select.Content>
+                    <Select.Item value="system">System Default</Select.Item>
+                    <Select.Item value="en-US">English (US)</Select.Item>
+                    <Select.Item value="de-DE">Deutsch</Select.Item>
+                  </Select.Content>
+                </Select.Root>
               </Flex>
             </Box>
             <Box>

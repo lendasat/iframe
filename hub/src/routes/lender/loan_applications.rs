@@ -214,7 +214,7 @@ async fn map_to_api_loan_application(
         .map_err(Error::database)?
         .ok_or(Error::MissingBorrower)?;
 
-    let price = get_bitmex_index_price(config, OffsetDateTime::now_utc())
+    let price = get_bitmex_index_price(config, OffsetDateTime::now_utc(), request.loan_asset)
         .await
         .map_err(Error::bitmex_price)?;
 

@@ -42,6 +42,7 @@ import AvailableLoanApplications from "./loan-applications/available-loan-applic
 import BitcoinCollateralizedLoan from "./contracts/bitcoin-loan-component";
 import { Toaster } from "@frontend/shadcn";
 import { Dashboard } from "./dash/dash";
+import "@frontend/ui-shared";
 
 interface ProtectedRouteProps {
   children: React.ReactNode;

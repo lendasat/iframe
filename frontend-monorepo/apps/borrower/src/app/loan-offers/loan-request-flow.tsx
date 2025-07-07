@@ -6,9 +6,11 @@ import { useSearchParams } from "react-router-dom";
 import { Confirmation } from "./confirmation";
 import { LoanAmountAndDurationInputs } from "./loan-amount-and-duration-inputs";
 import { OffersSelectionTable } from "./offer-selection/offers-selection";
+import { LoanAsset } from "@frontend/ui-shared";
 
 export const LoanRequestFlow = () => {
   const [searchParams, setSearchParams] = useSearchParams();
+  const [selectedLoanAsset, setSelectedLoanAsset] = useState(LoanAsset.USD);
   // Initialize state from URL parameters
   const [selectedProduct, setSelectedProduct] = useState<
     LoanProductOption | undefined
@@ -132,6 +134,7 @@ export const LoanRequestFlow = () => {
             onLoanDurationChange={onSetLoanDuration}
             onLoanProductSelect={handleProductOptionSelect}
             selectedOption={selectedProduct}
+            selectedLoanAsset={selectedLoanAsset}
           />
         </Box>
 
@@ -142,6 +145,7 @@ export const LoanRequestFlow = () => {
             selectedOfferId={selectedOfferId}
             columnFilters={columnFilters}
             setColumnFilters={setColumnFilters}
+            setSelectedLoanAsset={setSelectedLoanAsset}
           />
         </Box>
 
@@ -151,6 +155,7 @@ export const LoanRequestFlow = () => {
             selectedOfferId={selectedOfferId}
             selectedLoanAmount={selectedLoanAmount}
             selectedLoanDuration={selectedLoanDuration}
+            selectedLoanAsset={selectedLoanAsset}
           />
           <Flex direction={"column"} mx={"2"} gap={"1"}>
             <Text size={"1"} weight={"light"}>

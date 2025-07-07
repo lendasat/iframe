@@ -43,8 +43,14 @@ const ApproveOrRejectFiatDialog = ({
   const { encryptFiatLoanDetailsLender } = useWallet();
 
   const contractId = contract.id;
-  const loanAmount = formatCurrency(contract.loan_amount);
-  const interestAmount = formatCurrency(contract.interest);
+  const loanAmount = formatCurrency(
+    contract.loan_amount,
+    LoanAssetHelper.toCurrency(contract.loan_asset),
+  );
+  const interestAmount = formatCurrency(
+    contract.interest,
+    LoanAssetHelper.toCurrency(contract.loan_asset),
+  );
   const durationDays = contract.duration_days;
   const loanAsset = contract.loan_asset;
   const isKycLoan =
@@ -125,14 +131,14 @@ const ApproveOrRejectFiatDialog = ({
   const shortContractId = contractId ? shortenUuid(contractId) : undefined;
 
   return (
-    <div className="flex gap-2 md:justify-end justify-center">
+    <div className="flex justify-center gap-2 md:justify-end">
       {rejectError && (
-        <div className="mt-4 p-2 bg-red-50 text-red-600 rounded-md">
+        <div className="mt-4 rounded-md bg-red-50 p-2 text-red-600">
           <p className="text-sm">{rejectError}</p>
         </div>
       )}
       {approveError && (
-        <div className="mt-4 p-2 bg-red-50 text-red-600 rounded-md">
+        <div className="mt-4 rounded-md bg-red-50 p-2 text-red-600">
           <p className="text-sm">{approveError}</p>
         </div>
       )}

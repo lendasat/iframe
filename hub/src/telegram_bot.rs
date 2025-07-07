@@ -318,7 +318,7 @@ impl xtra::Handler<Notification> for TelegramBot {
                 let loan_amount = loan_amount.round_dp(0).to_string();
                 let interest_rate = (interest_rate * Decimal::from(100)).round_dp(1).to_string();
                 (
-                    format!("Hi, {name}. A new loan request is availablegs: \nA borrower is looking to borrow {loan_amount} of {asset} for {interest_rate}% for {duration} days. \n You can disable these messages in your settings.", ),
+                    format!("Hi, {name}. A new loan request is available: \nA borrower is looking to borrow {loan_amount} of {asset} for {interest_rate}% for {duration} days. \n You can disable these messages in your settings.", ),
                     "Details".to_string(),
                 )
             }

@@ -17,7 +17,7 @@ import {
 } from "@frontend/shadcn";
 import { Badge } from "@frontend/shadcn";
 import {
-  CurrencyFormatter,
+  formatCurrency,
   getFormatedStringFromDays,
   LoanAssetHelper,
 } from "@frontend/ui-shared";
@@ -99,7 +99,10 @@ export function LoanApplicationTable({
               <TableRow key={application.loan_deal_id}>
                 <TableCell>
                   <Skeleton loading={loading}>
-                    {CurrencyFormatter({ value: application.loan_amount })}
+                    {formatCurrency(
+                      application.loan_amount,
+                      LoanAssetHelper.toCurrency(application.loan_asset),
+                    )}
                   </Skeleton>
                 </TableCell>
                 <TableCell>

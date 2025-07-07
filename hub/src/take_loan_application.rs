@@ -62,7 +62,11 @@ pub async fn take_application(
 
     let contract_id = Uuid::new_v4();
 
-    let current_price = get_bitmex_index_price(config, now)
+    let application = db::loan_applications::get_loan_by_id(db, loan_deal_id)
+        .await
+        .map_err(Error::Database)?
+        .ok_or(Error::LoanApplicationNotFound(loan_deal_id.to_string()))?;
+    let current_price = get_bitmex_index_price(config, now, application.loan_asset)
         .await
         .map_err(Error::BitMexPrice)?;
 

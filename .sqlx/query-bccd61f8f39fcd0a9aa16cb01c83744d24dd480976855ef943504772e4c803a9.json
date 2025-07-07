@@ -1,6 +1,6 @@
 {
   "db_name": "PostgreSQL",
-  "query": "\n        SELECT\n            id,\n            lender_id,\n            borrower_id,\n            loan_deal_id,\n            initial_ltv,\n            initial_collateral_sats,\n            origination_fee_sats,\n            collateral_sats,\n            loan_amount,\n            borrower_btc_address,\n            borrower_pk,\n            borrower_derivation_path,\n            lender_pk,\n            lender_derivation_path,\n            borrower_loan_address,\n            lender_loan_repayment_address,\n            loan_type as \"loan_type: crate::model::db::LoanType\",\n            contract_address,\n            contract_index,\n            borrower_npub,\n            lender_npub,\n            status as \"status: crate::model::db::ContractStatus\",\n            liquidation_status as \"liquidation_status: crate::model::db::LiquidationStatus\",\n            duration_days,\n            expiry_date,\n            contract_version,\n            interest_rate,\n            client_contract_id,\n            extension_duration_days,\n            extension_interest_rate,\n            created_at,\n            updated_at\n        FROM contracts\n        where id = $1\n        ",
+  "query": "\n        SELECT\n            id,\n            lender_id,\n            borrower_id,\n            loan_deal_id,\n            initial_ltv,\n            initial_collateral_sats,\n            origination_fee_sats,\n            collateral_sats,\n            loan_amount,\n            borrower_btc_address,\n            borrower_pk,\n            borrower_derivation_path,\n            lender_pk,\n            lender_derivation_path,\n            borrower_loan_address,\n            lender_loan_repayment_address,\n            loan_type as \"loan_type: crate::model::db::LoanType\",\n            contract_address,\n            contract_index,\n            borrower_npub,\n            lender_npub,\n            status as \"status: crate::model::db::ContractStatus\",\n            liquidation_status as \"liquidation_status: crate::model::db::LiquidationStatus\",\n            duration_days,\n            expiry_date,\n            contract_version,\n            interest_rate,\n            client_contract_id,\n            extension_duration_days,\n            extension_interest_rate,\n            asset as \"asset: crate::model::LoanAsset\",\n            created_at,\n            updated_at\n        FROM contracts\n        where borrower_id = $1\n        ",
   "describe": {
     "columns": [
       {
@@ -210,11 +210,38 @@
       },
       {
         "ordinal": 30,
+        "name": "asset: crate::model::LoanAsset",
+        "type_info": {
+          "Custom": {
+            "name": "loan_asset",
+            "kind": {
+              "Enum": [
+                "UsdcPol",
+                "UsdtPol",
+                "UsdcEth",
+                "UsdtEth",
+                "UsdcStrk",
+                "UsdtStrk",
+                "UsdcSol",
+                "UsdtSol",
+                "Usd",
+                "Eur",
+                "Chf",
+                "Unknown",
+                "UsdtLiquid",
+                "Mxn"
+              ]
+            }
+          }
+        }
+      },
+      {
+        "ordinal": 31,
         "name": "created_at",
         "type_info": "Timestamptz"
       },
       {
-        "ordinal": 31,
+        "ordinal": 32,
         "name": "updated_at",
         "type_info": "Timestamptz"
       }
@@ -256,8 +283,9 @@
       false,
       false,
       false,
+      false,
       false
     ]
   },
-  "hash": "1512f974e476d24c29f44c1753aedc9eb4fe6d34bbd48accb26add763c236df6"
+  "hash": "bccd61f8f39fcd0a9aa16cb01c83744d24dd480976855ef943504772e4c803a9"
 }

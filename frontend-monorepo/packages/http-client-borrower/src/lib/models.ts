@@ -722,6 +722,7 @@ export interface User {
   used_referral_code?: string;
   personal_referral_codes?: PersonalReferralCode[];
   timezone?: string;
+  locale?: string;
   first_time_discount_rate: number;
   created_at: Date;
   personal_telegram_token?: string;

@@ -24,7 +24,8 @@ import {
   FormMessage,
 } from "@frontend/shadcn";
 import { Confirmation } from "./confirmation";
-import { DollarSign, Percent } from "lucide-react";
+import { DollarSign, Percent, Euro } from "lucide-react";
+import { Currency } from "@frontend/ui-shared";
 
 // Define the form schema with Zod
 const loanFormSchema = z.object({
@@ -108,10 +109,12 @@ export default function LoanApplication() {
   };
 
   const availableLoanAssets = LoanAssetHelper.all();
+  const selectedAsset = formValues.assetType as LoanAsset;
+  const selectedCurrency = LoanAssetHelper.toCurrency(selectedAsset);
 
   return (
     <ScrollArea className="h-screen">
-      <div className="py-10 space-y-8 px-4">
+      <div className="space-y-8 px-4 py-10">
         <Form {...form}>
           <form className="space-y-8">
             <div className="grid gap-6 sm:grid-cols-2">
@@ -120,12 +123,14 @@ export default function LoanApplication() {
                 name="loanAmount"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>
-                      How much do you wish to borrow in USD?
-                    </FormLabel>
+                    <FormLabel>How much do you wish to borrow?</FormLabel>
                     <FormControl>
-                      <div className="relative flex items-center max-w-2xl ">
-                        <DollarSign className="absolute left-2 top-1/2 h-4 w-4 -translate-y-1/2 transform" />
+                      <div className="relative flex max-w-2xl items-center">
+                        {selectedCurrency === Currency.EUR ? (
+                          <Euro className="absolute left-2 top-1/2 h-4 w-4 -translate-y-1/2 transform" />
+                        ) : (
+                          <DollarSign className="absolute left-2 top-1/2 h-4 w-4 -translate-y-1/2 transform" />
+                        )}
                         <Input
                           {...field}
                           type="number"
@@ -209,10 +214,10 @@ export default function LoanApplication() {
               name="interestRate"
               render={({ field }) => (
                 <FormItem>
-                  <div className="flex justify-between items-center">
+                  <div className="flex items-center justify-between">
                     <FormLabel>Preferred interest rate (p.a.)</FormLabel>
                     <div className="w-20">
-                      <div className="relative flex items-center max-w-2xl ">
+                      <div className="relative flex max-w-2xl items-center">
                         <Input
                           {...field}
                           type="number"
@@ -262,11 +267,11 @@ export default function LoanApplication() {
               name="ltv"
               render={({ field }) => (
                 <FormItem>
-                  <div className="flex justify-between items-center">
+                  <div className="flex items-center justify-between">
                     <FormLabel>Loan-to-value ratio</FormLabel>
 
                     <div className="w-20">
-                      <div className="relative flex items-center max-w-2xl ">
+                      <div className="relative flex max-w-2xl items-center">
                         <Input
                           {...field}
                           type="number"

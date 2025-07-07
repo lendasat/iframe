@@ -1,6 +1,6 @@
 {
   "db_name": "PostgreSQL",
-  "query": "SELECT\n           b.id as \"id!\",\n           b.name as \"name!\",\n           b.email,\n           b.used_referral_code,\n           b.first_time_discount_rate_referee,\n           b.timezone,\n           b_auth.salt,\n           b_auth.email as auth_email,\n           b_auth.verifier,\n           b_auth.password,\n           b_auth.verified,\n           b_auth.verification_code,\n           b_auth.password_reset_token,\n           b_auth.password_reset_at,\n           b.created_at as \"created_at!\",\n           b.updated_at as \"updated_at!\"\n           FROM borrowers_password_auth b_auth\n           LEFT JOIN borrower_discount_info b ON b.id = b_auth.borrower_id\n           WHERE b_auth.email = $1\n        ",
+  "query": "SELECT\n           b.id as \"id!\",\n           b.name as \"name!\",\n           b.email,\n           b.used_referral_code,\n           b.first_time_discount_rate_referee,\n           b.timezone,\n           b.locale,\n           b_auth.salt,\n           b_auth.email as auth_email,\n           b_auth.verifier,\n           b_auth.password,\n           b_auth.verified,\n           b_auth.verification_code,\n           b_auth.password_reset_token,\n           b_auth.password_reset_at,\n           b.created_at as \"created_at!\",\n           b.updated_at as \"updated_at!\"\n           FROM borrowers_password_auth b_auth\n           LEFT JOIN borrower_discount_info b ON b.id = b_auth.borrower_id\n           WHERE b_auth.email = $1\n        ",
   "describe": {
     "columns": [
       {
@@ -35,51 +35,56 @@
       },
       {
         "ordinal": 6,
-        "name": "salt",
+        "name": "locale",
         "type_info": "Text"
       },
       {
         "ordinal": 7,
+        "name": "salt",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 8,
         "name": "auth_email",
         "type_info": "Varchar"
       },
       {
-        "ordinal": 8,
+        "ordinal": 9,
         "name": "verifier",
         "type_info": "Text"
       },
       {
-        "ordinal": 9,
+        "ordinal": 10,
         "name": "password",
         "type_info": "Varchar"
       },
       {
-        "ordinal": 10,
+        "ordinal": 11,
         "name": "verified",
         "type_info": "Bool"
       },
       {
-        "ordinal": 11,
+        "ordinal": 12,
         "name": "verification_code",
         "type_info": "Varchar"
       },
       {
-        "ordinal": 12,
+        "ordinal": 13,
         "name": "password_reset_token",
         "type_info": "Varchar"
       },
       {
-        "ordinal": 13,
+        "ordinal": 14,
         "name": "password_reset_at",
         "type_info": "Timestamptz"
       },
       {
-        "ordinal": 14,
+        "ordinal": 15,
         "name": "created_at!",
         "type_info": "Timestamptz"
       },
       {
-        "ordinal": 15,
+        "ordinal": 16,
         "name": "updated_at!",
         "type_info": "Timestamptz"
       }
@@ -90,6 +95,7 @@
       ]
     },
     "nullable": [
+      true,
       true,
       true,
       true,
@@ -108,5 +114,5 @@
       true
     ]
   },
-  "hash": "8da80f8b087ce095c65f754b1be969624c818e9eed7108e4a7045e31c8e155f2"
+  "hash": "8307a64d691c78cd33e070af7af22b358ec4215cfe0b8c6fc2655192a9be3e45"
 }

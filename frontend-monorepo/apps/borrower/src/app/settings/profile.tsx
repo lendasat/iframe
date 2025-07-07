@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useAuth, useHttpClientBorrower } from "@frontend/http-client-borrower";
-import { EditableTimezoneField } from "@frontend/ui-shared";
+import { EditableTimezoneField, i18n } from "@frontend/ui-shared";
 import {
   Card,
   CardHeader,
@@ -12,6 +12,11 @@ import {
   AlertDescription,
   Badge,
   Button,
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
 } from "@frontend/shadcn";
 import { ReferralCodesTable } from "./referral-codes";
 import { format } from "date-fns";
@@ -19,11 +24,12 @@ import { LuCircleAlert, LuLoader, LuPencil } from "react-icons/lu";
 import { toast } from "sonner";
 
 export function Profile() {
-  const { user } = useAuth();
-  const { forgotPassword } = useHttpClientBorrower();
-  const { putUpdateProfile } = useHttpClientBorrower();
+  const { user, refreshUser } = useAuth();
+  const { forgotPassword, putUpdateProfile, putUpdateLocale } =
+    useHttpClientBorrower();
   const [isLoading, setLoading] = useState(false);
   const [error, setError] = useState("");
+  const [success, setSuccess] = useState("");
 
   const handleResetPassword = async () => {
     setLoading(true);
@@ -49,7 +55,7 @@ export function Profile() {
   }
 
   return (
-    <div className="space-y-4 max-w-3xl mx-auto">
+    <div className="mx-auto max-w-3xl space-y-4">
       <Card className="shadow-sm">
         <CardContent className="p-3">
           <div className="flex items-center gap-3">
@@ -71,25 +77,25 @@ export function Profile() {
       </Card>
 
       <Card className="shadow-sm">
-        <CardHeader className="pb-1 pt-3 px-4">
+        <CardHeader className="px-4 pb-1 pt-3">
           <h4 className="text-sm font-semibold">Personal information</h4>
         </CardHeader>
         <CardContent className="p-4 pt-2">
           <div className="grid gap-4 md:grid-cols-2">
             <div className="flex flex-col gap-0.5">
-              <div className="text-xs text-gray-500 font-medium">Username</div>
+              <div className="text-xs font-medium text-gray-500">Username</div>
               <p className="text-sm font-medium">{user.name}</p>
             </div>
 
             <div className="flex flex-col gap-0.5">
-              <div className="text-xs text-gray-500 font-medium">
+              <div className="text-xs font-medium text-gray-500">
                 Email Address
               </div>
               <p className="text-sm font-medium">{user.email}</p>
             </div>
 
             <div className="flex flex-col gap-0.5">
-              <div className="text-xs text-gray-500 font-medium">Password</div>
+              <div className="text-xs font-medium text-gray-500">Password</div>
               <div className="flex flex-row justify-between">
                 <p className="text-sm font-medium">********</p>
                 <Button
@@ -108,7 +114,7 @@ export function Profile() {
             </div>
 
             <div className="flex flex-col gap-0.5">
-              <div className="text-xs text-gray-500 font-medium">Timezone</div>
+              <div className="text-xs font-medium text-gray-500">Timezone</div>
               <EditableTimezoneField
                 onSave={async (newVal) => {
                   await putUpdateProfile({
@@ -120,14 +126,46 @@ export function Profile() {
             </div>
 
             <div className="flex flex-col gap-0.5">
-              <div className="text-xs text-gray-500 font-medium">Joined on</div>
+              <div className="text-xs font-medium text-gray-500">
+                Preferred Language
+              </div>
+              <Select
+                value={user.locale || "system"}
+                onValueChange={async (value) => {
+                  const locale = value === "system" ? undefined : value;
+                  try {
+                    setError("");
+                    await putUpdateLocale(locale);
+                    await refreshUser();
+                    await i18n.changeLanguage(locale);
+                    setSuccess("Language updated successfully!");
+                    setTimeout(() => setSuccess(""), 3000);
+                  } catch (err) {
+                    console.error("Failed updating locale: ", err);
+                    setError(`Failed updating language. ${err}`);
+                  }
+                }}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Select language" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="system">System Default</SelectItem>
+                  <SelectItem value="en-US">English (US)</SelectItem>
+                  <SelectItem value="de-DE">Deutsch</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div className="flex flex-col gap-0.5">
+              <div className="text-xs font-medium text-gray-500">Joined on</div>
               <p className="text-sm font-medium">
                 {format(user.created_at, "MMM, dd yyyy - p")}
               </p>
             </div>
 
             <div className="flex flex-col gap-0.5">
-              <div className="text-xs text-gray-500 font-medium">
+              <div className="text-xs font-medium text-gray-500">
                 Used referral code
               </div>
               <Badge variant="outline">
@@ -136,7 +174,7 @@ export function Profile() {
             </div>
 
             <div className="flex flex-col gap-0.5">
-              <div className="text-xs text-gray-500 font-medium">
+              <div className="text-xs font-medium text-gray-500">
                 Current discount on origination fee
               </div>
               <p className="text-sm font-medium">
@@ -147,8 +185,8 @@ export function Profile() {
         </CardContent>
       </Card>
 
-      <Card className="shadow-sm pb-24">
-        <CardHeader className="pb-1 pt-3 px-4">
+      <Card className="pb-24 shadow-sm">
+        <CardHeader className="px-4 pb-1 pt-3">
           <h4 className="text-sm font-semibold">Personal referral codes</h4>
         </CardHeader>
         <CardContent className="p-4 pt-2">
@@ -170,9 +208,19 @@ export function Profile() {
       </Card>
 
       {error && (
-        <Alert variant="destructive" className="text-sm my-4">
+        <Alert variant="destructive" className="my-4 text-sm">
           <LuCircleAlert className="h-4 w-4" />
           <AlertDescription className="text-xs">{error}</AlertDescription>
+        </Alert>
+      )}
+
+      {success && (
+        <Alert
+          variant="default"
+          className="my-4 border-green-500 text-sm text-green-700"
+        >
+          <LuCircleAlert className="h-4 w-4" />
+          <AlertDescription className="text-xs">{success}</AlertDescription>
         </Alert>
       )}
 

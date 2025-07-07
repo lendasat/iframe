@@ -12,12 +12,14 @@ import {
 } from "./models";
 import { process_login_response, verify_server } from "browser-wallet";
 import { isAllowedPageWithoutLogin } from "./utils";
+import { i18n } from "@frontend/ui-shared";
 
 interface AuthContextType {
   user: User | null;
   loading: boolean;
   login: (email: string, password: string) => Promise<LoginResponseOrUpgrade>;
   logout: () => Promise<void>;
+  refreshUser: () => Promise<void>;
   backendVersion: Version;
   enabledFeatures: LoanProductOption[];
 }
@@ -190,6 +192,7 @@ export const AuthProvider: FC<AuthProviderProps> = ({
         setEnabledFeatures([]);
       }
       if (currentUser) {
+        await i18n.changeLanguage(currentUser.locale);
         setUser(currentUser);
       } else {
         setUser(null);
@@ -219,9 +222,36 @@ export const AuthProvider: FC<AuthProviderProps> = ({
     }
   };
 
+  const refreshUser = async () => {
+    try {
+      const userData = await httpClient.me();
+      if (userData) {
+        setUser(userData.user);
+        setEnabledFeatures(
+          FeatureMapper.mapEnabledFeatures(userData.enabled_features),
+        );
+      } else {
+        setUser(null);
+        setEnabledFeatures([]);
+      }
+    } catch (error) {
+      console.error("Failed to refresh user data:", error);
+      // Don't throw the error to avoid breaking the UI
+      // The user will remain in their current state
+    }
+  };
+
   return (
     <AuthContext.Provider
-      value={{ user, loading, login, logout, backendVersion, enabledFeatures }}
+      value={{
+        user,
+        loading,
+        login,
+        logout,
+        refreshUser,
+        backendVersion,
+        enabledFeatures,
+      }}
     >
       <HttpClientContext.Provider value={httpClient}>
         {children}

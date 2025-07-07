@@ -66,10 +66,10 @@ export const SectionCards = ({ contracts, isLoading }: SectionCardsProps) => {
   const averageApr = calculateWeightedAverageAPR(closedContracts).toFixed(2);
 
   return (
-    <div className="flex flex-col gap-4 mt-4 md:gap-6 md:max-w-full">
+    <div className="mt-4 flex flex-col gap-4 md:max-w-full md:gap-6">
       <div
         className={
-          "grid gap-4 xs:grid-cols-1 sm:grid-cols-2 md:grid-cols-5 xl:grid-cols-5 px-6"
+          "xs:grid-cols-1 grid gap-4 px-6 sm:grid-cols-2 md:grid-cols-5 xl:grid-cols-5"
         }
       >
         <Card>
@@ -79,6 +79,7 @@ export const SectionCards = ({ contracts, isLoading }: SectionCardsProps) => {
               {isLoading ? (
                 <Skeleton className="h-8 w-[150px]" />
               ) : (
+                // FIXME: This is not 100%: Total amount is not USD, maybe we should add a None currency
                 formatCurrency(totalLoanAmount)
               )}
             </CardTitle>

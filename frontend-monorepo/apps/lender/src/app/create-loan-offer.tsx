@@ -850,8 +850,15 @@ const CreateLoanOffer = () => {
               <div className="my-4 flex items-center justify-between">
                 <span className="text-muted-foreground text-sm">Amount</span>
                 <span className="text-foreground/80 text-sm font-semibold">
-                  {formatCurrency(watchLoanAmount.min)} -{" "}
-                  {formatCurrency(watchLoanAmount.max)}
+                  {formatCurrency(
+                    watchLoanAmount.min,
+                    LoanAssetHelper.toCurrency(watchLoanAsset as LoanAsset),
+                  )}{" "}
+                  -{" "}
+                  {formatCurrency(
+                    watchLoanAmount.max,
+                    LoanAssetHelper.toCurrency(watchLoanAsset as LoanAsset),
+                  )}
                 </span>
               </div>
               <Separator className="opacity-50" />

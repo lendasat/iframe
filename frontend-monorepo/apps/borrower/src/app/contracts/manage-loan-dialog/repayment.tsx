@@ -47,7 +47,10 @@ export function Repayment({
               <Label>Principal Amount</Label>
               {principalAmount !== undefined ? (
                 <p className="text-lg font-bold">
-                  {formatCurrency(principalAmount)}
+                  {formatCurrency(
+                    principalAmount,
+                    LoanAssetHelper.toCurrency(contract?.loan_asset),
+                  )}
                 </p>
               ) : (
                 <Skeleton className="h-4 w-[150px]" />
@@ -58,7 +61,10 @@ export function Repayment({
             <Label>Interest</Label>
             {interestAmount !== undefined ? (
               <p className="text-lg font-bold">
-                {formatCurrency(interestAmount)}
+                {formatCurrency(
+                  interestAmount,
+                  LoanAssetHelper.toCurrency(contract?.loan_asset),
+                )}
               </p>
             ) : (
               <Skeleton className="h-4 w-[150px]" />
@@ -69,7 +75,11 @@ export function Repayment({
           <Label>Total Payment</Label>
           {totalRepaymentAmount !== undefined ? (
             <p className="text-xl font-bold">
-              {formatCurrency(totalRepaymentAmount)} {assetCoin}
+              {formatCurrency(
+                totalRepaymentAmount,
+                LoanAssetHelper.toCurrency(contract?.loan_asset),
+              )}{" "}
+              {assetCoin}
             </p>
           ) : (
             <Skeleton className="h-4 w-[150px]" />

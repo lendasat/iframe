@@ -998,6 +998,7 @@ struct FilteredUser {
     used_referral_code: Option<String>,
     personal_referral_codes: Vec<PersonalReferralCode>,
     timezone: Option<String>,
+    locale: Option<String>,
     personal_telegram_token: String,
     #[serde(with = "rust_decimal::serde::float")]
     first_time_discount_rate: Decimal,
@@ -1059,6 +1060,7 @@ impl FilteredUser {
                 .collect(),
             first_time_discount_rate: user.first_time_discount_rate_referee.unwrap_or_default(),
             timezone: user.timezone.clone(),
+            locale: user.locale.clone(),
             personal_telegram_token: personal_telegram_token.token,
             created_at: created_at_utc,
             updated_at: updated_at_utc,

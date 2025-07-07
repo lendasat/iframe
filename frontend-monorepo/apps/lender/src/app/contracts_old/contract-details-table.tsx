@@ -5,7 +5,11 @@ import {
   contractStatusToLabelString,
   LiquidationStatus,
 } from "@frontend/http-client-lender";
-import { CurrencyFormatter, LtvProgressBar } from "@frontend/ui-shared";
+import {
+  formatCurrency,
+  LoanAssetHelper,
+  LtvProgressBar,
+} from "@frontend/ui-shared";
 import { InfoCircledIcon } from "@radix-ui/react-icons";
 import {
   Badge,
@@ -276,7 +280,10 @@ export const ContractDetailsTable = ({
                     size={"1"}
                     weight={"medium"}
                   >
-                    <CurrencyFormatter value={contract.loan_amount} />
+                    {formatCurrency(
+                      contract.loan_amount,
+                      LoanAssetHelper.toCurrency(contract.loan_asset),
+                    )}
                   </Text>
                 </Table.RowHeaderCell>
               )}
@@ -315,6 +322,7 @@ export const ContractDetailsTable = ({
                   <LtvProgressBar
                     collateralBtc={collateral_btc}
                     loanAmount={contract.loan_amount}
+                    loanAsset={contract.loan_asset}
                   />
                 </Table.Cell>
               )}

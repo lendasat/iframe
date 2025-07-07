@@ -154,9 +154,7 @@ export const changeProtocolToWSS = (url: string): string => {
   return url.replace(/^http(s?):\/\//i, "ws$1://");
 };
 
-export * from "./lib/auth/email-verification-form";
 export * from "./lib/auth/forgot-password-form";
-export * from "./lib/auth/login-form";
 export * from "./lib/auth/registration-form";
 export * from "./lib/auth/reset-password-form";
 export * from "./lib/auth/upgrade-to-pake-form";
@@ -184,5 +182,6 @@ export * from "./lib/header-component";
 export * from "./lib/ltv-progress-bar/ltv-progress-bar";
 export * from "./lib/models";
 export * from "./lib/price-context";
-export * from "./lib/usd";
+export * from "./lib/currency";
 export * from "./lib/UserStats";
+export { default as i18n } from "./lib/i18n";

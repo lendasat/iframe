@@ -109,7 +109,7 @@ const MobileOfferCard = ({
             {loading ? (
               <div className="bg-muted h-4 w-24 animate-pulse rounded"></div>
             ) : (
-              `${formatCurrency(offer.loan_amount_min)} - ${formatCurrency(offer.loan_amount_max)}`
+              `${formatCurrency(offer.loan_amount_min, LoanAssetHelper.toCurrency(offer.loan_asset))} - ${formatCurrency(offer.loan_amount_max, LoanAssetHelper.toCurrency(offer.loan_asset))}`
             )}
           </span>
         </div>
@@ -216,6 +216,7 @@ interface LoanOfferTableProps {
   onColumnFiltersChange: OnChangeFn<ColumnFiltersState>;
   enableRowSelection: boolean;
   onOfferSelect?: (offerId: string) => void;
+  setSelectedLoanAsset?: (loanAsset: LoanAsset) => void;
   selectedOfferId?: string;
   enableActionColumn?: boolean;
   onActionColumnAction?: (offer: LoanOffer) => void;
@@ -228,6 +229,7 @@ export function LoanOfferTable({
   onColumnFiltersChange,
   enableRowSelection,
   onOfferSelect,
+  setSelectedLoanAsset,
   selectedOfferId,
   enableActionColumn,
   onActionColumnAction,
@@ -255,9 +257,18 @@ export function LoanOfferTable({
         },
         cell: ({ cell }) => {
           const value = cell.getValue() as AmountRange;
+          const offer = cell.row.original;
           return (
             <>
-              {formatCurrency(value.min)} - {formatCurrency(value.max)}
+              {formatCurrency(
+                value.min,
+                LoanAssetHelper.toCurrency(offer.loan_asset),
+              )}{" "}
+              -{" "}
+              {formatCurrency(
+                value.max,
+                LoanAssetHelper.toCurrency(offer.loan_asset),
+              )}
             </>
           );
         },
@@ -489,7 +500,13 @@ export function LoanOfferTable({
         const newValue =
           typeof updater === "function" ? updater(rowSelection) : updater;
         const selectedId = Object.keys(newValue)[0];
+
         onOfferSelect(selectedId);
+        if (setSelectedLoanAsset) {
+          const selectedRow = table.getRow(selectedId);
+          const selectedOffer = selectedRow.original;
+          setSelectedLoanAsset(selectedOffer.loan_asset);
+        }
       }
     },
     enableFilters: true,

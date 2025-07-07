@@ -68,6 +68,7 @@ pub struct Borrower {
     pub personal_referral_codes: Vec<PersonalReferralCode>,
     pub first_time_discount_rate_referee: Option<Decimal>,
     pub timezone: Option<String>,
+    pub locale: Option<String>,
     pub created_at: OffsetDateTime,
     pub updated_at: OffsetDateTime,
 }
@@ -135,6 +136,7 @@ pub struct Lender {
     pub invite_code: Option<i32>,
     pub password_reset_token: Option<String>,
     pub timezone: Option<String>,
+    pub locale: Option<String>,
     #[serde(with = "time::serde::rfc3339::option")]
     pub password_reset_at: Option<OffsetDateTime>,
     #[serde(with = "time::serde::rfc3339")]
@@ -520,6 +522,24 @@ impl LoanAsset {
             | LoanAsset::UsdtLiquid => false,
         }
     }
+
+    pub fn to_currency(&self) -> Currency {
+        match self {
+            LoanAsset::UsdcPol
+            | LoanAsset::UsdtPol
+            | LoanAsset::UsdcEth
+            | LoanAsset::UsdtEth
+            | LoanAsset::UsdcStrk
+            | LoanAsset::UsdtStrk
+            | LoanAsset::UsdcSol
+            | LoanAsset::UsdtSol
+            | LoanAsset::Usd
+            | LoanAsset::Chf
+            | LoanAsset::Mxn
+            | LoanAsset::UsdtLiquid => Currency::Usd,
+            LoanAsset::Eur => Currency::Eur,
+        }
+    }
 }
 
 impl fmt::Display for LoanAsset {
@@ -642,11 +662,16 @@ pub struct Contract {
     /// Yearly interest rate.
     pub interest_rate: Decimal,
     pub extension_policy: ExtensionPolicy,
+    pub asset: LoanAsset,
     pub created_at: OffsetDateTime,
     pub updated_at: OffsetDateTime,
 }
 
 impl Contract {
+    pub fn currency(&self) -> Currency {
+        self.asset.to_currency()
+    }
+
     pub fn ltv(&self, installments: &[Installment], price: Decimal) -> Result<Decimal> {
         let actual_collateral_sats =
             Decimal::from_u64(self.actual_collateral().to_sat()).expect("to fit into u64");
@@ -872,6 +897,7 @@ pub struct ApiKeyInfo {
 }
 
 pub mod db {
+    use crate::model::LoanAsset;
     use rust_decimal::Decimal;
     use serde::Deserialize;
     use serde::Serialize;
@@ -911,6 +937,7 @@ pub mod db {
         pub client_contract_id: Option<Uuid>,
         pub extension_duration_days: i32,
         pub extension_interest_rate: Decimal,
+        pub asset: LoanAsset,
         #[serde(with = "time::serde::rfc3339")]
         pub created_at: OffsetDateTime,
         #[serde(with = "time::serde::rfc3339")]
@@ -1038,6 +1065,7 @@ impl From<db::Contract> for Contract {
             contract_version: ContractVersion::from(value.contract_version),
             client_contract_id: value.client_contract_id,
             extension_policy,
+            asset: value.asset,
             created_at: value.created_at,
             updated_at: value.updated_at,
         }
@@ -1179,6 +1207,7 @@ impl From<Contract> for db::Contract {
             client_contract_id: value.client_contract_id,
             extension_duration_days,
             extension_interest_rate,
+            asset: value.asset,
             created_at: value.created_at,
             updated_at: value.updated_at,
         }
@@ -1475,6 +1504,21 @@ pub enum RepaymentPlan {
     InterestOnlyMonthly,
 }
 
+#[derive(Debug, Serialize, Deserialize, ToSchema, Clone, Copy, PartialEq, Eq, Hash, sqlx::Type)]
+pub enum Currency {
+    Eur,
+    Usd,
+}
+
+impl fmt::Display for Currency {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            Currency::Eur => f.write_str("Eur"),
+            Currency::Usd => f.write_str("Usd"),
+        }
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -1716,6 +1760,7 @@ mod tests {
             client_contract_id: None,
             interest_rate: dec!(0.10),
             extension_policy: ExtensionPolicy::DoNotExtend,
+            asset: LoanAsset::Usd,
             created_at: datetime!(2025-03-01 0:00 UTC),
             updated_at: datetime!(2025-03-01 0:00 UTC),
         }

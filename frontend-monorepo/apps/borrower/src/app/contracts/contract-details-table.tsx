@@ -5,7 +5,11 @@ import {
   contractStatusToLabelString,
   LiquidationStatus,
 } from "@frontend/http-client-borrower";
-import { CurrencyFormatter, LtvProgressBar } from "@frontend/ui-shared";
+import {
+  formatCurrency,
+  LoanAssetHelper,
+  LtvProgressBar,
+} from "@frontend/ui-shared";
 import { useNavigate } from "react-router-dom";
 import { formatDistance } from "date-fns";
 import { Info } from "lucide-react";
@@ -231,7 +235,10 @@ export const ContractDetailsTable = ({
             <TableRow key={contract.id}>
               {shownColumns.amount && (
                 <TableCell className="font-medium">
-                  <CurrencyFormatter value={contract.loan_amount} />
+                  {formatCurrency(
+                    contract.loan_amount,
+                    LoanAssetHelper.toCurrency(contract.loan_asset),
+                  )}
                 </TableCell>
               )}
               {shownColumns.expiry && (
@@ -253,6 +260,7 @@ export const ContractDetailsTable = ({
                   <LtvProgressBar
                     collateralBtc={collateral_btc}
                     loanAmount={contract.loan_amount}
+                    loanAsset={contract.loan_asset}
                   />
                 </TableCell>
               )}
@@ -277,7 +285,7 @@ export const ContractDetailsTable = ({
                     variant="default"
                     size="sm"
                     onClick={() => navigate(`/my-contracts/${contract.id}`)}
-                    className="hidden md:block font-semibold"
+                    className="hidden font-semibold md:block"
                   >
                     {actionFromStatus(contract.status)}
                   </Button>
@@ -287,7 +295,7 @@ export const ContractDetailsTable = ({
                     onClick={() => navigate(`/my-contracts/${contract.id}`)}
                     className="md:hidden"
                   >
-                    <Info className={"w-6 h-6"} />
+                    <Info className={"h-6 w-6"} />
                   </Button>
                 </TableCell>
               )}

@@ -7,6 +7,11 @@ export enum TransactionType {
   ClaimCollateral = "ClaimCollateral",
 }
 
+export enum Currency {
+  USD = "Usd",
+  EUR = "Eur",
+}
+
 export interface LoanTransaction {
   txid: string;
   contract_id: string;
@@ -224,6 +229,30 @@ export class LoanAssetHelper {
       case LoanAsset.MXN:
         // Fiat coins do not have a contract URL
         return "";
+    }
+  }
+
+  static toCurrency(loanAsset?: LoanAsset): Currency {
+    if (!loanAsset) {
+      return Currency.USD;
+    }
+
+    switch (loanAsset) {
+      case LoanAsset.EUR:
+        return Currency.EUR;
+      case LoanAsset.USDT_SN:
+      case LoanAsset.USDC_SN:
+      case LoanAsset.USDT_POL:
+      case LoanAsset.USDC_POL:
+      case LoanAsset.USDT_ETH:
+      case LoanAsset.USDC_ETH:
+      case LoanAsset.USDC_SOL:
+      case LoanAsset.USDT_SOL:
+      case LoanAsset.USDT_Liquid:
+      case LoanAsset.USD:
+      case LoanAsset.CHF:
+      case LoanAsset.MXN:
+        return Currency.USD;
     }
   }
 }
