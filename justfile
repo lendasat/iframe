@@ -1,4 +1,4 @@
-set dotenv-load
+set dotenv-load := true
 
 hub_logs := "$PWD/hub.log"
 mempool_logs := "$PWD/mempool.log"
@@ -47,7 +47,6 @@ check-frontend:
 ## ------------------------
 ## Test functions
 ## ------------------------
-
 # FIXME: we should run our frontend tests
 # test-frontend:
 #     #!/usr/bin/env bash
@@ -99,11 +98,11 @@ mempool-d:
 
     echo "Starting mock mempool server"
 
-    (exec -a mempool-mock just mempool &> {{mempool_logs}}) &
+    (exec -a mempool-mock just mempool &> {{ mempool_logs }}) &
 
     # TODO: We might need to wait longer here.
 
-    echo "Mempool mock server started. Find the logs in {{mempool_logs}}"
+    echo "Mempool mock server started. Find the logs in {{ mempool_logs }}"
 
 ## ------------------------
 ## Serve frontend functions
@@ -192,8 +191,8 @@ build-wallet:
 build-frontend target='':
     #!/usr/bin/env bash
     cd frontend-monorepo
-    if [ -n "{{target}}" ]; then \
-      pnpm build --filter @frontend/{{target}}
+    if [ -n "{{ target }}" ]; then \
+      pnpm build --filter @frontend/{{ target }}
     else \
       pnpm build
     fi
@@ -215,11 +214,11 @@ hub-d:
 
     echo "Starting hub"
 
-    just hub &> {{hub_logs}} &
+    just hub &> {{ hub_logs }} &
 
     # TODO: We might need to wait longer here.
 
-    echo "Hub started. Find the logs in {{hub_logs}}"
+    echo "Hub started. Find the logs in {{ hub_logs }}"
 
 # rebuilds the hub when related files change
 watch-hub:
@@ -238,7 +237,7 @@ db-prepare:
     cd hub && cargo sqlx prepare --workspace --database-url=$DB_URL
 
 db-add-migration args="":
-    sqlx migrate add --source ./hub/migrations -r {{args}}
+    sqlx migrate add --source ./hub/migrations -r {{ args }}
 
 db-run-migration:
     sqlx migrate run --source ./hub/migrations --database-url=$DB_URL
@@ -260,12 +259,12 @@ wipe-docker:
 # Wipe dev hub
 wipe-hub:
     pkill -9 hub && echo "Stopped hub" || echo "Hub not running, skipped"
-    [ ! -e "{{hub_logs}}" ] || mv -f {{hub_logs}} {{hub_logs}}.old
+    [ ! -e "{{ hub_logs }}" ] || mv -f {{ hub_logs }} {{ hub_logs }}.old
 
 # Wipe mock mempool server
 wipe-mempool:
     pkill -9 mempool-mock && echo "Stopped mock mempool server" || echo "Mock mempool server not running, skipped"
-    [ ! -e "{{mempool_logs}}" ] || mv -f {{mempool_logs}} {{mempool_logs}}.old
+    [ ! -e "{{ mempool_logs }}" ] || mv -f {{ mempool_logs }} {{ mempool_logs }}.old
 
 wipe-frontend:
     find . -type d -name "node_modules" -o -name ".turbo" -o -name "dist" | xargs rm -rf
@@ -284,7 +283,6 @@ watch-all:
 
 db-test-data:
     cargo run --example test-data
-
 
 ## ------------------------
 ## Release functions
