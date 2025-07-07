@@ -542,16 +542,6 @@ impl LoanAsset {
     }
 }
 
-impl Currency {
-    /// Get a representative LoanAsset for this currency for database queries
-    pub fn to_representative_loan_asset(&self) -> LoanAsset {
-        match self {
-            Currency::Usd => LoanAsset::Usd,
-            Currency::Eur => LoanAsset::Eur,
-        }
-    }
-}
-
 impl fmt::Display for LoanAsset {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         let string = match self {
