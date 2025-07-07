@@ -89,13 +89,14 @@ jobs:
           apiToken: ${{ secrets.CLOUDFLARE_SIGNET_TOKEN}}
           command: pages deploy apps/shop-demo/dist/ --project-name=lendasat-webshop-signet
 
-      - name: Deploy demo-popup
-        uses: cloudflare/wrangler-action@v3
-        with:
-          packageManager: pnpm
-          workingDirectory: 'frontend-monorepo'
-          apiToken: ${{ secrets.CLOUDFLARE_SIGNET_TOKEN}}
-          command: pages deploy apps/popup/dist/ --project-name=lendasat-popup-signet
+  # FIXME: building popup is borken at the moment see https://github.com/lendasat/lendasat/issues/1059
+  #      - name: Deploy demo-popup
+  #        uses: cloudflare/wrangler-action@v3
+  #        with:
+  #          packageManager: pnpm
+  #          workingDirectory: 'frontend-monorepo'
+  #          apiToken: ${{ secrets.CLOUDFLARE_SIGNET_TOKEN}}
+  #          command: pages deploy apps/popup/dist/ --project-name=lendasat-popup-signet
 
   deploy-test:
     runs-on: ubuntu-latest
