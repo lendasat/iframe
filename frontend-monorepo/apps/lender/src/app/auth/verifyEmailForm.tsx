@@ -1,7 +1,7 @@
 import { useLenderHttpClient } from "@frontend/http-client-lender";
 import { useNavigate, useParams } from "react-router-dom";
-import { ShadcnEmailVerification } from "#/components/email-verification-form";
 import { ReactComponent as Logo } from "./../../assets/lendasat_black.svg";
+import { ShadcnEmailVerification } from "@frontend/shadcn";
 
 function VerifyEmailForm() {
   const { verifyEmail } = useLenderHttpClient();
