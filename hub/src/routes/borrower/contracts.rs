@@ -347,6 +347,7 @@ async fn post_contract_request(
         body.client_contract_id,
         // The contract inherits the extension policy of the loan offer.
         offer.extension_policy,
+        offer.loan_asset,
     )
     .await
     .map_err(Error::database)?;

@@ -376,11 +376,8 @@ pub async fn insert_new_contract_request(
     lender_npub: Npub,
     client_contract_id: Option<Uuid>,
     extension_policy: ExtensionPolicy,
+    asset: LoanAsset,
 ) -> Result<Contract> {
-    // TODO: maybe better to provide this as an argument
-    let loan_deal = loan_deals::get_loan_deal_by_id(pool, loan_deal_id).await?;
-    let asset = loan_deal.loan_asset();
-
     let mut db_tx = pool
         .begin()
         .await

@@ -257,6 +257,7 @@ async fn create_contract_request(
         offer.lender_npub,
         Some(Uuid::new_v4()),
         offer.extension_policy,
+        offer.loan_asset,
     )
     .await?;
 
