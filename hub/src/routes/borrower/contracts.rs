@@ -940,9 +940,11 @@ async fn post_extend_contract_request(
     Path(contract_id): Path<String>,
     AppJson(body): AppJson<ExtendContractRequestSchema>,
 ) -> Result<AppJson<Contract>, Error> {
-    // FIXME: get the asset from contract
+    let contract = db::contracts::load_contract(&data.db, contract_id.as_str())
+        .await
+        .map_err(|e| Error::MissingContract(format!("{:#}", e)))?;
     let current_price =
-        get_bitmex_index_price(&data.config, OffsetDateTime::now_utc(), LoanAsset::Usd)
+        get_bitmex_index_price(&data.config, OffsetDateTime::now_utc(), contract.asset)
             .await
             .map_err(Error::bitmex_price)?;
 
