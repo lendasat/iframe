@@ -194,7 +194,7 @@ build-frontend target='':
     if [ -n "{{ target }}" ]; then \
       pnpm build --filter @frontend/{{ target }}
     else \
-      pnpm build --filter='!./apps/popup'
+      pnpm build
     fi
 
 ## ------------------------
