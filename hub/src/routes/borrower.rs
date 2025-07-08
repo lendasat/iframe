@@ -67,6 +67,7 @@ const CHAT_TAG: &str = "Chat";
 const DISPUTE_TAG: &str = "Disputes";
 const PRICE_FEED_TAG: &str = "Price Feed";
 const PROFILES_TAG: &str = "User Profiles";
+const CARDS_TAG: &str = "Cards";
 
 #[derive(OpenApi)]
 #[openapi(
@@ -182,6 +183,9 @@ curl -X POST "http://localhost:7337/api/contracts" \
         ),
         (
             name = PROFILES_TAG, description = "Public user profile statistics.",
+        ),
+        (
+            name = CARDS_TAG, description = "Manage PayWithMoon cards and transactions.",
         )
     ),
 )]
@@ -236,6 +240,7 @@ pub async fn spawn_borrower_server(
             profiles::router(app_state.clone())
                 .route_layer(middleware::from_fn_with_state(app_state.clone(), auth)),
         )
+        .nest("/api", cards::router(app_state.clone()))
         .split_for_parts();
 
     let router =
@@ -243,7 +248,6 @@ pub async fn spawn_borrower_server(
 
     let app = router
         .merge(auth::router(app_state.clone()))
-        .merge(cards::router(app_state.clone()))
         .merge(bringin::router(app_state))
         // This is a relative path on the filesystem, which means, when deploying `hub` we will need
         // to have the frontend in this directory. Ideally we would bundle the frontend with

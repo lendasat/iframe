@@ -2,6 +2,7 @@ use crate::db;
 use crate::model::Borrower;
 use crate::moon;
 use crate::routes::borrower::auth::jwt_or_api_auth;
+use crate::routes::borrower::CARDS_TAG;
 use crate::routes::AppState;
 use anyhow::anyhow;
 use anyhow::Result;
@@ -13,39 +14,51 @@ use axum::http::StatusCode;
 use axum::middleware;
 use axum::response::IntoResponse;
 use axum::response::Response;
-use axum::routing::get;
 use axum::routing::post;
 use axum::Extension;
 use axum::Json;
-use axum::Router;
 use rust_decimal::Decimal;
 use serde::Serialize;
 use serde_json::Value;
 use std::str::FromStr;
 use std::sync::Arc;
 use tracing::instrument;
+use utoipa::ToSchema;
+use utoipa_axum::router::OpenApiRouter;
+use utoipa_axum::routes;
 use uuid::Uuid;
 
-pub(crate) fn router(app_state: Arc<AppState>) -> Router {
-    Router::new()
-        .route(
-            "/api/cards",
-            get(get_cards).route_layer(middleware::from_fn_with_state(
-                app_state.clone(),
-                jwt_or_api_auth::auth,
-            )),
-        )
-        .route(
-            "/api/transaction/:card_id",
-            get(get_card_transactions).route_layer(middleware::from_fn_with_state(
-                app_state.clone(),
-                jwt_or_api_auth::auth,
-            )),
-        )
-        .route("/api/moon/webhook", post(post_webhook).get(get_webhook))
+pub(crate) fn router(app_state: Arc<AppState>) -> OpenApiRouter {
+    OpenApiRouter::new()
+        .routes(routes!(get_cards))
+        .routes(routes!(get_card_transactions))
+        // we don't want to document this one
+        .route("/moon/webhook", post(post_webhook).get(get_webhook))
+        .route_layer(middleware::from_fn_with_state(
+            app_state.clone(),
+            jwt_or_api_auth::auth,
+        ))
         .with_state(app_state)
 }
 
+/// Get all cards for the authenticated borrower.
+#[utoipa::path(
+    get,
+    path = "/cards",
+    tag = CARDS_TAG,
+    responses(
+        (
+            status = 200,
+            description = "List of borrower's cards with current details",
+            body = Vec<Card>
+        )
+    ),
+    security(
+        (
+            "api_key" = []
+        )
+    )
+)]
 #[instrument(skip_all, fields(borrower_id = user.id), err(Debug))]
 async fn get_cards(
     State(data): State<Arc<AppState>>,
@@ -80,6 +93,31 @@ async fn get_cards(
     Ok(AppJson(cards))
 }
 
+/// Get transactions for a specific card.
+#[utoipa::path(
+    get,
+    path = "/transaction/{card_id}",
+    tag = CARDS_TAG,
+    params(
+        ("card_id" = String, Path, description = "Card ID")
+    ),
+    responses(
+        (
+            status = 200,
+            description = "List of transactions for the specified card",
+            body = Vec<Transaction>
+        ),
+        (
+            status = 400,
+            description = "Invalid card ID or card not found"
+        )
+    ),
+    security(
+        (
+            "api_key" = []
+        )
+    )
+)]
 #[instrument(skip_all, fields(borrower_id = user.id, card_id), err(Debug))]
 async fn get_card_transactions(
     State(data): State<Arc<AppState>>,
@@ -110,6 +148,10 @@ async fn get_card_transactions(
     Ok(AppJson(txs))
 }
 
+/// Webhook endpoint for Moon payment service notifications.
+///
+/// This endpoint receives payment notifications from the Moon service
+/// and processes card transactions and payment events.
 #[instrument(skip(data, payload), err(Debug))]
 async fn post_webhook(
     State(data): State<Arc<AppState>>,
@@ -161,6 +203,9 @@ async fn post_webhook(
     }
 }
 
+/// Webhook registration endpoint for Moon payment service.
+///
+/// This endpoint handles webhook registration requests from the Moon service.
 #[instrument(err(Debug))]
 async fn get_webhook() -> Result<impl IntoResponse, Error> {
     tracing::debug!("New webhook registered via http get");
@@ -168,7 +213,7 @@ async fn get_webhook() -> Result<impl IntoResponse, Error> {
     Ok((StatusCode::OK, ()))
 }
 
-#[derive(Debug, Serialize, PartialEq, Clone)]
+#[derive(Debug, Serialize, PartialEq, Clone, ToSchema)]
 enum TransactionStatus {
     Authorization,
     Reversal,
@@ -194,7 +239,7 @@ impl From<pay_with_moon::TransactionStatus> for TransactionStatus {
     }
 }
 
-#[derive(Debug, Serialize, PartialEq, Clone)]
+#[derive(Debug, Serialize, PartialEq, Clone, ToSchema)]
 struct Fee {
     #[serde(rename = "type")]
     fee_type: String,
@@ -213,7 +258,7 @@ impl From<pay_with_moon::Fee> for Fee {
     }
 }
 
-#[derive(Debug, Serialize, PartialEq, Clone)]
+#[derive(Debug, Serialize, PartialEq, Clone, ToSchema)]
 struct TransactionCard {
     public_id: Uuid,
     name: String,
@@ -231,7 +276,7 @@ impl From<pay_with_moon::TransactionCard> for TransactionCard {
     }
 }
 
-#[derive(Debug, Serialize, PartialEq, Clone)]
+#[derive(Debug, Serialize, PartialEq, Clone, ToSchema)]
 #[serde(tag = "type", content = "data")]
 enum Transaction {
     Card(TransactionData),
@@ -251,7 +296,7 @@ impl From<pay_with_moon::Transaction> for Transaction {
     }
 }
 
-#[derive(Debug, Serialize, PartialEq, Clone)]
+#[derive(Debug, Serialize, PartialEq, Clone, ToSchema)]
 struct TransactionData {
     card: TransactionCard,
     transaction_id: Uuid,
@@ -292,7 +337,7 @@ impl From<pay_with_moon::TransactionData> for TransactionData {
     }
 }
 
-#[derive(Debug, Serialize, PartialEq, Clone)]
+#[derive(Debug, Serialize, PartialEq, Clone, ToSchema)]
 struct DeclineData {
     /// The date we receive has the following format: 2024-11-14 10:26:24
     datetime: String,
@@ -315,7 +360,7 @@ impl From<pay_with_moon::DeclineData> for DeclineData {
     }
 }
 
-#[derive(Debug, Serialize)]
+#[derive(Debug, Serialize, ToSchema)]
 struct Card {
     id: Uuid,
     #[serde(with = "rust_decimal::serde::float")]
