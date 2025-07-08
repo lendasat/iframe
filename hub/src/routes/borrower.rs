@@ -68,6 +68,7 @@ const DISPUTE_TAG: &str = "Disputes";
 const PRICE_FEED_TAG: &str = "Price Feed";
 const PROFILES_TAG: &str = "User Profiles";
 const CARDS_TAG: &str = "Cards";
+const BRINGIN_TAG: &str = "Bringin";
 
 #[derive(OpenApi)]
 #[openapi(
@@ -186,6 +187,9 @@ curl -X POST "http://localhost:7337/api/contracts" \
         ),
         (
             name = CARDS_TAG, description = "Manage PayWithMoon cards and transactions.",
+        ),
+        (
+            name = BRINGIN_TAG, description = "Bringin service integration for account connection.",
         )
     ),
 )]
@@ -241,6 +245,7 @@ pub async fn spawn_borrower_server(
                 .route_layer(middleware::from_fn_with_state(app_state.clone(), auth)),
         )
         .nest("/api", cards::router(app_state.clone()))
+        .nest("/api", bringin::router(app_state.clone()))
         .split_for_parts();
 
     let router =
@@ -248,7 +253,6 @@ pub async fn spawn_borrower_server(
 
     let app = router
         .merge(auth::router(app_state.clone()))
-        .merge(bringin::router(app_state))
         // This is a relative path on the filesystem, which means, when deploying `hub` we will need
         // to have the frontend in this directory. Ideally we would bundle the frontend with
         // the binary, but so far we failed at handling requests which are meant to be handled by

@@ -2,6 +2,7 @@ use crate::bringin;
 use crate::db;
 use crate::model::Borrower;
 use crate::routes::borrower::auth::jwt_or_api_auth;
+use crate::routes::borrower::BRINGIN_TAG;
 use crate::routes::user_connection_details_middleware;
 use crate::routes::AppState;
 use crate::utils::is_valid_email;
@@ -13,34 +14,27 @@ use axum::http::StatusCode;
 use axum::middleware;
 use axum::response::IntoResponse;
 use axum::response::Response;
-use axum::routing::get;
 use axum::routing::post;
 use axum::Extension;
 use axum::Json;
-use axum::Router;
 use serde::Deserialize;
 use serde::Serialize;
 use serde_json::Value;
 use std::sync::Arc;
 use tracing::instrument;
 use url::Url;
+use utoipa::ToSchema;
+use utoipa_axum::router::OpenApiRouter;
+use utoipa_axum::routes;
 
-pub(crate) fn router(app_state: Arc<AppState>) -> Router {
-    Router::new()
-        .route(
-            "/api/bringin/connect",
-            post(post_connect_with_bringin).route_layer(middleware::from_fn_with_state(
-                app_state.clone(),
-                jwt_or_api_auth::auth,
-            )),
-        )
-        .route(
-            "/api/bringin/api-key",
-            get(has_api_key).route_layer(middleware::from_fn_with_state(
-                app_state.clone(),
-                jwt_or_api_auth::auth,
-            )),
-        )
+pub(crate) fn router(app_state: Arc<AppState>) -> OpenApiRouter {
+    OpenApiRouter::new()
+        .routes(routes!(post_connect_with_bringin))
+        .routes(routes!(has_api_key))
+        .route_layer(middleware::from_fn_with_state(
+            app_state.clone(),
+            jwt_or_api_auth::auth,
+        ))
         .layer(
             tower::ServiceBuilder::new().layer(middleware::from_fn_with_state(
                 app_state.clone(),
@@ -48,20 +42,43 @@ pub(crate) fn router(app_state: Arc<AppState>) -> Router {
             )),
         )
         .route(
-            "/api/bringin/callback/verification-status",
+            "/bringin/callback/verification-status",
             post(post_verification_status),
         )
         .route(
-            "/api/bringin/callback/order-status",
+            "/bringin/callback/order-status",
             post(post_order_status_update_callback),
         )
         .route(
-            "/api/bringin/callback/:borrower_id",
+            "/bringin/callback/:borrower_id",
             post(post_user_connected_callback),
         )
         .with_state(app_state)
 }
 
+/// Connect borrower with Bringin service.
+#[utoipa::path(
+    post,
+    path = "/bringin/connect",
+    tag = BRINGIN_TAG,
+    request_body = PostConnectWithBringinRequest,
+    responses(
+        (
+            status = 200,
+            description = "Bringin connection initiated successfully",
+            body = PostConnectWithBringinResponse
+        ),
+        (
+            status = 400,
+            description = "Invalid email address"
+        )
+    ),
+    security(
+        (
+            "api_key" = []
+        )
+    )
+)]
 #[instrument(skip_all, fields(borrower_id = user.id, bringin_email = body.bringin_email), err(Debug), ret)]
 async fn post_connect_with_bringin(
     State(data): State<Arc<AppState>>,
@@ -153,6 +170,24 @@ async fn post_user_connected_callback(
     Ok(())
 }
 
+/// Check if borrower has Bringin API key.
+#[utoipa::path(
+    get,
+    path = "/bringin/api-key",
+    tag = BRINGIN_TAG,
+    responses(
+        (
+            status = 200,
+            description = "API key status",
+            body = ApiKey
+        )
+    ),
+    security(
+        (
+            "api_key" = []
+        )
+    )
+)]
 #[instrument(skip_all, fields(borrower_id = user.id), err(Debug))]
 async fn has_api_key(
     State(data): State<Arc<AppState>>,
@@ -166,7 +201,7 @@ async fn has_api_key(
     Ok(AppJson(ApiKey { has_key }))
 }
 
-#[derive(Debug, Deserialize, Serialize)]
+#[derive(Debug, Deserialize, Serialize, ToSchema)]
 struct PostVerificationStatus {
     /// Bringin user ID.
     #[serde(rename = "userId")]
@@ -180,7 +215,7 @@ struct PostVerificationStatus {
     verification_status: String,
 }
 
-#[derive(Debug, Deserialize, Serialize)]
+#[derive(Debug, Deserialize, Serialize, ToSchema)]
 struct PostUserConnectedRequest {
     /// Bringin user ID.
     #[serde(rename = "userId")]
@@ -192,17 +227,17 @@ struct PostUserConnectedRequest {
     borrower_id: String,
 }
 
-#[derive(Serialize, Debug)]
+#[derive(Serialize, Debug, ToSchema)]
 struct ApiKey {
     has_key: bool,
 }
 
-#[derive(Debug, Deserialize, Serialize)]
+#[derive(Debug, Deserialize, Serialize, ToSchema)]
 struct PostConnectWithBringinRequest {
     bringin_email: String,
 }
 
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Serialize, Deserialize, ToSchema)]
 struct PostConnectWithBringinResponse {
     signup_url: Option<Url>,
 }
