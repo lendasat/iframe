@@ -147,9 +147,8 @@ pub async fn spawn_lender_server(
                     .with_state(app_state),
             )
             .fallback_service(
-                ServeDir::new("./frontend-monorepo/apps/lender/dist").fallback(ServeFile::new(
-                    "./frontend-monorepo/apps/lender/dist/index.html",
-                )),
+                ServeDir::new("./frontend/apps/lender/dist")
+                    .fallback(ServeFile::new("./frontend/apps/lender/dist/index.html")),
             ),
     );
 
