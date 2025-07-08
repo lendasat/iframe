@@ -1133,7 +1133,7 @@ impl Notifications {
         }
     }
 
-    pub async fn send_daily_offer_digest(&self) {
+    pub async fn send_daily_offer_digest(&self, borrower_frontend_origin: &Url) {
         let today = OffsetDateTime::now_utc().date();
         let twenty_four_hours_ago = OffsetDateTime::now_utc() - time::Duration::days(1);
 
@@ -1204,9 +1204,13 @@ impl Notifications {
             return;
         }
 
-        // Create borrower URL - for now use a hardcoded URL, should be made configurable
-        let borrower_url =
-            Url::parse("https://app.lendasat.com").expect("hardcoded URL should be valid");
+        let borrower_url = match borrower_frontend_origin.join("/available-offers") {
+            Ok(url) => url,
+            Err(e) => {
+                tracing::error!("Failed to parse URL for daily digest email: {e:#}");
+                return;
+            }
+        };
 
         // Send the daily digest email
         if let Err(e) = self
@@ -1246,7 +1250,7 @@ impl Notifications {
         );
     }
 
-    pub async fn send_daily_application_digest(&self) {
+    pub async fn send_daily_application_digest(&self, lender_frontend_origin: &Url) {
         let today = OffsetDateTime::now_utc().date();
         let twenty_four_hours_ago = OffsetDateTime::now_utc() - time::Duration::days(1);
 
@@ -1320,9 +1324,13 @@ impl Notifications {
             return;
         }
 
-        // Create lender URL - for now use a hardcoded URL, should be made configurable
-        let lender_url =
-            Url::parse("https://lender.lendasat.com").expect("hardcoded URL should be valid");
+        let lender_url = match lender_frontend_origin.join("/loan-applications") {
+            Ok(url) => url,
+            Err(e) => {
+                tracing::error!("Failed to parse URL for daily digest email: {e:#}");
+                return;
+            }
+        };
 
         // Send the daily application digest email
         if let Err(e) = self
