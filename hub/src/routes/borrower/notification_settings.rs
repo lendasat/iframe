@@ -43,7 +43,7 @@ pub(crate) fn router(app_state: Arc<AppState>) -> OpenApiRouter {
 pub struct BorrowerNotificationSettingsResponse {
     pub on_login_email: bool,
     pub on_login_telegram: bool,
-    pub new_loan_offer_email: bool,
+    pub daily_offer_digest_email: bool,
     pub new_loan_offer_telegram: bool,
     pub contract_status_changed_email: bool,
     pub contract_status_changed_telegram: bool,
@@ -58,7 +58,7 @@ impl From<crate::model::notifications::BorrowerNotificationSettings>
         Self {
             on_login_email: settings.on_login_email,
             on_login_telegram: settings.on_login_telegram,
-            new_loan_offer_email: settings.new_loan_offer_email,
+            daily_offer_digest_email: settings.daily_offer_digest_email,
             new_loan_offer_telegram: settings.new_loan_offer_telegram,
             contract_status_changed_email: settings.contract_status_changed_email,
             contract_status_changed_telegram: settings.contract_status_changed_telegram,
@@ -130,7 +130,7 @@ async fn put_notification_settings(
         borrower_id: user.id.clone(),
         on_login_email: body.on_login_email,
         on_login_telegram: body.on_login_telegram,
-        new_loan_offer_email: body.new_loan_offer_email,
+        daily_offer_digest_email: body.daily_offer_digest_email,
         new_loan_offer_telegram: body.new_loan_offer_telegram,
         contract_status_changed_email: body.contract_status_changed_email,
         contract_status_changed_telegram: body.contract_status_changed_telegram,

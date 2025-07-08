@@ -7,6 +7,7 @@ use hub::bitmex_index_pricefeed::subscribe_index_price;
 use hub::config::Config;
 use hub::contract_approval_expired::add_contract_approval_expiry_job;
 use hub::contract_request_expiry::add_contract_request_expiry_job;
+use hub::daily_digest::add_daily_digest_job;
 use hub::db::connect_to_db;
 use hub::db::run_migration;
 use hub::installment_close_to_due_date::add_installment_close_to_due_date_job;
@@ -235,6 +236,7 @@ async fn main() -> Result<()> {
     )
     .await?;
     add_contract_approval_expiry_job(&sched, db).await?;
+    add_daily_digest_job(&sched, notifications).await?;
 
     sched.start().await?;
 

@@ -1,6 +1,6 @@
 {
   "db_name": "PostgreSQL",
-  "query": "\n        SELECT \n            l.id as \"id!\",\n            l.name as \"name!\",\n            l.email as email,\n            COALESCE(lns.new_loan_applications_email, true) as new_loan_applications_email,\n            COALESCE(lns.new_loan_applications_telegram, true) as new_loan_applications_telegram\n        FROM lenders l\n        LEFT JOIN lender_notification_settings lns ON l.id = lns.lender_id\n        where l.verified = true\n        ",
+  "query": "\n        SELECT\n            l.id as \"id!\",\n            l.name as \"name!\",\n            l.email as email,\n            COALESCE(lns.daily_application_digest_email, true) as daily_application_digest_email,\n            COALESCE(lns.new_loan_applications_telegram, true) as new_loan_applications_telegram\n        FROM lenders l\n        LEFT JOIN lender_notification_settings lns ON l.id = lns.lender_id\n        where l.verified = true\n        ",
   "describe": {
     "columns": [
       {
@@ -20,7 +20,7 @@
       },
       {
         "ordinal": 3,
-        "name": "new_loan_applications_email",
+        "name": "daily_application_digest_email",
         "type_info": "Bool"
       },
       {
@@ -40,5 +40,5 @@
       null
     ]
   },
-  "hash": "c02b44651eb48981cad565584f6d6ba221fc74a89590039dc5ee7387ec8c0167"
+  "hash": "298ecec45c4389f9fbd4db33c26edcc29d087439989238d99c3bd2e4ac5a1cc2"
 }

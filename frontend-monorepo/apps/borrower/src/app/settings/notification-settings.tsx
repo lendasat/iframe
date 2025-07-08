@@ -248,28 +248,41 @@ export function NotificationSettings() {
               </div>
 
               <div>
-                <h3 className="text-sm font-medium">
-                  Loan Offer Notifications
-                </h3>
+                <h3 className="text-sm font-medium">Daily Loan Offer Digest</h3>
                 <p className="text-muted-foreground mb-4 text-sm">
-                  Get notified when a new loan offer is available.
+                  Get a daily digest of new loan offers available in the last 24
+                  hours
                 </p>
                 <div className="flex gap-6">
                   <div className="flex items-center gap-2">
                     <Checkbox
-                      id="new_loan_offer_email"
-                      checked={localSettings.new_loan_offer_email}
+                      id="daily_offer_digest_email"
+                      checked={localSettings.daily_offer_digest_email}
                       onCheckedChange={(checked) =>
                         handleSettingChange(
-                          "new_loan_offer_email",
+                          "daily_offer_digest_email",
                           checked as boolean,
                         )
                       }
                     />
-                    <Label htmlFor="new_loan_offer_email" className="text-sm">
+                    <Label
+                      htmlFor="daily_offer_digest_email"
+                      className="text-sm"
+                    >
                       Email
                     </Label>
                   </div>
+                </div>
+              </div>
+
+              <div>
+                <h3 className="text-sm font-medium">
+                  Instant Loan Offer Notifications
+                </h3>
+                <p className="text-muted-foreground mb-4 text-sm">
+                  Get notified immediately when a new loan offer is available
+                </p>
+                <div className="flex gap-6">
                   <div className="flex items-center gap-2">
                     <Checkbox
                       id="new_loan_offer_telegram"

@@ -1087,34 +1087,6 @@ impl Notifications {
                     )
                     .await
                 }
-
-                let filtered_users = contact_details
-                    .iter()
-                    .filter(|details| details.new_loan_offer_email.unwrap_or_default())
-                    .filter_map(|details| {
-                        details
-                            .email
-                            .clone()
-                            .map(|email| (details.name.clone(), email))
-                    })
-                    .collect::<Vec<_>>();
-
-                if let Err(e) = self
-                    .email
-                    .send_new_loan_offer(
-                        filtered_users,
-                        offer_url,
-                        min_loan_amount,
-                        max_loan_amount,
-                        asset,
-                        interest_rate,
-                        min_duration,
-                        max_duration,
-                    )
-                    .await
-                {
-                    tracing::error!("Could not send email notification borrower {e:#}");
-                }
             }
             Err(error) => {
                 tracing::error!(
@@ -1152,32 +1124,6 @@ impl Notifications {
                     )
                     .await
                 }
-
-                let filtered_users = contact_details
-                    .iter()
-                    .filter(|details| details.new_loan_applications_email.unwrap_or_default())
-                    .filter_map(|details| {
-                        details
-                            .email
-                            .clone()
-                            .map(|email| (details.name.clone(), email))
-                    })
-                    .collect::<Vec<_>>();
-
-                if let Err(e) = self
-                    .email
-                    .send_new_loan_applications(
-                        filtered_users,
-                        offer_url,
-                        loan_amount,
-                        asset,
-                        interest_rate,
-                        duration,
-                    )
-                    .await
-                {
-                    tracing::error!("Could not send email notification lenders {e:#}");
-                }
             }
             Err(error) => {
                 tracing::error!(
@@ -1185,6 +1131,240 @@ impl Notifications {
                 )
             }
         }
+    }
+
+    pub async fn send_daily_offer_digest(&self) {
+        let today = OffsetDateTime::now_utc().date();
+        let twenty_four_hours_ago = OffsetDateTime::now_utc() - time::Duration::days(1);
+
+        // Get available offers from the last 24 hours
+        let offers = match db::notification_settings::get_available_offers_since(
+            &self.db,
+            twenty_four_hours_ago,
+        )
+        .await
+        {
+            Ok(offers) => offers,
+            Err(e) => {
+                tracing::error!("Failed to get available offers for daily digest: {e:#}");
+                return;
+            }
+        };
+
+        // Get borrowers who want daily digest emails
+        let borrowers =
+            match db::notification_settings::get_borrowers_for_loan_offer_notifications(&self.db)
+                .await
+            {
+                Ok(borrowers) => borrowers,
+                Err(e) => {
+                    tracing::error!("Failed to get borrowers for daily digest: {e:#}");
+                    return;
+                }
+            };
+
+        // Filter borrowers who want daily digest emails and haven't received one today
+        let mut recipients = Vec::new();
+        for borrower in &borrowers {
+            // Check if they want daily digest emails
+            if !borrower.daily_offer_digest_email.unwrap_or(false) {
+                continue;
+            }
+
+            // Check if we already sent digest today
+            match db::notification_settings::was_daily_digest_sent(&self.db, &borrower.id, today)
+                .await
+            {
+                Ok(true) => continue, // Already sent today
+                Ok(false) => {}       // Haven't sent today, proceed
+                Err(e) => {
+                    tracing::error!(
+                        "Failed to check if daily digest was sent for borrower {}: {e:#}",
+                        borrower.id
+                    );
+                    continue;
+                }
+            }
+
+            // Add to recipients if they have email
+            if let Some(email) = &borrower.email {
+                recipients.push((borrower.name.clone(), email.clone()));
+            }
+        }
+
+        if recipients.is_empty() {
+            tracing::info!("No borrowers to send daily digest to");
+            return;
+        }
+
+        // Only send email if there are offers OR it's been requested
+        // For now, let's only send when there are offers
+        if offers.is_empty() {
+            tracing::info!("No new offers available for daily digest");
+            return;
+        }
+
+        // Create borrower URL - for now use a hardcoded URL, should be made configurable
+        let borrower_url =
+            Url::parse("https://app.lendasat.com").expect("hardcoded URL should be valid");
+
+        // Send the daily digest email
+        if let Err(e) = self
+            .email
+            .send_daily_offer_digest(recipients.clone(), offers.clone(), today, borrower_url)
+            .await
+        {
+            tracing::error!("Failed to send daily digest email: {e:#}");
+            return;
+        }
+
+        // Mark digest as sent for all recipients
+        let recipients_len = recipients.len();
+        for (_, email) in &recipients {
+            // Find the borrower ID for this email
+            if let Some(borrower) = borrowers.iter().find(|b| b.email.as_ref() == Some(email)) {
+                if let Err(e) = db::notification_settings::mark_daily_digest_sent(
+                    &self.db,
+                    &borrower.id,
+                    today,
+                    offers.len() as i32,
+                )
+                .await
+                {
+                    tracing::error!(
+                        "Failed to mark daily digest as sent for borrower {}: {e:#}",
+                        borrower.id
+                    );
+                }
+            }
+        }
+
+        tracing::info!(
+            "Successfully sent daily digest to {} recipients with {} offers",
+            recipients_len,
+            offers.len()
+        );
+    }
+
+    pub async fn send_daily_application_digest(&self) {
+        let today = OffsetDateTime::now_utc().date();
+        let twenty_four_hours_ago = OffsetDateTime::now_utc() - time::Duration::days(1);
+
+        // Get available applications from the last 24 hours
+        let applications = match db::notification_settings::get_available_applications_since(
+            &self.db,
+            twenty_four_hours_ago,
+        )
+        .await
+        {
+            Ok(applications) => applications,
+            Err(e) => {
+                tracing::error!("Failed to get available applications for daily digest: {e:#}");
+                return;
+            }
+        };
+
+        // Get lenders who want daily digest emails
+        let lenders =
+            match db::notification_settings::get_lenders_for_application_digest_notifications(
+                &self.db,
+            )
+            .await
+            {
+                Ok(lenders) => lenders,
+                Err(e) => {
+                    tracing::error!("Failed to get lenders for daily application digest: {e:#}");
+                    return;
+                }
+            };
+
+        // Filter lenders who want daily digest emails and haven't received one today
+        let mut recipients = Vec::new();
+        for lender in &lenders {
+            // Check if they want daily digest emails
+            if !lender.daily_application_digest_email.unwrap_or(false) {
+                continue;
+            }
+
+            // Check if we already sent digest today
+            match db::notification_settings::was_daily_application_digest_sent(
+                &self.db, &lender.id, today,
+            )
+            .await
+            {
+                Ok(true) => continue, // Already sent today
+                Ok(false) => {}       // Haven't sent today, proceed
+                Err(e) => {
+                    tracing::error!(
+                        "Failed to check if daily application digest was sent for lender {}: {e:#}",
+                        lender.id
+                    );
+                    continue;
+                }
+            }
+
+            // Add to recipients if they have email
+            if let Some(email) = &lender.email {
+                recipients.push((lender.name.clone(), email.clone()));
+            }
+        }
+
+        if recipients.is_empty() {
+            tracing::info!("No lenders to send daily application digest to");
+            return;
+        }
+
+        // Only send email if there are applications
+        if applications.is_empty() {
+            tracing::info!("No new applications available for daily digest");
+            return;
+        }
+
+        // Create lender URL - for now use a hardcoded URL, should be made configurable
+        let lender_url =
+            Url::parse("https://lender.lendasat.com").expect("hardcoded URL should be valid");
+
+        // Send the daily application digest email
+        if let Err(e) = self
+            .email
+            .send_daily_application_digest(
+                recipients.clone(),
+                applications.clone(),
+                today,
+                lender_url,
+            )
+            .await
+        {
+            tracing::error!("Failed to send daily application digest email: {e:#}");
+            return;
+        }
+
+        // Mark digest as sent for all recipients
+        let recipients_len = recipients.len();
+        for (_, email) in &recipients {
+            // Find the lender ID for this email
+            if let Some(lender) = lenders.iter().find(|l| l.email.as_ref() == Some(email)) {
+                if let Err(e) = db::notification_settings::mark_daily_application_digest_sent(
+                    &self.db,
+                    &lender.id,
+                    today,
+                    applications.len() as i32,
+                )
+                .await
+                {
+                    tracing::error!(
+                        "Failed to mark daily application digest as sent for lender {}: {e:#}",
+                        lender.id
+                    );
+                }
+            }
+        }
+
+        tracing::info!(
+            "Successfully sent daily application digest to {} recipients with {} applications",
+            recipients_len,
+            applications.len()
+        );
     }
 
     async fn send_tg_notification_lender(

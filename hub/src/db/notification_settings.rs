@@ -8,7 +8,7 @@ pub struct LenderNotificationSettings {
     pub lender_id: String,
     pub on_login_email: bool,
     pub on_login_telegram: bool,
-    pub new_loan_applications_email: bool,
+    pub daily_application_digest_email: bool,
     pub new_loan_applications_telegram: bool,
     pub contract_status_changed_email: bool,
     pub contract_status_changed_telegram: bool,
@@ -24,7 +24,7 @@ impl From<LenderNotificationSettings> for crate::model::notifications::LenderNot
             lender_id: value.lender_id.clone(),
             on_login_email: value.on_login_email,
             on_login_telegram: value.on_login_telegram,
-            new_loan_applications_email: value.new_loan_applications_email,
+            daily_application_digest_email: value.daily_application_digest_email,
             new_loan_applications_telegram: value.new_loan_applications_telegram,
             contract_status_changed_email: value.contract_status_changed_email,
             contract_status_changed_telegram: value.contract_status_changed_telegram,
@@ -40,7 +40,7 @@ pub struct BorrowerNotificationSettings {
     pub borrower_id: String,
     pub on_login_email: bool,
     pub on_login_telegram: bool,
-    pub new_loan_offer_email: bool,
+    pub daily_offer_digest_email: bool,
     pub new_loan_offer_telegram: bool,
     pub contract_status_changed_email: bool,
     pub contract_status_changed_telegram: bool,
@@ -58,7 +58,7 @@ impl From<BorrowerNotificationSettings>
             borrower_id: value.borrower_id.clone(),
             on_login_email: value.on_login_email,
             on_login_telegram: value.on_login_telegram,
-            new_loan_offer_email: value.new_loan_offer_email,
+            daily_offer_digest_email: value.daily_offer_digest_email,
             new_loan_offer_telegram: value.new_loan_offer_telegram,
             contract_status_changed_email: value.contract_status_changed_email,
             contract_status_changed_telegram: value.contract_status_changed_telegram,
@@ -75,12 +75,12 @@ pub async fn get_lender_notification_settings(
     let result = sqlx::query_as!(
         LenderNotificationSettings,
         r#"
-        SELECT 
+        SELECT
             id,
             lender_id,
             on_login_email,
             on_login_telegram,
-            new_loan_applications_email,
+            daily_application_digest_email,
             new_loan_applications_telegram,
             contract_status_changed_email,
             contract_status_changed_telegram,
@@ -88,7 +88,7 @@ pub async fn get_lender_notification_settings(
             new_chat_message_telegram,
             created_at,
             updated_at
-        FROM lender_notification_settings 
+        FROM lender_notification_settings
         WHERE lender_id = $1
         "#,
         lender_id
@@ -128,12 +128,12 @@ pub async fn get_borrower_notification_settings(
     let result = sqlx::query_as!(
         BorrowerNotificationSettings,
         r#"
-        SELECT 
+        SELECT
             id,
             borrower_id,
             on_login_email,
             on_login_telegram,
-            new_loan_offer_email,
+            daily_offer_digest_email,
             new_loan_offer_telegram,
             contract_status_changed_email,
             contract_status_changed_telegram,
@@ -141,7 +141,7 @@ pub async fn get_borrower_notification_settings(
             new_chat_message_telegram,
             created_at,
             updated_at
-        FROM borrower_notification_settings 
+        FROM borrower_notification_settings
         WHERE borrower_id = $1
         "#,
         borrower_id
@@ -186,7 +186,7 @@ pub async fn update_lender_notification_settings(
             lender_id,
             on_login_email,
             on_login_telegram,
-            new_loan_applications_email,
+            daily_application_digest_email,
             new_loan_applications_telegram,
             contract_status_changed_email,
             contract_status_changed_telegram,
@@ -199,19 +199,19 @@ pub async fn update_lender_notification_settings(
         ON CONFLICT (lender_id) DO UPDATE SET
             on_login_email = EXCLUDED.on_login_email,
             on_login_telegram = EXCLUDED.on_login_telegram,
-            new_loan_applications_email = EXCLUDED.new_loan_applications_email,
+            daily_application_digest_email = EXCLUDED.daily_application_digest_email,
             new_loan_applications_telegram = EXCLUDED.new_loan_applications_telegram,
             contract_status_changed_email = EXCLUDED.contract_status_changed_email,
             contract_status_changed_telegram = EXCLUDED.contract_status_changed_telegram,
             new_chat_message_email = EXCLUDED.new_chat_message_email,
             new_chat_message_telegram = EXCLUDED.new_chat_message_telegram,
             updated_at = CURRENT_TIMESTAMP
-        RETURNING 
+        RETURNING
             id,
             lender_id,
             on_login_email,
             on_login_telegram,
-            new_loan_applications_email,
+            daily_application_digest_email,
             new_loan_applications_telegram,
             contract_status_changed_email,
             contract_status_changed_telegram,
@@ -223,7 +223,7 @@ pub async fn update_lender_notification_settings(
         lender_id,
         settings.on_login_email,
         settings.on_login_telegram,
-        settings.new_loan_applications_email,
+        settings.daily_application_digest_email,
         settings.new_loan_applications_telegram,
         settings.contract_status_changed_email,
         settings.contract_status_changed_telegram,
@@ -248,7 +248,7 @@ pub async fn update_borrower_notification_settings(
             borrower_id,
             on_login_email,
             on_login_telegram,
-            new_loan_offer_email,
+            daily_offer_digest_email,
             new_loan_offer_telegram,
             contract_status_changed_email,
             contract_status_changed_telegram,
@@ -261,19 +261,19 @@ pub async fn update_borrower_notification_settings(
         ON CONFLICT (borrower_id) DO UPDATE SET
             on_login_email = EXCLUDED.on_login_email,
             on_login_telegram = EXCLUDED.on_login_telegram,
-            new_loan_offer_email = EXCLUDED.new_loan_offer_email,
+            daily_offer_digest_email = EXCLUDED.daily_offer_digest_email,
             new_loan_offer_telegram = EXCLUDED.new_loan_offer_telegram,
             contract_status_changed_email = EXCLUDED.contract_status_changed_email,
             contract_status_changed_telegram = EXCLUDED.contract_status_changed_telegram,
             new_chat_message_email = EXCLUDED.new_chat_message_email,
             new_chat_message_telegram = EXCLUDED.new_chat_message_telegram,
             updated_at = CURRENT_TIMESTAMP
-        RETURNING 
+        RETURNING
             id,
             borrower_id,
             on_login_email,
             on_login_telegram,
-            new_loan_offer_email,
+            daily_offer_digest_email,
             new_loan_offer_telegram,
             contract_status_changed_email,
             contract_status_changed_telegram,
@@ -285,7 +285,7 @@ pub async fn update_borrower_notification_settings(
         borrower_id,
         settings.on_login_email,
         settings.on_login_telegram,
-        settings.new_loan_offer_email,
+        settings.daily_offer_digest_email,
         settings.new_loan_offer_telegram,
         settings.contract_status_changed_email,
         settings.contract_status_changed_telegram,
@@ -303,7 +303,7 @@ pub struct BorrowerContact {
     pub id: String,
     pub name: String,
     pub email: Option<String>,
-    pub new_loan_offer_email: Option<bool>,
+    pub daily_offer_digest_email: Option<bool>,
     pub new_loan_offer_telegram: Option<bool>,
 }
 
@@ -313,11 +313,11 @@ pub async fn get_borrowers_for_loan_offer_notifications(
     let result = sqlx::query_as!(
         BorrowerContact,
         r#"
-        SELECT 
+        SELECT
             b.id as "id!",
             b.name as "name!",
             b.email as email,
-            COALESCE(bns.new_loan_offer_email, true) as new_loan_offer_email,
+            COALESCE(bns.daily_offer_digest_email, true) as daily_offer_digest_email,
             COALESCE(bns.new_loan_offer_telegram, true) as new_loan_offer_telegram
         FROM borrowers b
         LEFT JOIN borrower_notification_settings bns ON b.id = bns.borrower_id
@@ -336,7 +336,7 @@ pub struct LenderContact {
     pub id: String,
     pub name: String,
     pub email: Option<String>,
-    pub new_loan_applications_email: Option<bool>,
+    pub daily_application_digest_email: Option<bool>,
     pub new_loan_applications_telegram: Option<bool>,
 }
 
@@ -344,11 +344,11 @@ pub async fn get_lenders_for_loan_loan_application(pool: &PgPool) -> Result<Vec<
     let result = sqlx::query_as!(
         LenderContact,
         r#"
-        SELECT 
+        SELECT
             l.id as "id!",
             l.name as "name!",
             l.email as email,
-            COALESCE(lns.new_loan_applications_email, true) as new_loan_applications_email,
+            COALESCE(lns.daily_application_digest_email, true) as daily_application_digest_email,
             COALESCE(lns.new_loan_applications_telegram, true) as new_loan_applications_telegram
         FROM lenders l
         LEFT JOIN lender_notification_settings lns ON l.id = lns.lender_id
@@ -359,4 +359,185 @@ pub async fn get_lenders_for_loan_loan_application(pool: &PgPool) -> Result<Vec<
     .await?;
 
     Ok(result)
+}
+
+pub async fn get_lenders_for_application_digest_notifications(
+    pool: &PgPool,
+) -> Result<Vec<LenderContact>> {
+    let result = sqlx::query_as!(
+        LenderContact,
+        r#"
+        SELECT
+            l.id as "id!",
+            l.name as "name!",
+            l.email as email,
+            COALESCE(lns.daily_application_digest_email, true) as daily_application_digest_email,
+            COALESCE(lns.new_loan_applications_telegram, true) as new_loan_applications_telegram
+        FROM lenders l
+        LEFT JOIN lender_notification_settings lns ON l.id = lns.lender_id
+        where l.verified = true
+        "#
+    )
+    .fetch_all(pool)
+    .await?;
+
+    Ok(result)
+}
+
+#[derive(Debug, Clone)]
+pub struct DailyDigestOffer {
+    pub id: String,
+    pub loan_amount_min: rust_decimal::Decimal,
+    pub loan_amount_max: rust_decimal::Decimal,
+    pub interest_rate: rust_decimal::Decimal,
+    pub duration_days_min: i32,
+    pub duration_days_max: i32,
+    pub loan_asset: String,
+    pub created_at: OffsetDateTime,
+}
+
+pub async fn get_available_offers_since(
+    pool: &PgPool,
+    since: OffsetDateTime,
+) -> Result<Vec<DailyDigestOffer>> {
+    let result = sqlx::query_as!(
+        DailyDigestOffer,
+        r#"
+        SELECT
+            lo.id as "id!",
+            lo.loan_amount_min,
+            lo.loan_amount_max,
+            lo.interest_rate,
+            lo.duration_days_min,
+            lo.duration_days_max,
+            lo.loan_asset::text as "loan_asset!",
+            lo.created_at
+        FROM loan_offers lo
+        WHERE lo.status = 'Available'
+          AND lo.created_at >= $1
+        ORDER BY lo.created_at DESC
+        "#,
+        since
+    )
+    .fetch_all(pool)
+    .await?;
+
+    Ok(result)
+}
+
+pub async fn mark_daily_digest_sent(
+    pool: &PgPool,
+    borrower_id: &str,
+    digest_date: time::Date,
+    offer_count: i32,
+) -> Result<()> {
+    sqlx::query!(
+        r#"
+        INSERT INTO daily_offer_digest_sent (borrower_id, digest_date, offer_count)
+        VALUES ($1, $2, $3)
+        ON CONFLICT (borrower_id, digest_date) DO UPDATE SET
+            sent_at = CURRENT_TIMESTAMP,
+            offer_count = EXCLUDED.offer_count
+        "#,
+        borrower_id,
+        digest_date,
+        offer_count
+    )
+    .execute(pool)
+    .await?;
+
+    Ok(())
+}
+
+pub async fn was_daily_digest_sent(
+    pool: &PgPool,
+    borrower_id: &str,
+    digest_date: time::Date,
+) -> Result<bool> {
+    let result = sqlx::query_scalar!(
+        "SELECT EXISTS(SELECT 1 FROM daily_offer_digest_sent WHERE borrower_id = $1 AND digest_date = $2)",
+        borrower_id,
+        digest_date
+    )
+    .fetch_one(pool)
+    .await?;
+
+    Ok(result.unwrap_or(false))
+}
+
+#[derive(Debug, Clone)]
+pub struct DailyDigestApplication {
+    pub id: String,
+    pub loan_amount: rust_decimal::Decimal,
+    pub interest_rate: rust_decimal::Decimal,
+    pub duration_days: i32,
+    pub loan_asset: String,
+    pub created_at: OffsetDateTime,
+}
+
+pub async fn get_available_applications_since(
+    pool: &PgPool,
+    since: OffsetDateTime,
+) -> Result<Vec<DailyDigestApplication>> {
+    let result = sqlx::query_as!(
+        DailyDigestApplication,
+        r#"
+        SELECT
+            la.id as "id!",
+            la.loan_amount,
+            la.interest_rate,
+            la.duration_days,
+            la.loan_asset::text as "loan_asset!",
+            la.created_at
+        FROM loan_applications la
+        WHERE la.status = 'Available'
+          AND la.created_at >= $1
+        ORDER BY la.created_at DESC
+        "#,
+        since
+    )
+    .fetch_all(pool)
+    .await?;
+
+    Ok(result)
+}
+
+pub async fn mark_daily_application_digest_sent(
+    pool: &PgPool,
+    lender_id: &str,
+    digest_date: time::Date,
+    application_count: i32,
+) -> Result<()> {
+    sqlx::query!(
+        r#"
+        INSERT INTO daily_application_digest_sent (lender_id, digest_date, application_count)
+        VALUES ($1, $2, $3)
+        ON CONFLICT (lender_id, digest_date) DO UPDATE SET
+            sent_at = CURRENT_TIMESTAMP,
+            application_count = EXCLUDED.application_count
+        "#,
+        lender_id,
+        digest_date,
+        application_count
+    )
+    .execute(pool)
+    .await?;
+
+    Ok(())
+}
+
+pub async fn was_daily_application_digest_sent(
+    pool: &PgPool,
+    lender_id: &str,
+    digest_date: time::Date,
+) -> Result<bool> {
+    let result = sqlx::query_scalar!(
+        "SELECT EXISTS(SELECT 1 FROM daily_application_digest_sent WHERE lender_id = $1 AND digest_date = $2)",
+        lender_id,
+        digest_date
+    )
+    .fetch_one(pool)
+    .await?;
+
+    Ok(result.unwrap_or(false))
 }
