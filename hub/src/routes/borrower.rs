@@ -66,6 +66,7 @@ const PROFILE_TAG: &str = "Profile";
 const CHAT_TAG: &str = "Chat";
 const DISPUTE_TAG: &str = "Disputes";
 const PRICE_FEED_TAG: &str = "Price Feed";
+const PROFILES_TAG: &str = "User Profiles";
 
 #[derive(OpenApi)]
 #[openapi(
@@ -178,6 +179,9 @@ curl -X POST "http://localhost:7337/api/contracts" \
         ),
         (
             name = PRICE_FEED_TAG, description = "Real-time price feed WebSocket.",
+        ),
+        (
+            name = PROFILES_TAG, description = "Public user profile statistics.",
         )
     ),
 )]
@@ -227,6 +231,11 @@ pub async fn spawn_borrower_server(
         .nest("/api/chat/notification", chat::router(app_state.clone()))
         .nest("/api/disputes", dispute::router(app_state.clone()))
         .nest("/api/pricefeed", price_feed_ws::router(app_state.clone()))
+        .nest(
+            "/api",
+            profiles::router(app_state.clone())
+                .route_layer(middleware::from_fn_with_state(app_state.clone(), auth)),
+        )
         .split_for_parts();
 
     let router =
@@ -234,11 +243,6 @@ pub async fn spawn_borrower_server(
 
     let app = router
         .merge(auth::router(app_state.clone()))
-        .merge(
-            profiles::router()
-                .route_layer(middleware::from_fn_with_state(app_state.clone(), auth))
-                .with_state(app_state.clone()),
-        )
         .merge(cards::router(app_state.clone()))
         .merge(bringin::router(app_state))
         // This is a relative path on the filesystem, which means, when deploying `hub` we will need

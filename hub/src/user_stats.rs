@@ -49,7 +49,7 @@ pub async fn get_lender_stats(db: &Pool<Postgres>, lender_id: &str) -> Result<Le
     Ok(LenderStats::from(lender_stats))
 }
 
-#[derive(Debug, Serialize, Deserialize, Clone)]
+#[derive(Debug, Serialize, Deserialize, Clone, ToSchema)]
 pub struct BorrowerStats {
     pub id: String,
     name: String,

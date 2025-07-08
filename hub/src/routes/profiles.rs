@@ -7,16 +7,19 @@ use axum::extract::State;
 use axum::http::StatusCode;
 use axum::response::IntoResponse;
 use axum::response::Response;
-use axum::routing::get;
 use axum::Json;
-use axum::Router;
 use serde::Serialize;
 use std::sync::Arc;
+use utoipa_axum::router::OpenApiRouter;
+use utoipa_axum::routes;
 
-pub(crate) fn router() -> Router<Arc<AppState>> {
-    Router::new()
-        .route("/api/lenders/:id", get(get_lender_stats))
-        .route("/api/borrowers/:id", get(get_borrower_stats))
+const PROFILES_TAG: &str = "User Profiles";
+
+pub(crate) fn router(app_state: Arc<AppState>) -> OpenApiRouter {
+    OpenApiRouter::new()
+        .routes(routes!(get_lender_stats))
+        .routes(routes!(get_borrower_stats))
+        .with_state(app_state)
 }
 
 pub enum Error {
@@ -66,6 +69,22 @@ impl IntoResponse for Error {
     }
 }
 
+/// Get public statistics for a lender.
+#[utoipa::path(
+    get,
+    path = "/lenders/{id}",
+    tag = PROFILES_TAG,
+    params(
+        ("id" = String, Path, description = "Lender ID")
+    ),
+    responses(
+        (
+            status = 200,
+            description = "Lender statistics",
+            body = LenderStats
+        )
+    )
+)]
 pub async fn get_lender_stats(
     State(data): State<Arc<AppState>>,
     Path(lender_id): Path<String>,
@@ -85,6 +104,22 @@ impl From<crate::user_stats::Error> for Error {
     }
 }
 
+/// Get public statistics for a borrower.
+#[utoipa::path(
+    get,
+    path = "/borrowers/{id}",
+    tag = PROFILES_TAG,
+    params(
+        ("id" = String, Path, description = "Borrower ID")
+    ),
+    responses(
+        (
+            status = 200,
+            description = "Borrower statistics",
+            body = BorrowerStats
+        )
+    )
+)]
 pub async fn get_borrower_stats(
     State(data): State<Arc<AppState>>,
     Path(borrower_id): Path<String>,

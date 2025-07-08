@@ -52,6 +52,7 @@ const VERSION_TAG: &str = "version";
 const NOTIFICATION_SETTINGS_TAG: &str = "Notification Settings";
 const CHAT_TAG: &str = "Chat";
 const PRICE_FEED_TAG: &str = "Price Feed";
+const PROFILES_TAG: &str = "User Profiles";
 
 #[derive(OpenApi)]
 #[openapi(
@@ -100,6 +101,9 @@ Interact with the lendasat server to
         ),
         (
             name = PRICE_FEED_TAG, description = "Real-time price feed WebSocket.",
+        ),
+        (
+            name = PROFILES_TAG, description = "Public user profile statistics.",
         )
     ),
 )]
@@ -140,6 +144,11 @@ pub async fn spawn_lender_server(
         )
         .nest("/api/chat/notification", chat::router(app_state.clone()))
         .nest("/api/pricefeed", price_feed_ws::router(app_state.clone()))
+        .nest(
+            "/profiles",
+            profiles::router(app_state.clone())
+                .route_layer(middleware::from_fn_with_state(app_state.clone(), auth)),
+        )
         .split_for_parts();
 
     let router =
@@ -149,11 +158,6 @@ pub async fn spawn_lender_server(
         profile::router(app_state.clone())
             .merge(dispute::router(app_state.clone()))
             .merge(notifications::router(app_state.clone()))
-            .merge(
-                profiles::router()
-                    .route_layer(middleware::from_fn_with_state(app_state.clone(), auth))
-                    .with_state(app_state),
-            )
             .fallback_service(
                 ServeDir::new("./frontend/apps/lender/dist")
                     .fallback(ServeFile::new("./frontend/apps/lender/dist/index.html")),
