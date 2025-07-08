@@ -4,9 +4,7 @@ use crate::moon;
 use crate::routes::borrower::auth::jwt_or_api_auth;
 use crate::routes::borrower::CARDS_TAG;
 use crate::routes::AppState;
-use anyhow::anyhow;
 use anyhow::Result;
-use axum::extract::rejection::JsonRejection;
 use axum::extract::FromRequest;
 use axum::extract::Path;
 use axum::extract::State;
@@ -14,12 +12,10 @@ use axum::http::StatusCode;
 use axum::middleware;
 use axum::response::IntoResponse;
 use axum::response::Response;
-use axum::routing::post;
 use axum::Extension;
 use axum::Json;
 use rust_decimal::Decimal;
 use serde::Serialize;
-use serde_json::Value;
 use std::str::FromStr;
 use std::sync::Arc;
 use tracing::instrument;
@@ -32,8 +28,6 @@ pub(crate) fn router(app_state: Arc<AppState>) -> OpenApiRouter {
     OpenApiRouter::new()
         .routes(routes!(get_cards))
         .routes(routes!(get_card_transactions))
-        // we don't want to document this one
-        .route("/moon/webhook", post(post_webhook).get(get_webhook))
         .route_layer(middleware::from_fn_with_state(
             app_state.clone(),
             jwt_or_api_auth::auth,
@@ -148,70 +142,6 @@ async fn get_card_transactions(
     Ok(AppJson(txs))
 }
 
-/// Webhook endpoint for Moon payment service notifications.
-///
-/// This endpoint receives payment notifications from the Moon service
-/// and processes card transactions and payment events.
-#[instrument(skip(data, payload), err(Debug))]
-async fn post_webhook(
-    State(data): State<Arc<AppState>>,
-    payload: Result<Json<Value>, JsonRejection>,
-) -> Result<(), Error> {
-    match payload {
-        // Handle request with JSON body
-        Ok(Json(payload)) => {
-            if let Ok(json_object) = serde_json::to_string(&payload) {
-                tracing::trace!(?json_object, "Received new json webhook data");
-            } else {
-                tracing::warn!(?payload, "Received new webhook data which was not json");
-            }
-
-            if let Ok(moon_message) =
-                serde_json::from_value::<pay_with_moon::MoonMessage>(payload.clone())
-            {
-                tracing::debug!(?moon_message, "Received new message from moon notification");
-                if let pay_with_moon::MoonMessage::MoonInvoicePayment(invoice) = &moon_message {
-                    if let Err(err) = data.moon.handle_paid_invoice(invoice).await {
-                        tracing::error!("Failed at handling moon invoice {err:#}");
-                    }
-                } else {
-                    // MoonMessage::MoonInvoicePayment is already stored in
-                    // `moon.handle_paid_invoice`
-                    if let Err(err) =
-                        db::moon::insert_moon_transactions(&data.db, moon_message).await
-                    {
-                        tracing::error!("Failed at persisting moon message {err:#}");
-                    }
-                }
-            } else {
-                tracing::warn!("Received unknown webhook data");
-            };
-            Ok(())
-        }
-
-        // Handle request without JSON body or invalid JSON
-        Err(JsonRejection::MissingJsonContentType(_))
-        | Err(JsonRejection::JsonDataError(_))
-        | Err(JsonRejection::JsonSyntaxError(_)) => {
-            tracing::debug!(?payload, "Webhook registered but did not match");
-
-            Ok(())
-        }
-
-        // Handle other JSON rejection cases
-        Err(e) => Err(Error::moon(anyhow!("Failed to process webhook: {e:#}"))),
-    }
-}
-
-/// Webhook registration endpoint for Moon payment service.
-///
-/// This endpoint handles webhook registration requests from the Moon service.
-#[instrument(err(Debug))]
-async fn get_webhook() -> Result<impl IntoResponse, Error> {
-    tracing::debug!("New webhook registered via http get");
-
-    Ok((StatusCode::OK, ()))
-}
 
 #[derive(Debug, Serialize, PartialEq, Clone, ToSchema)]
 enum TransactionStatus {
@@ -406,12 +336,8 @@ where
 /// All the errors related to the `cards` REST API.
 #[derive(Debug)]
 enum Error {
-    /// The request body contained invalid JSON.
-    JsonRejection(JsonRejection),
     /// Failed to interact with the database.
     Database(#[allow(dead_code)] String),
-    /// General error from Moon service.
-    Moon(#[allow(dead_code)] String),
     /// Invalid card ID provided.
     InvalidCardId,
     /// Card not found.
@@ -423,16 +349,8 @@ impl Error {
         Self::Database(format!("{e:#}"))
     }
 
-    fn moon(e: anyhow::Error) -> Self {
-        Self::Moon(format!("{e:#}"))
-    }
 }
 
-impl From<JsonRejection> for Error {
-    fn from(rejection: JsonRejection) -> Self {
-        Self::JsonRejection(rejection)
-    }
-}
 
 /// Tell `axum` how [`Error`] should be converted into a response.
 impl IntoResponse for Error {
@@ -444,11 +362,7 @@ impl IntoResponse for Error {
         }
 
         let (status, message) = match self {
-            Error::JsonRejection(rejection) => {
-                // This error is caused by bad user input so don't log it
-                (rejection.status(), rejection.body_text())
-            }
-            Error::Database(_) | Error::Moon(_) => (
+            Error::Database(_) => (
                 StatusCode::INTERNAL_SERVER_ERROR,
                 "Something went wrong".to_owned(),
             ),

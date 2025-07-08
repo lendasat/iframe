@@ -48,6 +48,7 @@ mod cards;
 mod chat;
 mod dispute;
 mod me;
+mod moon_webhook;
 
 pub use contracts::ClaimCollateralPsbt;
 pub use contracts::ClaimTx;
@@ -251,6 +252,7 @@ pub async fn spawn_borrower_server(
         )
         .nest("/api", cards::router(app_state.clone()))
         .nest("/api", bringin::router(app_state.clone()))
+        .nest("/api/moon", moon_webhook::router(app_state.clone()))
         .nest("/api/users", me::router(app_state.clone()))
         .split_for_parts();
 
