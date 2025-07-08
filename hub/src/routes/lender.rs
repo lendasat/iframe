@@ -51,6 +51,7 @@ const KYC_TAG: &str = "kyc";
 const VERSION_TAG: &str = "version";
 const NOTIFICATION_SETTINGS_TAG: &str = "Notification Settings";
 const CHAT_TAG: &str = "Chat";
+const PRICE_FEED_TAG: &str = "Price Feed";
 
 #[derive(OpenApi)]
 #[openapi(
@@ -96,6 +97,9 @@ Interact with the lendasat server to
         ),
         (
             name = CHAT_TAG, description = "Chat notifications.",
+        ),
+        (
+            name = PRICE_FEED_TAG, description = "Real-time price feed WebSocket.",
         )
     ),
 )]
@@ -135,6 +139,7 @@ pub async fn spawn_lender_server(
             notification_settings::router(app_state.clone()),
         )
         .nest("/api/chat/notification", chat::router(app_state.clone()))
+        .nest("/api/pricefeed", price_feed_ws::router(app_state.clone()))
         .split_for_parts();
 
     let router =
@@ -144,7 +149,6 @@ pub async fn spawn_lender_server(
         profile::router(app_state.clone())
             .merge(dispute::router(app_state.clone()))
             .merge(notifications::router(app_state.clone()))
-            .merge(price_feed_ws::router(app_state.clone()))
             .merge(
                 profiles::router()
                     .route_layer(middleware::from_fn_with_state(app_state.clone(), auth))

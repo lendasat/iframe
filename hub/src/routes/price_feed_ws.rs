@@ -4,20 +4,37 @@ use axum::extract::ws::WebSocket;
 use axum::extract::State;
 use axum::extract::WebSocketUpgrade;
 use axum::response::IntoResponse;
-use axum::routing::get;
-use axum::Router;
 use futures::SinkExt;
 use futures::StreamExt;
 use std::sync::Arc;
 use tokio::sync::mpsc;
 use tokio::sync::Mutex;
+use utoipa_axum::router::OpenApiRouter;
+use utoipa_axum::routes;
 
-pub(crate) fn router(app_state: Arc<AppState>) -> Router {
-    Router::new()
-        .route("/api/pricefeed", get(price_feed_websocket_handler))
+const PRICE_FEED_TAG: &str = "Price Feed";
+
+pub(crate) fn router(app_state: Arc<AppState>) -> OpenApiRouter {
+    OpenApiRouter::new()
+        .routes(routes!(price_feed_websocket_handler))
         .with_state(app_state)
 }
 
+/// WebSocket endpoint for real-time price feed updates.
+///
+/// This endpoint upgrades the HTTP connection to a WebSocket and provides
+/// real-time price feed updates to connected clients.
+#[utoipa::path(
+    get,
+    path = "/",
+    tag = PRICE_FEED_TAG,
+    responses(
+        (
+            status = 101,
+            description = "WebSocket connection established successfully"
+        )
+    )
+)]
 async fn price_feed_websocket_handler(
     State(state): State<Arc<AppState>>,
     ws: WebSocketUpgrade,
