@@ -1,7 +1,11 @@
+#![allow(unused_qualifications)]
+// Clippy seems to be wrong here that `Query(pagination): Query<PaginationQuery>,` has unnecessary
+// qualification.
 use crate::db;
 use crate::model::Borrower;
 use crate::model::NotificationMessage;
 use crate::routes::borrower::auth::jwt_or_api_auth;
+use crate::routes::borrower::NOTIFICATIONS_TAG;
 use crate::routes::AppState;
 use anyhow::anyhow;
 use axum::extract::rejection::JsonRejection;
@@ -16,52 +20,41 @@ use axum::middleware;
 use axum::response::IntoResponse;
 use axum::response::Response;
 use axum::routing::get;
-use axum::routing::put;
 use axum::Extension;
 use axum::Json;
-use axum::Router;
 use futures::SinkExt;
 use futures::StreamExt;
 use serde::Deserialize;
 use serde::Serialize;
 use std::sync::Arc;
 use tokio::sync::mpsc;
+use tracing::instrument;
+use utoipa::IntoParams;
+use utoipa::ToSchema;
+use utoipa_axum::router::OpenApiRouter;
+use utoipa_axum::routes;
 use uuid::Uuid;
 
-pub(crate) fn router(app_state: Arc<AppState>) -> Router {
-    Router::new()
+pub(crate) fn router(app_state: Arc<AppState>) -> OpenApiRouter {
+    OpenApiRouter::new()
+        .routes(routes!(get_all_notifications))
+        .routes(routes!(put_mark_as_read))
+        .routes(routes!(put_mark_all_as_read))
         .route(
-            "/api/notifications",
-            get(get_all_notifications).route_layer(middleware::from_fn_with_state(
-                app_state.clone(),
-                jwt_or_api_auth::auth,
-            )),
-        )
-        .route(
-            "/api/notifications/:id",
-            put(put_mark_as_read).route_layer(middleware::from_fn_with_state(
-                app_state.clone(),
-                jwt_or_api_auth::auth,
-            )),
-        )
-        .route(
-            "/api/notifications",
-            put(put_mark_all_as_read).route_layer(middleware::from_fn_with_state(
-                app_state.clone(),
-                jwt_or_api_auth::auth,
-            )),
-        )
-        .route(
-            "/api/notifications/ws",
+            "/ws",
             get(notifications_ws).route_layer(middleware::from_fn_with_state(
                 app_state.clone(),
                 jwt_or_api_auth::auth,
             )),
         )
+        .route_layer(middleware::from_fn_with_state(
+            app_state.clone(),
+            jwt_or_api_auth::auth,
+        ))
         .with_state(app_state)
 }
 
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Deserialize, ToSchema, IntoParams)]
 pub struct PaginationQuery {
     #[serde(default = "default_page")]
     pub page: u32,
@@ -82,7 +75,7 @@ fn default_unread_only() -> bool {
     true
 }
 
-#[derive(Debug, Serialize)]
+#[derive(Debug, Serialize, ToSchema)]
 pub struct PaginatedResponse<T> {
     pub data: Vec<T>,
     pub page: u32,
@@ -107,6 +100,32 @@ impl PaginationQuery {
     }
 }
 
+/// Get all notifications for a borrower with pagination support.
+#[utoipa::path(
+    get,
+    path = "/",
+    tag = NOTIFICATIONS_TAG,
+    params(
+        PaginationQuery
+    ),
+    responses(
+        (
+            status = 200,
+            description = "Paginated list of notifications",
+            body = PaginatedResponse<NotificationMessage>
+        ),
+        (
+            status = 400,
+            description = "Bad request (invalid pagination parameters)"
+        )
+    ),
+    security(
+        (
+            "api_key" = []
+        )
+    )
+)]
+#[instrument(skip_all, fields(borrower_id = user.id), ret, err(Debug))]
 async fn get_all_notifications(
     State(state): State<Arc<AppState>>,
     Extension(user): Extension<Borrower>,
@@ -215,6 +234,27 @@ async fn get_all_notifications(
     }))
 }
 
+/// Mark a specific notification as read.
+#[utoipa::path(
+    put,
+    path = "/{id}",
+    tag = NOTIFICATIONS_TAG,
+    params(
+        ("id" = Uuid, Path, description = "Notification ID")
+    ),
+    responses(
+        (
+            status = 200,
+            description = "Notification marked as read successfully"
+        )
+    ),
+    security(
+        (
+            "api_key" = []
+        )
+    )
+)]
+#[instrument(skip_all, fields(notification_id = %id), ret, err(Debug))]
 async fn put_mark_as_read(
     State(state): State<Arc<AppState>>,
     Path(id): Path<Uuid>,
@@ -226,6 +266,24 @@ async fn put_mark_as_read(
     Ok(AppJson(()))
 }
 
+/// Mark all notifications as read for the authenticated borrower.
+#[utoipa::path(
+    put,
+    path = "/",
+    tag = NOTIFICATIONS_TAG,
+    responses(
+        (
+            status = 200,
+            description = "All notifications marked as read successfully"
+        )
+    ),
+    security(
+        (
+            "api_key" = []
+        )
+    )
+)]
+#[instrument(skip_all, fields(borrower_id = user.id), ret, err(Debug))]
 async fn put_mark_all_as_read(
     State(state): State<Arc<AppState>>,
     Extension(user): Extension<Borrower>,

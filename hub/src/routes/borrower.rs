@@ -61,6 +61,7 @@ const API_KEYS_TAG: &str = "api-keys";
 const API_ACCOUNTS_TAG: &str = "api-accounts";
 const VERSION_TAG: &str = "version";
 const NOTIFICATION_SETTINGS_TAG: &str = "Notification Settings";
+const NOTIFICATIONS_TAG: &str = "Notifications";
 
 #[derive(OpenApi)]
 #[openapi(
@@ -202,6 +203,10 @@ pub async fn spawn_borrower_server(
             "/api/notification-settings",
             notification_settings::router(app_state.clone()),
         )
+        .nest(
+            "/api/notifications",
+            notifications::router(app_state.clone()),
+        )
         .split_for_parts();
 
     let router =
@@ -212,8 +217,6 @@ pub async fn spawn_borrower_server(
         .merge(profile::router(app_state.clone()))
         .merge(chat::router(app_state.clone()))
         .merge(dispute::router(app_state.clone()))
-        // TODO: move this into the OpenApiRouter so that it's documented
-        .merge(notifications::router(app_state.clone()))
         .merge(price_feed_ws::router(app_state.clone()))
         .merge(
             profiles::router()
