@@ -5,7 +5,7 @@ use bitcoin::hex::Case;
 use bitcoin::hex::DisplayHex;
 use bitcoin::Address;
 use bitcoin::PublicKey;
-use browser_wallet::wallet::Wallet;
+use client_sdk::wallet::Wallet;
 use hub::config::Config;
 use hub::db;
 use hub::db::wallet_backups::NewBorrowerWalletBackup;

@@ -3,10 +3,14 @@
 use anyhow::Result;
 use bitcoin::hashes::Hash;
 use bitcoin::Txid;
-use browser_wallet::auth::Salt;
-use browser_wallet::auth::ServerProof;
-use browser_wallet::auth::B;
-use browser_wallet::wallet::Wallet;
+use client_sdk::auth::process_login_response;
+use client_sdk::auth::verify_server;
+use client_sdk::auth::Salt;
+use client_sdk::auth::ServerProof;
+use client_sdk::auth::B;
+use client_sdk::srp::client::SrpClient;
+use client_sdk::srp::groups::G_2048;
+use client_sdk::wallet::Wallet;
 use hub::model::ContractStatus;
 use hub::model::PakeLoginRequest;
 use hub::model::PakeLoginResponse;
@@ -55,7 +59,11 @@ pub async fn log_in(port: u32, email: String, password: String) -> Client {
 
     let login_response: PakeLoginResponse = res.json().await.unwrap();
 
-    let (a_pub, client_proof) = browser_wallet::auth::process_login_response(
+    let mut rng = thread_rng();
+
+    let (a_pub, client_proof, client_verifier) = process_login_response(
+        &mut rng,
+        &SrpClient::new(&G_2048),
         email.clone(),
         password,
         Salt::try_from_hex(login_response.salt).unwrap(),
@@ -80,7 +88,8 @@ pub async fn log_in(port: u32, email: String, password: String) -> Client {
 
     let verify_response: PakeVerifyResponse = res.json().await.unwrap();
 
-    browser_wallet::auth::verify_server(
+    verify_server(
+        &client_verifier,
         ServerProof::try_from_hex(verify_response.server_proof).unwrap(),
     )
     .unwrap();

@@ -6,7 +6,7 @@ edition = "2021"
 [dependencies]
 anyhow = "1"
 bitcoin = "0.32.2"
-browser-wallet = { path = "../browser-wallet" }
+client-sdk = { path = "../client-sdk" }
 dotenv = "0.15.0"
 hex = "0.4"
 hub = { path = "../hub" }
