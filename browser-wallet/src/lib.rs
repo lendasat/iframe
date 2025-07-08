@@ -12,7 +12,6 @@ mod storage;
 
 // We make them public for the "e2e" tests.
 pub mod auth;
-mod models;
 pub mod wallet;
 
 #[wasm_bindgen]
@@ -562,17 +561,17 @@ pub fn decrypt_fiat_loan_details_with_password(
     Ok(fiat_loan_details.into())
 }
 
-impl From<InnerFiatLoanDetails> for models::FiatLoanDetails {
+impl From<InnerFiatLoanDetails> for wallet::FiatLoanDetails {
     fn from(value: InnerFiatLoanDetails) -> Self {
         Self {
             iban_transfer_details: value.iban_transfer_details.map(|i| {
-                models::IbanTransferDetails {
+                wallet::IbanTransferDetails {
                     iban: i.iban,
                     bic: i.bic,
                 }
             }),
             swift_transfer_details: value.swift_transfer_details.map(|s| {
-                models::SwiftTransferDetails {
+                wallet::SwiftTransferDetails {
                     swift_or_bic: s.bic_or_swift,
                     account_number: s.account_number,
                 }
@@ -591,8 +590,8 @@ impl From<InnerFiatLoanDetails> for models::FiatLoanDetails {
     }
 }
 
-impl From<models::FiatLoanDetails> for InnerFiatLoanDetails {
-    fn from(value: models::FiatLoanDetails) -> Self {
+impl From<wallet::FiatLoanDetails> for InnerFiatLoanDetails {
+    fn from(value: wallet::FiatLoanDetails) -> Self {
         Self {
             iban_transfer_details: value.iban_transfer_details.map(|i| IbanTransferDetails {
                 iban: i.iban,

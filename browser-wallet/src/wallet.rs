@@ -1,4 +1,3 @@
-use crate::models::FiatLoanDetails;
 use aes_gcm_siv::aead::Aead;
 use aes_gcm_siv::Aes256GcmSiv;
 use aes_gcm_siv::KeyInit;
@@ -41,6 +40,10 @@ use std::sync::LazyLock;
 use std::sync::Mutex;
 
 mod fiat_loan_details;
+
+pub use fiat_loan_details::FiatLoanDetails;
+pub use fiat_loan_details::IbanTransferDetails;
+pub use fiat_loan_details::SwiftTransferDetails;
 
 const SECRET_KEY_ENCRYPTION_NONCE: &[u8; 12] = b"SECRET_KEY!!";
 
