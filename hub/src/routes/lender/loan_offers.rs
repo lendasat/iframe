@@ -661,14 +661,11 @@ impl IntoResponse for Error {
             ),
             Error::InvalidLtv { ltv } => (
                 StatusCode::BAD_REQUEST,
-                format!("LTV needs to be between 0.00 and 1.00 but was {}", ltv),
+                format!("LTV needs to be between 0.00 and 1.00 but was {ltv}"),
             ),
             Error::InvalidInterestRate { rate } => (
                 StatusCode::BAD_REQUEST,
-                format!(
-                    "Interest rate needs to be between 0.00 and 1.00 but was {}",
-                    rate
-                ),
+                format!("Interest rate needs to be between 0.00 and 1.00 but was {rate}",),
             ),
             Error::InvalidUrl(_) => (
                 StatusCode::INTERNAL_SERVER_ERROR,

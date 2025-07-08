@@ -36,7 +36,7 @@ pub async fn mark_as_principal_given(
     if let Err(e) = async {
         let loan_url = config
             .borrower_frontend_origin
-            .join(&format!("/my-contracts/{}", contract_id))?;
+            .join(&format!("/my-contracts/{contract_id}"))?;
 
         let borrower = db::borrowers::get_user_by_id(pool, &contract.borrower_id)
             .await?

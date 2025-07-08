@@ -1071,7 +1071,7 @@ mod tests {
     pub fn deserialize_transaction_response() {
         let path = Path::new("tests/json_files/card_transactions/card_transactions.json");
         let file_contents =
-            fs::read_to_string(path).unwrap_or_else(|_| panic!("Unable to read file: {:?}", path));
+            fs::read_to_string(path).unwrap_or_else(|_| panic!("Unable to read file: {path:?}"));
 
         let result: Result<TransactionResponse, _> = serde_json::from_str(&file_contents);
         assert!(
@@ -1086,7 +1086,7 @@ mod tests {
     pub fn deserialize_card_decline_moon_message() {
         let path = Path::new("tests/json_files/moon_messages/moon_message_card_decline.json");
         let file_contents =
-            fs::read_to_string(path).unwrap_or_else(|_| panic!("Unable to read file: {:?}", path));
+            fs::read_to_string(path).unwrap_or_else(|_| panic!("Unable to read file: {path:?}"));
 
         let result: Result<MoonMessage, _> = serde_json::from_str(&file_contents);
         assert!(
@@ -1111,7 +1111,7 @@ mod tests {
     pub fn deserialize_normal_card_moon_message() {
         let path = Path::new("tests/json_files/moon_messages/moon_message4.json");
         let file_contents =
-            fs::read_to_string(path).unwrap_or_else(|_| panic!("Unable to read file: {:?}", path));
+            fs::read_to_string(path).unwrap_or_else(|_| panic!("Unable to read file: {path:?}"));
 
         let result: Result<MoonMessage, _> = serde_json::from_str(&file_contents);
         assert!(
@@ -1146,13 +1146,13 @@ mod tests {
             let path = entry.path();
 
             // Skip non-JSON files
-            if path.extension().map_or(false, |ext| ext != "json") {
+            if path.extension().is_some_and(|ext| ext != "json") {
                 continue;
             }
 
             // Read file contents
             let file_contents = fs::read_to_string(dbg!(&path))
-                .unwrap_or_else(|_| panic!("Unable to read file: {:?}", path));
+                .unwrap_or_else(|_| panic!("Unable to read file: {path:?}"));
 
             // Attempt to deserialize
             let result: Result<MoonMessage, _> = serde_json::from_str(&file_contents);

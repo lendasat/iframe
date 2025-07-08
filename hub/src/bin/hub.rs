@@ -78,7 +78,7 @@ async fn main() -> Result<()> {
             let temp_dir = TempDir::new().expect("to exist");
             let path = temp_dir.path();
             let path_str = path.to_str().map(|s| s.to_string()).expect("to work");
-            let db_path = format!("{}/one-time.db", path_str);
+            let db_path = format!("{path_str}/one-time.db");
             tracing::warn!(db_path, "Fee wallet is using non-persistent storage");
             (db_path, Some(temp_dir))
         }

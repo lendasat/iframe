@@ -292,7 +292,7 @@ async fn post_register(
     }
 
     Ok(Json(RegistrationResponse {
-        message: format!("We sent an email with a verification code to {}", email),
+        message: format!("We sent an email with a verification code to {email}"),
     }))
 }
 

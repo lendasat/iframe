@@ -318,7 +318,7 @@ fn calculate_auth_header<T: serde::Serialize>(
     }
 
     // Step 4: Concatenate timestamp, method, path, and body digest
-    let signature_raw_data = format!("{}{}{}{}", time, method, path, content_hash);
+    let signature_raw_data = format!("{time}{method}{path}{content_hash}");
 
     // Step 5: Create HMAC SHA256 digest
     let mut mac = HmacSha256::new_from_slice(api_secret.as_bytes())
@@ -330,7 +330,7 @@ fn calculate_auth_header<T: serde::Serialize>(
     let signature = result.to_hex_string(Case::Lower);
 
     // Step 6: Assemble the authorization header
-    Ok(format!("HMAC {}:{}", time, signature))
+    Ok(format!("HMAC {time}:{signature}"))
 }
 
 #[cfg(test)]

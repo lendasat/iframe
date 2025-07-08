@@ -37,7 +37,7 @@ fn main() {
         })
         .unwrap_or(None);
 
-    println!("cargo:rustc-env=GIT_COMMIT_HASH={}", git_commit_hash);
+    println!("cargo:rustc-env=GIT_COMMIT_HASH={git_commit_hash}");
 
     println!(
         "cargo:rustc-env=GIT_TAG={}",

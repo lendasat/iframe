@@ -235,7 +235,7 @@ async fn api_account_borrower() {
         // Testing the ability to fund the collateral with several outputs.
 
         // We add 1 to ensure that we don't round down.
-        let half = (total_collateral + 1) / 2;
+        let half = total_collateral.div_ceil(2);
         for i in 0..=1 {
             tracing::debug!(i, amount = %half, "Funding collateral");
 

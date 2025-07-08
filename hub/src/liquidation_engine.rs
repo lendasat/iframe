@@ -424,7 +424,7 @@ async fn send_notification(
 
     let borrower_contract_url = config
         .borrower_frontend_origin
-        .join(format!("/my-contracts/{}", contract_id).as_str())?;
+        .join(format!("/my-contracts/{contract_id}").as_str())?;
 
     match status {
         LiquidationStatus::Healthy => {

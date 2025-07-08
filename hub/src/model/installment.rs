@@ -140,9 +140,11 @@ fn generate_installment(
         (interval_days + extra_days) as u32,
     );
 
-    let principal = is_final_installment
-        .then_some(loan_amount_usd)
-        .unwrap_or_default();
+    let principal = if is_final_installment {
+        loan_amount_usd
+    } else {
+        Default::default()
+    };
 
     Installment {
         id: Uuid::new_v4(),

@@ -25,7 +25,7 @@ fn main() {
         })
         .unwrap_or(None);
 
-    println!("cargo:rustc-env=GIT_COMMIT_HASH={}", git_commit_hash);
+    println!("cargo:rustc-env=GIT_COMMIT_HASH={git_commit_hash}");
 
     println!(
         "cargo:rustc-env=GIT_TAG={}",
@@ -37,5 +37,5 @@ fn main() {
         .expect("Time went backwards")
         .as_secs();
 
-    println!("cargo:rustc-env=BUILD_TIMESTAMP={}", timestamp);
+    println!("cargo:rustc-env=BUILD_TIMESTAMP={timestamp}");
 }

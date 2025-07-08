@@ -1107,7 +1107,7 @@ async fn send_loan_collateralized_email_to_lender(
 
         let loan_url = config
             .lender_frontend_origin
-            .join(format!("/my-contracts/{}", contract_id).as_str())?;
+            .join(format!("/my-contracts/{contract_id}").as_str())?;
 
         notifications
             .send_loan_collateralized(lender, loan_url, contract_id)

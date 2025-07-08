@@ -189,7 +189,7 @@ pub async fn take_application(
 
     let loan_url = config
         .borrower_frontend_origin
-        .join(format!("/my-contracts/{}", contract_id).as_str())
+        .join(format!("/my-contracts/{contract_id}").as_str())
         .expect("to be a correct URL");
     let borrower = db::borrowers::get_user_by_id(db, contract.borrower_id.as_str())
         .await

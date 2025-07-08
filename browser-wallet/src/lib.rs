@@ -165,7 +165,7 @@ pub fn unlock_and_sign_claim_psbt(
 ) -> Result<SignedTransaction, JsValue> {
     if let Err(err) = browser_wallet::load(&password, &key) {
         log::error!("Failed unlocking wallet {err:#}");
-        return Err(JsValue::from_str(&format!("{:#}", err)));
+        return Err(JsValue::from_str(&format!("{err:#}")));
     }
 
     let (tx, outputs, params) = map_err_to_js!(browser_wallet::sign_claim_psbt(
@@ -253,7 +253,7 @@ pub fn sign_liquidation_psbt_with_password(
 ) -> Result<SignedTransaction, JsValue> {
     if let Err(err) = browser_wallet::load(&password, &key) {
         log::error!("Failed unlocking wallet {err:#}");
-        return Err(JsValue::from_str(&format!("{:#}", err)));
+        return Err(JsValue::from_str(&format!("{err:#}")));
     }
 
     let (tx, outputs, params) = map_err_to_js!(browser_wallet::sign_liquidation_psbt(
@@ -549,7 +549,7 @@ pub fn decrypt_fiat_loan_details_with_password(
 ) -> Result<InnerFiatLoanDetails, JsValue> {
     if let Err(err) = browser_wallet::load(&password, &key) {
         log::error!("Failed decrypting details {err:#}");
-        return Err(JsValue::from_str(&format!("{:#}", err)));
+        return Err(JsValue::from_str(&format!("{err:#}")));
     }
 
     let fiat_loan_details = map_err_to_js!(wallet::decrypt_fiat_loan_details(
@@ -686,7 +686,7 @@ pub fn sign_message_with_pk_and_password(
 ) -> Result<SignedMessage, JsValue> {
     if let Err(err) = browser_wallet::load(&password, &key) {
         log::error!("Failed unlocking wallet {err:#}");
-        return Err(JsValue::from_str(&format!("{:#}", err)));
+        return Err(JsValue::from_str(&format!("{err:#}")));
     }
 
     let signed_message = map_err_to_js!(wallet::sign_message(

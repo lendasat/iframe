@@ -449,5 +449,5 @@ fn move_wallet_to_other_key(key: &str) -> Result<()> {
 
 fn derive_storage_key(key: &str, actual_key: &str) -> String {
     let key = key.trim().replace(['\n', '\t', ' '], "_");
-    format!("{}.{}.{}", STORAGE_KEY_PREFIX, key, actual_key)
+    format!("{STORAGE_KEY_PREFIX}.{key}.{actual_key}")
 }
