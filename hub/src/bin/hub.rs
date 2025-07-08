@@ -236,7 +236,13 @@ async fn main() -> Result<()> {
     )
     .await?;
     add_contract_approval_expiry_job(&sched, db).await?;
-    add_daily_digest_job(&sched, notifications).await?;
+    add_daily_digest_job(
+        &sched,
+        notifications,
+        config.borrower_frontend_origin,
+        config.lender_frontend_origin,
+    )
+    .await?;
 
     sched.start().await?;
 

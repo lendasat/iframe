@@ -4,6 +4,7 @@ use std::sync::Arc;
 use tokio_cron_scheduler::Job;
 use tokio_cron_scheduler::JobScheduler;
 use tokio_cron_scheduler::JobSchedulerError;
+use url::Url;
 
 // We don't want the doc block below to be auto-formatted.
 #[rustfmt::skip]
@@ -19,8 +20,16 @@ const DAILY_DIGEST_SCHEDULER: &str = "0 0 9 * * *";
 pub async fn add_daily_digest_job(
     scheduler: &JobScheduler,
     notifications: Arc<Notifications>,
+    borrower_frontend_origin: Url,
+    lender_frontend_origin: Url,
 ) -> Result<()> {
-    let daily_digest_job = create_daily_digest_job(scheduler, notifications).await?;
+    let daily_digest_job = create_daily_digest_job(
+        scheduler,
+        notifications,
+        borrower_frontend_origin,
+        lender_frontend_origin,
+    )
+    .await?;
     let uuid = scheduler.add(daily_digest_job).await?;
 
     tracing::debug!(
@@ -34,15 +43,24 @@ pub async fn add_daily_digest_job(
 async fn create_daily_digest_job(
     scheduler: &JobScheduler,
     notifications: Arc<Notifications>,
+    borrower_frontend_origin: Url,
+    lender_frontend_origin: Url,
 ) -> Result<Job, JobSchedulerError> {
     let mut daily_digest_job = Job::new_async(DAILY_DIGEST_SCHEDULER, move |_uuid, _l| {
         tracing::info!("Running daily digest job");
 
         Box::pin({
             let notifications = notifications.clone();
+            let borrower_frontend_origin = borrower_frontend_origin.clone();
+            let lender_frontend_origin = lender_frontend_origin.clone();
+
             async move {
-                notifications.send_daily_offer_digest().await;
-                notifications.send_daily_application_digest().await;
+                notifications
+                    .send_daily_offer_digest(&borrower_frontend_origin)
+                    .await;
+                notifications
+                    .send_daily_application_digest(&lender_frontend_origin)
+                    .await;
             }
         })
     })?;
