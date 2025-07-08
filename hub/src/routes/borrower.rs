@@ -63,6 +63,7 @@ const VERSION_TAG: &str = "version";
 const NOTIFICATION_SETTINGS_TAG: &str = "Notification Settings";
 const NOTIFICATIONS_TAG: &str = "Notifications";
 const PROFILE_TAG: &str = "Profile";
+const CHAT_TAG: &str = "Chat";
 
 #[derive(OpenApi)]
 #[openapi(
@@ -166,6 +167,9 @@ curl -X POST "http://localhost:7337/api/contracts" \
         ),
         (
             name = PROFILE_TAG, description = "Manage user profile.",
+        ),
+        (
+            name = CHAT_TAG, description = "Chat message notification endpoint.",
         )
     ),
 )]
@@ -212,6 +216,7 @@ pub async fn spawn_borrower_server(
             notifications::router(app_state.clone()),
         )
         .nest("/api/users", profile::router(app_state.clone()))
+        .nest("/api/chat/notification", chat::router(app_state.clone()))
         .split_for_parts();
 
     let router =
@@ -219,7 +224,6 @@ pub async fn spawn_borrower_server(
 
     let app = router
         .merge(auth::router(app_state.clone()))
-        .merge(chat::router(app_state.clone()))
         .merge(dispute::router(app_state.clone()))
         .merge(price_feed_ws::router(app_state.clone()))
         .merge(
