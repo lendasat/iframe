@@ -29,10 +29,10 @@ jobs:
         with:
           node-version: 22
           cache: pnpm
-          cache-dependency-path: "frontend-monorepo/pnpm-lock.yaml"
+          cache-dependency-path: "frontend/pnpm-lock.yaml"
 
       - name: Run frontend prettier
-        working-directory: frontend-monorepo
+        working-directory: frontend
         run: |
           node --version
           pnpm --version
@@ -156,7 +156,7 @@ jobs:
     runs-on: ubuntu-latest
     defaults:
       run:
-        working-directory: ./frontend-monorepo
+        working-directory: ./frontend
     steps:
       - uses: actions/checkout@v4
         with:
@@ -184,7 +184,7 @@ jobs:
         with:
           node-version: 22
           cache: "pnpm"
-          cache-dependency-path: "frontend-monorepo/pnpm-lock.yaml"
+          cache-dependency-path: "frontend/pnpm-lock.yaml"
 
       - name: Install dependencies
         run: pnpm install --frozen-lockfile

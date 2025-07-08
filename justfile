@@ -26,7 +26,7 @@ fmt-dprint:
 fmt-frontend:
     #!/usr/bin/env bash
     set -euxo pipefail
-    cd frontend-monorepo
+    cd frontend
     pnpm biome format --write .
 
 clippy:
@@ -35,13 +35,13 @@ clippy:
 lint-frontend:
     #!/usr/bin/env bash
     set -euxo pipefail
-    cd frontend-monorepo
+    cd frontend
     pnpm biome lint
 
 check-frontend:
     #!/usr/bin/env bash
     set -euxo pipefail
-    cd frontend-monorepo
+    cd frontend
     pnpm check-types
 
 ## ------------------------
@@ -51,7 +51,7 @@ check-frontend:
 # test-frontend:
 #     #!/usr/bin/env bash
 #     set -euxo pipefail
-#     cd frontend-monorepo
+#     cd frontend
 #     pnpm test
 
 test-rust:
@@ -150,27 +150,27 @@ frontend-version:
 
 fronts: frontend-version
     #!/usr/bin/env bash
-    cd frontend-monorepo
+    cd frontend
     pnpm dev
 
 borrower: frontend-version
     #!/usr/bin/env bash
-    cd frontend-monorepo
+    cd frontend
     pnpm --filter="@frontend/borrower" dev
 
 lender: frontend-version
     #!/usr/bin/env bash
-    cd frontend-monorepo
+    cd frontend
     pnpm --filter="@frontend/lender" dev
 
 popup:
     #!/usr/bin/env bash
-    cd frontend-monorepo
+    cd frontend
     pnpm --filter="@frontend/popup" dev
 
 shop:
     #!/usr/bin/env bash
-    cd frontend-monorepo
+    cd frontend
     pnpm --filter="@frontend/shop-demo" dev
 
 ## ------------------------
@@ -180,7 +180,7 @@ shop:
 # install dependencies
 deps-frontend:
     #!/usr/bin/env bash
-    cd frontend-monorepo
+    cd frontend
     pnpm install
 
 # build the WASM browser wallet
@@ -190,7 +190,7 @@ build-wallet:
 # Build all or one of the frontend apps
 build-frontend target='':
     #!/usr/bin/env bash
-    cd frontend-monorepo
+    cd frontend
     if [ -n "{{ target }}" ]; then \
       pnpm build --filter @frontend/{{ target }}
     else \
