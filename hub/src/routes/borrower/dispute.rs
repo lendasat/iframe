@@ -1,7 +1,10 @@
+#![allow(unused_qualifications)] // Imho clippy is in the wrong here
+
 use crate::db;
 use crate::model::Borrower;
 use crate::model::DisputeRequestBodySchema;
 use crate::routes::borrower::auth::jwt_or_api_auth;
+use crate::routes::borrower::DISPUTE_TAG;
 use crate::routes::AppState;
 use axum::extract::FromRequest;
 use axum::extract::Path;
@@ -11,51 +14,52 @@ use axum::http::StatusCode;
 use axum::middleware;
 use axum::response::IntoResponse;
 use axum::response::Response;
-use axum::routing::get;
-use axum::routing::post;
-use axum::routing::put;
 use axum::Extension;
 use axum::Json;
-use axum::Router;
 use serde::Deserialize;
 use serde::Serialize;
 use std::sync::Arc;
 use tracing::instrument;
+use utoipa::IntoParams;
+use utoipa::ToSchema;
+use utoipa_axum::router::OpenApiRouter;
+use utoipa_axum::routes;
 use uuid::Uuid;
 
-pub(crate) fn router(app_state: Arc<AppState>) -> Router {
-    Router::new()
-        .route(
-            "/api/disputes",
-            get(get_all_disputes_for_contract).route_layer(middleware::from_fn_with_state(
-                app_state.clone(),
-                jwt_or_api_auth::auth,
-            )),
-        )
-        .route(
-            "/api/disputes",
-            post(create_dispute).route_layer(middleware::from_fn_with_state(
-                app_state.clone(),
-                jwt_or_api_auth::auth,
-            )),
-        )
-        .route(
-            "/api/disputes/:dispute_id",
-            put(add_message_to_dispute).route_layer(middleware::from_fn_with_state(
-                app_state.clone(),
-                jwt_or_api_auth::auth,
-            )),
-        )
-        .route(
-            "/api/disputes/:dispute_id/resolve",
-            put(put_resolve_dispute).route_layer(middleware::from_fn_with_state(
-                app_state.clone(),
-                jwt_or_api_auth::auth,
-            )),
-        )
+pub(crate) fn router(app_state: Arc<AppState>) -> OpenApiRouter {
+    OpenApiRouter::new()
+        .routes(routes!(get_all_disputes_for_contract))
+        .routes(routes!(create_dispute))
+        .routes(routes!(add_message_to_dispute))
+        .routes(routes!(put_resolve_dispute))
+        .route_layer(middleware::from_fn_with_state(
+            app_state.clone(),
+            jwt_or_api_auth::auth,
+        ))
         .with_state(app_state)
 }
 
+/// Get all disputes for a specific contract.
+#[utoipa::path(
+    get,
+    path = "/",
+    tag = DISPUTE_TAG,
+    params(
+        DisputeQueryParams
+    ),
+    responses(
+        (
+            status = 200,
+            description = "List of disputes with messages for the contract",
+            body = Vec<db::contract_disputes::DisputeWithMessages>
+        )
+    ),
+    security(
+        (
+            "api_key" = []
+        )
+    )
+)]
 async fn get_all_disputes_for_contract(
     State(data): State<Arc<AppState>>,
     query_params: Query<DisputeQueryParams>,
@@ -70,6 +74,29 @@ async fn get_all_disputes_for_contract(
     Ok(AppJson(disputes))
 }
 
+/// Create a new dispute for a contract.
+#[utoipa::path(
+    post,
+    path = "/",
+    tag = DISPUTE_TAG,
+    request_body = DisputeRequestBodySchema,
+    responses(
+        (
+            status = 200,
+            description = "Dispute created successfully",
+            body = db::contract_disputes::ContractDispute
+        ),
+        (
+            status = 400,
+            description = "Dispute already in progress for this contract"
+        )
+    ),
+    security(
+        (
+            "api_key" = []
+        )
+    )
+)]
 #[instrument(skip_all, fields(borrower_id = user.id, ?body), ret, err(Debug))]
 async fn create_dispute(
     State(data): State<Arc<AppState>>,
@@ -130,6 +157,27 @@ async fn create_dispute(
     Ok(AppJson(dispute))
 }
 
+/// Add a message to an existing dispute.
+#[utoipa::path(
+    put,
+    path = "/{dispute_id}",
+    tag = DISPUTE_TAG,
+    params(
+        ("dispute_id" = Uuid, Path, description = "Dispute ID")
+    ),
+    request_body = DisputeMessage,
+    responses(
+        (
+            status = 200,
+            description = "Message added to dispute successfully"
+        )
+    ),
+    security(
+        (
+            "api_key" = []
+        )
+    )
+)]
 #[instrument(skip_all, fields(borrower_id = user.id, dispute_id), err(Debug), ret)]
 async fn add_message_to_dispute(
     State(data): State<Arc<AppState>>,
@@ -144,6 +192,30 @@ async fn add_message_to_dispute(
     Ok(())
 }
 
+/// Resolve a dispute that was started by the borrower.
+#[utoipa::path(
+    put,
+    path = "/{dispute_id}/resolve",
+    tag = DISPUTE_TAG,
+    params(
+        ("dispute_id" = Uuid, Path, description = "Dispute ID")
+    ),
+    responses(
+        (
+            status = 200,
+            description = "Dispute resolved successfully"
+        ),
+        (
+            status = 400,
+            description = "Dispute was not started by borrower"
+        )
+    ),
+    security(
+        (
+            "api_key" = []
+        )
+    )
+)]
 #[instrument(skip_all, fields(borrower_id = user.id, dispute_id), err(Debug), ret)]
 async fn put_resolve_dispute(
     State(data): State<Arc<AppState>>,
@@ -165,12 +237,12 @@ async fn put_resolve_dispute(
     Ok(())
 }
 
-#[derive(Deserialize)]
+#[derive(Deserialize, ToSchema, IntoParams)]
 struct DisputeQueryParams {
     contract_id: String,
 }
 
-#[derive(Deserialize, Debug)]
+#[derive(Deserialize, Debug, ToSchema)]
 struct DisputeMessage {
     message: String,
 }

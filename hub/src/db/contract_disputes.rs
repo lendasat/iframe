@@ -8,9 +8,10 @@ use sqlx::Error;
 use sqlx::PgPool;
 use sqlx::Postgres;
 use time::OffsetDateTime;
+use utoipa::ToSchema;
 use uuid::Uuid;
 
-#[derive(Debug, Clone, Copy, Serialize, Deserialize, sqlx::Type)]
+#[derive(Debug, Clone, Copy, Serialize, Deserialize, sqlx::Type, ToSchema)]
 #[sqlx(
     type_name = "contract_dispute_initiator_type",
     rename_all = "lowercase"
@@ -20,7 +21,7 @@ pub enum DisputeInitiatorType {
     Lender,
 }
 
-#[derive(Debug, Clone, Copy, Serialize, Deserialize, sqlx::Type, PartialEq)]
+#[derive(Debug, Clone, Copy, Serialize, Deserialize, sqlx::Type, PartialEq, ToSchema)]
 #[sqlx(type_name = "contract_dispute_status")]
 pub enum DisputeStatus {
     DisputeStartedBorrower,
@@ -30,7 +31,7 @@ pub enum DisputeStatus {
     Cancelled,
 }
 
-#[derive(Debug, Clone, Copy, Serialize, Deserialize, sqlx::Type)]
+#[derive(Debug, Clone, Copy, Serialize, Deserialize, sqlx::Type, ToSchema)]
 #[sqlx(
     type_name = "contract_dispute_sender_type_enum",
     rename_all = "snake_case"
@@ -41,7 +42,7 @@ pub enum SenderType {
     PlatformAdmin,
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, ToSchema)]
 pub struct ContractDispute {
     pub id: Uuid,
     pub contract_id: String,
@@ -58,7 +59,7 @@ pub struct ContractDispute {
     pub resolution_notes: Option<String>,
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, ToSchema)]
 pub struct ContractDisputeMessage {
     pub id: Uuid,
     pub dispute_id: Uuid,
@@ -70,7 +71,7 @@ pub struct ContractDisputeMessage {
 }
 
 // New struct that combines a dispute with its messages
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, ToSchema)]
 pub struct DisputeWithMessages {
     #[serde(flatten)]
     pub dispute: ContractDispute,

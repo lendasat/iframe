@@ -1311,7 +1311,7 @@ pub struct Dispute {
     pub updated_at: OffsetDateTime,
 }
 
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Deserialize, ToSchema)]
 pub struct DisputeRequestBodySchema {
     pub contract_id: String,
     pub reason: String,
