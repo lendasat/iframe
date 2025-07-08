@@ -114,7 +114,7 @@ impl PasswordAuth {
         match PasswordHash::new(legacy_password_hash) {
             Ok(parsed_hash) => Argon2::default()
                 .verify_password(provided_password.as_bytes(), &parsed_hash)
-                .map_or(false, |_| true),
+                .is_ok_and(|_| true),
             Err(_) => false,
         }
     }
@@ -159,7 +159,7 @@ impl Lender {
         match PasswordHash::new(legacy_password_hash) {
             Ok(parsed_hash) => Argon2::default()
                 .verify_password(provided_password.as_bytes(), &parsed_hash)
-                .map_or(false, |_| true),
+                .is_ok_and(|_| true),
             Err(_) => false,
         }
     }
@@ -559,7 +559,7 @@ impl fmt::Display for LoanAsset {
             LoanAsset::Mxn => "MXN",
             LoanAsset::UsdtLiquid => "USDT on Liquid",
         };
-        write!(f, "{}", string)
+        write!(f, "{string}")
     }
 }
 

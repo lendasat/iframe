@@ -176,9 +176,12 @@ pub fn change_wallet_encryption(
         .get_item::<String>(&derive_storage_key(&key, NETWORK_KEY))?
         .context("No network stored for wallet")?;
 
-    let new_mnemonic_ciphertext =
-        wallet::change_wallet_encryption(&mnemonic_ciphertext, &old_password, &new_password)
-            .context("failed to generate upgraded wallet data")?;
+    let new_mnemonic_ciphertext = client_sdk::wallet::change_wallet_encryption(
+        &mnemonic_ciphertext,
+        &old_password,
+        &new_password,
+    )
+    .context("failed to generate upgraded wallet data")?;
 
     move_wallet_to_other_key(&key).context("Failed to move wallet to other key")?;
 
@@ -252,7 +255,7 @@ pub fn get_next_normal_pk(key: String) -> Result<(PublicKey, bip32::DerivationPa
         .get_item::<u32>(contract_index_key)?
         .unwrap_or_default();
 
-    let (pk, path) = wallet::derive_next_normal_pk_multisig(xpub, contract_index)?;
+    let (pk, path) = client_sdk::wallet::derive_next_normal_pk_multisig(xpub, contract_index)?;
 
     // After using the contract index, we increment it so that the next generated key is different.
     storage.set_item(contract_index_key, contract_index + 1)?;
@@ -393,7 +396,7 @@ pub fn get_next_address(key: String) -> Result<Address> {
         .get_item::<u32>(contract_index_key)?
         .unwrap_or_default();
 
-    let (pk, _) = wallet::derive_next_normal_pk_singlesig(xpub, contract_index)?;
+    let (pk, _) = client_sdk::wallet::derive_next_normal_pk_singlesig(xpub, contract_index)?;
 
     let network_key = &derive_storage_key(&key, NETWORK_KEY);
     let network = storage
@@ -449,5 +452,5 @@ fn move_wallet_to_other_key(key: &str) -> Result<()> {
 
 fn derive_storage_key(key: &str, actual_key: &str) -> String {
     let key = key.trim().replace(['\n', '\t', ' '], "_");
-    format!("{}.{}.{}", STORAGE_KEY_PREFIX, key, actual_key)
+    format!("{STORAGE_KEY_PREFIX}.{key}.{actual_key}")
 }

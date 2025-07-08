@@ -31,7 +31,7 @@ impl Storage {
             .inner
             .get_item(name)
             .map_err(js_to_anyhow)
-            .with_context(|| format!("Failed to get item from key {}", name))?;
+            .with_context(|| format!("Failed to get item from key {name}"))?;
 
         let value = match value {
             Some(value) => value,
@@ -50,7 +50,7 @@ impl Storage {
         self.inner
             .set_item(name, &value.to_string())
             .map_err(js_to_anyhow)
-            .with_context(|| format!("Failed to set item to key {}", name))?;
+            .with_context(|| format!("Failed to set item to key {name}"))?;
 
         Ok(())
     }
@@ -59,7 +59,7 @@ impl Storage {
         self.inner
             .remove_item(name)
             .map_err(js_to_anyhow)
-            .with_context(|| format!("Failed to remove item from key {}", name))?;
+            .with_context(|| format!("Failed to remove item from key {name}"))?;
 
         Ok(())
     }

@@ -99,7 +99,7 @@ impl Email {
         html_template: String,
     ) -> Result<()> {
         let email = Message::builder()
-            .to(format!("{} <{}>", user_name, user_email).parse()?)
+            .to(format!("{user_name} <{user_email}>").parse()?)
             .reply_to(self.from.as_str().parse()?)
             .from(self.from.as_str().parse()?)
             .subject(subject)
@@ -145,9 +145,9 @@ impl Email {
             .subject(subject)
             .header(ContentType::TEXT_HTML);
         for (user_name, user_email) in &user_name_and_emails {
-            let addr = format!("{} <{}>", user_name, user_email)
+            let addr = format!("{user_name} <{user_email}>")
                 .parse()
-                .with_context(|| format!("Invalid email format: {} <{}>", user_name, user_email))?;
+                .with_context(|| format!("Invalid email format: {user_name} <{user_email}>"))?;
             builder = builder.bcc(addr);
         }
 
@@ -179,7 +179,7 @@ impl Email {
 
     fn prepare_template(template_name: &str) -> Result<Handlebars> {
         let mut handlebars = Handlebars::new();
-        let content = Self::get_template_content(&format!("{}.hbs", template_name))?;
+        let content = Self::get_template_content(&format!("{template_name}.hbs"))?;
         handlebars.register_template_string(template_name, content)?;
         let content = Self::get_template_content("partials/styles.hbs")?;
         handlebars.register_template_string("styles", content)?;
@@ -315,7 +315,7 @@ impl Email {
         let template_name = "start_dispute";
         let handlebars = Self::prepare_template(template_name)?;
 
-        let subject = format!("You have started a dispute - {}", contract_id);
+        let subject = format!("You have started a dispute - {contract_id}");
 
         let data = serde_json::json!({
             "first_name": name,
@@ -352,7 +352,7 @@ impl Email {
         let html_template = handlebars.render(template_name, &data)?;
 
         self.send_email(
-            format!("Dispute started - {} ", contract_id).as_str(),
+            format!("Dispute started - {contract_id} ").as_str(),
             "admin",
             DISPUTE_ADMIN_EMAIL,
             html_template,

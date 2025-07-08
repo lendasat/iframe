@@ -317,7 +317,7 @@ mod tests {
                 }
             }
             Ok(Some(Err(e))) => {
-                panic!("Stream error: {:?}", e);
+                panic!("Stream error: {e:?}");
             }
             Ok(None) => {
                 panic!("Stream ended unexpectedly");

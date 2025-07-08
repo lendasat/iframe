@@ -7,26 +7,18 @@ edition = "2018"
 crate-type = ["cdylib", "rlib"]
 
 [dependencies]
-aes-gcm-siv = { version = "0.11", features = ["std"] }
 anyhow = "1"
-argon2 = "0.6.0-pre.1"
 bip39 = { version = "2.1.0", features = ["rand_core"] }
 bitcoin = { version = "0.32.2", features = ["secp-recovery"] }
+client-sdk = { path = "../client-sdk" }
 console_log = { version = "1", features = ["color"] }
-ecies = { version = "0.2.6", default-features = false, features = ["pure"] }
 getrandom = { version = "0.2", features = ["wasm-bindgen", "js"] }
 hex = "0.4"
-hkdf = { version = "0.12", features = ["std"] }
 log = "0.4"
 miniscript = "12"
 nostr = { version = "0.40.0", default-features = false, features = ["std"] }
-once_cell = { version = "1.19.0", features = ["critical-section"] }
 rand = "0.8"
 sha2 = "0.10"
 srp = "0.6.0"
 wasm-bindgen = "0.2.93"
-# TODO: Might not need all these features.
-web-sys = { version = "0.3", features = ["Window", "Storage", "Cache", "CacheStorage", "StorageEvent"] }
-
-[dev-dependencies]
-wasm-bindgen-test = "0.3.34"
+web-sys = { version = "0.3", features = ["Window", "Storage"] }

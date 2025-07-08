@@ -943,7 +943,7 @@ async fn post_extend_contract_request(
 ) -> Result<AppJson<Contract>, Error> {
     let contract = db::contracts::load_contract(&data.db, contract_id.as_str())
         .await
-        .map_err(|e| Error::MissingContract(format!("{:#}", e)))?;
+        .map_err(|e| Error::MissingContract(format!("{e:#}")))?;
     let current_price =
         get_bitmex_index_price(&data.config, OffsetDateTime::now_utc(), contract.asset)
             .await

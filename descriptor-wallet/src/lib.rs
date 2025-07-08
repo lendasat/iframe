@@ -45,7 +45,7 @@ pub mod tests {
         let d = TempDir::new().expect("to exist");
         let path = d.path();
         let string = path.to_str().map(|s| s.to_string()).expect("to work");
-        let db_path = format!("{}/test.db", string);
+        let db_path = format!("{string}/test.db");
 
         let descriptor = "wpkh([2e8978e5/84h/1h/0h]tpubDDMuC8nQpQtPV3Q7BTdempTBYG3tZ5McJRwTVYDXVPR7oiUxTR5DjKKB1aa4yi5C74DK4R8Z4WRHt8GAy5WkVUTksUZbDoLEEgoz2aaZXU7/0/*)#eara5f0t";
         let mut wallet = DescriptorWallet::new(descriptor, db_path.as_str(), "signet")

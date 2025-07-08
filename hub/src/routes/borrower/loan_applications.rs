@@ -391,15 +391,15 @@ impl IntoResponse for Error {
             ),
             Error::InvalidLtv { ltv } => (
                 StatusCode::BAD_REQUEST,
-                format!("LTV must be between 0 and 1 but was {}", ltv),
+                format!("LTV must be between 0 and 1 but was {ltv}"),
             ),
             Error::InvalidInterestRate { rate } => (
                 StatusCode::BAD_REQUEST,
-                format!("Interest rate must be between 0 and 1 but was {}", rate),
+                format!("Interest rate must be between 0 and 1 but was {rate}"),
             ),
             Error::InvalidLoanAmount { amount } => (
                 StatusCode::BAD_REQUEST,
-                format!("Loan amount not valid. Was {}", amount),
+                format!("Loan amount not valid. Was {amount}"),
             ),
         };
         (status, AppJson(LoanApplicationErrorResponse { message })).into_response()

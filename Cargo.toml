@@ -1,6 +1,7 @@
 [workspace]
 members = [
   "browser-wallet",
+  "client-sdk",
   "descriptor-wallet",
   "hub",
   "mempool-mock",

@@ -55,10 +55,10 @@ pub async fn get_first_time_discount_rate(
     let has_existing_contracts = sqlx::query_scalar!(
         r#"
         SELECT EXISTS(
-            SELECT 1 
-            FROM contracts 
+            SELECT 1
+            FROM contracts
             WHERE borrower_id = $1 AND
-            status != 'RequestExpired' AND 
+            status != 'RequestExpired' AND
             status != 'Rejected'
         )
         "#,
@@ -75,15 +75,15 @@ pub async fn get_first_time_discount_rate(
     // If no existing contracts, get the discount rate from an active referral code
     let discount_rate = sqlx::query_scalar!(
         r#"
-        SELECT 
+        SELECT
             rcb.FIRST_TIME_DISCOUNT_RATE_REFEREE
-        FROM 
+        FROM
             referred_borrowers rb
-        JOIN 
+        JOIN
             referral_codes_borrowers rcb ON rb.referral_code = rcb.code
-        WHERE 
-            rb.referred_borrower_id = $1 AND 
-            rcb.active = true AND 
+        WHERE
+            rb.referred_borrower_id = $1 AND
+            rcb.active = true AND
             rcb.expires_at > CURRENT_TIMESTAMP
         "#,
         borrower_id.to_string(),
@@ -98,11 +98,11 @@ pub async fn is_referral_code_valid(pool: &PgPool, code: &str) -> Result<bool, s
     sqlx::query_scalar!(
         r#"
         SELECT EXISTS(
-            SELECT 1 
-            FROM referral_codes_borrowers 
-            WHERE 
-                code = $1 AND 
-                active = true AND 
+            SELECT 1
+            FROM referral_codes_borrowers
+            WHERE
+                code = $1 AND
+                active = true AND
                 expires_at > CURRENT_TIMESTAMP
         )
         "#,
@@ -126,7 +126,7 @@ fn generate_referral_code() -> String {
         })
         .collect();
 
-    format!("LAS-{}", random_part)
+    format!("LAS-{random_part}")
 }
 
 async fn generate_unique_referral_code(pool: &PgPool) -> Result<String> {

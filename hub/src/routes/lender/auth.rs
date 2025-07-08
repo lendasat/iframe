@@ -237,7 +237,7 @@ async fn post_register(
     db_tx.commit().await.map_err(Error::database)?;
 
     Ok(AppJson(SuccessMessage {
-        message: format!("We sent a verification to {}", email),
+        message: format!("We sent a verification to {email}"),
     }))
 }
 
@@ -439,7 +439,7 @@ async fn post_pake_verify(
             profile_url,
             ip_address.as_str(),
             OffsetDateTime::now_utc(),
-            location.map(|a| format!("{}", a)),
+            location.map(|a| a.to_string()),
             user_agent.as_str(),
         )
         .await;

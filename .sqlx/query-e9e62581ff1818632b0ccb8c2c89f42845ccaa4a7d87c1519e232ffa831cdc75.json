@@ -1,0 +1,22 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "\n        SELECT EXISTS(\n            SELECT 1\n            FROM contracts\n            WHERE borrower_id = $1 AND\n            status != 'RequestExpired' AND\n            status != 'Rejected'\n        )\n        ",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "exists",
+        "type_info": "Bool"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Bpchar"
+      ]
+    },
+    "nullable": [
+      null
+    ]
+  },
+  "hash": "e9e62581ff1818632b0ccb8c2c89f42845ccaa4a7d87c1519e232ffa831cdc75"
+}

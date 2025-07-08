@@ -119,8 +119,7 @@ mod tests {
             let result = calculate_rating(positive, negative);
             assert_eq!(
                 result, expected,
-                "Failed for positive: {}, negative: {}. Expected: {}, got: {}",
-                positive, negative, expected, result
+                "Failed for positive: {positive}, negative: {negative}. Expected: {expected}, got: {result}",
             );
         }
     }

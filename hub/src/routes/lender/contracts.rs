@@ -219,7 +219,7 @@ async fn put_update_extension_policy(
             let loan_url = data
                 .config
                 .borrower_frontend_origin
-                .join(format!("/my-contracts/{}", contract_id).as_str())?;
+                .join(format!("/my-contracts/{contract_id}").as_str())?;
 
             data.notifications
                 .send_contract_extension_enabled(borrower, loan_url, contract_id.as_str())
@@ -800,7 +800,7 @@ async fn post_liquidation_tx(
         let loan_url = data
             .config
             .borrower_frontend_origin
-            .join(&format!("/my-contracts/{}", contract_id))?;
+            .join(&format!("/my-contracts/{contract_id}"))?;
 
         let emails = db::contract_emails::load_contract_emails(&data.db, &contract.id).await?;
         if emails.defaulted_loan_liquidated_sent {

@@ -363,7 +363,7 @@ impl SideShiftClient {
         let url = match amount {
             None => url,
             Some(amount) => {
-                format!("{}?amount={}", url, amount)
+                format!("{url}?amount={amount}")
             }
         };
 

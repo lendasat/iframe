@@ -11,9 +11,9 @@ pub struct GeoInfo {
 impl fmt::Display for GeoInfo {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match (&self.country, &self.city) {
-            (Some(country), Some(city)) => write!(f, "{}/{}", country, city),
-            (Some(country), None) => write!(f, "{}", country),
-            (None, Some(city)) => write!(f, "{}", city),
+            (Some(country), Some(city)) => write!(f, "{country}/{city}"),
+            (Some(country), None) => write!(f, "{country}"),
+            (None, Some(city)) => write!(f, "{city}"),
             (None, None) => write!(f, "unknown"),
         }
     }

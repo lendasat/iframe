@@ -202,9 +202,7 @@ mod tests {
 
         assert!(
             (result - expected).abs() < dec!(0.0001),
-            "({} - {}).abs() < 0.0001",
-            result,
-            expected
+            "({result} - {expected}).abs() < 0.0001"
         );
     }
 
@@ -226,9 +224,7 @@ mod tests {
 
         assert!(
             (result - expected).abs() < dec!(0.0001),
-            "({} - {}).abs() < 0.0001",
-            result,
-            expected
+            "({result} - {expected}).abs() < 0.0001"
         );
     }
 

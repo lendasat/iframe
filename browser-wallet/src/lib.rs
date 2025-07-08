@@ -1,19 +1,17 @@
-use crate::auth::Salt;
-use crate::auth::ServerProof;
-use crate::auth::B;
 use bitcoin::hex::Case;
 use bitcoin::hex::DisplayHex;
 use bitcoin::Address;
+use client_sdk::auth::Salt;
+use client_sdk::auth::ServerProof;
+use client_sdk::auth::B;
+use client_sdk::wallet::NOSTR_DERIVATION_PATH;
 use wasm_bindgen::prelude::wasm_bindgen;
 use wasm_bindgen::JsValue;
 
+mod auth;
 mod browser_wallet;
 mod storage;
-
-// We make them public for the "e2e" tests.
-pub mod auth;
-mod models;
-pub mod wallet;
+mod wallet;
 
 #[wasm_bindgen]
 pub struct WalletDetails {
@@ -166,7 +164,7 @@ pub fn unlock_and_sign_claim_psbt(
 ) -> Result<SignedTransaction, JsValue> {
     if let Err(err) = browser_wallet::load(&password, &key) {
         log::error!("Failed unlocking wallet {err:#}");
-        return Err(JsValue::from_str(&format!("{:#}", err)));
+        return Err(JsValue::from_str(&format!("{err:#}")));
     }
 
     let (tx, outputs, params) = map_err_to_js!(browser_wallet::sign_claim_psbt(
@@ -254,7 +252,7 @@ pub fn sign_liquidation_psbt_with_password(
 ) -> Result<SignedTransaction, JsValue> {
     if let Err(err) = browser_wallet::load(&password, &key) {
         log::error!("Failed unlocking wallet {err:#}");
-        return Err(JsValue::from_str(&format!("{:#}", err)));
+        return Err(JsValue::from_str(&format!("{err:#}")));
     }
 
     let (tx, outputs, params) = map_err_to_js!(browser_wallet::sign_liquidation_psbt(
@@ -289,7 +287,7 @@ pub fn get_npub(key: String) -> Result<String, JsValue> {
 
 #[wasm_bindgen]
 pub fn get_nostr_derivation_path() -> String {
-    wallet::NOSTR_DERIVATION_PATH.to_string()
+    NOSTR_DERIVATION_PATH.to_string()
 }
 
 #[wasm_bindgen(getter_with_clone)]
@@ -311,7 +309,7 @@ pub fn get_pk_and_derivation_path(key: String) -> Result<PkAndPath, JsValue> {
 
 #[wasm_bindgen]
 pub fn derive_nostr_room_pk(contract: String) -> Result<String, JsValue> {
-    map_err_to_js!(wallet::derive_nostr_room_pk(contract))
+    map_err_to_js!(client_sdk::wallet::derive_nostr_room_pk(contract))
 }
 
 #[wasm_bindgen]
@@ -527,7 +525,7 @@ pub fn encrypt_fiat_loan_details(
     counterparty_encryption_pk: String,
 ) -> Result<FiatLoanDetails, JsValue> {
     let (fiat_loan_details, encrypted_encryption_key_own, encrypted_encryption_key_counterparty) =
-        map_err_to_js!(wallet::encrypt_fiat_loan_details(
+        map_err_to_js!(client_sdk::wallet::encrypt_fiat_loan_details(
             &fiat_loan_details.into(),
             &own_encryption_pk,
             &counterparty_encryption_pk
@@ -550,7 +548,7 @@ pub fn decrypt_fiat_loan_details_with_password(
 ) -> Result<InnerFiatLoanDetails, JsValue> {
     if let Err(err) = browser_wallet::load(&password, &key) {
         log::error!("Failed decrypting details {err:#}");
-        return Err(JsValue::from_str(&format!("{:#}", err)));
+        return Err(JsValue::from_str(&format!("{err:#}")));
     }
 
     let fiat_loan_details = map_err_to_js!(wallet::decrypt_fiat_loan_details(
@@ -562,17 +560,17 @@ pub fn decrypt_fiat_loan_details_with_password(
     Ok(fiat_loan_details.into())
 }
 
-impl From<InnerFiatLoanDetails> for models::FiatLoanDetails {
+impl From<InnerFiatLoanDetails> for client_sdk::wallet::FiatLoanDetails {
     fn from(value: InnerFiatLoanDetails) -> Self {
         Self {
             iban_transfer_details: value.iban_transfer_details.map(|i| {
-                models::IbanTransferDetails {
+                client_sdk::wallet::IbanTransferDetails {
                     iban: i.iban,
                     bic: i.bic,
                 }
             }),
             swift_transfer_details: value.swift_transfer_details.map(|s| {
-                models::SwiftTransferDetails {
+                client_sdk::wallet::SwiftTransferDetails {
                     swift_or_bic: s.bic_or_swift,
                     account_number: s.account_number,
                 }
@@ -591,8 +589,8 @@ impl From<InnerFiatLoanDetails> for models::FiatLoanDetails {
     }
 }
 
-impl From<models::FiatLoanDetails> for InnerFiatLoanDetails {
-    fn from(value: models::FiatLoanDetails) -> Self {
+impl From<client_sdk::wallet::FiatLoanDetails> for InnerFiatLoanDetails {
+    fn from(value: client_sdk::wallet::FiatLoanDetails) -> Self {
         Self {
             iban_transfer_details: value.iban_transfer_details.map(|i| IbanTransferDetails {
                 iban: i.iban,
@@ -687,7 +685,7 @@ pub fn sign_message_with_pk_and_password(
 ) -> Result<SignedMessage, JsValue> {
     if let Err(err) = browser_wallet::load(&password, &key) {
         log::error!("Failed unlocking wallet {err:#}");
-        return Err(JsValue::from_str(&format!("{:#}", err)));
+        return Err(JsValue::from_str(&format!("{err:#}")));
     }
 
     let signed_message = map_err_to_js!(wallet::sign_message(
