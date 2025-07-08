@@ -340,6 +340,7 @@ mod tests {
     use std::str::FromStr;
     use uuid::Uuid;
 
+    #[ignore]
     #[tokio::test]
     async fn test_get_user_id() {
         let bringin_url = "https://dev.bringin.xyz/api/v0";
@@ -356,6 +357,7 @@ mod tests {
         .unwrap();
     }
 
+    #[ignore]
     #[tokio::test]
     async fn test_post_usdc_polygon_offramp_address() {
         let bringin_url = "https://dev.bringin.xyz/api/v0";
@@ -425,6 +427,7 @@ mod tests {
         )
     }
 
+    #[ignore]
     #[tokio::test]
     async fn test_register_webhook_for_api_key() {
         let bringin_url = "https://dev.bringin.xyz/api/v0";
