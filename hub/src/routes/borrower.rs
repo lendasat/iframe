@@ -47,6 +47,7 @@ pub(crate) mod version;
 mod cards;
 mod chat;
 mod dispute;
+mod me;
 
 pub use contracts::ClaimCollateralPsbt;
 pub use contracts::ClaimTx;
@@ -69,6 +70,7 @@ const PRICE_FEED_TAG: &str = "Price Feed";
 const PROFILES_TAG: &str = "User Profiles";
 const CARDS_TAG: &str = "Cards";
 const BRINGIN_TAG: &str = "Bringin";
+const ME_TAG: &str = "User";
 
 #[derive(OpenApi)]
 #[openapi(
@@ -190,6 +192,9 @@ curl -X POST "http://localhost:7337/api/contracts" \
         ),
         (
             name = BRINGIN_TAG, description = "Bringin service integration for account connection.",
+        ),
+        (
+            name = ME_TAG, description = "Current user information and settings.",
         )
     ),
 )]
@@ -215,7 +220,7 @@ pub async fn spawn_borrower_server(
     let (router, api) = OpenApiRouter::with_openapi(ApiDoc::openapi())
         .nest("/api/version", version::router())
         .nest("/api/health", health_check::router())
-        .nest("/api/auth", auth::router_openapi(app_state.clone()))
+        .nest("/api/auth", auth::router(app_state.clone()))
         .nest("/api/offers", loan_offers::router(app_state.clone()))
         .nest("/api/contracts", contracts::router(app_state.clone()))
         .nest("/api/keys", api_keys::router(app_state.clone()))
@@ -246,13 +251,13 @@ pub async fn spawn_borrower_server(
         )
         .nest("/api", cards::router(app_state.clone()))
         .nest("/api", bringin::router(app_state.clone()))
+        .nest("/api/users", me::router(app_state.clone()))
         .split_for_parts();
 
     let router =
         router.merge(SwaggerUi::new("/swagger-ui").url("/api-docs/openapi.json", api.clone()));
 
     let app = router
-        .merge(auth::router(app_state.clone()))
         // This is a relative path on the filesystem, which means, when deploying `hub` we will need
         // to have the frontend in this directory. Ideally we would bundle the frontend with
         // the binary, but so far we failed at handling requests which are meant to be handled by
