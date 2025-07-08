@@ -1,6 +1,7 @@
 use crate::db;
 use crate::model::Borrower;
 use crate::routes::borrower::auth::jwt_or_api_auth;
+use crate::routes::borrower::PROFILE_TAG;
 use crate::routes::user_connection_details_middleware;
 use crate::routes::AppState;
 use axum::extract::FromRequest;
@@ -9,31 +10,24 @@ use axum::http::StatusCode;
 use axum::middleware;
 use axum::response::IntoResponse;
 use axum::response::Response;
-use axum::routing::put;
 use axum::Extension;
 use axum::Json;
-use axum::Router;
 use serde::Deserialize;
 use serde::Serialize;
 use std::sync::Arc;
 use tracing::instrument;
+use utoipa::ToSchema;
+use utoipa_axum::router::OpenApiRouter;
+use utoipa_axum::routes;
 
-pub(crate) fn router(app_state: Arc<AppState>) -> Router {
-    Router::new()
-        .route(
-            "/api/users/",
-            put(update_profile).route_layer(middleware::from_fn_with_state(
-                app_state.clone(),
-                jwt_or_api_auth::auth,
-            )),
-        )
-        .route(
-            "/api/users/locale",
-            put(update_locale).route_layer(middleware::from_fn_with_state(
-                app_state.clone(),
-                jwt_or_api_auth::auth,
-            )),
-        )
+pub(crate) fn router(app_state: Arc<AppState>) -> OpenApiRouter {
+    OpenApiRouter::new()
+        .routes(routes!(update_profile))
+        .routes(routes!(update_locale))
+        .route_layer(middleware::from_fn_with_state(
+            app_state.clone(),
+            jwt_or_api_auth::auth,
+        ))
         .layer(
             tower::ServiceBuilder::new().layer(middleware::from_fn_with_state(
                 app_state.clone(),
@@ -43,7 +37,29 @@ pub(crate) fn router(app_state: Arc<AppState>) -> Router {
         .with_state(app_state)
 }
 
-#[instrument(skip_all, fields(borrower_id), err(Debug))]
+/// Update borrower profile settings including timezone.
+#[utoipa::path(
+    put,
+    path = "/",
+    tag = PROFILE_TAG,
+    request_body = UpdateProfile,
+    responses(
+        (
+            status = 200,
+            description = "Profile updated successfully"
+        ),
+        (
+            status = 400,
+            description = "Invalid timezone provided"
+        )
+    ),
+    security(
+        (
+            "api_key" = []
+        )
+    )
+)]
+#[instrument(skip_all, fields(borrower_id = user.id), err(Debug))]
 async fn update_profile(
     State(data): State<Arc<AppState>>,
     Extension(user): Extension<Borrower>,
@@ -68,7 +84,25 @@ async fn update_profile(
     Ok(())
 }
 
-#[instrument(skip_all, fields(borrower_id), err(Debug))]
+/// Update borrower locale preferences.
+#[utoipa::path(
+    put,
+    path = "/locale",
+    tag = PROFILE_TAG,
+    request_body = UpdateLocale,
+    responses(
+        (
+            status = 200,
+            description = "Locale updated successfully"
+        )
+    ),
+    security(
+        (
+            "api_key" = []
+        )
+    )
+)]
+#[instrument(skip_all, fields(borrower_id = user.id), err(Debug))]
 async fn update_locale(
     State(data): State<Arc<AppState>>,
     Extension(user): Extension<Borrower>,
@@ -83,12 +117,12 @@ async fn update_locale(
     Ok(())
 }
 
-#[derive(Debug, Deserialize, Serialize)]
+#[derive(Debug, Deserialize, Serialize, ToSchema)]
 struct UpdateProfile {
     timezone: String,
 }
 
-#[derive(Debug, Deserialize, Serialize)]
+#[derive(Debug, Deserialize, Serialize, ToSchema)]
 struct UpdateLocale {
     locale: Option<String>,
 }
