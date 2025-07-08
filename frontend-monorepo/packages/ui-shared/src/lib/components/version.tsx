@@ -53,7 +53,7 @@ export const VersionInfo = ({ getVersion }: VersionInfoProps) => {
     } catch (error) {
       console.error(`Failed fetching wasm version ${error}`);
     }
-  }, [isInitialized]);
+  }, [isInitialized, getWasmVersion]);
 
   return (
     <div className="mx-auto max-w-3xl space-y-4">

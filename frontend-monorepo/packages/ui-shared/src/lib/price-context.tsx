@@ -95,7 +95,7 @@ export const PriceProvider: FC<{ url: string; children: ReactNode }> = ({
     return () => {
       ws.current?.close();
     };
-  }, [url, websocketUrl]);
+  }, [websocketUrl]);
 
   return (
     <PriceContext.Provider value={{ latestPrices }}>
