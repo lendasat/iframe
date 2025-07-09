@@ -260,7 +260,7 @@ pub async fn spawn_borrower_server(
             lender_profiles::router(app_state.clone())
                 .route_layer(middleware::from_fn_with_state(app_state.clone(), auth)),
         )
-        .nest("/api", cards::router(app_state.clone()))
+        .nest("/api/moon", cards::router(app_state.clone()))
         .nest("/api", bringin::router(app_state.clone()))
         .nest("/api/moon", moon_webhook::router(app_state.clone()))
         .nest("/api/users", me::router(app_state.clone()))

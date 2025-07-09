@@ -90,7 +90,7 @@ async fn get_cards(
 /// Get transactions for a specific card.
 #[utoipa::path(
     get,
-    path = "/transaction/{card_id}",
+    path = "/transactions/{card_id}",
     tag = CARDS_TAG,
     params(
         ("card_id" = String, Path, description = "Card ID")

@@ -186,11 +186,12 @@ export interface HttpClient {
   getLenderProfile: (id: string) => Promise<LenderStats>;
   getBorrowerProfile: (id: string) => Promise<BorrowerStats>;
   putUpdateLocale: (locale?: string) => Promise<void>;
+  putUpdateProfile: (request: PutUpdateProfile) => Promise<void>;
 
-  // Card methods
+  // Card moon methods
   getUserCards: () => Promise<UserCardDetail[]>;
   getCardTransactions: (cardId: string) => Promise<CardTransaction[]>;
-  putUpdateProfile: (request: PutUpdateProfile) => Promise<void>;
+
   newChatNotification: (request: NotifyUser) => Promise<void>;
 
   // Bringin methods
@@ -951,7 +952,7 @@ export const createHttpClient = (
   const getUserCards = async (): Promise<UserCardDetail[]> => {
     try {
       const response: AxiosResponse<UserCardDetail[]> =
-        await axiosClient.get("/api/cards");
+        await axiosClient.get("/api/moon/cards");
 
       return response.data;
     } catch (error) {
@@ -965,7 +966,7 @@ export const createHttpClient = (
   ): Promise<CardTransaction[]> => {
     try {
       const transactionResponse: AxiosResponse<CardTransaction[]> =
-        await axiosClient.get(`/api/transaction/${cardId}`);
+        await axiosClient.get(`/api/moon/transactions/${cardId}`);
       return transactionResponse.data;
     } catch (error) {
       handleError(error, "getting card transactions");
