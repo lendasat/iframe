@@ -4,6 +4,7 @@ use crate::model::BorrowerLoanFeatureResponse;
 use crate::model::FilteredUser;
 use crate::model::MeResponse;
 use crate::model::PasswordAuth;
+use crate::routes::borrower::ME_TAG;
 use crate::routes::AppState;
 use axum::extract::FromRequest;
 use axum::extract::State;
@@ -18,8 +19,6 @@ use tracing::instrument;
 use tracing::Level;
 use utoipa_axum::router::OpenApiRouter;
 use utoipa_axum::routes;
-
-const ME_TAG: &str = "User";
 
 pub(crate) fn router(app_state: Arc<AppState>) -> OpenApiRouter {
     OpenApiRouter::new()
