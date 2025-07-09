@@ -44,6 +44,7 @@ use axum::http::StatusCode;
 use axum::middleware;
 use axum::response::IntoResponse;
 use axum::response::Response;
+use axum::routing::post;
 use axum::Extension;
 use axum::Json;
 use axum_extra::extract::cookie::Cookie;
@@ -82,8 +83,6 @@ pub(crate) fn router(app_state: Arc<AppState>) -> OpenApiRouter {
     let public_routes = OpenApiRouter::new()
         .routes(routes!(get_is_registered))
         .routes(routes!(post_register))
-        .routes(routes!(post_start_upgrade_to_pake))
-        .routes(routes!(post_finish_upgrade_to_pake))
         .routes(routes!(post_pake_login))
         .routes(routes!(post_pake_verify))
         .routes(routes!(verify_email_handler))
@@ -91,6 +90,11 @@ pub(crate) fn router(app_state: Arc<AppState>) -> OpenApiRouter {
         .routes(routes!(reset_password_handler))
         .routes(routes!(reset_legacy_password_handler))
         .routes(routes!(post_add_to_waitlist));
+
+    // undocumented routes
+    let undocumented_routes = OpenApiRouter::new()
+        .route("/upgrade-to-pake", post(post_start_upgrade_to_pake))
+        .route("/finish-upgrade-to-pake", post(post_finish_upgrade_to_pake));
 
     // Routes requiring JWT authentication
     let jwt_routes = OpenApiRouter::new()
@@ -110,6 +114,7 @@ pub(crate) fn router(app_state: Arc<AppState>) -> OpenApiRouter {
         ));
 
     public_routes
+        .merge(undocumented_routes)
         .merge(jwt_routes)
         .merge(jwt_or_api_routes)
         .layer(
@@ -560,23 +565,6 @@ async fn post_pake_verify(
 /// We return their wallet backup data, so that they can decrypt it locally and send us the backup
 /// encrypted using their new password.
 /// Start upgrade from legacy password to PAKE authentication.
-#[utoipa::path(
-    post,
-    path = "/upgrade-to-pake",
-    tag = AUTH_TAG,
-    request_body = UpgradeToPakeRequest,
-    responses(
-        (
-            status = 200,
-            description = "PAKE upgrade initiated successfully",
-            body = UpgradeToPakeResponse
-        ),
-        (
-            status = 400,
-            description = "Invalid email, password, or user not verified"
-        )
-    )
-)]
 #[instrument(skip_all, fields(borrower_id), err(Debug))]
 async fn post_start_upgrade_to_pake(
     State(data): State<Arc<AppState>>,
@@ -657,23 +645,6 @@ struct PakeUpgradedResponse {
 /// Additionally, we erase the old pasword hash from the database, as the borrower won't be
 /// authenticating that way anymore.
 /// Complete upgrade from legacy password to PAKE authentication.
-#[utoipa::path(
-    post,
-    path = "/finish-upgrade-to-pake",
-    tag = AUTH_TAG,
-    request_body = FinishUpgradeToPakeRequest,
-    responses(
-        (
-            status = 200,
-            description = "PAKE upgrade completed successfully",
-            body = PakeUpgradedResponse
-        ),
-        (
-            status = 400,
-            description = "Invalid email, password, or user not verified"
-        )
-    )
-)]
 #[instrument(skip_all, fields(borrower_id), err(Debug))]
 async fn post_finish_upgrade_to_pake(
     State(data): State<Arc<AppState>>,
