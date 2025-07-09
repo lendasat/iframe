@@ -144,14 +144,20 @@ async fn get_card_transactions(
 
 #[derive(Debug, Serialize, PartialEq, Clone, ToSchema)]
 enum TransactionStatus {
+    #[schema(title = "Authorization")]
     Authorization,
+    #[schema(title = "Reversal")]
     Reversal,
+    #[schema(title = "Clearing")]
     Clearing,
+    #[schema(title = "Refund")]
     Refund,
+    #[schema(title = "Pending")]
     Pending,
+    #[schema(title = "Settled")]
     Settled,
     #[serde(untagged)]
-    Unknown(String),
+    Unknown(#[schema(inline)] String),
 }
 
 impl From<pay_with_moon::TransactionStatus> for TransactionStatus {
