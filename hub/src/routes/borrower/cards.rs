@@ -99,7 +99,7 @@ async fn get_cards(
         (
             status = 200,
             description = "List of transactions for the specified card",
-            body = Vec<Transaction>
+            body = Vec<CardTransaction>
         ),
         (
             status = 400,
@@ -117,7 +117,7 @@ async fn get_card_transactions(
     State(data): State<Arc<AppState>>,
     Extension(user): Extension<Borrower>,
     Path(card_id): Path<String>,
-) -> Result<AppJson<Vec<Transaction>>, Error> {
+) -> Result<AppJson<Vec<CardTransaction>>, Error> {
     let uuid = Uuid::from_str(card_id.as_str()).map_err(|_| Error::InvalidCardId)?;
     let cards = data
         .moon
@@ -136,7 +136,7 @@ async fn get_card_transactions(
 
     let txs = transactions
         .into_iter()
-        .map(Transaction::from)
+        .map(CardTransaction::from)
         .collect::<Vec<_>>();
 
     Ok(AppJson(txs))
@@ -213,20 +213,23 @@ impl From<pay_with_moon::TransactionCard> for TransactionCard {
 
 #[derive(Debug, Serialize, PartialEq, Clone, ToSchema)]
 #[serde(tag = "type", content = "data")]
-enum Transaction {
+enum CardTransaction {
+    #[schema(title = "Card")]
     Card(TransactionData),
+    #[schema(title = "CardAuthorizationRefund")]
     CardAuthorizationRefund(TransactionData),
+    #[schema(title = "DeclineData")]
     DeclineData(DeclineData),
 }
 
-impl From<pay_with_moon::Transaction> for Transaction {
+impl From<pay_with_moon::Transaction> for CardTransaction {
     fn from(value: pay_with_moon::Transaction) -> Self {
         match value {
-            pay_with_moon::Transaction::CardTransaction(tx) => Transaction::Card(tx.into()),
+            pay_with_moon::Transaction::CardTransaction(tx) => CardTransaction::Card(tx.into()),
             pay_with_moon::Transaction::CardAuthorizationRefund(tx) => {
-                Transaction::CardAuthorizationRefund(tx.into())
+                CardTransaction::CardAuthorizationRefund(tx.into())
             }
-            pay_with_moon::Transaction::DeclineData(dd) => Transaction::DeclineData(dd.into()),
+            pay_with_moon::Transaction::DeclineData(dd) => CardTransaction::DeclineData(dd.into()),
         }
     }
 }
