@@ -39,7 +39,7 @@ pub(crate) fn router(app_state: Arc<AppState>) -> OpenApiRouter {
 /// Send a new chat notification to the borrower associated with a contract.
 #[utoipa::path(
     post,
-    path = "/api/chat/notification",
+    path = "/",
     tag = CHAT_TAG,
     request_body = NotifyUser,
     responses(
