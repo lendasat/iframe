@@ -12,7 +12,7 @@ use std::sync::Arc;
 use utoipa_axum::router::OpenApiRouter;
 use utoipa_axum::routes;
 
-pub(crate) const LENDER_PROFILES_TAG: &str = "Lender Profiles";
+pub(crate) const LENDER_PROFILES_TAG: &str = "lender-profiles";
 
 pub(crate) fn router(app_state: Arc<AppState>) -> OpenApiRouter {
     OpenApiRouter::new()

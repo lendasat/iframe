@@ -52,9 +52,9 @@ const API_KEYS_TAG: &str = "api-keys";
 const LOAN_APPLICATIONS_TAG: &str = "loan-applications";
 const KYC_TAG: &str = "kyc";
 const VERSION_TAG: &str = "version";
-const NOTIFICATION_SETTINGS_TAG: &str = "Notification Settings";
-const CHAT_TAG: &str = "Chat";
-const PRICE_FEED_TAG: &str = "Price Feed";
+const NOTIFICATION_SETTINGS_TAG: &str = "notification-settings";
+const CHAT_TAG: &str = "chat";
+const PRICE_FEED_TAG: &str = "price-feed";
 
 #[derive(OpenApi)]
 #[openapi(

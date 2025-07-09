@@ -65,15 +65,15 @@ const LOAN_APPLICATIONS_TAG: &str = "loan-applications";
 const API_KEYS_TAG: &str = "api-keys";
 const API_ACCOUNTS_TAG: &str = "api-accounts";
 const VERSION_TAG: &str = "version";
-const NOTIFICATION_SETTINGS_TAG: &str = "Notification Settings";
-const NOTIFICATIONS_TAG: &str = "Notifications";
-const PROFILE_TAG: &str = "Profile";
-const CHAT_TAG: &str = "Chat";
-const DISPUTE_TAG: &str = "Disputes";
-const PRICE_FEED_TAG: &str = "Price Feed";
-const CARDS_TAG: &str = "Cards";
-const BRINGIN_TAG: &str = "Bringin";
-const ME_TAG: &str = "User";
+const NOTIFICATION_SETTINGS_TAG: &str = "notification-settings";
+const NOTIFICATIONS_TAG: &str = "notifications";
+const PROFILE_TAG: &str = "profile";
+const CHAT_TAG: &str = "chat";
+const DISPUTE_TAG: &str = "disputes";
+const PRICE_FEED_TAG: &str = "price-feed";
+const CARDS_TAG: &str = "cards";
+const BRINGIN_TAG: &str = "bringin";
+const ME_TAG: &str = "user";
 
 #[derive(OpenApi)]
 #[openapi(
