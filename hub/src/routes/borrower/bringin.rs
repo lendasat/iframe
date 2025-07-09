@@ -42,24 +42,21 @@ pub(crate) fn router(app_state: Arc<AppState>) -> OpenApiRouter {
             )),
         )
         .route(
-            "/bringin/callback/verification-status",
+            "/callback/verification-status",
             post(post_verification_status),
         )
         .route(
-            "/bringin/callback/order-status",
+            "/callback/order-status",
             post(post_order_status_update_callback),
         )
-        .route(
-            "/bringin/callback/:borrower_id",
-            post(post_user_connected_callback),
-        )
+        .route("/callback/:borrower_id", post(post_user_connected_callback))
         .with_state(app_state)
 }
 
 /// Connect borrower with Bringin service.
 #[utoipa::path(
     post,
-    path = "/bringin/connect",
+    path = "/connect",
     tag = BRINGIN_TAG,
     request_body = PostConnectWithBringinRequest,
     responses(
@@ -173,7 +170,7 @@ async fn post_user_connected_callback(
 /// Check if borrower has Bringin API key.
 #[utoipa::path(
     get,
-    path = "/bringin/api-key",
+    path = "/api-key",
     tag = BRINGIN_TAG,
     responses(
         (
