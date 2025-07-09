@@ -16,9 +16,10 @@ use tokio::sync::mpsc;
 use tokio::sync::Mutex;
 
 pub mod borrower;
+pub mod borrower_profiles;
 pub mod lender;
+pub mod lender_profiles;
 pub mod price_feed_ws;
-pub(crate) mod profiles;
 mod user_connection_details_middleware;
 
 #[derive(Debug, Serialize)]

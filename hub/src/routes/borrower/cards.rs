@@ -2,10 +2,9 @@ use crate::db;
 use crate::model::Borrower;
 use crate::moon;
 use crate::routes::borrower::auth::jwt_or_api_auth;
+use crate::routes::borrower::CARDS_TAG;
 use crate::routes::AppState;
-use anyhow::anyhow;
 use anyhow::Result;
-use axum::extract::rejection::JsonRejection;
 use axum::extract::FromRequest;
 use axum::extract::Path;
 use axum::extract::State;
@@ -13,39 +12,47 @@ use axum::http::StatusCode;
 use axum::middleware;
 use axum::response::IntoResponse;
 use axum::response::Response;
-use axum::routing::get;
-use axum::routing::post;
 use axum::Extension;
 use axum::Json;
-use axum::Router;
 use rust_decimal::Decimal;
 use serde::Serialize;
-use serde_json::Value;
 use std::str::FromStr;
 use std::sync::Arc;
 use tracing::instrument;
+use utoipa::ToSchema;
+use utoipa_axum::router::OpenApiRouter;
+use utoipa_axum::routes;
 use uuid::Uuid;
 
-pub(crate) fn router(app_state: Arc<AppState>) -> Router {
-    Router::new()
-        .route(
-            "/api/cards",
-            get(get_cards).route_layer(middleware::from_fn_with_state(
-                app_state.clone(),
-                jwt_or_api_auth::auth,
-            )),
-        )
-        .route(
-            "/api/transaction/:card_id",
-            get(get_card_transactions).route_layer(middleware::from_fn_with_state(
-                app_state.clone(),
-                jwt_or_api_auth::auth,
-            )),
-        )
-        .route("/api/moon/webhook", post(post_webhook).get(get_webhook))
+pub(crate) fn router(app_state: Arc<AppState>) -> OpenApiRouter {
+    OpenApiRouter::new()
+        .routes(routes!(get_cards))
+        .routes(routes!(get_card_transactions))
+        .route_layer(middleware::from_fn_with_state(
+            app_state.clone(),
+            jwt_or_api_auth::auth,
+        ))
         .with_state(app_state)
 }
 
+/// Get all cards for the authenticated borrower.
+#[utoipa::path(
+    get,
+    path = "/cards",
+    tag = CARDS_TAG,
+    responses(
+        (
+            status = 200,
+            description = "List of borrower's cards with current details",
+            body = Vec<Card>
+        )
+    ),
+    security(
+        (
+            "api_key" = []
+        )
+    )
+)]
 #[instrument(skip_all, fields(borrower_id = user.id), err(Debug))]
 async fn get_cards(
     State(data): State<Arc<AppState>>,
@@ -80,6 +87,31 @@ async fn get_cards(
     Ok(AppJson(cards))
 }
 
+/// Get transactions for a specific card.
+#[utoipa::path(
+    get,
+    path = "/transactions/{card_id}",
+    tag = CARDS_TAG,
+    params(
+        ("card_id" = String, Path, description = "Card ID")
+    ),
+    responses(
+        (
+            status = 200,
+            description = "List of transactions for the specified card",
+            body = Vec<Transaction>
+        ),
+        (
+            status = 400,
+            description = "Invalid card ID or card not found"
+        )
+    ),
+    security(
+        (
+            "api_key" = []
+        )
+    )
+)]
 #[instrument(skip_all, fields(borrower_id = user.id, card_id), err(Debug))]
 async fn get_card_transactions(
     State(data): State<Arc<AppState>>,
@@ -110,65 +142,7 @@ async fn get_card_transactions(
     Ok(AppJson(txs))
 }
 
-#[instrument(skip(data, payload), err(Debug))]
-async fn post_webhook(
-    State(data): State<Arc<AppState>>,
-    payload: Result<Json<Value>, JsonRejection>,
-) -> Result<(), Error> {
-    match payload {
-        // Handle request with JSON body
-        Ok(Json(payload)) => {
-            if let Ok(json_object) = serde_json::to_string(&payload) {
-                tracing::trace!(?json_object, "Received new json webhook data");
-            } else {
-                tracing::warn!(?payload, "Received new webhook data which was not json");
-            }
-
-            if let Ok(moon_message) =
-                serde_json::from_value::<pay_with_moon::MoonMessage>(payload.clone())
-            {
-                tracing::debug!(?moon_message, "Received new message from moon notification");
-                if let pay_with_moon::MoonMessage::MoonInvoicePayment(invoice) = &moon_message {
-                    if let Err(err) = data.moon.handle_paid_invoice(invoice).await {
-                        tracing::error!("Failed at handling moon invoice {err:#}");
-                    }
-                } else {
-                    // MoonMessage::MoonInvoicePayment is already stored in
-                    // `moon.handle_paid_invoice`
-                    if let Err(err) =
-                        db::moon::insert_moon_transactions(&data.db, moon_message).await
-                    {
-                        tracing::error!("Failed at persisting moon message {err:#}");
-                    }
-                }
-            } else {
-                tracing::warn!("Received unknown webhook data");
-            };
-            Ok(())
-        }
-
-        // Handle request without JSON body or invalid JSON
-        Err(JsonRejection::MissingJsonContentType(_))
-        | Err(JsonRejection::JsonDataError(_))
-        | Err(JsonRejection::JsonSyntaxError(_)) => {
-            tracing::debug!(?payload, "Webhook registered but did not match");
-
-            Ok(())
-        }
-
-        // Handle other JSON rejection cases
-        Err(e) => Err(Error::moon(anyhow!("Failed to process webhook: {e:#}"))),
-    }
-}
-
-#[instrument(err(Debug))]
-async fn get_webhook() -> Result<impl IntoResponse, Error> {
-    tracing::debug!("New webhook registered via http get");
-
-    Ok((StatusCode::OK, ()))
-}
-
-#[derive(Debug, Serialize, PartialEq, Clone)]
+#[derive(Debug, Serialize, PartialEq, Clone, ToSchema)]
 enum TransactionStatus {
     Authorization,
     Reversal,
@@ -194,7 +168,7 @@ impl From<pay_with_moon::TransactionStatus> for TransactionStatus {
     }
 }
 
-#[derive(Debug, Serialize, PartialEq, Clone)]
+#[derive(Debug, Serialize, PartialEq, Clone, ToSchema)]
 struct Fee {
     #[serde(rename = "type")]
     fee_type: String,
@@ -213,7 +187,7 @@ impl From<pay_with_moon::Fee> for Fee {
     }
 }
 
-#[derive(Debug, Serialize, PartialEq, Clone)]
+#[derive(Debug, Serialize, PartialEq, Clone, ToSchema)]
 struct TransactionCard {
     public_id: Uuid,
     name: String,
@@ -231,7 +205,7 @@ impl From<pay_with_moon::TransactionCard> for TransactionCard {
     }
 }
 
-#[derive(Debug, Serialize, PartialEq, Clone)]
+#[derive(Debug, Serialize, PartialEq, Clone, ToSchema)]
 #[serde(tag = "type", content = "data")]
 enum Transaction {
     Card(TransactionData),
@@ -251,7 +225,7 @@ impl From<pay_with_moon::Transaction> for Transaction {
     }
 }
 
-#[derive(Debug, Serialize, PartialEq, Clone)]
+#[derive(Debug, Serialize, PartialEq, Clone, ToSchema)]
 struct TransactionData {
     card: TransactionCard,
     transaction_id: Uuid,
@@ -292,7 +266,7 @@ impl From<pay_with_moon::TransactionData> for TransactionData {
     }
 }
 
-#[derive(Debug, Serialize, PartialEq, Clone)]
+#[derive(Debug, Serialize, PartialEq, Clone, ToSchema)]
 struct DeclineData {
     /// The date we receive has the following format: 2024-11-14 10:26:24
     datetime: String,
@@ -315,7 +289,7 @@ impl From<pay_with_moon::DeclineData> for DeclineData {
     }
 }
 
-#[derive(Debug, Serialize)]
+#[derive(Debug, Serialize, ToSchema)]
 struct Card {
     id: Uuid,
     #[serde(with = "rust_decimal::serde::float")]
@@ -361,12 +335,8 @@ where
 /// All the errors related to the `cards` REST API.
 #[derive(Debug)]
 enum Error {
-    /// The request body contained invalid JSON.
-    JsonRejection(JsonRejection),
     /// Failed to interact with the database.
     Database(#[allow(dead_code)] String),
-    /// General error from Moon service.
-    Moon(#[allow(dead_code)] String),
     /// Invalid card ID provided.
     InvalidCardId,
     /// Card not found.
@@ -376,16 +346,6 @@ enum Error {
 impl Error {
     fn database(e: anyhow::Error) -> Self {
         Self::Database(format!("{e:#}"))
-    }
-
-    fn moon(e: anyhow::Error) -> Self {
-        Self::Moon(format!("{e:#}"))
-    }
-}
-
-impl From<JsonRejection> for Error {
-    fn from(rejection: JsonRejection) -> Self {
-        Self::JsonRejection(rejection)
     }
 }
 
@@ -399,11 +359,7 @@ impl IntoResponse for Error {
         }
 
         let (status, message) = match self {
-            Error::JsonRejection(rejection) => {
-                // This error is caused by bad user input so don't log it
-                (rejection.status(), rejection.body_text())
-            }
-            Error::Database(_) | Error::Moon(_) => (
+            Error::Database(_) => (
                 StatusCode::INTERNAL_SERVER_ERROR,
                 "Something went wrong".to_owned(),
             ),

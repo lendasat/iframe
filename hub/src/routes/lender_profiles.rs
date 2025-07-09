@@ -1,5 +1,4 @@
 use crate::routes::AppState;
-use crate::user_stats::BorrowerStats;
 use crate::user_stats::LenderStats;
 use axum::extract::FromRequest;
 use axum::extract::Path;
@@ -7,21 +6,58 @@ use axum::extract::State;
 use axum::http::StatusCode;
 use axum::response::IntoResponse;
 use axum::response::Response;
-use axum::routing::get;
 use axum::Json;
-use axum::Router;
 use serde::Serialize;
 use std::sync::Arc;
+use utoipa_axum::router::OpenApiRouter;
+use utoipa_axum::routes;
 
-pub(crate) fn router() -> Router<Arc<AppState>> {
-    Router::new()
-        .route("/api/lenders/:id", get(get_lender_stats))
-        .route("/api/borrowers/:id", get(get_borrower_stats))
+pub(crate) const LENDER_PROFILES_TAG: &str = "lender-profiles";
+
+pub(crate) fn router(app_state: Arc<AppState>) -> OpenApiRouter {
+    OpenApiRouter::new()
+        .routes(routes!(get_lender_stats))
+        .with_state(app_state)
+}
+
+/// Get public statistics for a lender.
+#[utoipa::path(
+    get,
+    path = "/{id}",
+    tag = LENDER_PROFILES_TAG,
+    params(
+        ("id" = String, Path, description = "Lender ID")
+    ),
+    responses(
+        (
+            status = 200,
+            description = "Lender statistics",
+            body = LenderStats
+        )
+    )
+)]
+pub async fn get_lender_stats(
+    State(data): State<Arc<AppState>>,
+    Path(lender_id): Path<String>,
+) -> Result<AppJson<LenderStats>, Error> {
+    let lender_stats = crate::user_stats::get_lender_stats(&data.db, lender_id.as_str())
+        .await
+        .map_err(Error::from)?;
+
+    Ok(AppJson(lender_stats))
 }
 
 pub enum Error {
     /// Failed to interact with the database.
     Database(sqlx::Error),
+}
+
+impl From<crate::user_stats::Error> for Error {
+    fn from(value: crate::user_stats::Error) -> Self {
+        match value {
+            crate::user_stats::Error::Database(error) => Error::Database(error),
+        }
+    }
 }
 
 // Create our own JSON extractor by wrapping `axum::Json`. This makes it easy to override the
@@ -41,7 +77,7 @@ where
     }
 }
 
-/// Tell `axum` how [`AppError`] should be converted into a response.
+/// Tell `axum` how [`Error`] should be converted into a response.
 impl IntoResponse for Error {
     fn into_response(self) -> Response {
         /// How we want error responses to be serialized.
@@ -64,34 +100,4 @@ impl IntoResponse for Error {
 
         (status, AppJson(ErrorResponse { message })).into_response()
     }
-}
-
-pub async fn get_lender_stats(
-    State(data): State<Arc<AppState>>,
-    Path(lender_id): Path<String>,
-) -> Result<AppJson<LenderStats>, Error> {
-    let lender_stats = crate::user_stats::get_lender_stats(&data.db, lender_id.as_str())
-        .await
-        .map_err(Error::from)?;
-
-    Ok(AppJson(lender_stats))
-}
-
-impl From<crate::user_stats::Error> for Error {
-    fn from(value: crate::user_stats::Error) -> Self {
-        match value {
-            crate::user_stats::Error::Database(error) => Error::Database(error),
-        }
-    }
-}
-
-pub async fn get_borrower_stats(
-    State(data): State<Arc<AppState>>,
-    Path(borrower_id): Path<String>,
-) -> Result<AppJson<BorrowerStats>, Error> {
-    let borrower_stats = crate::user_stats::get_borrower_stats(&data.db, borrower_id.as_str())
-        .await
-        .map_err(Error::from)?;
-
-    Ok(AppJson(borrower_stats))
 }

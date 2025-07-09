@@ -200,12 +200,12 @@ pub struct WalletBackupData {
     pub network: String,
 }
 
-#[derive(Debug, Deserialize, Serialize)]
+#[derive(Debug, Deserialize, Serialize, ToSchema)]
 pub struct PakeLoginRequest {
     pub email: Email,
 }
 
-#[derive(Debug, Deserialize, Serialize)]
+#[derive(Debug, Deserialize, Serialize, ToSchema)]
 pub struct PakeLoginResponse {
     pub salt: String,
     pub b_pub: String,
@@ -216,14 +216,14 @@ pub struct PakeServerData {
     pub b: Vec<u8>,
 }
 
-#[derive(Debug, Deserialize, Serialize)]
+#[derive(Debug, Deserialize, Serialize, ToSchema)]
 pub struct PakeVerifyRequest {
     pub email: Email,
     pub a_pub: String,
     pub client_proof: String,
 }
 
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Deserialize, ToSchema)]
 pub struct UpgradeToPakeRequest {
     pub email: Email,
     /// The password the user used before PAKE. This one must be verified against the password hash
@@ -231,15 +231,16 @@ pub struct UpgradeToPakeRequest {
     pub old_password: String,
 }
 
-#[derive(Debug, Serialize)]
+#[derive(Debug, Serialize, ToSchema)]
 pub struct UpgradeToPakeResponse {
     pub old_wallet_backup_data: WalletBackupData,
     /// We include a list of public keys which the user has used in open contracts, so that the
     /// client can verify that they are able to spend the contract with the remote wallet backup.
+    #[schema(value_type = Vec<String>)]
     pub contract_pks: Vec<PublicKey>,
 }
 
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Deserialize, ToSchema)]
 pub struct FinishUpgradeToPakeRequest {
     pub email: Email,
     /// The password the user used before PAKE. This one must be verified against the password hash
@@ -250,19 +251,19 @@ pub struct FinishUpgradeToPakeRequest {
     pub new_wallet_backup_data: WalletBackupData,
 }
 
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Deserialize, ToSchema)]
 pub struct ForgotPasswordSchema {
     pub email: Email,
 }
 
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Deserialize, ToSchema)]
 pub struct ResetPasswordSchema {
     pub verifier: String,
     pub salt: String,
     pub new_wallet_backup_data: WalletBackupData,
 }
 
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Deserialize, ToSchema)]
 pub struct ResetLegacyPasswordSchema {
     pub password: String,
 }
@@ -1311,7 +1312,7 @@ pub struct Dispute {
     pub updated_at: OffsetDateTime,
 }
 
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Deserialize, ToSchema)]
 pub struct DisputeRequestBodySchema {
     pub contract_id: String,
     pub reason: String,
@@ -1377,12 +1378,103 @@ impl OriginationFee {
     }
 }
 
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Serialize, Deserialize, ToSchema)]
 pub struct BorrowerLoanFeature {
     pub id: String,
     pub name: String,
     pub description: Option<String>,
     pub is_enabled: bool,
+}
+
+#[derive(Debug, Serialize, Deserialize, ToSchema)]
+pub struct BorrowerLoanFeatureResponse {
+    pub id: String,
+    pub name: String,
+}
+
+#[derive(Debug, Serialize, Deserialize, ToSchema)]
+pub struct FilteredUser {
+    pub id: String,
+    pub name: String,
+    pub email: String,
+    pub verified: bool,
+    pub used_referral_code: Option<String>,
+    pub personal_referral_codes: Vec<PersonalReferralCodeResponse>,
+    pub timezone: Option<String>,
+    pub locale: Option<String>,
+    pub personal_telegram_token: String,
+    #[serde(with = "rust_decimal::serde::float")]
+    pub first_time_discount_rate: Decimal,
+    #[serde(with = "time::serde::rfc3339")]
+    pub created_at: OffsetDateTime,
+    #[serde(with = "time::serde::rfc3339")]
+    pub updated_at: OffsetDateTime,
+}
+
+#[derive(Debug, Serialize, Deserialize, ToSchema)]
+pub struct PersonalReferralCodeResponse {
+    pub code: String,
+    pub active: bool,
+    #[serde(with = "rust_decimal::serde::float")]
+    pub first_time_discount_rate_referee: Decimal,
+    #[serde(with = "rust_decimal::serde::float")]
+    pub first_time_commission_rate_referrer: Decimal,
+    #[serde(with = "rust_decimal::serde::float")]
+    pub commission_rate_referrer: Decimal,
+    #[serde(with = "time::serde::rfc3339")]
+    pub created_at: OffsetDateTime,
+    #[serde(with = "time::serde::rfc3339")]
+    pub expires_at: OffsetDateTime,
+}
+
+#[derive(Debug, Serialize, ToSchema)]
+pub struct MeResponse {
+    pub enabled_features: Vec<BorrowerLoanFeatureResponse>,
+    pub user: FilteredUser,
+}
+
+impl From<PersonalReferralCode> for PersonalReferralCodeResponse {
+    fn from(value: PersonalReferralCode) -> Self {
+        PersonalReferralCodeResponse {
+            code: value.code,
+            active: value.active,
+            first_time_discount_rate_referee: value.first_time_discount_rate_referee,
+            first_time_commission_rate_referrer: value.first_time_commission_rate_referrer,
+            commission_rate_referrer: value.commission_rate_referrer,
+            created_at: value.created_at,
+            expires_at: value.expires_at,
+        }
+    }
+}
+
+impl FilteredUser {
+    pub fn new_user(
+        user: &Borrower,
+        password_auth_info: &PasswordAuth,
+        personal_telegram_token: crate::db::telegram_bot::TelegramBotToken,
+    ) -> Self {
+        let created_at_utc = user.created_at;
+        let updated_at_utc = user.updated_at;
+        Self {
+            id: user.id.to_string(),
+            email: password_auth_info.email.clone(),
+            name: user.name.to_owned(),
+            verified: password_auth_info.verified,
+            used_referral_code: user.used_referral_code.clone(),
+            personal_referral_codes: user
+                .personal_referral_codes
+                .clone()
+                .into_iter()
+                .map(PersonalReferralCodeResponse::from)
+                .collect(),
+            first_time_discount_rate: user.first_time_discount_rate_referee.unwrap_or_default(),
+            timezone: user.timezone.clone(),
+            locale: user.locale.clone(),
+            personal_telegram_token: personal_telegram_token.token,
+            created_at: created_at_utc,
+            updated_at: updated_at_utc,
+        }
+    }
 }
 
 #[derive(Debug)]

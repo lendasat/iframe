@@ -1,6 +1,7 @@
 use crate::db;
 use crate::model::Lender;
 use crate::routes::lender::auth::jwt_auth;
+use crate::routes::lender::CHAT_TAG;
 use crate::routes::user_connection_details_middleware;
 use crate::routes::AppState;
 use axum::extract::FromRequest;
@@ -9,24 +10,23 @@ use axum::http::StatusCode;
 use axum::middleware;
 use axum::response::IntoResponse;
 use axum::response::Response;
-use axum::routing::post;
 use axum::Extension;
 use axum::Json;
-use axum::Router;
 use serde::Deserialize;
 use serde::Serialize;
 use std::sync::Arc;
 use tracing::instrument;
+use utoipa::ToSchema;
+use utoipa_axum::router::OpenApiRouter;
+use utoipa_axum::routes;
 
-pub(crate) fn router(app_state: Arc<AppState>) -> Router {
-    Router::new()
-        .route(
-            "/api/chat/notification",
-            post(new_chat_notification).route_layer(middleware::from_fn_with_state(
-                app_state.clone(),
-                jwt_auth::auth,
-            )),
-        )
+pub(crate) fn router(app_state: Arc<AppState>) -> OpenApiRouter {
+    OpenApiRouter::new()
+        .routes(routes!(new_chat_notification))
+        .route_layer(middleware::from_fn_with_state(
+            app_state.clone(),
+            jwt_auth::auth,
+        ))
         .layer(
             tower::ServiceBuilder::new().layer(middleware::from_fn_with_state(
                 app_state.clone(),
@@ -36,7 +36,29 @@ pub(crate) fn router(app_state: Arc<AppState>) -> Router {
         .with_state(app_state)
 }
 
-#[instrument(skip_all, fields(lender_id), err(Debug))]
+/// Send a new chat notification to the borrower associated with a contract.
+#[utoipa::path(
+    post,
+    path = "/",
+    tag = CHAT_TAG,
+    request_body = NotifyUser,
+    responses(
+        (
+            status = 200,
+            description = "Chat notification sent successfully"
+        ),
+        (
+            status = 400,
+            description = "Contract not found or borrower not found"
+        )
+    ),
+    security(
+        (
+            "api_key" = []
+        )
+    )
+)]
+#[instrument(skip_all, fields(lender_id = user.id), err(Debug))]
 async fn new_chat_notification(
     State(data): State<Arc<AppState>>,
     Extension(user): Extension<Lender>,
@@ -69,7 +91,7 @@ async fn new_chat_notification(
     Ok(())
 }
 
-#[derive(Debug, Deserialize, Serialize)]
+#[derive(Debug, Deserialize, Serialize, ToSchema)]
 struct NotifyUser {
     contract_id: String,
 }

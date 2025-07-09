@@ -3,9 +3,10 @@ use crate::model::InstallmentStatus;
 use serde::Deserialize;
 use serde::Serialize;
 use time::OffsetDateTime;
+use utoipa::ToSchema;
 use uuid::Uuid;
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, ToSchema)]
 #[serde(tag = "type", content = "data")]
 pub enum NotificationMessage {
     ContractUpdate {

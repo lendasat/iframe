@@ -1,7 +1,10 @@
 use crate::config::Config;
 use crate::routes::borrower::auth::jwt_or_api_auth::auth;
+use crate::routes::borrower_profiles;
+use crate::routes::borrower_profiles::BORROWER_PROFILES_TAG;
+use crate::routes::lender_profiles;
+use crate::routes::lender_profiles::LENDER_PROFILES_TAG;
 use crate::routes::price_feed_ws;
-use crate::routes::profiles;
 use crate::routes::AppState;
 use anyhow::Result;
 use axum::http::header::ACCEPT;
@@ -47,6 +50,8 @@ pub(crate) mod version;
 mod cards;
 mod chat;
 mod dispute;
+mod me;
+mod moon_webhook;
 
 pub use contracts::ClaimCollateralPsbt;
 pub use contracts::ClaimTx;
@@ -60,7 +65,15 @@ const LOAN_APPLICATIONS_TAG: &str = "loan-applications";
 const API_KEYS_TAG: &str = "api-keys";
 const API_ACCOUNTS_TAG: &str = "api-accounts";
 const VERSION_TAG: &str = "version";
-const NOTIFICATION_SETTINGS_TAG: &str = "Notification Settings";
+const NOTIFICATION_SETTINGS_TAG: &str = "notification-settings";
+const NOTIFICATIONS_TAG: &str = "notifications";
+const PROFILE_TAG: &str = "profile";
+const CHAT_TAG: &str = "chat";
+const DISPUTE_TAG: &str = "disputes";
+const PRICE_FEED_TAG: &str = "price-feed";
+const CARDS_TAG: &str = "cards";
+const BRINGIN_TAG: &str = "bringin";
+const ME_TAG: &str = "user";
 
 #[derive(OpenApi)]
 #[openapi(
@@ -161,6 +174,33 @@ curl -X POST "http://localhost:7337/api/contracts" \
         ),
         (
             name = NOTIFICATION_SETTINGS_TAG, description = "Manage notifications.",
+        ),
+        (
+            name = PROFILE_TAG, description = "Manage user profile.",
+        ),
+        (
+            name = CHAT_TAG, description = "Chat message notification endpoint.",
+        ),
+        (
+            name = DISPUTE_TAG, description = "Manage contract disputes.",
+        ),
+        (
+            name = PRICE_FEED_TAG, description = "Real-time price feed WebSocket.",
+        ),
+        (
+            name = BORROWER_PROFILES_TAG, description = "Public borrower profile statistics.",
+        ),
+        (
+            name = LENDER_PROFILES_TAG, description = "Public borrower profile statistics.",
+        ),
+        (
+            name = CARDS_TAG, description = "Manage PayWithMoon cards and transactions.",
+        ),
+        (
+            name = BRINGIN_TAG, description = "Bringin service integration for account connection.",
+        ),
+        (
+            name = ME_TAG, description = "Current user information and settings.",
         )
     ),
 )]
@@ -186,7 +226,7 @@ pub async fn spawn_borrower_server(
     let (router, api) = OpenApiRouter::with_openapi(ApiDoc::openapi())
         .nest("/api/version", version::router())
         .nest("/api/health", health_check::router())
-        .nest("/api/auth", auth::router_openapi(app_state.clone()))
+        .nest("/api/auth", auth::router(app_state.clone()))
         .nest("/api/offers", loan_offers::router(app_state.clone()))
         .nest("/api/contracts", contracts::router(app_state.clone()))
         .nest("/api/keys", api_keys::router(app_state.clone()))
@@ -202,26 +242,34 @@ pub async fn spawn_borrower_server(
             "/api/notification-settings",
             notification_settings::router(app_state.clone()),
         )
+        .nest(
+            "/api/notifications",
+            notifications::router(app_state.clone()),
+        )
+        .nest("/api/users", profile::router(app_state.clone()))
+        .nest("/api/chat/notification", chat::router(app_state.clone()))
+        .nest("/api/disputes", dispute::router(app_state.clone()))
+        .nest("/api/pricefeed", price_feed_ws::router(app_state.clone()))
+        .nest(
+            "/api/profiles/borrowers",
+            borrower_profiles::router(app_state.clone())
+                .route_layer(middleware::from_fn_with_state(app_state.clone(), auth)),
+        )
+        .nest(
+            "/api/profiles/lenders",
+            lender_profiles::router(app_state.clone())
+                .route_layer(middleware::from_fn_with_state(app_state.clone(), auth)),
+        )
+        .nest("/api/moon", cards::router(app_state.clone()))
+        .nest("/api/bringin", bringin::router(app_state.clone()))
+        .nest("/api/moon", moon_webhook::router(app_state.clone()))
+        .nest("/api/users", me::router(app_state.clone()))
         .split_for_parts();
 
     let router =
         router.merge(SwaggerUi::new("/swagger-ui").url("/api-docs/openapi.json", api.clone()));
 
     let app = router
-        .merge(auth::router(app_state.clone()))
-        .merge(profile::router(app_state.clone()))
-        .merge(chat::router(app_state.clone()))
-        .merge(dispute::router(app_state.clone()))
-        // TODO: move this into the OpenApiRouter so that it's documented
-        .merge(notifications::router(app_state.clone()))
-        .merge(price_feed_ws::router(app_state.clone()))
-        .merge(
-            profiles::router()
-                .route_layer(middleware::from_fn_with_state(app_state.clone(), auth))
-                .with_state(app_state.clone()),
-        )
-        .merge(cards::router(app_state.clone()))
-        .merge(bringin::router(app_state))
         // This is a relative path on the filesystem, which means, when deploying `hub` we will need
         // to have the frontend in this directory. Ideally we would bundle the frontend with
         // the binary, but so far we failed at handling requests which are meant to be handled by

@@ -7,13 +7,13 @@ use crate::db::borrowers::register_password_auth_user;
 use crate::db::borrowers::update_password_reset_token_for_user;
 use crate::db::borrowers::user_exists;
 use crate::db::borrowers::verify_user;
-use crate::db::telegram_bot::TelegramBotToken;
 use crate::db::waitlist::WaitlistRole;
 use crate::db::wallet_backups::NewBorrowerWalletBackup;
 use crate::geo_location;
-use crate::model;
 use crate::model::Borrower;
+use crate::model::BorrowerLoanFeature;
 use crate::model::ContractStatus;
+use crate::model::FilteredUser;
 use crate::model::FinishUpgradeToPakeRequest;
 use crate::model::ForgotPasswordSchema;
 use crate::model::PakeLoginRequest;
@@ -44,12 +44,9 @@ use axum::http::StatusCode;
 use axum::middleware;
 use axum::response::IntoResponse;
 use axum::response::Response;
-use axum::routing::get;
 use axum::routing::post;
-use axum::routing::put;
 use axum::Extension;
 use axum::Json;
-use axum::Router;
 use axum_extra::extract::cookie::Cookie;
 use axum_extra::extract::cookie::SameSite;
 use jsonwebtoken::encode;
@@ -57,7 +54,6 @@ use jsonwebtoken::EncodingKey;
 use jsonwebtoken::Header;
 use rand::thread_rng;
 use rand::RngCore;
-use rust_decimal::Decimal;
 use serde::Deserialize;
 use serde::Serialize;
 use serde_json::json;
@@ -82,61 +78,45 @@ const COOKIE_EXPIRY_HOURS: i64 = 1;
 const PASSWORD_TOKEN_EXPIRES_IN_MINUTES: i64 = 10;
 const PASSWORD_RESET_TOKEN_LENGTH: usize = 20;
 
-pub(crate) fn router(app_state: Arc<AppState>) -> Router {
-    Router::new()
-        .route("/api/auth/is-registered", get(get_is_registered))
-        .route(
-            "/api/auth/upgrade-to-pake",
-            post(post_start_upgrade_to_pake),
-        )
-        .route(
-            "/api/auth/finish-upgrade-to-pake",
-            post(post_finish_upgrade_to_pake),
-        )
-        .route("/api/auth/pake-login", post(post_pake_login))
-        .route("/api/auth/pake-verify", post(post_pake_verify))
-        .route(
-            "/api/auth/refresh-token",
-            post(refresh_token_handler).route_layer(middleware::from_fn_with_state(
-                app_state.clone(),
-                jwt_auth::auth,
-            )),
-        )
-        .route(
-            "/api/auth/logout",
-            get(logout_handler).route_layer(middleware::from_fn_with_state(
-                app_state.clone(),
-                jwt_or_api_auth::auth,
-            )),
-        )
-        .route(
-            "/api/auth/check",
-            get(check_auth_handler).route_layer(middleware::from_fn_with_state(
-                app_state.clone(),
-                jwt_or_api_auth::auth,
-            )),
-        )
-        .route(
-            "/api/auth/verifyemail/:verification_code",
-            get(verify_email_handler),
-        )
-        .route("/api/auth/forgotpassword", post(forgot_password_handler))
-        .route(
-            "/api/auth/resetpassword/:password_reset_token",
-            put(reset_password_handler),
-        )
-        .route(
-            "/api/users/me",
-            get(get_me_handler).route_layer(middleware::from_fn_with_state(
-                app_state.clone(),
-                jwt_auth::auth,
-            )),
-        )
-        .route(
-            "/api/auth/reset-legacy-password/:password_reset_token",
-            put(reset_legacy_password_handler),
-        )
-        .route("/api/auth/waitlist", post(post_add_to_waitlist))
+pub(crate) fn router(app_state: Arc<AppState>) -> OpenApiRouter {
+    // Routes without authentication
+    let public_routes = OpenApiRouter::new()
+        .routes(routes!(get_is_registered))
+        .routes(routes!(post_register))
+        .routes(routes!(post_pake_login))
+        .routes(routes!(post_pake_verify))
+        .routes(routes!(verify_email_handler))
+        .routes(routes!(forgot_password_handler))
+        .routes(routes!(reset_password_handler))
+        .routes(routes!(reset_legacy_password_handler))
+        .routes(routes!(post_add_to_waitlist));
+
+    // undocumented routes
+    let undocumented_routes = OpenApiRouter::new()
+        .route("/upgrade-to-pake", post(post_start_upgrade_to_pake))
+        .route("/finish-upgrade-to-pake", post(post_finish_upgrade_to_pake));
+
+    // Routes requiring JWT authentication
+    let jwt_routes = OpenApiRouter::new()
+        .routes(routes!(refresh_token_handler))
+        .route_layer(middleware::from_fn_with_state(
+            app_state.clone(),
+            jwt_auth::auth,
+        ));
+
+    // Routes requiring JWT or API key authentication
+    let jwt_or_api_routes = OpenApiRouter::new()
+        .routes(routes!(logout_handler))
+        .routes(routes!(check_auth_handler))
+        .route_layer(middleware::from_fn_with_state(
+            app_state.clone(),
+            jwt_or_api_auth::auth,
+        ));
+
+    public_routes
+        .merge(undocumented_routes)
+        .merge(jwt_routes)
+        .merge(jwt_or_api_routes)
         .layer(
             tower::ServiceBuilder::new().layer(middleware::from_fn_with_state(
                 app_state.clone(),
@@ -146,12 +126,26 @@ pub(crate) fn router(app_state: Arc<AppState>) -> Router {
         .with_state(app_state)
 }
 
-pub(crate) fn router_openapi(app_state: Arc<AppState>) -> OpenApiRouter {
-    OpenApiRouter::new()
-        .routes(routes!(post_register))
-        .with_state(app_state)
-}
-
+/// Check if a user is registered and verified with the given email.
+#[utoipa::path(
+    get,
+    path = "/is-registered",
+    tag = AUTH_TAG,
+    params(
+        ("email" = String, Query, description = "Email address to check")
+    ),
+    responses(
+        (
+            status = 200,
+            description = "Registration and verification status",
+            body = IsRegisteredResponse
+        ),
+        (
+            status = 400,
+            description = "Invalid email address"
+        )
+    )
+)]
 async fn get_is_registered(
     State(data): State<Arc<AppState>>,
     query_params: Query<IsRegisteredParams>,
@@ -296,6 +290,24 @@ async fn post_register(
     }))
 }
 
+/// Initiate PAKE authentication login.
+#[utoipa::path(
+    post,
+    path = "/pake-login",
+    tag = AUTH_TAG,
+    request_body = PakeLoginRequest,
+    responses(
+        (
+            status = 200,
+            description = "PAKE login challenge response",
+            body = PakeLoginResponse
+        ),
+        (
+            status = 400,
+            description = "Invalid email, email not verified, or PAKE upgrade required"
+        )
+    )
+)]
 #[instrument(skip_all, fields(borrower_id), err(Debug))]
 async fn post_pake_login(
     State(data): State<Arc<AppState>>,
@@ -345,6 +357,24 @@ async fn post_pake_login(
     }))
 }
 
+/// Complete PAKE authentication verification.
+#[utoipa::path(
+    post,
+    path = "/pake-verify",
+    tag = AUTH_TAG,
+    request_body = PakeVerifyRequest,
+    responses(
+        (
+            status = 200,
+            description = "PAKE verification successful, user authenticated",
+            body = PakeVerifyResponse
+        ),
+        (
+            status = 400,
+            description = "Invalid credentials or authentication failed"
+        )
+    )
+)]
 #[instrument(skip_all, fields(borrower_id), err(Debug))]
 async fn post_pake_verify(
     State(data): State<Arc<AppState>>,
@@ -426,6 +456,8 @@ async fn post_pake_verify(
                 Some(BorrowerLoanFeature {
                     id: f.id.clone(),
                     name: f.name.clone(),
+                    description: f.description.clone(),
+                    is_enabled: f.is_enabled,
                 })
             } else {
                 None
@@ -532,6 +564,7 @@ async fn post_pake_verify(
 ///
 /// We return their wallet backup data, so that they can decrypt it locally and send us the backup
 /// encrypted using their new password.
+/// Start upgrade from legacy password to PAKE authentication.
 #[instrument(skip_all, fields(borrower_id), err(Debug))]
 async fn post_start_upgrade_to_pake(
     State(data): State<Arc<AppState>>,
@@ -597,7 +630,7 @@ async fn post_start_upgrade_to_pake(
     }))
 }
 
-#[derive(Debug, Deserialize, Serialize)]
+#[derive(Debug, Deserialize, Serialize, ToSchema)]
 struct PakeUpgradedResponse {
     upgraded: bool,
 }
@@ -611,6 +644,7 @@ struct PakeUpgradedResponse {
 /// After that, we insert in the DB values needed to authenticate the borrower via PAKE.
 /// Additionally, we erase the old pasword hash from the database, as the borrower won't be
 /// authenticating that way anymore.
+/// Complete upgrade from legacy password to PAKE authentication.
 #[instrument(skip_all, fields(borrower_id), err(Debug))]
 async fn post_finish_upgrade_to_pake(
     State(data): State<Arc<AppState>>,
@@ -661,6 +695,25 @@ async fn post_finish_upgrade_to_pake(
     Ok(AppJson(PakeUpgradedResponse { upgraded: true }))
 }
 
+/// Verify user email with verification code.
+#[utoipa::path(
+    get,
+    path = "/verifyemail/{verification_code}",
+    tag = AUTH_TAG,
+    params(
+        ("verification_code" = String, Path, description = "Email verification code")
+    ),
+    responses(
+        (
+            status = 200,
+            description = "Email verified successfully"
+        ),
+        (
+            status = 400,
+            description = "Invalid verification code or user already verified"
+        )
+    )
+)]
 #[instrument(skip_all, fields(borrower_id), err(Debug, level = Level::DEBUG))]
 async fn verify_email_handler(
     State(data): State<Arc<AppState>>,
@@ -691,6 +744,23 @@ async fn verify_email_handler(
     Ok(Json(response))
 }
 
+/// Request password reset for user account.
+#[utoipa::path(
+    post,
+    path = "/forgotpassword",
+    tag = AUTH_TAG,
+    request_body = ForgotPasswordSchema,
+    responses(
+        (
+            status = 200,
+            description = "Password reset email sent successfully"
+        ),
+        (
+            status = 400,
+            description = "Invalid email, user not found, or account not verified"
+        )
+    )
+)]
 #[instrument(skip_all, fields(borrower_id), err(Debug, level = Level::DEBUG))]
 async fn forgot_password_handler(
     State(data): State<Arc<AppState>>,
@@ -764,6 +834,26 @@ async fn forgot_password_handler(
     Ok(())
 }
 
+/// Reset user password with reset token.
+#[utoipa::path(
+    put,
+    path = "/resetpassword/{password_reset_token}",
+    tag = AUTH_TAG,
+    params(
+        ("password_reset_token" = String, Path, description = "Password reset token")
+    ),
+    request_body = ResetPasswordSchema,
+    responses(
+        (
+            status = 200,
+            description = "Password reset successfully"
+        ),
+        (
+            status = 400,
+            description = "Invalid reset token or token expired"
+        )
+    )
+)]
 #[instrument(skip_all, fields(borrower_id), err(Debug))]
 async fn reset_password_handler(
     State(data): State<Arc<AppState>>,
@@ -823,6 +913,26 @@ async fn reset_password_handler(
     Ok(response)
 }
 
+/// Reset legacy password with reset token.
+#[utoipa::path(
+    put,
+    path = "/reset-legacy-password/{password_reset_token}",
+    tag = AUTH_TAG,
+    params(
+        ("password_reset_token" = String, Path, description = "Password reset token")
+    ),
+    request_body = ResetLegacyPasswordSchema,
+    responses(
+        (
+            status = 200,
+            description = "Legacy password reset successfully"
+        ),
+        (
+            status = 400,
+            description = "Invalid reset token or no legacy password to reset"
+        )
+    )
+)]
 #[instrument(skip_all, fields(borrower_id), err(Debug))]
 async fn reset_legacy_password_handler(
     State(data): State<Arc<AppState>>,
@@ -849,6 +959,23 @@ async fn reset_legacy_password_handler(
     Ok(())
 }
 
+/// Logout user and clear authentication cookie.
+#[utoipa::path(
+    get,
+    path = "/logout",
+    tag = AUTH_TAG,
+    responses(
+        (
+            status = 200,
+            description = "Successfully logged out"
+        )
+    ),
+    security(
+        (
+            "api_key" = []
+        )
+    )
+)]
 #[instrument(skip_all, err(Debug, level = Level::DEBUG))]
 async fn logout_handler() -> Result<impl IntoResponse, Error> {
     let cookie = Cookie::build(("token", ""))
@@ -868,53 +995,49 @@ async fn logout_handler() -> Result<impl IntoResponse, Error> {
     Ok(response)
 }
 
-#[instrument(skip_all, fields(borrower_id = user.id), err(Debug, level = Level::DEBUG))]
-async fn get_me_handler(
-    State(data): State<Arc<AppState>>,
-    Extension((user, password_auth_info)): Extension<(Borrower, PasswordAuth)>,
-) -> Result<AppJson<MeResponse>, Error> {
-    let personal_telegram_token =
-        db::telegram_bot::borrower::get_or_create_token_by_borrower_id(&data.db, user.id.as_str())
-            .await
-            .map_err(Error::database)?;
-
-    let filtered_user = FilteredUser::new_user(&user, &password_auth_info, personal_telegram_token);
-
-    let features = db::borrower_features::load_borrower_features(&data.db, user.id.clone())
-        .await
-        .map_err(Error::database)?;
-
-    let features = features
-        .iter()
-        .filter_map(|f| {
-            if f.is_enabled {
-                Some(BorrowerLoanFeature {
-                    id: f.id.clone(),
-                    name: f.name.clone(),
-                })
-            } else {
-                None
-            }
-        })
-        .collect::<Vec<_>>();
-
-    if features.is_empty() {
-        return Err(Error::NoFeaturesEnabled {
-            borrower_id: user.id.clone(),
-        });
-    }
-
-    Ok(AppJson(MeResponse {
-        enabled_features: features,
-        user: filtered_user,
-    }))
-}
-
+/// Check if user is authenticated.
+#[utoipa::path(
+    get,
+    path = "/check",
+    tag = AUTH_TAG,
+    responses(
+        (
+            status = 200,
+            description = "User is authenticated"
+        ),
+        (
+            status = 401,
+            description = "User is not authenticated"
+        )
+    ),
+    security(
+        (
+            "api_key" = []
+        )
+    )
+)]
 #[instrument(skip_all, err(Debug, level = Level::DEBUG))]
 async fn check_auth_handler(Extension(_user): Extension<Borrower>) -> Result<(), Error> {
     Ok(())
 }
 
+/// Add user to the waitlist.
+#[utoipa::path(
+    post,
+    path = "/waitlist",
+    tag = AUTH_TAG,
+    request_body = WaitlistBody,
+    responses(
+        (
+            status = 200,
+            description = "Successfully added to waitlist"
+        ),
+        (
+            status = 409,
+            description = "Email already in waitlist"
+        )
+    )
+)]
 #[instrument(skip_all, err(Debug))]
 async fn post_add_to_waitlist(
     State(data): State<Arc<AppState>>,
@@ -927,11 +1050,33 @@ async fn post_add_to_waitlist(
     Ok(Json(()))
 }
 
-#[instrument(skip_all, fields(borrower_id = user.id), err(Debug))]
+/// Refresh user authentication token.
+#[utoipa::path(
+    post,
+    path = "/refresh-token",
+    tag = AUTH_TAG,
+    responses(
+        (
+            status = 200,
+            description = "Token refreshed successfully"
+        ),
+        (
+            status = 401,
+            description = "Invalid or expired token"
+        )
+    ),
+    security(
+        (
+            "api_key" = []
+        )
+    )
+)]
+#[instrument(skip_all, fields(borrower_id), err(Debug))]
 async fn refresh_token_handler(
     State(data): State<Arc<AppState>>,
-    Extension((user, _)): Extension<(Borrower, PasswordAuth)>,
+    Extension(user_aut): Extension<(Borrower, PasswordAuth)>,
 ) -> Result<impl IntoResponse, Error> {
+    let user = user_aut.0;
     let now = OffsetDateTime::now_utc();
     let iat = now.unix_timestamp();
     let exp = (now + time::Duration::hours(COOKIE_EXPIRY_HOURS)).unix_timestamp();
@@ -967,12 +1112,12 @@ async fn refresh_token_handler(
     Ok(response)
 }
 
-#[derive(Deserialize)]
+#[derive(Deserialize, ToSchema)]
 struct IsRegisteredParams {
     email: String,
 }
 
-#[derive(Serialize)]
+#[derive(Serialize, ToSchema)]
 struct IsRegisteredResponse {
     is_registered: bool,
     is_verified: bool,
@@ -983,92 +1128,7 @@ struct RegistrationResponse {
     message: String,
 }
 
-#[derive(Debug, Serialize, Deserialize)]
-struct BorrowerLoanFeature {
-    id: String,
-    name: String,
-}
-
-#[derive(Debug, Serialize, Deserialize)]
-struct FilteredUser {
-    id: String,
-    name: String,
-    email: String,
-    verified: bool,
-    used_referral_code: Option<String>,
-    personal_referral_codes: Vec<PersonalReferralCode>,
-    timezone: Option<String>,
-    locale: Option<String>,
-    personal_telegram_token: String,
-    #[serde(with = "rust_decimal::serde::float")]
-    first_time_discount_rate: Decimal,
-    #[serde(with = "time::serde::rfc3339")]
-    created_at: OffsetDateTime,
-    #[serde(with = "time::serde::rfc3339")]
-    updated_at: OffsetDateTime,
-}
-
-#[derive(Debug, Serialize, Deserialize)]
-struct PersonalReferralCode {
-    code: String,
-    active: bool,
-    #[serde(with = "rust_decimal::serde::float")]
-    first_time_discount_rate_referee: Decimal,
-    #[serde(with = "rust_decimal::serde::float")]
-    first_time_commission_rate_referrer: Decimal,
-    #[serde(with = "rust_decimal::serde::float")]
-    commission_rate_referrer: Decimal,
-    #[serde(with = "time::serde::rfc3339")]
-    created_at: OffsetDateTime,
-    #[serde(with = "time::serde::rfc3339")]
-    expires_at: OffsetDateTime,
-}
-
-impl From<model::PersonalReferralCode> for PersonalReferralCode {
-    fn from(value: model::PersonalReferralCode) -> Self {
-        PersonalReferralCode {
-            code: value.code,
-            active: value.active,
-            first_time_discount_rate_referee: value.first_time_discount_rate_referee,
-            first_time_commission_rate_referrer: value.first_time_commission_rate_referrer,
-            commission_rate_referrer: value.commission_rate_referrer,
-            created_at: value.created_at,
-            expires_at: value.expires_at,
-        }
-    }
-}
-
-impl FilteredUser {
-    fn new_user(
-        user: &Borrower,
-        password_auth_info: &PasswordAuth,
-        personal_telegram_token: TelegramBotToken,
-    ) -> Self {
-        let created_at_utc = user.created_at;
-        let updated_at_utc = user.updated_at;
-        Self {
-            id: user.id.to_string(),
-            email: password_auth_info.email.clone(),
-            name: user.name.to_owned(),
-            verified: password_auth_info.verified,
-            used_referral_code: user.used_referral_code.clone(),
-            personal_referral_codes: user
-                .personal_referral_codes
-                .clone()
-                .into_iter()
-                .map(PersonalReferralCode::from)
-                .collect(),
-            first_time_discount_rate: user.first_time_discount_rate_referee.unwrap_or_default(),
-            timezone: user.timezone.clone(),
-            locale: user.locale.clone(),
-            personal_telegram_token: personal_telegram_token.token,
-            created_at: created_at_utc,
-            updated_at: updated_at_utc,
-        }
-    }
-}
-
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Serialize, Deserialize, ToSchema)]
 struct PakeVerifyResponse {
     server_proof: String,
     token: String,
@@ -1077,15 +1137,9 @@ struct PakeVerifyResponse {
     wallet_backup_data: WalletBackupData,
 }
 
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Deserialize, ToSchema)]
 struct WaitlistBody {
     email: String,
-}
-
-#[derive(Debug, Serialize)]
-struct MeResponse {
-    enabled_features: Vec<BorrowerLoanFeature>,
-    user: FilteredUser,
 }
 
 // Create our own JSON extractor by wrapping `axum::Json`. This makes it easy to override the
