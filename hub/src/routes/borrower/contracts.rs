@@ -1110,9 +1110,9 @@ struct TimelineEvent {
 #[derive(Debug, Serialize, Deserialize, ToSchema)]
 #[serde(tag = "type", rename_all = "snake_case")]
 enum TimelineEventKind {
-    ContractStatusChange {
-        status: ContractStatus,
-    },
+    #[schema(title = "contract_status_change")]
+    ContractStatusChange { status: ContractStatus },
+    #[schema(title = "installment")]
     Installment {
         is_confirmed: bool,
         installment_id: Uuid,
