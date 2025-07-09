@@ -142,7 +142,6 @@ async fn get_card_transactions(
     Ok(AppJson(txs))
 }
 
-
 #[derive(Debug, Serialize, PartialEq, Clone, ToSchema)]
 enum TransactionStatus {
     Authorization,
@@ -348,9 +347,7 @@ impl Error {
     fn database(e: anyhow::Error) -> Self {
         Self::Database(format!("{e:#}"))
     }
-
 }
-
 
 /// Tell `axum` how [`Error`] should be converted into a response.
 impl IntoResponse for Error {

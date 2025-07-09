@@ -7,11 +7,11 @@ use axum::http::StatusCode;
 use axum::response::IntoResponse;
 use axum::routing::post;
 use axum::Json;
-use utoipa_axum::router::OpenApiRouter;
 use serde::Serialize;
 use serde_json::Value;
 use std::sync::Arc;
 use tracing::instrument;
+use utoipa_axum::router::OpenApiRouter;
 
 pub(crate) fn router(app_state: Arc<AppState>) -> OpenApiRouter {
     OpenApiRouter::new()

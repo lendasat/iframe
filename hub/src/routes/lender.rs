@@ -1,7 +1,10 @@
 use crate::config::Config;
+use crate::routes::borrower_profiles;
+use crate::routes::borrower_profiles::BORROWER_PROFILES_TAG;
 use crate::routes::lender::auth::jwt_auth::auth;
+use crate::routes::lender_profiles;
+use crate::routes::lender_profiles::LENDER_PROFILES_TAG;
 use crate::routes::price_feed_ws;
-use crate::routes::profiles;
 use crate::routes::AppState;
 use anyhow::Result;
 use axum::http::header::ACCEPT;
@@ -52,7 +55,6 @@ const VERSION_TAG: &str = "version";
 const NOTIFICATION_SETTINGS_TAG: &str = "Notification Settings";
 const CHAT_TAG: &str = "Chat";
 const PRICE_FEED_TAG: &str = "Price Feed";
-const PROFILES_TAG: &str = "User Profiles";
 
 #[derive(OpenApi)]
 #[openapi(
@@ -103,7 +105,10 @@ Interact with the lendasat server to
             name = PRICE_FEED_TAG, description = "Real-time price feed WebSocket.",
         ),
         (
-            name = PROFILES_TAG, description = "Public user profile statistics.",
+            name = LENDER_PROFILES_TAG, description = "Public lender profile statistics.",
+        ),
+        (
+            name = BORROWER_PROFILES_TAG, description = "Public borrower profile statistics.",
         )
     ),
 )]
@@ -145,8 +150,13 @@ pub async fn spawn_lender_server(
         .nest("/api/chat/notification", chat::router(app_state.clone()))
         .nest("/api/pricefeed", price_feed_ws::router(app_state.clone()))
         .nest(
-            "/profiles",
-            profiles::router(app_state.clone())
+            "/api/profiles/borrowers",
+            borrower_profiles::router(app_state.clone())
+                .route_layer(middleware::from_fn_with_state(app_state.clone(), auth)),
+        )
+        .nest(
+            "/api/profiles/lenders",
+            lender_profiles::router(app_state.clone())
                 .route_layer(middleware::from_fn_with_state(app_state.clone(), auth)),
         )
         .split_for_parts();

@@ -1,7 +1,10 @@
 use crate::config::Config;
 use crate::routes::borrower::auth::jwt_or_api_auth::auth;
+use crate::routes::borrower_profiles;
+use crate::routes::borrower_profiles::BORROWER_PROFILES_TAG;
+use crate::routes::lender_profiles;
+use crate::routes::lender_profiles::LENDER_PROFILES_TAG;
 use crate::routes::price_feed_ws;
-use crate::routes::profiles;
 use crate::routes::AppState;
 use anyhow::Result;
 use axum::http::header::ACCEPT;
@@ -68,7 +71,6 @@ const PROFILE_TAG: &str = "Profile";
 const CHAT_TAG: &str = "Chat";
 const DISPUTE_TAG: &str = "Disputes";
 const PRICE_FEED_TAG: &str = "Price Feed";
-const PROFILES_TAG: &str = "User Profiles";
 const CARDS_TAG: &str = "Cards";
 const BRINGIN_TAG: &str = "Bringin";
 const ME_TAG: &str = "User";
@@ -186,7 +188,10 @@ curl -X POST "http://localhost:7337/api/contracts" \
             name = PRICE_FEED_TAG, description = "Real-time price feed WebSocket.",
         ),
         (
-            name = PROFILES_TAG, description = "Public user profile statistics.",
+            name = BORROWER_PROFILES_TAG, description = "Public borrower profile statistics.",
+        ),
+        (
+            name = LENDER_PROFILES_TAG, description = "Public borrower profile statistics.",
         ),
         (
             name = CARDS_TAG, description = "Manage PayWithMoon cards and transactions.",
@@ -246,8 +251,13 @@ pub async fn spawn_borrower_server(
         .nest("/api/disputes", dispute::router(app_state.clone()))
         .nest("/api/pricefeed", price_feed_ws::router(app_state.clone()))
         .nest(
-            "/api",
-            profiles::router(app_state.clone())
+            "/api/profiles/borrowers",
+            borrower_profiles::router(app_state.clone())
+                .route_layer(middleware::from_fn_with_state(app_state.clone(), auth)),
+        )
+        .nest(
+            "/api/profiles/lenders",
+            lender_profiles::router(app_state.clone())
                 .route_layer(middleware::from_fn_with_state(app_state.clone(), auth)),
         )
         .nest("/api", cards::router(app_state.clone()))
