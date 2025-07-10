@@ -284,7 +284,7 @@ pub fn get_npub(key: String) -> Result<String> {
     Ok(npub.to_bech32()?)
 }
 
-pub fn sign_claim_psbt(
+pub fn sign_spend_collateral_psbt(
     psbt: &str,
     collateral_descriptor: &str,
     own_pk: &str,
@@ -299,7 +299,7 @@ pub fn sign_claim_psbt(
 
     let derivation_path = derivation_path.map(|p| p.parse()).transpose()?;
 
-    let tx = wallet::sign_claim_psbt(
+    let tx = wallet::sign_spend_collateral_psbt(
         psbt,
         collateral_descriptor,
         own_pk,
@@ -311,39 +311,7 @@ pub fn sign_claim_psbt(
 
     let tx = bitcoin::consensus::encode::serialize_hex(&tx);
 
-    log::debug!("Signed claim TX: {tx}");
-
-    Ok((tx, outputs, params))
-}
-
-pub fn sign_liquidation_psbt(
-    psbt: &str,
-    collateral_descriptor: &str,
-    own_pk: &str,
-    derivation_path: Option<&str>,
-) -> Result<(String, Vec<TxOut>, bitcoin::params::Params)> {
-    let psbt = hex::decode(psbt)?;
-    let psbt = Psbt::deserialize(&psbt)?;
-
-    let collateral_descriptor = collateral_descriptor.parse()?;
-
-    let own_pk = own_pk.parse()?;
-
-    let derivation_path = derivation_path.map(|p| p.parse()).transpose()?;
-
-    let tx = wallet::sign_liquidation_psbt(
-        psbt,
-        collateral_descriptor,
-        own_pk,
-        derivation_path.as_ref(),
-    )?;
-
-    let outputs = tx.output.clone();
-    let params = wallet::consensus_params()?;
-
-    let tx = bitcoin::consensus::encode::serialize_hex(&tx);
-
-    log::debug!("Signed liquidation TX: {tx}");
+    log::debug!("Signed spend collateral TX: {tx}");
 
     Ok((tx, outputs, params))
 }

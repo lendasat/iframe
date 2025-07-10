@@ -8,16 +8,14 @@ import init, {
   InnerFiatLoanDetails,
   is_wallet_loaded,
   load_wallet,
-  sign_claim_psbt,
-  sign_liquidation_psbt,
-  unlock_and_sign_claim_psbt,
+  sign_spend_collateral_psbt,
+  unlock_and_sign_spend_collateral_psbt,
   SwiftTransferDetails,
   IbanTransferDetails,
   SignedTransaction,
   get_npub,
   get_pk_and_derivation_path,
   get_version,
-  sign_liquidation_psbt_with_password,
   FiatLoanDetails,
   decrypt_fiat_loan_details_with_password,
   sign_message_with_pk,
@@ -198,7 +196,7 @@ export const WalletProvider = ({ children, email }: WalletProviderProps) => {
     derivationPath?: string,
   ) => {
     if (isInitialized && isWalletLoaded) {
-      return sign_claim_psbt(
+      return sign_spend_collateral_psbt(
         psbt,
         collateralDescriptor,
         borrowerPk,
@@ -223,7 +221,7 @@ export const WalletProvider = ({ children, email }: WalletProviderProps) => {
   ) => {
     if (isInitialized) {
       if (isWalletLoaded) {
-        return sign_claim_psbt(
+        return sign_spend_collateral_psbt(
           psbt,
           collateralDescriptor,
           borrowerPk,
@@ -232,7 +230,7 @@ export const WalletProvider = ({ children, email }: WalletProviderProps) => {
       }
 
       const key = await md5CaseInsensitive(email);
-      const signedPsbt = unlock_and_sign_claim_psbt(
+      const signedPsbt = unlock_and_sign_spend_collateral_psbt(
         password,
         key,
         psbt,
@@ -254,7 +252,7 @@ export const WalletProvider = ({ children, email }: WalletProviderProps) => {
     derivationPath?: string,
   ) => {
     if (isInitialized && isWalletLoaded) {
-      return sign_liquidation_psbt(
+      return sign_spend_collateral_psbt(
         psbt,
         collateralDescriptor,
         lenderPk,
@@ -273,7 +271,7 @@ export const WalletProvider = ({ children, email }: WalletProviderProps) => {
     derivationPath?: string,
   ) => {
     const key = await md5CaseInsensitive(email);
-    return sign_liquidation_psbt_with_password(
+    return unlock_and_sign_spend_collateral_psbt(
       password,
       key,
       psbt,

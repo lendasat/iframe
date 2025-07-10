@@ -195,8 +195,7 @@ pub fn get_mnemonic() -> Result<String> {
     Ok(mnemonic.to_string())
 }
 
-/// Used by borrowers.
-pub fn sign_claim_psbt(
+pub fn sign_spend_collateral_psbt(
     psbt: Psbt,
     collateral_descriptor: Descriptor<PublicKey>,
     own_pk: PublicKey,
@@ -216,27 +215,8 @@ pub fn sign_claim_psbt(
         }
     };
 
-    let tx = wallet.sign_claim_psbt(psbt, collateral_descriptor, own_pk, derivation_path)?;
-
-    Ok(tx)
-}
-
-/// Used by lenders.
-pub fn sign_liquidation_psbt(
-    psbt: Psbt,
-    collateral_descriptor: Descriptor<PublicKey>,
-    own_pk: PublicKey,
-    derivation_path: Option<&DerivationPath>,
-) -> Result<Transaction> {
-    let guard = WALLET.lock().expect("to get lock");
-    let wallet = match *guard {
-        Some(ref wallet) => wallet,
-        None => {
-            bail!("Can't get keypair if wallet is not loaded");
-        }
-    };
-
-    let tx = wallet.sign_liquidation_psbt(psbt, collateral_descriptor, own_pk, derivation_path)?;
+    let tx =
+        wallet.sign_spend_collateral_psbt(psbt, collateral_descriptor, own_pk, derivation_path)?;
 
     Ok(tx)
 }

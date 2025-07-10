@@ -335,7 +335,7 @@ async fn open_and_repay_loan() {
     let claim_psbt = Psbt::deserialize(&claim_psbt).unwrap();
 
     let tx = borrower_wallet
-        .sign_claim_psbt(
+        .sign_spend_collateral_psbt(
             claim_psbt,
             collateral_descriptor,
             borrower_pk,
