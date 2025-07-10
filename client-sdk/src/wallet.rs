@@ -252,60 +252,94 @@ impl Wallet {
 
     fn find_kp(
         &self,
+        // Newer contracts use a derivation path decided by the hub.
+        //
+        // Older contracts used a local index, unknown to the hub and not backed up. To find the
+        // corresponding secret key, we use a heuristic: we look through the first 100 keys using
+        // the common derivation path `586/0/*` (for mainnet) until we find one that matches our
+        // public key in the contract i.e. `own_pk`.
         derivation_path: Option<&DerivationPath>,
         own_pk: &PublicKey,
     ) -> Result<Keypair> {
-        if let Some(derivation_path) = derivation_path {
-            let kp = get_kp_from_path(&self.xprv, derivation_path)?;
+        let kp = match derivation_path {
+            // We use the caller's suggested derivation path.
+            Some(derivation_path) => {
+                log::debug!(
+                    "Looking for KP matching PK {own_pk}, using derivation path {derivation_path}"
+                );
 
-            let xpub = Xpub::from_priv(&Secp256k1::new(), &self.xprv);
+                let kp = get_kp_from_path(&self.xprv, derivation_path)
+                    .context("Failed to get KP from path")?;
+                let xpub = Xpub::from_priv(&Secp256k1::new(), &self.xprv);
 
-            log::debug!(
-                "Derived PK {} with derivation path {derivation_path} for Xpub {xpub}",
-                kp.public_key(),
-            );
+                log::debug!(
+                    "Derived PK {} with derivation path {derivation_path} for Xpub {xpub}",
+                    kp.public_key(),
+                );
 
-            if kp.public_key() != own_pk.inner {
-                match self.legacy_xprv {
-                    Some(legacy_xprv) => {
-                        let kp = get_kp_from_path(&legacy_xprv, derivation_path)?;
+                if kp.public_key() == own_pk.inner {
+                    kp
+                } else {
+                    log::debug!("Derived PK from Xpub does not match target {own_pk}");
 
-                        let legacy_xpub = Xpub::from_priv(&Secp256k1::new(), &legacy_xprv);
-
-                        log::debug!(
-                            "Derived PK {} with derivation path {derivation_path} \
-                         for legacy Xpub {legacy_xpub}",
-                            kp.public_key(),
-                        );
-
-                        if kp.public_key() != own_pk.inner {
-                            bail!(
-                                "Cannot derive PK {} using derivation path {derivation_path} \
-                             for either Xpub ({xpub} and {legacy_xpub})",
-                                own_pk.inner,
+                    match self.legacy_xprv {
+                        Some(legacy_xprv) => {
+                            log::debug!(
+                                "Looking for KP matching PK {own_pk}, \
+                             using derivation path {derivation_path} and legacy Xpriv"
                             );
-                        }
 
-                        // We use a keypair derived from the legacy Xprv.
-                        return Ok(kp);
-                    }
-                    None => {
-                        bail!(
-                            "Cannot derive PK {} using derivation path \
-                         {derivation_path} for Xpub {xpub}",
-                            own_pk.inner,
-                        );
+                            let kp = get_kp_from_path(&legacy_xprv, derivation_path)
+                                .context("Failed to get KP from path")?;
+
+                            let legacy_xpub = Xpub::from_priv(&Secp256k1::new(), &legacy_xprv);
+
+                            log::debug!(
+                                "Derived PK {} with derivation path {derivation_path} \
+                            for legacy Xpub {legacy_xpub}",
+                                kp.public_key(),
+                            );
+
+                            if kp.public_key() != own_pk.inner {
+                                // We use a keypair derived from the legacy Xprv.
+                                kp
+                            } else {
+                                log::debug!(
+                                    "Derived PK from legacy Xpub \
+                                does not match target {own_pk}"
+                                );
+
+                                // We fall back on our heuristic in case the derivation path was
+                                // incorrect.
+                                self.find_kp_using_heuristic(own_pk)
+                                    .context("Failed to find KP using heuristic")?
+                            }
+                        }
+                        None => {
+                            // We fall back on our heuristic in case the derivation path was
+                            // incorrect.
+                            self.find_kp_using_heuristic(own_pk)
+                                .context("Failed to find KP using heuristic")?
+                        }
                     }
                 }
             }
+            None => self
+                .find_kp_using_heuristic(own_pk)
+                .context("Failed to find KP using heuristic")?,
+        };
 
-            // We use a keypair derived from the current Xprv.
-            return Ok(kp);
-        }
+        log::info!("KP found for PK {own_pk}");
+
+        Ok(kp)
+    }
+
+    fn find_kp_using_heuristic(&self, own_pk: &PublicKey) -> Result<Keypair> {
+        log::debug!("Looking for KP matching PK {own_pk}, without known derivation path");
 
         let network = self.network.into();
-        let res =
-            find_kp_for_pk(&self.xprv, network, own_pk).context("Could not find keypair to sign");
+        let res = find_kp_for_pk(&self.xprv, network, own_pk)
+            .context("Could not find keypair with regular Xpriv");
 
         let kp = match res {
             Ok(kp) => kp,
