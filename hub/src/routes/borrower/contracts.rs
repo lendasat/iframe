@@ -1080,11 +1080,11 @@ pub struct Contract {
     #[serde(with = "rust_decimal::serde::float_option")]
     extension_interest_rate: Option<Decimal>,
     extension_origination_fee: Vec<OriginationFee>,
-    pub installments: Vec<Installment>,
+    pub installments: Vec<CardInstallment>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, ToSchema)]
-pub struct Installment {
+pub struct CardInstallment {
     pub id: Uuid,
     #[serde(with = "rust_decimal::serde::float")]
     principal: Decimal,
@@ -1313,7 +1313,10 @@ async fn map_to_api_contract(
         extension_max_duration_days,
         extension_interest_rate,
         extension_origination_fee,
-        installments: installments.into_iter().map(Installment::from).collect(),
+        installments: installments
+            .into_iter()
+            .map(CardInstallment::from)
+            .collect(),
     };
 
     Ok(contract)
@@ -1990,7 +1993,7 @@ impl From<bringin::Error> for Error {
     }
 }
 
-impl From<model::Installment> for Installment {
+impl From<model::Installment> for CardInstallment {
     fn from(value: model::Installment) -> Self {
         Self {
             id: value.id,
