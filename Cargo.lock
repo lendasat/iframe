@@ -851,7 +851,6 @@ dependencies = [
  "nostr",
  "rand",
  "sha2",
- "srp",
  "wasm-bindgen",
  "web-sys",
 ]

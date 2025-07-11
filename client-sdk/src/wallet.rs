@@ -41,9 +41,9 @@ pub use fiat_loan_details::FiatLoanDetails;
 pub use fiat_loan_details::IbanTransferDetails;
 pub use fiat_loan_details::SwiftTransferDetails;
 
-const SECRET_KEY_ENCRYPTION_NONCE: &[u8; 12] = b"SECRET_KEY!!";
-
 pub const NOSTR_DERIVATION_PATH: &str = "m/44/0/0/0/0";
+
+const SECRET_KEY_ENCRYPTION_NONCE: &[u8; 12] = b"SECRET_KEY!!";
 
 pub struct Wallet {
     /// We keep this so that we can display it to the user.
@@ -63,8 +63,34 @@ pub struct Wallet {
     /// across all devices. PK reuse is acceptable.
     contract_index: u32,
 }
+#[derive(Clone)]
+pub struct MnemonicCiphertext {
+    salt: [u8; 32],
+    inner: Vec<u8>,
+}
+
+pub struct SignedMessage {
+    pub message: sha256d::Hash,
+    pub signature: RecoverableSignature,
+}
 
 impl Wallet {
+    /// Create a [`Wallet`] with a random [`Mnemonic`], using the provided `password`, [`network`]
+    /// and `contract_index`.
+    pub fn random<R>(
+        rng: &mut R,
+        password: &str,
+        network: &str,
+        contract_index: u32,
+    ) -> Result<(Self, MnemonicCiphertext)>
+    where
+        R: Rng + CryptoRng,
+    {
+        let mnemonic = Mnemonic::generate_in_with(rng, bip39::Language::English, 12)?;
+
+        Self::new(rng, mnemonic, password, network, contract_index)
+    }
+
     /// Create a [`Wallet`] using the provided [`Mnemonic`], `password`, [`network`] and
     /// `contract_index`.
     pub fn new<R>(
@@ -252,12 +278,12 @@ impl Wallet {
 
     fn find_kp(
         &self,
-        // Newer contracts use a derivation path decided by the hub.
+        // Newer contracts use a derivation path decided by the Lendasat server.
         //
-        // Older contracts used a local index, unknown to the hub and not backed up. To find the
-        // corresponding secret key, we use a heuristic: we look through the first 100 keys using
-        // the common derivation path `586/0/*` (for mainnet) until we find one that matches our
-        // public key in the contract i.e. `own_pk`.
+        // Older contracts used a local index, unknown to the Lendasat server and not backed up. To
+        // find the corresponding secret key, we use a heuristic: we look through the first 100
+        // keys using the common derivation path `586/0/*` (for mainnet) until we find one
+        // that matches our public key in the contract i.e. `own_pk`.
         derivation_path: Option<&DerivationPath>,
         own_pk: &PublicKey,
     ) -> Result<Keypair> {
@@ -377,8 +403,21 @@ impl Wallet {
     }
 
     pub fn nsec(&self) -> Result<SecretKey> {
-        let nsec = derive_nsec_from_xprv(&self.xprv)?;
-        Ok(nsec)
+        let xprv: &Xpriv = &self.xprv;
+        let path = DerivationPath::from_str(NOSTR_DERIVATION_PATH).expect("to be valid");
+
+        let secp = Secp256k1::new();
+
+        // Derive the child key at the specified path
+        let child_xprv = xprv.derive_priv(&secp, &path)?;
+
+        // Get the private key bytes
+        let private_key_bytes = child_xprv.private_key.secret_bytes();
+
+        // Create SecretKey from bytes
+        let secret_key = SecretKey::from_slice(&private_key_bytes)?;
+
+        Ok(secret_key)
     }
 
     pub fn xpub(&self) -> Xpub {
@@ -388,12 +427,6 @@ impl Wallet {
     pub fn network(&self) -> Network {
         self.network
     }
-}
-
-#[derive(Clone)]
-pub struct MnemonicCiphertext {
-    salt: [u8; 32],
-    inner: Vec<u8>,
 }
 
 fn get_normal_pk_for_network_and_index(xpub: &str, network: &str, index: u32) -> Result<PublicKey> {
@@ -486,10 +519,23 @@ fn find_kp_for_pk(xprv: &Xpriv, network: NetworkKind, pk: &PublicKey) -> Result<
     bail!("Could not find keypair for public key {pk} after {n} iterations");
 }
 
-/// Find the [`KeyPair`] corresponding to the given [`PublicKey`].
+/// Find the keypair for a given public key using legacy derivation.
 ///
-/// This builds on the assumption that the [`PublicKey`] was derived from the [`Wallet`]'s
-/// [`Xpriv`].
+/// This function searches for a keypair by trying different derivation paths
+/// and network types. It's used for backward compatibility with older wallets.
+///
+/// # Arguments
+///
+/// * `legacy_xprv` - The legacy extended private key
+/// * `pk` - The public key to find the corresponding private key for
+///
+/// # Returns
+///
+/// The keypair if found.
+///
+/// # Errors
+///
+/// Returns an error if the keypair cannot be found after exhaustive search.
 pub fn find_kp_for_borrower_pk_legacy(legacy_xprv: &Xpriv, pk: &PublicKey) -> Result<Keypair> {
     // We have to try both network types no matter what, because we had a bug that would derive the
     // `Xpriv` using the wrong network. Since we use the `Xpriv`'s network as part of the derivation
@@ -575,20 +621,6 @@ pub fn change_wallet_encryption(
     };
 
     Ok(new_mnemonic_ciphertext)
-}
-
-pub fn generate_mnemonic<R>(rng: &mut R) -> Result<Mnemonic>
-where
-    R: Rng + CryptoRng,
-{
-    let mnemonic = Mnemonic::generate_in_with(rng, bip39::Language::English, 12)?;
-
-    Ok(mnemonic)
-}
-
-pub struct SignedMessage {
-    pub message: sha256d::Hash,
-    pub signature: RecoverableSignature,
 }
 
 pub fn is_signed_by_pk(
@@ -714,23 +746,6 @@ fn encrypt_mnemonic(mnemonic: &Mnemonic, encryption_key: [u8; 32]) -> Result<Vec
     Ok(ciphertext)
 }
 
-fn derive_nsec_from_xprv(xprv: &Xpriv) -> Result<SecretKey> {
-    let path = DerivationPath::from_str(NOSTR_DERIVATION_PATH).expect("to be valid");
-
-    let secp = Secp256k1::new();
-
-    // Derive the child key at the specified path
-    let child_xprv = xprv.derive_priv(&secp, &path)?;
-
-    // Get the private key bytes
-    let private_key_bytes = child_xprv.private_key.secret_bytes();
-
-    // Create SecretKey from bytes
-    let secret_key = SecretKey::from_slice(&private_key_bytes)?;
-
-    Ok(secret_key)
-}
-
 /// Encrypt the mnemonic seed phrase with the encryption key plus a passphrase.
 ///
 /// Old wallets used to have a passphrase. New ones do not. We keep the passphrase around in the
@@ -813,7 +828,7 @@ pub fn derive_nostr_room_pk(contract: String) -> Result<String> {
     Ok(public_key.to_string())
 }
 
-/// Encrypt [`FiatLoanDetails`] so that they can be stored in the hub database.
+/// Encrypt [`FiatLoanDetails`] so that they can be stored in the Lendasat server's database.
 ///
 /// The caller can decrypt the details after decrypting the `encrypted_encryption_key_own` with
 /// their [`SecretKey`].

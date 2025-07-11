@@ -17,7 +17,6 @@ use client_sdk::wallet::derive_encryption_key;
 use client_sdk::wallet::does_pk_belong_to_xpub;
 use client_sdk::wallet::encrypt_mnemonic_with_passphrase;
 use client_sdk::wallet::find_kp_for_borrower_pk_legacy;
-use client_sdk::wallet::generate_mnemonic;
 use client_sdk::wallet::FiatLoanDetails;
 use client_sdk::wallet::MnemonicCiphertext;
 use client_sdk::wallet::SignedMessage;
@@ -36,13 +35,11 @@ pub fn generate_new(password: &str, network: &str) -> Result<(MnemonicCiphertext
 
     let mut rng = thread_rng();
 
-    let mnemonic = generate_mnemonic(&mut rng)?;
-
     // Start from zero for a new wallet.
     let contract_index = 0;
 
     let (wallet, mnemonic_ciphertext) =
-        Wallet::new(&mut rng, mnemonic, password, network, contract_index)?;
+        Wallet::random(&mut rng, password, network, contract_index)?;
     let network = wallet.network();
 
     Ok((mnemonic_ciphertext, network))
