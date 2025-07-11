@@ -30,6 +30,9 @@ import {
   WalletBackupData,
   PaginatedNotificationResponse,
   LenderNotificationSettings,
+  ApiKey,
+  CreateApiKeyRequest,
+  CreateApiKeyResponse,
 } from "./models";
 import { isAllowedPageWithoutLogin, parseRFC3339Date } from "./utils";
 
@@ -216,6 +219,11 @@ export interface HttpClientLender {
   updateNotificationSettings: (
     settings: LenderNotificationSettings,
   ) => Promise<LenderNotificationSettings>;
+
+  // API Key methods
+  getApiKeys: () => Promise<ApiKey[]>;
+  createApiKey: (request: CreateApiKeyRequest) => Promise<CreateApiKeyResponse>;
+  deleteApiKey: (id: number) => Promise<void>;
 }
 
 // Create a factory function to create our client
@@ -1120,6 +1128,47 @@ export const createHttpClientLender = (
     }
   };
 
+  // API Key methods
+  const getApiKeys = async (): Promise<ApiKey[]> => {
+    try {
+      const response: AxiosResponse<ApiKey[]> =
+        await axiosClient.get("/api/keys");
+
+      // Defensive programming: ensure we always return an array
+      if (!Array.isArray(response.data)) {
+        console.warn("API returned non-array data, returning empty array");
+        return [];
+      }
+
+      return response.data;
+    } catch (error) {
+      handleError(error, "fetching API keys");
+      throw error;
+    }
+  };
+
+  const createApiKey = async (
+    request: CreateApiKeyRequest,
+  ): Promise<CreateApiKeyResponse> => {
+    try {
+      const response: AxiosResponse<CreateApiKeyResponse> =
+        await axiosClient.post("/api/keys", request);
+      return response.data;
+    } catch (error) {
+      handleError(error, "creating API key");
+      throw error;
+    }
+  };
+
+  const deleteApiKey = async (id: number): Promise<void> => {
+    try {
+      await axiosClient.delete(`/api/keys/${id}`);
+    } catch (error) {
+      handleError(error, "deleting API key");
+      throw error;
+    }
+  };
+
   // Return all functions bundled as our client
   return {
     register,
@@ -1174,6 +1223,9 @@ export const createHttpClientLender = (
     markAllNotificationAsRead,
     getNotificationSettings,
     updateNotificationSettings,
+    getApiKeys,
+    createApiKey,
+    deleteApiKey,
   };
 };
 

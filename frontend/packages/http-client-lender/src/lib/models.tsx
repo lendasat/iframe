@@ -782,3 +782,17 @@ export interface LenderNotificationSettings {
   new_chat_message_email: boolean;
   new_chat_message_telegram: boolean;
 }
+
+export interface ApiKey {
+  id: number;
+  description: string;
+  created_at: string;
+}
+
+export interface CreateApiKeyRequest {
+  description: string;
+}
+
+export interface CreateApiKeyResponse {
+  api_key: string;
+}
