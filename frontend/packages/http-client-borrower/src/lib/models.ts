@@ -732,6 +732,20 @@ export interface HasApiKey {
   has_key: boolean;
 }
 
+export interface ApiKey {
+  id: number;
+  description: string;
+  created_at: string;
+}
+
+export interface CreateApiKeyRequest {
+  description: string;
+}
+
+export interface CreateApiKeyResponse {
+  api_key: string;
+}
+
 export interface BringinConnectResponse {
   signup_url?: string;
 }
