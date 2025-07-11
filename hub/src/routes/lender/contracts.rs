@@ -21,7 +21,7 @@ use crate::model::LoanTransaction;
 use crate::model::ManualCollateralRecovery;
 use crate::model::Npub;
 use crate::model::TransactionType;
-use crate::routes::lender::auth::jwt_auth;
+use crate::routes::lender::auth::jwt_or_api_auth;
 use crate::routes::lender::CONTRACTS_TAG;
 use crate::routes::user_connection_details_middleware::UserConnectionDetails;
 use crate::routes::AppState;
@@ -78,7 +78,7 @@ pub(crate) fn router(app_state: Arc<AppState>) -> OpenApiRouter {
         .routes(routes!(get_manual_recovery_psbt))
         .route_layer(middleware::from_fn_with_state(
             app_state.clone(),
-            jwt_auth::auth,
+            jwt_or_api_auth::auth,
         ))
         .with_state(app_state.clone())
 }

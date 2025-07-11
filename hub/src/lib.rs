@@ -5,6 +5,7 @@ mod contract_liquidation;
 mod discounted_origination_fee;
 mod user_stats;
 
+pub mod api_keys;
 pub mod approve_contract;
 pub mod bitmex_index_price_rest;
 pub mod bitmex_index_pricefeed;

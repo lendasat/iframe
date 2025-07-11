@@ -1,0 +1,34 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "\n            SELECT borrower_id, api_key_hash, salt\n            FROM api_keys_borrower\n            WHERE key_id = $1\n        ",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "borrower_id",
+        "type_info": "Bpchar"
+      },
+      {
+        "ordinal": 1,
+        "name": "api_key_hash",
+        "type_info": "Bpchar"
+      },
+      {
+        "ordinal": 2,
+        "name": "salt",
+        "type_info": "Bytea"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Text"
+      ]
+    },
+    "nullable": [
+      false,
+      false,
+      false
+    ]
+  },
+  "hash": "2e19635df62d6cebe45d126666be7a2216422a360f6ede21be605d800aee8e3f"
+}

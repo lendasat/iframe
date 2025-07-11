@@ -17,8 +17,6 @@ use jsonwebtoken::decode;
 use jsonwebtoken::DecodingKey;
 use jsonwebtoken::Validation;
 use serde::Serialize;
-use sha2::Digest;
-use sha2::Sha256;
 use std::sync::Arc;
 
 /// Authentication middleware to check if the cookie is still active and the user is still logged
@@ -62,10 +60,7 @@ pub(crate) async fn auth(
 
             let api_key = api_key.to_str().map_err(|_| Error::InvalidApiKey)?;
 
-            let api_key_hash = Sha256::digest(api_key.as_bytes());
-            let api_key_hash = hex::encode(api_key_hash);
-
-            db::api_keys::authenticate_borrower(&data.db, &api_key_hash)
+            db::api_keys::authenticate_borrower(&data.db, api_key)
                 .await
                 .map_err(Error::database)?
                 .ok_or(Error::InvalidApiKey)?
