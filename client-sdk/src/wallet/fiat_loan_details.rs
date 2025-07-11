@@ -1,3 +1,15 @@
+//! Encrypted storage and sharing of fiat loan details.
+//!
+//! This module provides functionality to encrypt sensitive banking information so that it can be
+//! stored on untrusted servers while remaining accessible only to authorized parties (borrower and
+//! lender).
+//!
+//! # Security
+//!
+//! - All fields are encrypted using AES-GCM-SIV with unique salts
+//! - Encryption keys are protected using ECIES with Bitcoin public keys
+//! - The Lendasat server cannot decrypt the banking details
+
 use aes_gcm_siv::aead::Aead;
 use aes_gcm_siv::Aes256GcmSiv;
 use aes_gcm_siv::KeyInit;
@@ -14,54 +26,69 @@ use rand::thread_rng;
 use rand::Rng;
 use sha2::Sha256;
 
-/// It is safe to reuse this nonce because we use AES-CGM-SIV.
+/// It is safe to reuse this nonce because we use AES-GCM-SIV. AES-GCM-SIV is nonce-misuse
+/// resistant, providing security even when the same nonce is used multiple times.
 const NONCE: &[u8; 12] = b"6by2d6wxps3a";
 
-/// Details needed for the lender to send fiat to the borrower.
+/// Banking details for fiat transfers. Fields may be encrypted or plaintext.
 ///
-/// All fields are _encrypted_ so that the hub can't learn anything.
+/// When encrypted, this allows sensitive data to be stored in the Lendasat server. Only the
+/// borrower and lender can decrypt these details using their respective private keys.
 #[derive(Debug, PartialEq)]
 pub struct FiatLoanDetails {
-    /// Details for transfers within Europe (generally).
+    /// IBAN transfer details for SEPA transfers.
     pub iban_transfer_details: Option<IbanTransferDetails>,
-    /// Details for transfers outside Europe (generally).
+    /// SWIFT transfer details for international transfers.
     pub swift_transfer_details: Option<SwiftTransferDetails>,
+    /// Name of the recipient's bank.
     pub bank_name: String,
+    /// Physical address of the bank.
     pub bank_address: String,
+    /// Country where the bank is located.
     pub bank_country: String,
+    /// Purpose of the transfer for compliance.
     pub purpose_of_remittance: String,
+    /// Full legal name of the recipient.
     pub full_name: String,
+    /// Recipient's residential address.
     pub address: String,
+    /// City of residence.
     pub city: String,
+    /// Postal/ZIP code.
     pub post_code: String,
+    /// Country of residence.
     pub country: String,
-    /// Extra information the borrower may want to provide to the lender.
+    /// Additional notes or reference information.
     pub comments: Option<String>,
 }
 
-/// Details needed for the lender to send fiat via an IBAN transfer to the borrower.
+/// IBAN transfer details for SEPA transfers. Fields may be encrypted or plaintext.
 ///
-/// All fields are _encrypted_ so that the hub can't learn anything.
+/// Used primarily for transfers within Europe and other IBAN-supporting regions.
 #[derive(Debug, PartialEq)]
 pub struct IbanTransferDetails {
+    /// International Bank Account Number (encrypted).
     pub iban: String,
+    /// Bank Identifier Code, optional for some countries (encrypted).
     pub bic: Option<String>,
 }
 
-/// Details needed for the lender to send fiat via a SWIFT transfer to the borrower.
+/// Transfer details for international transfers. Fields may be encrypted or plaintext.
 ///
-/// All fields are _encrypted_ so that the hub can't learn anything.
+/// Used for transfers outside SEPA zone or when IBAN is not available.
 #[derive(Debug, PartialEq)]
 pub struct SwiftTransferDetails {
+    /// SWIFT code or BIC of the recipient's bank (encrypted).
     pub swift_or_bic: String,
+    /// Local account number at the bank (encrypted).
     pub account_number: String,
 }
 
 /// Symmetrically encrypt [`FiatLoanDetails`] with a randomly generated encryption key.
 ///
 /// The encryption key is itself encrypted against an own public key and a counterparty public key.
-/// The two encrypted encryption keys can then be stored in the hub database, since the hub will not
-/// be able to decrypt them.
+/// The two encrypted encryption keys can then be stored in the Lendasat server's database, since
+/// the server will not be able to decrypt them.
 ///
 /// # Returns
 ///

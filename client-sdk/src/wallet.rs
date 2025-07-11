@@ -41,9 +41,9 @@ pub use fiat_loan_details::FiatLoanDetails;
 pub use fiat_loan_details::IbanTransferDetails;
 pub use fiat_loan_details::SwiftTransferDetails;
 
-const SECRET_KEY_ENCRYPTION_NONCE: &[u8; 12] = b"SECRET_KEY!!";
-
 pub const NOSTR_DERIVATION_PATH: &str = "m/44/0/0/0/0";
+
+const SECRET_KEY_ENCRYPTION_NONCE: &[u8; 12] = b"SECRET_KEY!!";
 
 pub struct Wallet {
     /// We keep this so that we can display it to the user.
@@ -63,277 +63,10 @@ pub struct Wallet {
     /// across all devices. PK reuse is acceptable.
     contract_index: u32,
 }
-
 #[derive(Clone)]
 pub struct MnemonicCiphertext {
     salt: [u8; 32],
     inner: Vec<u8>,
-}
-
-fn get_normal_pk_for_network_and_index(xpub: &str, network: &str, index: u32) -> Result<PublicKey> {
-    let xpub = Xpub::from_str(xpub).context("Invalid Xpub")?;
-    let network = Network::from_str(network).context("Invalid network")?;
-    let network = NetworkKind::from(network);
-
-    let network_index = if network.is_mainnet() {
-        ChildNumber::from_normal_idx(0).expect("infallible")
-    } else {
-        ChildNumber::from_normal_idx(1).expect("infallible")
-    };
-
-    let path = [
-        ChildNumber::from_normal_idx(586).expect("infallible"),
-        network_index,
-        ChildNumber::from_normal_idx(index).expect("infallible"),
-    ];
-
-    let pk = xpub.derive_pub(&Secp256k1::new(), &path)?.public_key;
-    let pk = PublicKey::new(pk);
-
-    Ok(pk)
-}
-
-fn get_hardened_kp_for_network(
-    legacy_xprv: &Xpriv,
-    index: u32,
-    network: NetworkKind,
-) -> Result<Keypair> {
-    let network_index = if network.is_mainnet() {
-        ChildNumber::from_hardened_idx(0).expect("infallible")
-    } else {
-        ChildNumber::from_hardened_idx(1).expect("infallible")
-    };
-
-    let path = vec![
-        // Random number copied from
-        // https://github.com/MutinyWallet/mutiny-node/blob/f71300680ff20381aae07e5e64d5fd6802d21a43/mutiny-core/src/dlc/mod.rs#L126.
-        ChildNumber::from_hardened_idx(586).expect("infallible"),
-        network_index,
-        ChildNumber::from_hardened_idx(index).expect("infallible"),
-    ];
-
-    get_kp_from_path(legacy_xprv, &DerivationPath::from(path))
-}
-
-fn get_normal_kp_for_network(xprv: &Xpriv, index: u32, network: NetworkKind) -> Result<Keypair> {
-    let network_index = if network.is_mainnet() {
-        ChildNumber::from_normal_idx(0).expect("infallible")
-    } else {
-        ChildNumber::from_normal_idx(1).expect("infallible")
-    };
-
-    let path = vec![
-        ChildNumber::from_normal_idx(586).expect("infallible"),
-        network_index,
-        ChildNumber::from_normal_idx(index).expect("infallible"),
-    ];
-
-    get_kp_from_path(xprv, &DerivationPath::from(path))
-}
-
-fn get_kp_from_path(xprv: &Xpriv, derivation_path: &DerivationPath) -> Result<Keypair> {
-    let sk = xprv
-        .derive_priv(&Secp256k1::new(), derivation_path)?
-        .private_key;
-    let kp = Keypair::from_secret_key(&Secp256k1::new(), &sk);
-
-    Ok(kp)
-}
-
-fn find_kp(
-    wallet: &Wallet,
-    derivation_path: Option<&DerivationPath>,
-    own_pk: &PublicKey,
-) -> Result<Keypair> {
-    if let Some(derivation_path) = derivation_path {
-        let kp = get_kp_from_path(&wallet.xprv, derivation_path)?;
-
-        let xpub = Xpub::from_priv(&Secp256k1::new(), &wallet.xprv);
-
-        log::debug!(
-            "Derived PK {} with derivation path {derivation_path} for Xpub {xpub}",
-            kp.public_key(),
-        );
-
-        if kp.public_key() != own_pk.inner {
-            match wallet.legacy_xprv {
-                Some(legacy_xprv) => {
-                    let kp = get_kp_from_path(&legacy_xprv, derivation_path)?;
-
-                    let legacy_xpub = Xpub::from_priv(&Secp256k1::new(), &legacy_xprv);
-
-                    log::debug!(
-                        "Derived PK {} with derivation path {derivation_path} \
-                         for legacy Xpub {legacy_xpub}",
-                        kp.public_key(),
-                    );
-
-                    if kp.public_key() != own_pk.inner {
-                        bail!(
-                            "Cannot derive PK {} using derivation path {derivation_path} \
-                             for either Xpub ({xpub} and {legacy_xpub})",
-                            own_pk.inner,
-                        );
-                    }
-
-                    // We use a keypair derived from the legacy Xprv.
-                    return Ok(kp);
-                }
-                None => {
-                    bail!(
-                        "Cannot derive PK {} using derivation path \
-                         {derivation_path} for Xpub {xpub}",
-                        own_pk.inner,
-                    );
-                }
-            }
-        }
-
-        // We use a keypair derived from the current Xprv.
-        return Ok(kp);
-    }
-
-    let network = wallet.network.into();
-    let res =
-        find_kp_for_pk(&wallet.xprv, network, own_pk).context("Could not find keypair to sign");
-
-    let kp = match res {
-        Ok(kp) => kp,
-        Err(e) => {
-            if let Some(legacy_xprv) = wallet.legacy_xprv {
-                log::warn!("Falling back to legacy Xpriv: {e}");
-
-                find_kp_for_borrower_pk_legacy(&legacy_xprv, own_pk)
-                    .context("Could not find keypair to sign using legacy Xpriv")?
-            } else {
-                bail!(e);
-            }
-        }
-    };
-
-    Ok(kp)
-}
-
-/// Find the [`KeyPair`] corresponding to the given [`PublicKey`].
-///
-/// This builds on the assumption that the [`PublicKey`] was derived from the [`Wallet`]'s
-/// [`Xpriv`].
-pub fn find_kp_for_borrower_pk_legacy(legacy_xprv: &Xpriv, pk: &PublicKey) -> Result<Keypair> {
-    // We have to try both network types no matter what, because we had a bug that would derive the
-    // `Xpriv` using the wrong network. Since we use the `Xpriv`'s network as part of the derivation
-    // path, we can end up missing the correct keypair if we don't try both.
-    //
-    // See patch https://github.com/lendasat/lendasat/commit/8f14fc2.
-    // See issue https://github.com/lendasat/lendasat/issues/345.
-    let networks = [NetworkKind::Main, NetworkKind::Test];
-
-    let n = 100;
-    for i in 0..n {
-        for network in networks {
-            log::info!("Looking for keypair matching public key {pk}; trying index {i} and network {network:?}");
-            let kp =
-                get_hardened_kp_for_network(legacy_xprv, i, network).context("No kp for index")?;
-
-            if kp.public_key() == pk.inner {
-                log::info!(
-                    "Found keypair matching public key {pk} at index {i} and network {network:?}"
-                );
-
-                return Ok(kp);
-            }
-        }
-    }
-
-    bail!("Could not find keypair for public key {pk} after {n} iterations");
-}
-
-/// Check if the given [`PublicKey`] was generated by the given [`Xpub`].
-pub fn does_pk_belong_to_xpub(xpub: &Xpub, target_pk: &PublicKey, network: Network) -> Result<()> {
-    let xpub_str = xpub.to_string();
-    let network_str = network.to_string();
-
-    let n = 100;
-    for i in 0..n {
-        let pk = get_normal_pk_for_network_and_index(&xpub_str, &network_str, i)
-            .context("No PK for index")?;
-
-        if pk == *target_pk {
-            return Ok(());
-        }
-    }
-
-    bail!("Could not find PK match after {n} iterations");
-}
-
-/// Decrypt `mnemonic_ciphertext` using `old_password` and re-encrypt using `new_password`.
-pub fn change_wallet_encryption(
-    mnemonic_ciphertext: &str,
-    old_password: &str,
-    new_password: &str,
-) -> Result<MnemonicCiphertext> {
-    let mnemonic_ciphertext = MnemonicCiphertext::from_str(mnemonic_ciphertext)
-        .context("Failed to deserialize mnemonic ciphertext")?;
-
-    let old_encryption_key = derive_encryption_key(old_password, &mnemonic_ciphertext.salt)
-        .context("Failed to generate old encryption key")?;
-
-    let (mnemonic, old_passphrase) = decrypt_mnemonic(&mnemonic_ciphertext, old_encryption_key)
-        .context("Failed to decrypt mnemonic using old encryption key")?;
-
-    let new_mnemonic_ciphertext = {
-        let mut rng = thread_rng();
-        let new_salt = rng.gen::<[u8; 32]>();
-
-        let new_encryption_key = derive_encryption_key(new_password, &mnemonic_ciphertext.salt)
-            .context("Failed to generate new encryption key")?;
-
-        let ciphertext = match old_passphrase {
-            Some(old_passphrase) => {
-                encrypt_mnemonic_with_passphrase(&mnemonic, &old_passphrase, new_encryption_key)
-                    .context("Failed to encrypt mnemonic with new encryption key")?
-            }
-            None => encrypt_mnemonic(&mnemonic, new_encryption_key)
-                .context("Failed to encrypt mnemonic with new encryption key")?,
-        };
-
-        MnemonicCiphertext {
-            salt: new_salt,
-            inner: ciphertext,
-        }
-    };
-
-    Ok(new_mnemonic_ciphertext)
-}
-
-/// Find the [`KeyPair`] corresponding to the given [`PublicKey`].
-///
-/// This builds on the assumption that the [`PublicKey`] was derived from the [`Wallet`]'s [`Xpub`].
-///
-/// Since version 0.4.0, all derived keys are non-hardened.
-fn find_kp_for_pk(xprv: &Xpriv, network: NetworkKind, pk: &PublicKey) -> Result<Keypair> {
-    // This is an arbitrary number. We may need to increase it in the future.
-    let n = 100;
-    for i in 0..n {
-        log::info!("Looking for keypair matching public key {pk}; trying index {i}");
-        let kp = get_normal_kp_for_network(xprv, i, network).context("No kp for index")?;
-
-        if kp.public_key() == pk.inner {
-            log::info!("Found keypair matching public key {pk} at index {i}");
-
-            return Ok(kp);
-        }
-    }
-
-    bail!("Could not find keypair for public key {pk} after {n} iterations");
-}
-
-pub fn generate_mnemonic<R>(rng: &mut R) -> Result<Mnemonic>
-where
-    R: Rng + CryptoRng,
-{
-    let mnemonic = Mnemonic::generate_in_with(rng, bip39::Language::English, 12)?;
-
-    Ok(mnemonic)
 }
 
 pub struct SignedMessage {
@@ -342,10 +75,24 @@ pub struct SignedMessage {
 }
 
 impl Wallet {
-    /// Create a [`Wallet`] using the provided `mnemonic`, `password` and `network`.
-    ///
-    /// The `password` is being used for two purposes to derive an encryption key with which to
-    /// encrypt the `mnemonic`.
+    /// Create a [`Wallet`] with a random [`Mnemonic`], using the provided `password`, [`network`]
+    /// and `contract_index`.
+    pub fn random<R>(
+        rng: &mut R,
+        password: &str,
+        network: &str,
+        contract_index: u32,
+    ) -> Result<(Self, MnemonicCiphertext)>
+    where
+        R: Rng + CryptoRng,
+    {
+        let mnemonic = Mnemonic::generate_in_with(rng, bip39::Language::English, 12)?;
+
+        Self::new(rng, mnemonic, password, network, contract_index)
+    }
+
+    /// Create a [`Wallet`] using the provided [`Mnemonic`], `password`, [`network`] and
+    /// `contract_index`.
     pub fn new<R>(
         rng: &mut R,
         mnemonic: Mnemonic,
@@ -432,6 +179,10 @@ impl Wallet {
         })
     }
 
+    /// Derive the next [`PublicKey`], usually for a new collateral contract.
+    ///
+    /// The [`DerivationPath`] is returned so that the caller can provide it later to sign with the
+    /// corresponding [`KeyPair`].
     pub fn next_hardened_pk(&mut self) -> Result<(PublicKey, DerivationPath)> {
         let contract_index = self.contract_index;
 
@@ -451,67 +202,19 @@ impl Wallet {
         Ok((kp.public_key().into(), path))
     }
 
-    pub fn sign_claim_psbt(
-        &self,
-        mut psbt: Psbt,
-        collateral_descriptor: Descriptor<PublicKey>,
-        own_pk: PublicKey,
-        // Newer contracts use a derivation path decided by the hub.
-        //
-        // Older contracts used a local index, unknown to the hub and not backed up. To find the
-        // corresponding secret key, we use a heuristic: we look throught the first 100 keys using
-        // the common derivation path `586/0/*` (for mainnet) until we find one that
-        // matches our public key in the contract i.e. `own_pk`.
-        derivation_path: Option<&DerivationPath>,
-    ) -> Result<Transaction> {
-        let kp = find_kp(self, derivation_path, &own_pk)?;
-
-        let sk = kp.secret_key();
-        let pk = PublicKey::new(kp.public_key());
-
-        let secp = Secp256k1::new();
-        for (i, input) in psbt.inputs.iter_mut().enumerate() {
-            let collateral_amount = input.clone().witness_utxo.context("No witness UTXO")?.value;
-
-            let sighash = SighashCache::new(&psbt.unsigned_tx)
-                .p2wsh_signature_hash(
-                    i,
-                    &collateral_descriptor
-                        .script_code()
-                        .context("No script code")?,
-                    collateral_amount,
-                    EcdsaSighashType::All,
-                )
-                .context("Can't produce sighash cache")?;
-
-            let sig = secp.sign_ecdsa(&sighash.into(), &sk);
-
-            input.partial_sigs.insert(
-                pk,
-                bitcoin::ecdsa::Signature {
-                    signature: sig,
-                    sighash_type: EcdsaSighashType::All,
-                },
-            );
-        }
-
-        let psbt = psbt
-            .finalize(&secp)
-            .map_err(|e| anyhow!("Failed to finalize PSBT: {e:?}"))?;
-
-        let tx = psbt.extract(&secp).context("Could not extract signed TX")?;
-
-        Ok(tx)
-    }
-
-    pub fn sign_liquidation_psbt(
+    /// Sign a [`Psbt`] spending a collateral contract in which our own [`PublicKey`] was involved.
+    ///
+    /// The [`DerivationPath`] is used as a hint in order to find the corresponding [`KeyPair`]
+    /// which will be used to sign the transaction. If the [`DerivationPath`] is missing or we can't
+    /// find the correct [`PublicKey`] using it, we fall back on old heuristics.
+    pub fn sign_spend_collateral_psbt(
         &self,
         mut psbt: Psbt,
         collateral_descriptor: Descriptor<PublicKey>,
         own_pk: PublicKey,
         derivation_path: Option<&DerivationPath>,
     ) -> Result<Transaction> {
-        let kp = find_kp(self, derivation_path, &own_pk)?;
+        let kp = self.find_kp(derivation_path, &own_pk)?;
         let sk = kp.secret_key();
 
         let secp = Secp256k1::new();
@@ -551,15 +254,15 @@ impl Wallet {
 
     /// Signs a message using Bitcoin's message signing format.
     ///
-    /// The message will be prefixed with b"\x18Bitcoin Signed Message:\n" before signing.
-    /// see https://docs.rs/satsnet/latest/src/satsnet/sign_message.rs.html#201-208
+    /// The message will be prefixed with b"\x18Bitcoin Signed Message:\n" before signing. See
+    /// https://docs.rs/satsnet/latest/src/satsnet/sign_message.rs.html#201-208.
     pub fn sign_message(
         &self,
         message: &str,
         own_pk: PublicKey,
         derivation_path: Option<&DerivationPath>,
     ) -> Result<SignedMessage> {
-        let kp = find_kp(self, derivation_path, &own_pk)?;
+        let kp = self.find_kp(derivation_path, &own_pk)?;
         let sk = kp.secret_key();
 
         let secp = Secp256k1::new();
@@ -571,6 +274,114 @@ impl Wallet {
             message: msg_hash,
             signature: secp_sig,
         })
+    }
+
+    fn find_kp(
+        &self,
+        // Newer contracts use a derivation path decided by the Lendasat server.
+        //
+        // Older contracts used a local index, unknown to the Lendasat server and not backed up. To
+        // find the corresponding secret key, we use a heuristic: we look through the first 100
+        // keys using the common derivation path `586/0/*` (for mainnet) until we find one
+        // that matches our public key in the contract i.e. `own_pk`.
+        derivation_path: Option<&DerivationPath>,
+        own_pk: &PublicKey,
+    ) -> Result<Keypair> {
+        let kp = match derivation_path {
+            // We use the caller's suggested derivation path.
+            Some(derivation_path) => {
+                log::debug!(
+                    "Looking for KP matching PK {own_pk}, using derivation path {derivation_path}"
+                );
+
+                let kp = get_kp_from_path(&self.xprv, derivation_path)
+                    .context("Failed to get KP from path")?;
+                let xpub = Xpub::from_priv(&Secp256k1::new(), &self.xprv);
+
+                log::debug!(
+                    "Derived PK {} with derivation path {derivation_path} for Xpub {xpub}",
+                    kp.public_key(),
+                );
+
+                if kp.public_key() == own_pk.inner {
+                    kp
+                } else {
+                    log::debug!("Derived PK from Xpub does not match target {own_pk}");
+
+                    match self.legacy_xprv {
+                        Some(legacy_xprv) => {
+                            log::debug!(
+                                "Looking for KP matching PK {own_pk}, \
+                             using derivation path {derivation_path} and legacy Xpriv"
+                            );
+
+                            let kp = get_kp_from_path(&legacy_xprv, derivation_path)
+                                .context("Failed to get KP from path")?;
+
+                            let legacy_xpub = Xpub::from_priv(&Secp256k1::new(), &legacy_xprv);
+
+                            log::debug!(
+                                "Derived PK {} with derivation path {derivation_path} \
+                            for legacy Xpub {legacy_xpub}",
+                                kp.public_key(),
+                            );
+
+                            if kp.public_key() != own_pk.inner {
+                                // We use a keypair derived from the legacy Xprv.
+                                kp
+                            } else {
+                                log::debug!(
+                                    "Derived PK from legacy Xpub \
+                                does not match target {own_pk}"
+                                );
+
+                                // We fall back on our heuristic in case the derivation path was
+                                // incorrect.
+                                self.find_kp_using_heuristic(own_pk)
+                                    .context("Failed to find KP using heuristic")?
+                            }
+                        }
+                        None => {
+                            // We fall back on our heuristic in case the derivation path was
+                            // incorrect.
+                            self.find_kp_using_heuristic(own_pk)
+                                .context("Failed to find KP using heuristic")?
+                        }
+                    }
+                }
+            }
+            None => self
+                .find_kp_using_heuristic(own_pk)
+                .context("Failed to find KP using heuristic")?,
+        };
+
+        log::info!("KP found for PK {own_pk}");
+
+        Ok(kp)
+    }
+
+    fn find_kp_using_heuristic(&self, own_pk: &PublicKey) -> Result<Keypair> {
+        log::debug!("Looking for KP matching PK {own_pk}, without known derivation path");
+
+        let network = self.network.into();
+        let res = find_kp_for_pk(&self.xprv, network, own_pk)
+            .context("Could not find keypair with regular Xpriv");
+
+        let kp = match res {
+            Ok(kp) => kp,
+            Err(e) => {
+                if let Some(legacy_xprv) = self.legacy_xprv {
+                    log::warn!("Falling back to legacy Xpriv: {e}");
+
+                    find_kp_for_borrower_pk_legacy(&legacy_xprv, own_pk)
+                        .context("Could not find keypair to sign using legacy Xpriv")?
+                } else {
+                    bail!(e);
+                }
+            }
+        };
+
+        Ok(kp)
     }
 
     pub fn decrypt_fiat_loan_details(
@@ -592,8 +403,21 @@ impl Wallet {
     }
 
     pub fn nsec(&self) -> Result<SecretKey> {
-        let nsec = derive_nsec_from_xprv(&self.xprv)?;
-        Ok(nsec)
+        let xprv: &Xpriv = &self.xprv;
+        let path = DerivationPath::from_str(NOSTR_DERIVATION_PATH).expect("to be valid");
+
+        let secp = Secp256k1::new();
+
+        // Derive the child key at the specified path
+        let child_xprv = xprv.derive_priv(&secp, &path)?;
+
+        // Get the private key bytes
+        let private_key_bytes = child_xprv.private_key.secret_bytes();
+
+        // Create SecretKey from bytes
+        let secret_key = SecretKey::from_slice(&private_key_bytes)?;
+
+        Ok(secret_key)
     }
 
     pub fn xpub(&self) -> Xpub {
@@ -603,6 +427,200 @@ impl Wallet {
     pub fn network(&self) -> Network {
         self.network
     }
+}
+
+fn get_normal_pk_for_network_and_index(xpub: &str, network: &str, index: u32) -> Result<PublicKey> {
+    let xpub = Xpub::from_str(xpub).context("Invalid Xpub")?;
+    let network = Network::from_str(network).context("Invalid network")?;
+    let network = NetworkKind::from(network);
+
+    let network_index = if network.is_mainnet() {
+        ChildNumber::from_normal_idx(0).expect("infallible")
+    } else {
+        ChildNumber::from_normal_idx(1).expect("infallible")
+    };
+
+    let path = [
+        ChildNumber::from_normal_idx(586).expect("infallible"),
+        network_index,
+        ChildNumber::from_normal_idx(index).expect("infallible"),
+    ];
+
+    let pk = xpub.derive_pub(&Secp256k1::new(), &path)?.public_key;
+    let pk = PublicKey::new(pk);
+
+    Ok(pk)
+}
+
+fn get_hardened_kp_for_network(
+    legacy_xprv: &Xpriv,
+    index: u32,
+    network: NetworkKind,
+) -> Result<Keypair> {
+    let network_index = if network.is_mainnet() {
+        ChildNumber::from_hardened_idx(0).expect("infallible")
+    } else {
+        ChildNumber::from_hardened_idx(1).expect("infallible")
+    };
+
+    let path = vec![
+        ChildNumber::from_hardened_idx(586).expect("infallible"),
+        network_index,
+        ChildNumber::from_hardened_idx(index).expect("infallible"),
+    ];
+
+    get_kp_from_path(legacy_xprv, &DerivationPath::from(path))
+}
+
+fn get_normal_kp_for_network(xprv: &Xpriv, index: u32, network: NetworkKind) -> Result<Keypair> {
+    let network_index = if network.is_mainnet() {
+        ChildNumber::from_normal_idx(0).expect("infallible")
+    } else {
+        ChildNumber::from_normal_idx(1).expect("infallible")
+    };
+
+    let path = vec![
+        ChildNumber::from_normal_idx(586).expect("infallible"),
+        network_index,
+        ChildNumber::from_normal_idx(index).expect("infallible"),
+    ];
+
+    get_kp_from_path(xprv, &DerivationPath::from(path))
+}
+
+fn get_kp_from_path(xprv: &Xpriv, derivation_path: &DerivationPath) -> Result<Keypair> {
+    let sk = xprv
+        .derive_priv(&Secp256k1::new(), derivation_path)?
+        .private_key;
+    let kp = Keypair::from_secret_key(&Secp256k1::new(), &sk);
+
+    Ok(kp)
+}
+
+/// Find the [`KeyPair`] corresponding to the given [`PublicKey`].
+///
+/// This builds on the assumption that the [`PublicKey`] was derived from the [`Wallet`]'s [`Xpub`].
+///
+/// Since version 0.4.0, all derived keys are non-hardened.
+fn find_kp_for_pk(xprv: &Xpriv, network: NetworkKind, pk: &PublicKey) -> Result<Keypair> {
+    // This is an arbitrary number. We may need to increase it in the future.
+    let n = 100;
+    for i in 0..n {
+        log::info!("Looking for keypair matching public key {pk}; trying index {i}");
+        let kp = get_normal_kp_for_network(xprv, i, network).context("No kp for index")?;
+
+        if kp.public_key() == pk.inner {
+            log::info!("Found keypair matching public key {pk} at index {i}");
+
+            return Ok(kp);
+        }
+    }
+
+    bail!("Could not find keypair for public key {pk} after {n} iterations");
+}
+
+/// Find the keypair for a given public key using legacy derivation.
+///
+/// This function searches for a keypair by trying different derivation paths
+/// and network types. It's used for backward compatibility with older wallets.
+///
+/// # Arguments
+///
+/// * `legacy_xprv` - The legacy extended private key
+/// * `pk` - The public key to find the corresponding private key for
+///
+/// # Returns
+///
+/// The keypair if found.
+///
+/// # Errors
+///
+/// Returns an error if the keypair cannot be found after exhaustive search.
+pub fn find_kp_for_borrower_pk_legacy(legacy_xprv: &Xpriv, pk: &PublicKey) -> Result<Keypair> {
+    // We have to try both network types no matter what, because we had a bug that would derive the
+    // `Xpriv` using the wrong network. Since we use the `Xpriv`'s network as part of the derivation
+    // path, we can end up missing the correct keypair if we don't try both.
+    //
+    // See patch https://github.com/lendasat/lendasat/commit/8f14fc2.
+    // See issue https://github.com/lendasat/lendasat/issues/345.
+    let networks = [NetworkKind::Main, NetworkKind::Test];
+
+    let n = 100;
+    for i in 0..n {
+        for network in networks {
+            log::info!("Looking for keypair matching public key {pk}; trying index {i} and network {network:?}");
+            let kp =
+                get_hardened_kp_for_network(legacy_xprv, i, network).context("No kp for index")?;
+
+            if kp.public_key() == pk.inner {
+                log::info!(
+                    "Found keypair matching public key {pk} at index {i} and network {network:?}"
+                );
+
+                return Ok(kp);
+            }
+        }
+    }
+
+    bail!("Could not find keypair for public key {pk} after {n} iterations");
+}
+
+/// Check if the given [`PublicKey`] was generated by the given [`Xpub`].
+pub fn does_pk_belong_to_xpub(xpub: &Xpub, target_pk: &PublicKey, network: Network) -> Result<()> {
+    let xpub_str = xpub.to_string();
+    let network_str = network.to_string();
+
+    let n = 100;
+    for i in 0..n {
+        let pk = get_normal_pk_for_network_and_index(&xpub_str, &network_str, i)
+            .context("No PK for index")?;
+
+        if pk == *target_pk {
+            return Ok(());
+        }
+    }
+
+    bail!("Could not find PK match after {n} iterations");
+}
+
+/// Decrypt `mnemonic_ciphertext` using `old_password` and re-encrypt using `new_password`.
+pub fn change_wallet_encryption(
+    mnemonic_ciphertext: &str,
+    old_password: &str,
+    new_password: &str,
+) -> Result<MnemonicCiphertext> {
+    let mnemonic_ciphertext = MnemonicCiphertext::from_str(mnemonic_ciphertext)
+        .context("Failed to deserialize mnemonic ciphertext")?;
+
+    let old_encryption_key = derive_encryption_key(old_password, &mnemonic_ciphertext.salt)
+        .context("Failed to generate old encryption key")?;
+
+    let (mnemonic, old_passphrase) = decrypt_mnemonic(&mnemonic_ciphertext, old_encryption_key)
+        .context("Failed to decrypt mnemonic using old encryption key")?;
+
+    let new_mnemonic_ciphertext = {
+        let mut rng = thread_rng();
+        let new_salt = rng.gen::<[u8; 32]>();
+
+        let new_encryption_key = derive_encryption_key(new_password, &mnemonic_ciphertext.salt)
+            .context("Failed to generate new encryption key")?;
+
+        let ciphertext = match old_passphrase {
+            Some(old_passphrase) => {
+                encrypt_mnemonic_with_passphrase(&mnemonic, &old_passphrase, new_encryption_key)
+                    .context("Failed to encrypt mnemonic with new encryption key")?
+            }
+            None => encrypt_mnemonic(&mnemonic, new_encryption_key)
+                .context("Failed to encrypt mnemonic with new encryption key")?,
+        };
+
+        MnemonicCiphertext {
+            salt: new_salt,
+            inner: ciphertext,
+        }
+    };
+
+    Ok(new_mnemonic_ciphertext)
 }
 
 pub fn is_signed_by_pk(
@@ -728,23 +746,6 @@ fn encrypt_mnemonic(mnemonic: &Mnemonic, encryption_key: [u8; 32]) -> Result<Vec
     Ok(ciphertext)
 }
 
-fn derive_nsec_from_xprv(xprv: &Xpriv) -> Result<SecretKey> {
-    let path = DerivationPath::from_str(NOSTR_DERIVATION_PATH).expect("to be valid");
-
-    let secp = Secp256k1::new();
-
-    // Derive the child key at the specified path
-    let child_xprv = xprv.derive_priv(&secp, &path)?;
-
-    // Get the private key bytes
-    let private_key_bytes = child_xprv.private_key.secret_bytes();
-
-    // Create SecretKey from bytes
-    let secret_key = SecretKey::from_slice(&private_key_bytes)?;
-
-    Ok(secret_key)
-}
-
 /// Encrypt the mnemonic seed phrase with the encryption key plus a passphrase.
 ///
 /// Old wallets used to have a passphrase. New ones do not. We keep the passphrase around in the
@@ -827,7 +828,7 @@ pub fn derive_nostr_room_pk(contract: String) -> Result<String> {
     Ok(public_key.to_string())
 }
 
-/// Encrypt [`FiatLoanDetails`] so that they can be stored in the hub database.
+/// Encrypt [`FiatLoanDetails`] so that they can be stored in the Lendasat server's database.
 ///
 /// The caller can decrypt the details after decrypting the `encrypted_encryption_key_own` with
 /// their [`SecretKey`].

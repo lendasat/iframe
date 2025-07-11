@@ -17,7 +17,6 @@ use client_sdk::wallet::derive_encryption_key;
 use client_sdk::wallet::does_pk_belong_to_xpub;
 use client_sdk::wallet::encrypt_mnemonic_with_passphrase;
 use client_sdk::wallet::find_kp_for_borrower_pk_legacy;
-use client_sdk::wallet::generate_mnemonic;
 use client_sdk::wallet::FiatLoanDetails;
 use client_sdk::wallet::MnemonicCiphertext;
 use client_sdk::wallet::SignedMessage;
@@ -36,13 +35,11 @@ pub fn generate_new(password: &str, network: &str) -> Result<(MnemonicCiphertext
 
     let mut rng = thread_rng();
 
-    let mnemonic = generate_mnemonic(&mut rng)?;
-
     // Start from zero for a new wallet.
     let contract_index = 0;
 
     let (wallet, mnemonic_ciphertext) =
-        Wallet::new(&mut rng, mnemonic, password, network, contract_index)?;
+        Wallet::random(&mut rng, password, network, contract_index)?;
     let network = wallet.network();
 
     Ok((mnemonic_ciphertext, network))
@@ -195,8 +192,7 @@ pub fn get_mnemonic() -> Result<String> {
     Ok(mnemonic.to_string())
 }
 
-/// Used by borrowers.
-pub fn sign_claim_psbt(
+pub fn sign_spend_collateral_psbt(
     psbt: Psbt,
     collateral_descriptor: Descriptor<PublicKey>,
     own_pk: PublicKey,
@@ -216,27 +212,8 @@ pub fn sign_claim_psbt(
         }
     };
 
-    let tx = wallet.sign_claim_psbt(psbt, collateral_descriptor, own_pk, derivation_path)?;
-
-    Ok(tx)
-}
-
-/// Used by lenders.
-pub fn sign_liquidation_psbt(
-    psbt: Psbt,
-    collateral_descriptor: Descriptor<PublicKey>,
-    own_pk: PublicKey,
-    derivation_path: Option<&DerivationPath>,
-) -> Result<Transaction> {
-    let guard = WALLET.lock().expect("to get lock");
-    let wallet = match *guard {
-        Some(ref wallet) => wallet,
-        None => {
-            bail!("Can't get keypair if wallet is not loaded");
-        }
-    };
-
-    let tx = wallet.sign_liquidation_psbt(psbt, collateral_descriptor, own_pk, derivation_path)?;
+    let tx =
+        wallet.sign_spend_collateral_psbt(psbt, collateral_descriptor, own_pk, derivation_path)?;
 
     Ok(tx)
 }

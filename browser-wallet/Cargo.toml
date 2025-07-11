@@ -19,6 +19,5 @@ miniscript = "12"
 nostr = { version = "0.40.0", default-features = false, features = ["std"] }
 rand = "0.8"
 sha2 = "0.10"
-srp = "0.6.0"
 wasm-bindgen = "0.2.93"
 web-sys = { version = "0.3", features = ["Window", "Storage"] }
