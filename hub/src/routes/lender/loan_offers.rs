@@ -8,7 +8,7 @@ use crate::model::LoanOfferStatus;
 use crate::model::LoanPayout;
 use crate::model::OriginationFee;
 use crate::model::RepaymentPlan;
-use crate::routes::lender::auth::jwt_auth::auth;
+use crate::routes::lender::auth::jwt_or_api_auth::auth;
 use crate::routes::lender::LOAN_OFFERS_TAG;
 use crate::routes::AppState;
 use crate::user_stats;

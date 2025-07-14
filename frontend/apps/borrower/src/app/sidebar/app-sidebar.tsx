@@ -12,6 +12,7 @@ import {
   Bell,
   MessageCircle,
   Code,
+  Key,
   MoreHorizontal,
 } from "lucide-react";
 import { ReactComponent as Lendasat } from "../../assets/lendasat_black.svg";
@@ -82,6 +83,12 @@ const lowMenuItems = [
         icon: Code,
         name: "Version",
         url: "/settings/version",
+        isActive: false,
+      },
+      {
+        icon: Key,
+        name: "API Keys",
+        url: "/settings/api-keys",
         isActive: false,
       },
     ],

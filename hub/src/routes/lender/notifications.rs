@@ -1,7 +1,7 @@
 use crate::db;
 use crate::model::Lender;
 use crate::model::NotificationMessage;
-use crate::routes::lender::auth::jwt_auth;
+use crate::routes::lender::auth::jwt_or_api_auth;
 use crate::routes::AppState;
 use axum::extract::rejection::JsonRejection;
 use axum::extract::ws::WebSocket;
@@ -33,28 +33,28 @@ pub(crate) fn router(app_state: Arc<AppState>) -> Router {
             "/api/notifications",
             get(get_all_notifications).route_layer(middleware::from_fn_with_state(
                 app_state.clone(),
-                jwt_auth::auth,
+                jwt_or_api_auth::auth,
             )),
         )
         .route(
             "/api/notifications/:id",
             put(put_mark_as_read).route_layer(middleware::from_fn_with_state(
                 app_state.clone(),
-                jwt_auth::auth,
+                jwt_or_api_auth::auth,
             )),
         )
         .route(
             "/api/notifications",
             put(put_mark_all_as_read).route_layer(middleware::from_fn_with_state(
                 app_state.clone(),
-                jwt_auth::auth,
+                jwt_or_api_auth::auth,
             )),
         )
         .route(
             "/api/notifications/ws",
             get(notifications_ws).route_layer(middleware::from_fn_with_state(
                 app_state.clone(),
-                jwt_auth::auth,
+                jwt_or_api_auth::auth,
             )),
         )
         .with_state(app_state)

@@ -9,7 +9,7 @@ use crate::model::Lender;
 use crate::model::LoanApplicationStatus;
 use crate::model::LoanAsset;
 use crate::model::Npub;
-use crate::routes::lender::auth::jwt_auth;
+use crate::routes::lender::auth::jwt_or_api_auth;
 use crate::routes::lender::LOAN_APPLICATIONS_TAG;
 use crate::routes::AppState;
 use crate::take_loan_application;
@@ -46,7 +46,7 @@ pub(crate) fn router(app_state: Arc<AppState>) -> OpenApiRouter {
         .routes(routes!(post_take_loan_application))
         .route_layer(middleware::from_fn_with_state(
             app_state.clone(),
-            jwt_auth::auth,
+            jwt_or_api_auth::auth,
         ))
         .with_state(app_state.clone())
 }

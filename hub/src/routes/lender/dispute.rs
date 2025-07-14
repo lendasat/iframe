@@ -1,7 +1,7 @@
 use crate::db;
 use crate::model::DisputeRequestBodySchema;
 use crate::model::Lender;
-use crate::routes::lender::auth::jwt_auth;
+use crate::routes::lender::auth::jwt_or_api_auth;
 use crate::routes::AppState;
 use axum::extract::FromRequest;
 use axum::extract::Path;
@@ -29,28 +29,28 @@ pub(crate) fn router(app_state: Arc<AppState>) -> Router {
             "/api/disputes",
             get(get_all_disputes_for_contract).route_layer(middleware::from_fn_with_state(
                 app_state.clone(),
-                jwt_auth::auth,
+                jwt_or_api_auth::auth,
             )),
         )
         .route(
             "/api/disputes",
             post(create_dispute).route_layer(middleware::from_fn_with_state(
                 app_state.clone(),
-                jwt_auth::auth,
+                jwt_or_api_auth::auth,
             )),
         )
         .route(
             "/api/disputes/:dispute_id",
             put(add_message_to_dispute).route_layer(middleware::from_fn_with_state(
                 app_state.clone(),
-                jwt_auth::auth,
+                jwt_or_api_auth::auth,
             )),
         )
         .route(
             "/api/disputes/:dispute_id/resolve",
             put(put_resolve_dispute).route_layer(middleware::from_fn_with_state(
                 app_state.clone(),
-                jwt_auth::auth,
+                jwt_or_api_auth::auth,
             )),
         )
         .with_state(app_state)

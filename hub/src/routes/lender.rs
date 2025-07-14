@@ -1,7 +1,7 @@
 use crate::config::Config;
 use crate::routes::borrower_profiles;
 use crate::routes::borrower_profiles::BORROWER_PROFILES_TAG;
-use crate::routes::lender::auth::jwt_auth::auth;
+use crate::routes::lender::auth::jwt_or_api_auth::auth;
 use crate::routes::lender_profiles;
 use crate::routes::lender_profiles::LENDER_PROFILES_TAG;
 use crate::routes::price_feed_ws;

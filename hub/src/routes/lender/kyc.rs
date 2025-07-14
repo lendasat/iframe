@@ -1,6 +1,6 @@
 use crate::db;
 use crate::model::Lender;
-use crate::routes::lender::auth::jwt_auth;
+use crate::routes::lender::auth::jwt_or_api_auth;
 use crate::routes::lender::KYC_TAG;
 use crate::routes::AppState;
 use axum::extract::Path;
@@ -23,7 +23,7 @@ pub(crate) fn router(app_state: Arc<AppState>) -> OpenApiRouter {
         .routes(routes!(put_reject_kyc))
         .route_layer(middleware::from_fn_with_state(
             app_state.clone(),
-            jwt_auth::auth,
+            jwt_or_api_auth::auth,
         ))
         .with_state(app_state.clone())
 }

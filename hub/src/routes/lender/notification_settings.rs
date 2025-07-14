@@ -1,6 +1,6 @@
 use crate::db::notification_settings;
 use crate::model::Lender;
-use crate::routes::lender::auth::jwt_auth;
+use crate::routes::lender::auth::jwt_or_api_auth;
 use crate::routes::lender::NOTIFICATION_SETTINGS_TAG;
 use crate::routes::user_connection_details_middleware;
 use crate::routes::user_connection_details_middleware::UserConnectionDetails;
@@ -28,7 +28,7 @@ pub(crate) fn router(app_state: Arc<AppState>) -> OpenApiRouter {
         .routes(routes!(put_notification_settings))
         .route_layer(middleware::from_fn_with_state(
             app_state.clone(),
-            jwt_auth::auth,
+            jwt_or_api_auth::auth,
         ))
         .layer(
             tower::ServiceBuilder::new().layer(middleware::from_fn_with_state(

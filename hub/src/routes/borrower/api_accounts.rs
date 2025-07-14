@@ -58,12 +58,16 @@ async fn post_create_api_account(
 ) -> Result<AppJson<CreateApiAccountResponse>, Error> {
     let mut db_tx = data.db.begin().await.map_err(Error::database)?;
 
-    let (borrower, api_key) = db::borrowers::register_api_account(
+    // Generate API key for borrower account
+    let (api_key, api_key_hash) = crate::api_keys::ApiKey::new();
+
+    let borrower = db::borrowers::register_api_account(
         &mut db_tx,
         &body.name,
         body.email.as_deref(),
         body.timezone.as_deref(),
         creator_api_key.id,
+        &api_key_hash,
     )
     .await
     .map_err(Error::database)?;
@@ -77,7 +81,7 @@ async fn post_create_api_account(
         name: borrower.name,
         email: borrower.email,
         timezone: borrower.timezone,
-        api_key,
+        api_key: api_key.full_key().to_string(),
     }))
 }
 

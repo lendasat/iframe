@@ -26,7 +26,7 @@ use crate::model::TokenClaims;
 use crate::model::UpgradeToPakeRequest;
 use crate::model::UpgradeToPakeResponse;
 use crate::model::WalletBackupData;
-use crate::routes::lender::auth::jwt_auth::auth;
+use crate::routes::lender::auth::jwt_or_api_auth::auth;
 use crate::routes::lender::AUTH_TAG;
 use crate::routes::user_connection_details_middleware;
 use crate::routes::user_connection_details_middleware::UserConnectionDetails;
@@ -67,7 +67,7 @@ use tracing::Level;
 use utoipa_axum::router::OpenApiRouter;
 use utoipa_axum::routes;
 
-pub(crate) mod jwt_auth;
+pub(crate) mod jwt_or_api_auth;
 
 /// Expiry time of a session cookie
 const COOKIE_EXPIRY_HOURS: i64 = 1;

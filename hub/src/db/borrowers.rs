@@ -1,3 +1,4 @@
+use crate::api_keys::ApiKeyHash;
 use crate::db;
 use crate::model;
 use crate::model::PersonalReferralCode;
@@ -6,8 +7,6 @@ use anyhow::Result;
 use rand::distributions::Alphanumeric;
 use rand::Rng;
 use rust_decimal::Decimal;
-use sha2::Digest;
-use sha2::Sha256;
 use sqlx::PgPool;
 use sqlx::Pool;
 use sqlx::Postgres;
@@ -131,7 +130,8 @@ pub async fn register_api_account(
     email: Option<&str>,
     timezone: Option<&str>,
     creator_api_id: i32,
-) -> Result<(model::Borrower, String)> {
+    api_key_hash: &ApiKeyHash,
+) -> Result<model::Borrower> {
     let borrower_id = uuid::Uuid::new_v4().to_string();
     let email = email.map(|email| email.to_ascii_lowercase().trim().to_string());
     let row = sqlx::query!(
@@ -160,14 +160,7 @@ pub async fn register_api_account(
     .execute(&mut **db_tx)
     .await?;
 
-    let api_key = {
-        let key = uuid::Uuid::new_v4().to_string();
-        format!("ldst-acc-{key}")
-    };
-    let api_key_hash = Sha256::digest(api_key.as_bytes());
-    let api_key_hash = hex::encode(api_key_hash);
-
-    db::api_keys::insert_borrower(&mut **db_tx, &api_key_hash, &borrower_id, "account key").await?;
+    db::api_keys::insert_borrower(&mut **db_tx, api_key_hash, &borrower_id, "account key").await?;
 
     // Not dealing with referral codes or discounts for API accounts (for now).
 
@@ -185,7 +178,7 @@ pub async fn register_api_account(
 
     let borrower = new_model_borrower(borrower, vec![]);
 
-    Ok((borrower, api_key))
+    Ok(borrower)
 }
 
 async fn enhance_with_personal_code<'a, E>(pool: E, base_user: Borrower) -> Result<model::Borrower>

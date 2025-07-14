@@ -6,6 +6,7 @@ use bitcoin::hex::DisplayHex;
 use bitcoin::Address;
 use bitcoin::PublicKey;
 use client_sdk::wallet::Wallet;
+use hub::api_keys::ApiKeyHash;
 use hub::config::Config;
 use hub::db;
 use hub::db::wallet_backups::NewBorrowerWalletBackup;
@@ -74,8 +75,37 @@ async fn main() -> Result<()> {
 
     create_sample_card(&pool, &borrower).await?;
 
-    insert_borrower_api_key(&pool, &borrower.id, "satoshi").await?;
-    insert_lender_api_key(&pool, &lender.id, "lendatoshi").await?;
+    tracing::info!(
+        api_key = "lndst_sk_dee619e34a7e_NI2TUiMmYF9TcBavaFhUW0rZ63QOIsoldG1w0YdFMpR",
+        "Borrower API key"
+    );
+
+    let api_key_hash = ApiKeyHash::new(
+        "dee619e34a7e".to_string(),
+        vec![
+            0xad, 0xb1, 0x9d, 0x65, 0xe7, 0xeb, 0x6f, 0x0b, 0x45, 0x71, 0xb0, 0x1a, 0x89, 0x7b,
+            0xe0, 0xa1,
+        ],
+        "066a7750b4343aa18fe3677c640ecb2078bf6f7e6a10cb71f085e753c8b5192d".to_string(),
+    );
+
+    insert_borrower_api_key(&pool, &borrower.id, &api_key_hash).await?;
+
+    tracing::info!(
+        api_key = "lndst_sk_31ce1f53b53e_VTOWwjHcsPMHvn7UJgNnvQlr0xHXBpuSHCNo8mLkph8",
+        "Lender API key"
+    );
+
+    let api_key_hash = ApiKeyHash::new(
+        "31ce1f53b53e".to_string(),
+        vec![
+            0x8e, 0x9a, 0xe8, 0x0a, 0x99, 0x4d, 0x24, 0x55, 0x87, 0xef, 0x21, 0x2e, 0x73, 0xca,
+            0x06, 0xa0,
+        ],
+        "3597aefe66391db7f0abbfeafeb4451ca4ff9c6bd14562aca833558a1321eabe".to_string(),
+    );
+
+    insert_lender_api_key(&pool, &lender.id, &api_key_hash).await?;
 
     // The corresponding API account creator API key is `theboss`.
     let sha256 = create_sha256(b"theboss");
@@ -517,12 +547,9 @@ async fn enable_lender_features(pool: &Pool<Postgres>, user_id: &str) -> Result<
 async fn insert_borrower_api_key(
     pool: &Pool<Postgres>,
     borrower_id: &str,
-    api_key: &str,
+    api_key_hash: &ApiKeyHash,
 ) -> Result<()> {
-    let api_key_hash = Sha256::digest(api_key.as_bytes());
-    let api_key_hash = hex::encode(api_key_hash);
-
-    db::api_keys::insert_borrower(pool, &api_key_hash, borrower_id, "test").await?;
+    db::api_keys::insert_borrower(pool, api_key_hash, borrower_id, "test").await?;
 
     Ok(())
 }
@@ -530,12 +557,9 @@ async fn insert_borrower_api_key(
 async fn insert_lender_api_key(
     pool: &Pool<Postgres>,
     lender_id: &str,
-    api_key: &str,
+    api_key_hash: &ApiKeyHash,
 ) -> Result<()> {
-    let api_key_hash = Sha256::digest(api_key.as_bytes());
-    let api_key_hash = hex::encode(api_key_hash);
-
-    db::api_keys::insert_lender(pool, &api_key_hash, lender_id, "test").await?;
+    db::api_keys::insert_lender(pool, api_key_hash, lender_id, "test").await?;
 
     Ok(())
 }
