@@ -542,6 +542,7 @@ async fn post_pake_verify(
     let response = Response::builder()
         .status(StatusCode::OK)
         .header(header::SET_COOKIE.as_str(), cookie.to_string().as_str())
+        .header(header::CONTENT_TYPE.as_str(), "application/json")
         .body(
             json!(PakeVerifyResponse {
                 server_proof,
