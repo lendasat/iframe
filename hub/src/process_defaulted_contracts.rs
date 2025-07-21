@@ -1,13 +1,19 @@
 use crate::config::Config;
 use crate::db;
+use crate::model::generate_installments;
 use crate::model::Contract;
 use crate::model::ContractStatus;
+use crate::model::LatePenalty;
+use crate::model::RepaymentPlan;
 use crate::notifications::Notifications;
 use anyhow::Context;
 use anyhow::Result;
+use rust_decimal::Decimal;
 use sqlx::Pool;
 use sqlx::Postgres;
+use std::num::NonZeroU64;
 use std::sync::Arc;
+use time::OffsetDateTime;
 use tokio_cron_scheduler::Job;
 use tokio_cron_scheduler::JobScheduler;
 use tokio_cron_scheduler::JobSchedulerError;
@@ -90,6 +96,69 @@ async fn run_process_defaulted_contracts(
         };
 
         if late_installments.is_empty() {
+            continue;
+        }
+
+        if late_installments.len() == 1
+            && matches!(
+                late_installments[0].late_penalty,
+                LatePenalty::InstallmentRestructure
+            )
+        {
+            let now = OffsetDateTime::now_utc();
+
+            // Restructure the (0-interest) installment into three, with interest.
+
+            let mut installments = generate_installments(
+                now,
+                contract.id.parse().expect("UUID"),
+                RepaymentPlan::InterestOnlyMonthly,
+                NonZeroU64::new(90).expect("non-zero"),
+                contract.interest_rate,
+                contract.loan_amount,
+                LatePenalty::FullLiquidation,
+            );
+
+            // The first installment's interest is doubled to account for the first month the
+            // contract has already been open for.
+            installments[0].interest *= Decimal::TWO;
+
+            let mut tx = match db.begin().await {
+                Ok(tx) => tx,
+                Err(e) => {
+                    tracing::error!(
+                        contract_id = %contract.id,
+                        "Failed to begin DB transaction: {e:#}"
+                    );
+                    continue;
+                }
+            };
+
+            if let Err(e) = db::installments::insert(&mut *tx, installments).await {
+                tracing::error!(
+                    contract_id = %contract.id,
+                    "Failed to restructure installments: {e:#}"
+                );
+                continue;
+            }
+
+            if let Err(e) =
+                db::installments::mark_as_cancelled(&mut *tx, late_installments[0].id).await
+            {
+                tracing::error!(
+                    contract_id = %contract.id,
+                    "Failed to mark late installment as cancelled after restructuring: {e:#}"
+                );
+                continue;
+            }
+
+            if let Err(e) = tx.commit().await {
+                tracing::error!(
+                    contract_id = %contract.id,
+                    "Failed to commit DB transaction: {e:#}"
+                );
+            }
+
             continue;
         }
 

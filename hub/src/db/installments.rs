@@ -261,18 +261,17 @@ pub async fn mark_as_confirmed(db: &PgPool, installment_id: Uuid, contract_id: &
     Ok(())
 }
 
-/// The installment is no longer expected. The contract was either cancelled or replaced (via
-/// extension).
-pub async fn mark_as_cancelled(db: &PgPool, installment_id: Uuid, payment_id: &str) -> Result<()> {
+/// The installment is no longer expected.
+pub async fn mark_as_cancelled<'a, E>(db: E, installment_id: Uuid) -> Result<()>
+where
+    E: sqlx::Executor<'a, Database = Postgres>,
+{
     sqlx::query!(
         r#"
             UPDATE installments
-            SET
-                status = 'Paid',
-                payment_id = $1
-            WHERE id = $2
+            SET status = 'Cancelled'
+            WHERE id = $1
         "#,
-        payment_id,
         installment_id
     )
     .execute(db)
