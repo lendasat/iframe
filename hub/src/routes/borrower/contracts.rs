@@ -1766,203 +1766,209 @@ impl IntoResponse for Error {
         }
 
         let (status, message) = match self {
-            Error::JsonRejection(rejection) => {
-                                (rejection.status(), rejection.body_text())
-                            }
-            Error::Database(_) |
-                            Error::MissingLoanOffer { .. } |
-                            Error::MissingLender |
-                            Error::MoonCardGeneration(_) |
-                            Error::MoonInvoiceGeneration(_) |
-                            Error::BitMexPrice(_) |
-                            Error::InitialCollateralCalculation(_) |
-                            Error::MissingOriginationFee |
-                            Error::OriginationFeeCalculation(_) |
-                            Error::MissingContractIndex |
-                            Error::MissingCollateralAddress |
-                            Error::ContractAddress(_) |
-                            Error::MissingBorrower |
-                            Error::TrackContract(_) |
-                            Error::MissingCollateralOutputs |
-                            Error::TrackClaimTx(_) |
-                            Error::PostClaimTx(_) |
-                            Error::InterestRateCalculation(_) |
-                            Error::InvalidDiscountRate { .. } |
-                            Error::CreateClaimCollateralPsbt(_) |
-                            Error::CannotBuildDescriptor(_) |
-                            Error::GeoJs(_) |
-                            Error::MissingContractAddress |
-                            Error::Bringin(_) |
-                            Error::ComputeExtensionInstallments(_) => {
-                                (
-                                    StatusCode::INTERNAL_SERVER_ERROR,
-                                    "Something went wrong".to_owned(),
-                                )
-                            },
-            Error::MissingBorrowerLoanAddress => (
-                                StatusCode::BAD_REQUEST,
-                                "Failed to provide borrower loan address for stablecoin loan".to_owned(),
-                            ),
-            Error::InvalidMoonLoanRequest { asset } => (
-                                StatusCode::BAD_REQUEST,
-                                format!(
-                                    "Cannot create loan request for Moon card with asset {asset:?}. \
-                     Moon only supports USDC on Polygon"
-                                ),
-                            ),
-            Error::CannotTopUpNonexistentCard => {
-                                (StatusCode::NOT_FOUND, "Card not found".to_owned())
-                            }
-            Error::CannotTopUpOverLimit {
-                                current_balance,
-                                loan_amount,
-                                limit,
-                            } => (
-                                StatusCode::BAD_REQUEST,
-                                format!(
-                                    "Invalid Moon card top-up request: current balance ({current_balance}) \
-                     + loan amount ({loan_amount}) > limit ({limit})"
-                                ),
-                            ),
-            Error::CannotTopUpMoonCardWithoutIp => (
-                                StatusCode::UNAVAILABLE_FOR_LEGAL_REASONS,
-                                "Request IP required".to_owned(),
-                            ),
-            Error::CannotTopUpMoonCardFromUs => (
-                                StatusCode::UNAVAILABLE_FOR_LEGAL_REASONS,
-                                "Cannot top up Moon card from the US".to_owned(),
-                            ),
-            Error::InvalidCancelRequest { status } => (
-                                StatusCode::BAD_REQUEST,
-                                format!("Cannot cancel a contract request with status {status:?}"),
-                            ),
-            Error::LoanNotRepaid => (
-                                StatusCode::BAD_REQUEST,
-                                "Cannot claim collateral until loan has been repaid".to_owned(),
-                            ),
-            Error::ParseClaimTx(_) => {
-                                (
-                                    StatusCode::BAD_REQUEST,
-                                    "Failed to parse signed claim TX".to_owned(),
-                                )
-                            }
-            Error::NotYourContract => (StatusCode::NOT_FOUND, "Contract not found".to_owned()),
-            Error::InvalidApproveRequest { status } => (
-                                StatusCode::BAD_REQUEST,
-                                format!("Cannot approve a contract request with status {status:?}"),
-                            ),
-            Error::MissingFiatLoanDetails => (
-                                StatusCode::BAD_REQUEST,
-                                "Failed to provide bank details for fiat loan".to_owned(),
-                            ),
-            Error::FiatLoanWithoutFiatAsset { asset } => (
-                                StatusCode::BAD_REQUEST,
-                                format!("Cannot create fiat contract with asset: {asset:?}"),
-                            ),
-            Error::InvalidLoanAmount {
-                                amount,
-                                loan_amount_min,
-                                loan_amount_max,
-                            } => (
-                                StatusCode::BAD_REQUEST,
-                                format!("Invalid loan amount: ${amount} not in range ${loan_amount_min}-${loan_amount_max}"),
-                            ),
-            Error::ZeroLoanDuration => (
-                                StatusCode::BAD_REQUEST,
-                                "Loan duration cannot be zero".to_string(),
-                            ),
-            Error::ZeroLoanExtensionDuration => (
-                                StatusCode::BAD_REQUEST,
-                                "Loan extension duration cannot be zero".to_string(),
-                            ),
-            Error::InvalidLoanDuration { duration_days, duration_days_min, duration_days_max } => (
-                                StatusCode::BAD_REQUEST,
-                                format!("Invalid loan duration: {duration_days} days not in range {duration_days_min}-{duration_days_max}"),
-                            ),
-            Error::MissingContract(contract_id) => (
-                                StatusCode::BAD_REQUEST,
-                                format!("Missing contract: {contract_id}"),
+            Error::JsonRejection(rejection) => (rejection.status(), rejection.body_text()),
+            Error::Database(_)
+            | Error::MissingLoanOffer { .. }
+            | Error::MissingLender
+            | Error::MoonCardGeneration(_)
+            | Error::MoonInvoiceGeneration(_)
+            | Error::BitMexPrice(_)
+            | Error::InitialCollateralCalculation(_)
+            | Error::MissingOriginationFee
+            | Error::OriginationFeeCalculation(_)
+            | Error::MissingContractIndex
+            | Error::MissingCollateralAddress
+            | Error::ContractAddress(_)
+            | Error::MissingBorrower
+            | Error::TrackContract(_)
+            | Error::MissingCollateralOutputs
+            | Error::TrackClaimTx(_)
+            | Error::PostClaimTx(_)
+            | Error::InterestRateCalculation(_)
+            | Error::InvalidDiscountRate { .. }
+            | Error::CreateClaimCollateralPsbt(_)
+            | Error::CannotBuildDescriptor(_)
+            | Error::GeoJs(_)
+            | Error::MissingContractAddress
+            | Error::Bringin(_)
+            | Error::ComputeExtensionInstallments(_) => (
+                StatusCode::INTERNAL_SERVER_ERROR,
+                "Something went wrong".to_string(),
             ),
-            Error::InvalidBringinAsset { invalid_asset, supported_assets } => (
-                                StatusCode::BAD_REQUEST,
-                                format!(
-                                    "Bringin does not support loan asset {invalid_asset:?}. \
-                                     List of supported assets {supported_assets:?}"
-                                ),
+            Error::MissingBorrowerLoanAddress => (
+                StatusCode::BAD_REQUEST,
+                "Failed to provide borrower loan \
+                 address for stablecoin loan"
+                    .to_string(),
+            ),
+            Error::InvalidMoonLoanRequest { asset } => (
+                StatusCode::BAD_REQUEST,
+                format!(
+                    "Cannot create loan request for Moon \
+                     card with asset {asset:?}. Moon only supports USDC on Polygon"
+                ),
+            ),
+            Error::CannotTopUpNonexistentCard => {
+                (StatusCode::NOT_FOUND, "Card not found".to_string())
+            }
+            Error::CannotTopUpOverLimit {
+                current_balance,
+                loan_amount,
+                limit,
+            } => (
+                StatusCode::BAD_REQUEST,
+                format!(
+                    "Invalid Moon card top-up request: current balance \
+                     ({current_balance}) + loan amount ({loan_amount}) > \
+                     limit ({limit})"
+                ),
+            ),
+            Error::CannotTopUpMoonCardWithoutIp => (
+                StatusCode::UNAVAILABLE_FOR_LEGAL_REASONS,
+                "Request IP required".to_string(),
+            ),
+            Error::CannotTopUpMoonCardFromUs => (
+                StatusCode::UNAVAILABLE_FOR_LEGAL_REASONS,
+                "Cannot top up Moon card from the US".to_string(),
+            ),
+            Error::InvalidCancelRequest { status } => (
+                StatusCode::BAD_REQUEST,
+                format!("Cannot cancel a contract request with status {status:?}"),
+            ),
+            Error::LoanNotRepaid => (
+                StatusCode::BAD_REQUEST,
+                "Cannot claim collateral until loan has been repaid".to_string(),
+            ),
+            Error::ParseClaimTx(_) => (
+                StatusCode::BAD_REQUEST,
+                "Failed to parse signed claim TX".to_string(),
+            ),
+            Error::NotYourContract => (StatusCode::NOT_FOUND, "Contract not found".to_string()),
+            Error::InvalidApproveRequest { status } => (
+                StatusCode::BAD_REQUEST,
+                format!("Cannot approve a contract request with status {status:?}"),
+            ),
+            Error::MissingFiatLoanDetails => (
+                StatusCode::BAD_REQUEST,
+                "Failed to provide bank details for fiat loan".to_string(),
+            ),
+            Error::FiatLoanWithoutFiatAsset { asset } => (
+                StatusCode::BAD_REQUEST,
+                format!("Cannot create fiat contract with asset: {asset:?}"),
+            ),
+            Error::InvalidLoanAmount {
+                amount,
+                loan_amount_min,
+                loan_amount_max,
+            } => (
+                StatusCode::BAD_REQUEST,
+                format!(
+                    "Invalid loan amount: ${amount} not in \
+                     range ${loan_amount_min}-${loan_amount_max}"
+                ),
+            ),
+            Error::ZeroLoanDuration => (
+                StatusCode::BAD_REQUEST,
+                "Loan duration cannot be zero".to_string(),
+            ),
+            Error::ZeroLoanExtensionDuration => (
+                StatusCode::BAD_REQUEST,
+                "Loan extension duration cannot be zero".to_string(),
+            ),
+            Error::InvalidLoanDuration {
+                duration_days,
+                duration_days_min,
+                duration_days_max,
+            } => (
+                StatusCode::BAD_REQUEST,
+                format!(
+                    "Invalid loan duration: {duration_days} \
+                     days not in range {duration_days_min}-{duration_days_max}"
+                ),
+            ),
+            Error::MissingContract(contract_id) => (
+                StatusCode::BAD_REQUEST,
+                format!("Missing contract: {contract_id}"),
+            ),
+            Error::InvalidBringinAsset {
+                invalid_asset,
+                supported_assets,
+            } => (
+                StatusCode::BAD_REQUEST,
+                format!(
+                    "Bringin does not support loan asset {invalid_asset:?}. \
+                     List of supported assets {supported_assets:?}"
+                ),
             ),
             Error::CannotUseBringinWithoutIp => (
-                                StatusCode::BAD_REQUEST,
-                                "Cannot use Bringin without IP address".to_string()
-                            ),
+                StatusCode::BAD_REQUEST,
+                "Cannot use Bringin without IP address".to_string(),
+            ),
             Error::NoBringinApiKey => (
-                                StatusCode::BAD_REQUEST,
-                                "Cannot use Bringin without a Bringin API key".to_string()
-                            ),
-            Error::BringinLoanAmountOutOfBounds { min, max, loan_amount } => (
-                                StatusCode::BAD_REQUEST,
-                                format!("Invalid loan amount for Bringin: {loan_amount}. Amount must be within {min}-{max}"),
-                            ),
+                StatusCode::BAD_REQUEST,
+                "Cannot use Bringin without a Bringin API key".to_string(),
+            ),
+            Error::BringinLoanAmountOutOfBounds {
+                min,
+                max,
+                loan_amount,
+            } => (
+                StatusCode::BAD_REQUEST,
+                format!(
+                    "Invalid loan amount for Bringin: {loan_amount}. \
+                     Amount must be within {min}-{max}"
+                ),
+            ),
             Error::ExtensionNotAllowed => (
-                        StatusCode::BAD_REQUEST,
-                        "The contract cannnot be extended".to_string(),
-                     ),
+                StatusCode::BAD_REQUEST,
+                "The contract cannnot be extended".to_string(),
+            ),
             Error::ExtensionTooSoon => (
-                        StatusCode::BAD_REQUEST,
-                        "The contract can only be extended after \
-                         half of the duration has passed".to_string(),
-                     ),
+                StatusCode::BAD_REQUEST,
+                "The contract can only be extended after \
+                         half of the duration has passed"
+                    .to_string(),
+            ),
             Error::ExtensionTooManyDays { max_duration_days } => (
-                        StatusCode::BAD_REQUEST,
-                        format!(
-                            "The contract cannot be extended for that long. \
+                StatusCode::BAD_REQUEST,
+                format!(
+                    "The contract cannot be extended for that long. \
                              Maximum extension is {max_duration_days} days"
-                        ),
-                     ),
-            Error::UpdateBorrowerAddress => {
-                (
-                    StatusCode::BAD_REQUEST,
-                    "Could not update address".to_string(),
-                )
-            }
-            Error::BadSignatureProvided(_) => {
-                (
-                    StatusCode::BAD_REQUEST,
-                    "Bad signature provided".to_string(),
-                )
-            }
-            Error::InvalidSignatureProvided => {
-                (
-                    StatusCode::BAD_REQUEST,
-                    "Invalid signature provided".to_string(),
-                )
-            }
-            Error::InvalidStableCoinLoanPayout {actual_payout} => {
-                (
-                    StatusCode::BAD_REQUEST,
-                    format!(
-                        "Stable loan type has invalid loan payout, \
+                ),
+            ),
+            Error::UpdateBorrowerAddress => (
+                StatusCode::BAD_REQUEST,
+                "Could not update address".to_string(),
+            ),
+            Error::BadSignatureProvided(_) => (
+                StatusCode::BAD_REQUEST,
+                "Bad signature provided".to_string(),
+            ),
+            Error::InvalidSignatureProvided => (
+                StatusCode::BAD_REQUEST,
+                "Invalid signature provided".to_string(),
+            ),
+            Error::InvalidStableCoinLoanPayout { actual_payout } => (
+                StatusCode::BAD_REQUEST,
+                format!(
+                    "Stable loan type has invalid loan payout, \
                          but got {actual_payout:?}"
-                    ),
-                )
-            }
-            Error::InvalidPayWithMoonPayout { actual_payout } => {
-                (
-                    StatusCode::BAD_REQUEST,
-                    format!(
-                        "PayWithMoon loan type requires Direct loan payout, \
+                ),
+            ),
+            Error::InvalidPayWithMoonPayout { actual_payout } => (
+                StatusCode::BAD_REQUEST,
+                format!(
+                    "PayWithMoon loan type requires Direct loan payout, \
                          but got {actual_payout:?}"
-                    ),
-                )
-            }
-            Error::InvalidMoonCardInstantPayout { actual_payout } => {
-                (
-                    StatusCode::BAD_REQUEST,
-                    format!(
-                        "MoonCardInstant loan type requires MoonCardInstant \
+                ),
+            ),
+            Error::InvalidMoonCardInstantPayout { actual_payout } => (
+                StatusCode::BAD_REQUEST,
+                format!(
+                    "MoonCardInstant loan type requires MoonCardInstant \
                          loan payout, but got {actual_payout:?}"
-                    ),
-                )
-            }
+                ),
+            ),
         };
         (status, AppJson(ErrorResponse { message })).into_response()
     }
