@@ -229,7 +229,7 @@ pub fn consensus_params() -> Result<bitcoin::params::Params> {
 
     let params = match wallet.network() {
         Network::Bitcoin => bitcoin::params::Params::BITCOIN,
-        Network::Testnet => bitcoin::params::Params::TESTNET,
+        Network::Testnet => bitcoin::params::Params::TESTNET3,
         Network::Signet => bitcoin::params::Params::SIGNET,
         Network::Regtest => bitcoin::params::Params::REGTEST,
         _ => unreachable!("Unsupported network"),
