@@ -243,7 +243,7 @@ impl Manager {
                 %invoice_id,
                 card_id = ?invoice.card_id,
                 borrower_id = invoice.borrower_id,
-                "Ignoring payment for already paid invoice"
+                "Ignoring payment for already paid invoice (probably a card app loan)"
             );
 
             return Ok(());
@@ -292,7 +292,6 @@ impl Manager {
             "Assigned balance to card"
         );
 
-        //TODO: notify the user via email that the card is ready to use
         let borrower = db::borrowers::get_user_by_id(&self.db, invoice.borrower_id.as_str())
             .await
             .context("Failed loading borrower")?
@@ -300,6 +299,7 @@ impl Manager {
 
         let card_details_url = self.config.borrower_frontend_origin.join("/cards")?;
 
+        // TODO: This notification does not distinguish between new cards and top-ups.
         self.notifications
             .send_moon_card_ready(borrower, card_details_url)
             .await;

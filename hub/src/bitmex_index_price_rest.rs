@@ -51,11 +51,8 @@ pub async fn get_bitmex_index_price(
     {
         use bitcoin::Network;
         use rust_decimal_macros::dec;
-        use std::str::FromStr;
 
-        let network = Network::from_str(&config.network).expect("valid network");
-
-        if !matches!(network, Network::Bitcoin) && config.use_fake_price {
+        if !matches!(config.network, Network::Bitcoin) && config.use_fake_price {
             return Ok(dec!(80_000));
         }
     }
@@ -108,16 +105,17 @@ mod tests {
     use super::*;
     use crate::model::LoanAsset;
     use crate::model::OriginationFee;
+    use bitcoin::Network;
     use rust_decimal_macros::dec;
     use time::macros::datetime;
     use uuid::Uuid;
 
-    fn create_test_config(use_fake_price: bool, network: &str) -> Config {
+    fn create_test_config(use_fake_price: bool, network: Network) -> Config {
         Config {
             database_url: "test".to_string(),
             mempool_rest_url: "test".to_string(),
             mempool_ws_url: "test".to_string(),
-            network: network.to_string(),
+            network,
             use_fake_price,
             seed_file: "test".to_string(),
             fallback_xpub: "test".to_string(),
@@ -160,6 +158,7 @@ mod tests {
             bringin_api_secret: "test".to_string(),
             bringin_api_key: "test".to_string(),
             bringin_webhook_url: url::Url::parse("http://localhost").unwrap(),
+            etherscan_api_key: "test".to_string(),
         }
     }
 
@@ -179,7 +178,7 @@ mod tests {
 
     #[tokio::test]
     async fn test_fake_price_in_debug_non_bitcoin_network() {
-        let config = create_test_config(true, "regtest");
+        let config = create_test_config(true, Network::Regtest);
         let timestamp = datetime!(2024-01-01 12:00:00.000 +00:00);
 
         let result = get_bitmex_index_price(&config, timestamp, LoanAsset::Usd).await;
@@ -191,7 +190,7 @@ mod tests {
     #[tokio::test]
     #[ignore]
     async fn test_real_bitmex_api_usd_index() {
-        let config = create_test_config(false, "bitcoin");
+        let config = create_test_config(false, Network::Bitcoin);
         let timestamp = OffsetDateTime::now_utc();
 
         let result = get_bitmex_index_price(&config, timestamp, LoanAsset::Usd).await;
@@ -207,7 +206,7 @@ mod tests {
     #[tokio::test]
     #[ignore]
     async fn test_real_bitmex_api_eur_index() {
-        let config = create_test_config(false, "bitcoin");
+        let config = create_test_config(false, Network::Bitcoin);
         let timestamp = OffsetDateTime::now_utc();
 
         let result = get_bitmex_index_price(&config, timestamp, LoanAsset::Eur).await;

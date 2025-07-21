@@ -318,6 +318,7 @@ async fn put_report_principal_disbursed(
         &data.db,
         &data.config,
         &data.notifications,
+        &data.moon,
         &contract_id,
         &user.id,
         query_params.txid.clone(),

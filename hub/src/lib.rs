@@ -3,6 +3,7 @@ use rust_decimal_macros::dec;
 
 mod contract_liquidation;
 mod discounted_origination_fee;
+mod etherscan;
 mod user_stats;
 
 pub mod api_keys;
