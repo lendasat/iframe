@@ -71,7 +71,8 @@
                 "PayWithMoon",
                 "StableCoin",
                 "Fiat",
-                "Bringin"
+                "Bringin",
+                "PayWithMoonMobileApp"
               ]
             }
           }
@@ -192,7 +193,8 @@
                 "PayWithMoon",
                 "StableCoin",
                 "Fiat",
-                "Bringin"
+                "Bringin",
+                "PayWithMoonMobileApp"
               ]
             }
           }

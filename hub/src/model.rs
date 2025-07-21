@@ -16,7 +16,6 @@ use bitcoin::bip32;
 use bitcoin::Address;
 use bitcoin::Amount;
 use bitcoin::PublicKey;
-pub use notifications::*;
 use rust_decimal::prelude::FromPrimitive;
 use rust_decimal::prelude::ToPrimitive;
 use rust_decimal::Decimal;
@@ -33,10 +32,12 @@ use utoipa::ToSchema;
 use uuid::Uuid;
 
 mod installment;
-pub mod notifications;
 mod npub;
 
+pub mod notifications;
+
 pub use installment::*;
+pub use notifications::*;
 pub use npub::*;
 
 pub type Email = String;
@@ -365,9 +366,15 @@ pub struct FiatLoanDetailsWrapper {
 }
 
 /// The type of loan primarily describes where to deliver the principal.
-#[derive(Debug, Deserialize, Serialize, Clone, Copy, ToSchema)]
+#[derive(Debug, Deserialize, Serialize, Clone, Copy, PartialEq, ToSchema)]
 pub enum LoanType {
     PayWithMoon,
+    /// Like [`LoanType::PayWithMoon`], but we do not wait for the invoice to be confirmed by Moon
+    /// before assigning funds to the borrower's card.
+    ///
+    /// This only works if the Lendasat Moon account has sufficient balance to cover the incoming
+    /// loan amount.
+    MoonCardInstant,
     StableCoin,
     Fiat,
     Bringin,
@@ -449,6 +456,11 @@ pub struct LoanOffer {
     pub lender_npub: Npub,
     pub extension_policy: ExtensionPolicy,
     pub repayment_plan: RepaymentPlan,
+    /// The address where the lender wants to receive repayment, if the borrower chooses to repay
+    /// with Bitcoin.
+    ///
+    /// It's optional because not all lenders will accept Bitcoin repayments.
+    pub btc_loan_repayment_address: Option<Address>,
     pub created_at: OffsetDateTime,
     pub updated_at: OffsetDateTime,
 }
@@ -488,6 +500,12 @@ pub enum LoanPayout {
     /// The loan is paid out indirectly i.e. the borrower receives a good or service valued at the
     /// `loan_amount` price.
     Indirect,
+    /// The loan is paid out to the borrower's Moon Card, but without requiring lots of
+    /// confirmations on (currently) Polygon.
+    ///
+    /// We want [`LoanOffer`]s with this kind of payout to only show up on the Lendasat card mobile
+    /// app. In facet, this variant is only used to indicate that.
+    MoonCardInstant,
 }
 
 #[derive(Debug, Deserialize, sqlx::Type, Serialize, Clone, Copy, PartialEq, ToSchema)]
@@ -651,6 +669,11 @@ pub struct Contract {
     /// Optional because fiat loans do not have loan addresses in the cryptocurrency sense.
     pub borrower_loan_address: Option<String>,
     pub lender_loan_repayment_address: Option<String>,
+    /// The address where the lender wants to receive repayment, if the borrower chooses to repay
+    /// with Bitcoin.
+    ///
+    /// It's optional because not all lenders will accept Bitcoin repayments.
+    pub lender_btc_loan_repayment_address: Option<Address>,
     pub loan_type: LoanType,
     pub contract_address: Option<Address<NetworkUnchecked>>,
     pub contract_index: Option<u32>,
@@ -926,6 +949,11 @@ pub mod db {
         pub lender_derivation_path: String,
         pub borrower_loan_address: Option<String>,
         pub lender_loan_repayment_address: Option<String>,
+        /// The address where the lender wants to receive repayment, if the borrower chooses to
+        /// repay with Bitcoin.
+        ///
+        /// It's optional because not all lenders will accept Bitcoin repayments.
+        pub lender_btc_loan_repayment_address: Option<String>,
         pub loan_type: LoanType,
         pub contract_address: Option<String>,
         pub contract_index: Option<i32>,
@@ -986,6 +1014,7 @@ pub mod db {
     #[sqlx(type_name = "loan_type")]
     pub enum LoanType {
         PayWithMoon,
+        MoonCardInstant,
         StableCoin,
         Fiat,
         Bringin,
@@ -1053,6 +1082,13 @@ impl From<db::Contract> for Contract {
             lender_derivation_path: value.lender_derivation_path.parse().expect("valid path"),
             borrower_loan_address: value.borrower_loan_address,
             lender_loan_repayment_address: value.lender_loan_repayment_address,
+            lender_btc_loan_repayment_address: value.lender_btc_loan_repayment_address.map(
+                |addr| {
+                    addr.parse::<Address<NetworkUnchecked>>()
+                        .expect("valid address")
+                        .assume_checked()
+                },
+            ),
             loan_type: value.loan_type.into(),
             contract_address: value
                 .contract_address
@@ -1118,6 +1154,7 @@ impl From<db::LoanType> for LoanType {
     fn from(value: db::LoanType) -> Self {
         match value {
             db::LoanType::PayWithMoon => Self::PayWithMoon,
+            db::LoanType::MoonCardInstant => Self::MoonCardInstant,
             db::LoanType::StableCoin => Self::StableCoin,
             db::LoanType::Fiat => Self::Fiat,
             db::LoanType::Bringin => Self::Bringin,
@@ -1129,6 +1166,7 @@ impl From<LoanType> for db::LoanType {
     fn from(value: LoanType) -> Self {
         match value {
             LoanType::PayWithMoon => Self::PayWithMoon,
+            LoanType::MoonCardInstant => Self::MoonCardInstant,
             LoanType::StableCoin => Self::StableCoin,
             LoanType::Fiat => Self::Fiat,
             LoanType::Bringin => Self::Bringin,
@@ -1194,6 +1232,9 @@ impl From<Contract> for db::Contract {
             lender_derivation_path: value.lender_derivation_path.to_string(),
             borrower_loan_address: value.borrower_loan_address,
             lender_loan_repayment_address: value.lender_loan_repayment_address,
+            lender_btc_loan_repayment_address: value
+                .lender_btc_loan_repayment_address
+                .map(|addr| addr.to_string()),
             loan_type: value.loan_type.into(),
             contract_address: value
                 .contract_address
@@ -1675,6 +1716,7 @@ mod tests {
             duration_days,
             yearly_interest_rate,
             loan_amount_usd,
+            LatePenalty::FullLiquidation,
         );
 
         let outstanding_balance_usd = compute_outstanding_balance(&installments);
@@ -1695,6 +1737,7 @@ mod tests {
             duration_days,
             yearly_interest_rate,
             loan_amount_usd,
+            LatePenalty::FullLiquidation,
         );
 
         let outstanding_balance_usd = compute_outstanding_balance(&installments);
@@ -1715,6 +1758,7 @@ mod tests {
             duration_days,
             yearly_interest_rate,
             loan_amount_usd,
+            LatePenalty::FullLiquidation,
         );
 
         let outstanding_balance_usd = compute_outstanding_balance(&installments);
@@ -1836,6 +1880,7 @@ mod tests {
             lender_derivation_path: "m/586/0/0".parse().unwrap(),
             borrower_loan_address: None,
             lender_loan_repayment_address: None,
+            lender_btc_loan_repayment_address: None,
             loan_type: LoanType::StableCoin,
             contract_address: None,
             contract_index: None,

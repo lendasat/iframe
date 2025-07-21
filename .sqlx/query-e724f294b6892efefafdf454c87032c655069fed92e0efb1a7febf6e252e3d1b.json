@@ -1,61 +1,61 @@
 {
   "db_name": "PostgreSQL",
-  "query": "\n        SELECT\n            id as \"id!\",\n            lender_id as \"lender_id!\",\n            borrower_id as \"borrower_id!\",\n            loan_deal_id as \"loan_deal_id!\",\n            initial_ltv as \"initial_ltv!\",\n            initial_collateral_sats as \"initial_collateral_sats!\",\n            origination_fee_sats as \"origination_fee_sats!\",\n            collateral_sats as \"collateral_sats!\",\n            loan_amount as \"loan_amount!\",\n            borrower_btc_address as \"borrower_btc_address!\",\n            borrower_pk as \"borrower_pk!\",\n            borrower_derivation_path,\n            lender_pk as \"lender_pk!\",\n            lender_derivation_path as \"lender_derivation_path!\",\n            borrower_loan_address,\n            lender_loan_repayment_address,\n            loan_type as \"loan_type!: crate::model::db::LoanType\",\n            contract_address,\n            contract_index,\n            borrower_npub as \"borrower_npub!\",\n            lender_npub as \"lender_npub!\",\n            status as \"status!: crate::model::db::ContractStatus\",\n            liquidation_status as \"liquidation_status!: crate::model::db::LiquidationStatus\",\n            duration_days as \"duration_days!\",\n            expiry_date as \"expiry_date!\",\n            contract_version as \"contract_version!\",\n            interest_rate as \"interest_rate!\",\n            extension_duration_days as \"extension_duration_days!\",\n            extension_interest_rate as \"extension_interest_rate!\",\n            asset as \"asset!: crate::model::LoanAsset\",\n            created_at as \"created_at!\",\n            updated_at as \"updated_at!\",\n            client_contract_id\n        FROM contracts_to_be_watched\n        WHERE (\n            CASE \n                WHEN $1 = 'Usd' THEN asset != 'Eur'\n                WHEN $1 = 'Eur' THEN asset = 'Eur'\n                ELSE FALSE\n            END\n        )\n          AND status NOT IN ('Defaulted', 'Undercollateralized')\n          AND liquidation_status != 'Liquidated'\n        ",
+  "query": "\n        SELECT\n            id,\n            lender_id,\n            borrower_id,\n            loan_deal_id,\n            initial_ltv,\n            initial_collateral_sats,\n            origination_fee_sats,\n            collateral_sats,\n            loan_amount,\n            borrower_btc_address,\n            borrower_pk,\n            borrower_derivation_path,\n            lender_pk,\n            lender_derivation_path,\n            borrower_loan_address,\n            lender_loan_repayment_address,\n            lender_btc_loan_repayment_address,\n            loan_type as \"loan_type: crate::model::db::LoanType\",\n            contract_address,\n            contract_index,\n            borrower_npub,\n            lender_npub,\n            status as \"status: crate::model::db::ContractStatus\",\n            liquidation_status as \"liquidation_status: crate::model::db::LiquidationStatus\",\n            duration_days,\n            expiry_date,\n            contract_version,\n            interest_rate,\n            client_contract_id,\n            extension_duration_days,\n            extension_interest_rate,\n            asset as \"asset: crate::model::LoanAsset\",\n            created_at,\n            updated_at\n        FROM contracts\n        where lender_id = $1\n        ",
   "describe": {
     "columns": [
       {
         "ordinal": 0,
-        "name": "id!",
+        "name": "id",
         "type_info": "Bpchar"
       },
       {
         "ordinal": 1,
-        "name": "lender_id!",
+        "name": "lender_id",
         "type_info": "Bpchar"
       },
       {
         "ordinal": 2,
-        "name": "borrower_id!",
+        "name": "borrower_id",
         "type_info": "Bpchar"
       },
       {
         "ordinal": 3,
-        "name": "loan_deal_id!",
+        "name": "loan_deal_id",
         "type_info": "Bpchar"
       },
       {
         "ordinal": 4,
-        "name": "initial_ltv!",
+        "name": "initial_ltv",
         "type_info": "Numeric"
       },
       {
         "ordinal": 5,
-        "name": "initial_collateral_sats!",
+        "name": "initial_collateral_sats",
         "type_info": "Int8"
       },
       {
         "ordinal": 6,
-        "name": "origination_fee_sats!",
+        "name": "origination_fee_sats",
         "type_info": "Int8"
       },
       {
         "ordinal": 7,
-        "name": "collateral_sats!",
+        "name": "collateral_sats",
         "type_info": "Int8"
       },
       {
         "ordinal": 8,
-        "name": "loan_amount!",
+        "name": "loan_amount",
         "type_info": "Numeric"
       },
       {
         "ordinal": 9,
-        "name": "borrower_btc_address!",
+        "name": "borrower_btc_address",
         "type_info": "Text"
       },
       {
         "ordinal": 10,
-        "name": "borrower_pk!",
+        "name": "borrower_pk",
         "type_info": "Bpchar"
       },
       {
@@ -65,12 +65,12 @@
       },
       {
         "ordinal": 12,
-        "name": "lender_pk!",
+        "name": "lender_pk",
         "type_info": "Bpchar"
       },
       {
         "ordinal": 13,
-        "name": "lender_derivation_path!",
+        "name": "lender_derivation_path",
         "type_info": "Text"
       },
       {
@@ -85,7 +85,12 @@
       },
       {
         "ordinal": 16,
-        "name": "loan_type!: crate::model::db::LoanType",
+        "name": "lender_btc_loan_repayment_address",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 17,
+        "name": "loan_type: crate::model::db::LoanType",
         "type_info": {
           "Custom": {
             "name": "loan_type",
@@ -94,35 +99,36 @@
                 "PayWithMoon",
                 "StableCoin",
                 "Fiat",
-                "Bringin"
+                "Bringin",
+                "PayWithMoonMobileApp"
               ]
             }
           }
         }
       },
       {
-        "ordinal": 17,
+        "ordinal": 18,
         "name": "contract_address",
         "type_info": "Text"
       },
       {
-        "ordinal": 18,
+        "ordinal": 19,
         "name": "contract_index",
         "type_info": "Int4"
       },
       {
-        "ordinal": 19,
-        "name": "borrower_npub!",
-        "type_info": "Text"
-      },
-      {
         "ordinal": 20,
-        "name": "lender_npub!",
+        "name": "borrower_npub",
         "type_info": "Text"
       },
       {
         "ordinal": 21,
-        "name": "status!: crate::model::db::ContractStatus",
+        "name": "lender_npub",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 22,
+        "name": "status: crate::model::db::ContractStatus",
         "type_info": {
           "Custom": {
             "name": "contract_status",
@@ -157,8 +163,8 @@
         }
       },
       {
-        "ordinal": 22,
-        "name": "liquidation_status!: crate::model::db::LiquidationStatus",
+        "ordinal": 23,
+        "name": "liquidation_status: crate::model::db::LiquidationStatus",
         "type_info": {
           "Custom": {
             "name": "liquidation_status",
@@ -174,38 +180,43 @@
         }
       },
       {
-        "ordinal": 23,
-        "name": "duration_days!",
-        "type_info": "Int4"
-      },
-      {
         "ordinal": 24,
-        "name": "expiry_date!",
-        "type_info": "Timestamptz"
+        "name": "duration_days",
+        "type_info": "Int4"
       },
       {
         "ordinal": 25,
-        "name": "contract_version!",
-        "type_info": "Int4"
+        "name": "expiry_date",
+        "type_info": "Timestamptz"
       },
       {
         "ordinal": 26,
-        "name": "interest_rate!",
-        "type_info": "Numeric"
-      },
-      {
-        "ordinal": 27,
-        "name": "extension_duration_days!",
+        "name": "contract_version",
         "type_info": "Int4"
       },
       {
-        "ordinal": 28,
-        "name": "extension_interest_rate!",
+        "ordinal": 27,
+        "name": "interest_rate",
         "type_info": "Numeric"
       },
       {
+        "ordinal": 28,
+        "name": "client_contract_id",
+        "type_info": "Uuid"
+      },
+      {
         "ordinal": 29,
-        "name": "asset!: crate::model::LoanAsset",
+        "name": "extension_duration_days",
+        "type_info": "Int4"
+      },
+      {
+        "ordinal": 30,
+        "name": "extension_interest_rate",
+        "type_info": "Numeric"
+      },
+      {
+        "ordinal": 31,
+        "name": "asset: crate::model::LoanAsset",
         "type_info": {
           "Custom": {
             "name": "loan_asset",
@@ -231,61 +242,57 @@
         }
       },
       {
-        "ordinal": 30,
-        "name": "created_at!",
-        "type_info": "Timestamptz"
-      },
-      {
-        "ordinal": 31,
-        "name": "updated_at!",
-        "type_info": "Timestamptz"
-      },
-      {
         "ordinal": 32,
-        "name": "client_contract_id",
-        "type_info": "Uuid"
+        "name": "created_at",
+        "type_info": "Timestamptz"
+      },
+      {
+        "ordinal": 33,
+        "name": "updated_at",
+        "type_info": "Timestamptz"
       }
     ],
     "parameters": {
       "Left": [
-        "Text"
+        "Bpchar"
       ]
     },
     "nullable": [
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      true,
+      false,
+      false,
       true,
       true,
       true,
+      false,
       true,
       true,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
       true,
-      true,
-      true,
-      true,
-      true,
-      true,
-      true,
-      true,
-      true,
-      true,
-      true,
-      true,
-      true,
-      true,
-      true,
-      true,
-      true,
-      true,
-      true,
-      true,
-      true,
-      true,
-      true,
-      true,
-      true,
-      true,
-      true,
-      true
+      false,
+      false,
+      false,
+      false,
+      false
     ]
   },
-  "hash": "78e016a72704c45760dcf51598a0fa58bddef2cadc98bce0b369daf16d95c4c4"
+  "hash": "e724f294b6892efefafdf454c87032c655069fed92e0efb1a7febf6e252e3d1b"
 }

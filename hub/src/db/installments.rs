@@ -15,6 +15,7 @@ struct Installment {
     interest: Decimal,
     due_date: OffsetDateTime,
     status: InstallmentStatus,
+    late_penalty: LatePenalty,
     paid_date: Option<OffsetDateTime>,
     payment_id: Option<String>,
 }
@@ -32,6 +33,13 @@ pub enum InstallmentStatus {
     Late,
     /// The installment is no longer expected and was never paid.
     Cancelled,
+}
+
+#[derive(Debug, Clone, Copy, sqlx::Type)]
+#[sqlx(type_name = "late_penalty")]
+pub enum LatePenalty {
+    FullLiquidation,
+    InstallmentRestructure,
 }
 
 pub async fn insert<'a, E>(db: E, rows: Vec<model::Installment>) -> Result<()>
@@ -89,6 +97,7 @@ pub async fn get_all_for_contract_id(
                 interest,
                 due_date,
                 status AS "status: InstallmentStatus",
+                late_penalty AS "late_penalty: LatePenalty",
                 paid_date,
                 payment_id
             FROM installments
@@ -122,6 +131,7 @@ pub async fn get_close_to_due_date_installments(db: &PgPool) -> Result<Vec<model
                 interest,
                 due_date,
                 status AS "status: InstallmentStatus",
+                late_penalty AS "late_penalty: LatePenalty",
                 paid_date,
                 payment_id
             FROM installments
@@ -164,6 +174,7 @@ pub async fn mark_late_installments(db: &PgPool) -> Result<Vec<model::Installmen
                 interest,
                 due_date,
                 status AS "status: InstallmentStatus",
+                late_penalty AS "late_penalty: LatePenalty",
                 paid_date,
                 payment_id
         "#
@@ -271,8 +282,27 @@ impl From<Installment> for model::Installment {
             interest: value.interest,
             due_date: value.due_date,
             status: value.status.into(),
+            late_penalty: value.late_penalty.into(),
             paid_date: value.paid_date,
             payment_id: value.payment_id,
+        }
+    }
+}
+
+impl From<LatePenalty> for model::LatePenalty {
+    fn from(value: LatePenalty) -> Self {
+        match value {
+            LatePenalty::FullLiquidation => Self::FullLiquidation,
+            LatePenalty::InstallmentRestructure => Self::InstallmentRestructure,
+        }
+    }
+}
+
+impl From<model::LatePenalty> for LatePenalty {
+    fn from(value: model::LatePenalty) -> Self {
+        match value {
+            model::LatePenalty::FullLiquidation => Self::FullLiquidation,
+            model::LatePenalty::InstallmentRestructure => Self::InstallmentRestructure,
         }
     }
 }
