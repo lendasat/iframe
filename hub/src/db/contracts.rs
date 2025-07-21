@@ -142,6 +142,69 @@ pub async fn load_contracts_by_lender_id(
     Ok(contracts)
 }
 
+pub async fn load_contracts_by_status(
+    pool: &Pool<Postgres>,
+    statuses: &[ContractStatus],
+) -> Result<Vec<Contract>> {
+    let statuses: Vec<db::ContractStatus> = statuses
+        .iter()
+        .map(|s| db::ContractStatus::from(*s))
+        .collect();
+
+    let contracts = sqlx::query_as!(
+        db::Contract,
+        r#"
+        SELECT
+            id,
+            lender_id,
+            borrower_id,
+            loan_deal_id,
+            initial_ltv,
+            initial_collateral_sats,
+            origination_fee_sats,
+            collateral_sats,
+            loan_amount,
+            borrower_btc_address,
+            borrower_pk,
+            borrower_derivation_path,
+            lender_pk,
+            lender_derivation_path,
+            borrower_loan_address,
+            lender_loan_repayment_address,
+            lender_btc_loan_repayment_address,
+            loan_type as "loan_type: crate::model::db::LoanType",
+            contract_address,
+            contract_index,
+            borrower_npub,
+            lender_npub,
+            status as "status: crate::model::db::ContractStatus",
+            liquidation_status as "liquidation_status: crate::model::db::LiquidationStatus",
+            duration_days,
+            expiry_date,
+            contract_version,
+            interest_rate,
+            client_contract_id,
+            extension_duration_days,
+            extension_interest_rate,
+            asset as "asset: crate::model::LoanAsset",
+            created_at,
+            updated_at
+        FROM contracts
+        WHERE status = ANY($1::contract_status[])
+        "#,
+        statuses as Vec<db::ContractStatus>
+    )
+    .fetch_all(pool)
+    .await?;
+
+    let contracts = contracts
+        .into_iter()
+        .map(Contract::from)
+        .collect::<Vec<Contract>>();
+
+    Ok(contracts)
+}
+
 pub async fn load_contract(pool: &Pool<Postgres>, contract_id: &str) -> Result<Contract> {
     let contract = sqlx::query_as!(
         db::Contract,
@@ -1001,7 +1064,7 @@ pub(crate) async fn load_open_not_liquidated_contracts_by_currency(
             client_contract_id
         FROM contracts_to_be_watched
         WHERE (
-            CASE 
+            CASE
                 WHEN $1 = 'Usd' THEN asset != 'Eur'
                 WHEN $1 = 'Eur' THEN asset = 'Eur'
                 ELSE FALSE

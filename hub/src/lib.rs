@@ -23,6 +23,7 @@ pub mod geo_location;
 pub mod installment_close_to_due_date;
 pub mod late_installments;
 pub mod liquidation_engine;
+pub mod process_defaulted_contracts;
 pub mod loan_application_expiry;
 pub mod logger;
 pub mod mark_as_principal_given;

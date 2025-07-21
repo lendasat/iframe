@@ -190,6 +190,31 @@ pub async fn mark_late_installments(db: &PgPool) -> Result<Vec<model::Installmen
     Ok(installments)
 }
 
+pub async fn load_late_installments_by_contract(
+    db: &PgPool,
+    contract_id: &str,
+) -> Result<Vec<model::Installment>> {
+    let installments = sqlx::query_as::<_, Installment>(
+        r#"
+            SELECT *
+            FROM installments
+            WHERE contract_id = $1
+                AND status = 'Late'
+            ORDER BY due_date
+        "#,
+    )
+    .bind(contract_id)
+    .fetch_all(db)
+    .await?;
+
+    let installments = installments
+        .into_iter()
+        .map(model::Installment::from)
+        .collect();
+
+    Ok(installments)
+}
+
 /// The borrower has acknowledged payment.
 pub async fn mark_as_paid(db: &PgPool, installment_id: Uuid, payment_id: &str) -> Result<()> {
     let paid_date = OffsetDateTime::now_utc();

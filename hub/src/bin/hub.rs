@@ -13,6 +13,7 @@ use hub::db::run_migration;
 use hub::installment_close_to_due_date::add_installment_close_to_due_date_job;
 use hub::late_installments::add_late_installment_job;
 use hub::liquidation_engine::monitor_positions;
+use hub::process_defaulted_contracts::add_process_defaulted_contracts_job;
 use hub::loan_application_expiry::add_loan_application_expiry_job;
 use hub::logger::init_tracing;
 use hub::mempool;
@@ -227,7 +228,9 @@ async fn main() -> Result<()> {
         .await?;
     add_loan_application_expiry_job(&sched, db.clone(), config.clone(), notifications.clone())
         .await?;
-    add_late_installment_job(&sched, config.clone(), db.clone(), notifications.clone()).await?;
+    add_late_installment_job(&sched, db.clone()).await?;
+    add_process_defaulted_contracts_job(&sched, config.clone(), db.clone(), notifications.clone())
+        .await?;
     add_installment_close_to_due_date_job(
         &sched,
         config.clone(),
