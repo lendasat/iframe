@@ -422,7 +422,7 @@ async fn post_contract_request(
         .map_err(Error::database)?;
     }
 
-    let contract = map_to_api_contract(&data, contract).await?;
+    let mut contract = map_to_api_contract(&data, contract).await?;
 
     if let Some(invoice) = moon_invoice {
         data.moon
@@ -436,7 +436,7 @@ async fn post_contract_request(
     // - KYC is required; or
     // - The loan asset is fiat.
     if offer.auto_accept && (!is_kyc_required && !offer.loan_asset.is_fiat()) {
-        approve_contract(
+        let db_contract = approve_contract(
             &data.db,
             &data.wallet,
             &data.mempool,
@@ -448,6 +448,7 @@ async fn post_contract_request(
         )
         .await
         .map_err(Error::from)?;
+        contract = map_to_api_contract(&data, db_contract).await?;
     }
 
     let lender_loan_url = data
