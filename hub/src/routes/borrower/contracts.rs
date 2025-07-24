@@ -540,7 +540,7 @@ async fn cancel_contract_request(
     .await
     .map_err(Error::database)?;
 
-    if contract.status != ContractStatus::Requested {
+    if contract.status != ContractStatus::Requested && contract.status != ContractStatus::Approved {
         return Err(Error::InvalidCancelRequest {
             status: contract.status,
         });
