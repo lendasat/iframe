@@ -9,6 +9,7 @@ use uuid::Uuid;
 #[derive(Debug, Clone, Serialize, Deserialize, ToSchema)]
 #[serde(tag = "type", content = "data")]
 pub enum NotificationMessage {
+    #[schema(title = "ContractUpdate")]
     ContractUpdate {
         id: Uuid,
         contract_id: String,
@@ -17,6 +18,7 @@ pub enum NotificationMessage {
         status: ContractStatus,
         read: bool,
     },
+    #[schema(title = "InstallmentUpdate")]
     InstallmentUpdate {
         id: Uuid,
         installment_id: Uuid,
@@ -26,6 +28,7 @@ pub enum NotificationMessage {
         status: InstallmentStatus,
         read: bool,
     },
+    #[schema(title = "ChatMessage")]
     ChatMessage {
         id: Uuid,
         contract_id: String,
