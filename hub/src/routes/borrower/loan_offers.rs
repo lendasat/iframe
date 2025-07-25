@@ -92,6 +92,11 @@ async fn get_all_available_loan_offers(
             QueryParamLoanType::All => {
                 // we take all offers
             }
+            QueryParamLoanType::MoonCardInstant => {
+                if loan_offer.loan_payout != LoanPayout::MoonCardInstant {
+                    continue; // Skip this offer
+                }
+            }
         }
 
         let lender = db::lenders::get_user_by_id(&data.db, &loan_offer.lender_id)
@@ -177,6 +182,11 @@ async fn get_available_loan_offers_by_lender(
             }
             QueryParamLoanType::Indirect => {
                 if loan_offer.loan_payout != LoanPayout::Indirect {
+                    continue; // Skip this offer
+                }
+            }
+            QueryParamLoanType::MoonCardInstant => {
+                if loan_offer.loan_payout != LoanPayout::MoonCardInstant {
                     continue; // Skip this offer
                 }
             }
@@ -314,6 +324,8 @@ pub enum QueryParamLoanType {
     Direct,
     /// Filter for indirect loan offers only.
     Indirect,
+    /// Filter for instant Moon card offers only.
+    MoonCardInstant,
     /// Show all loan offers (both direct and indirect).
     All,
 }
