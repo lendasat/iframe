@@ -73,7 +73,7 @@ pub async fn mark_as_principal_given(
                     moon.handle_paid_invoice(&InvoicePayment {
                         id,
                         invoice_id: invoice.id,
-                        amount: contract.loan_amount,
+                        amount: invoice.usd_amount_owed,
                         // These two fields we ignore anyway.
                         created_at: OffsetDateTime::now_utc().unix_timestamp().to_string(),
                         currency: "USD".to_string(),
