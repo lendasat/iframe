@@ -5,6 +5,5 @@ edition = "2021"
 
 [dependencies]
 anyhow = "1"
-bdk = { version = "1.0.0-alpha.11" }
-bdk_file_store = "0.11.0"
+bdk_wallet = { version = "2", features = ["file_store"] }
 temp-dir = "0.1.13"

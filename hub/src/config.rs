@@ -1,4 +1,5 @@
 use crate::model::OriginationFee;
+use bitcoin::Network;
 use rust_decimal::Decimal;
 use rust_decimal_macros::dec;
 use std::ops::Div;
@@ -11,7 +12,7 @@ pub struct Config {
     pub database_url: String,
     pub mempool_rest_url: String,
     pub mempool_ws_url: String,
-    pub network: String,
+    pub network: Network,
     pub use_fake_price: bool,
     pub seed_file: String,
     pub fallback_xpub: String,
@@ -46,6 +47,7 @@ pub struct Config {
     pub bringin_api_secret: String,
     pub bringin_api_key: String,
     pub bringin_webhook_url: Url,
+    pub etherscan_api_key: String,
 }
 
 impl Config {
@@ -56,6 +58,8 @@ impl Config {
         let mempool_ws_url = std::env::var("MEMPOOL_WS_URL").expect("MEMPOOL_WS_URL must be set");
 
         let network = std::env::var("NETWORK").expect("NETWORK must be set");
+        let network = Network::from_str(&network).expect("Invalid Bitcoin network");
+
         let use_fake_price = {
             let value = std::env::var("USE_FAKE_PRICE").ok();
             let value = value.map(|v| bool::from_str(v.as_ref()).unwrap_or_default());
@@ -184,6 +188,9 @@ impl Config {
         let bringin_webhook_url =
             Url::parse(bringin_webhook_url.as_str()).expect("to be a valid URL");
 
+        let etherscan_api_key =
+            std::env::var("ETHERSCAN_API_KEY").expect("ETHERSCAN_API_KEY must be set");
+
         Config {
             database_url,
             mempool_rest_url,
@@ -228,6 +235,7 @@ impl Config {
             bringin_api_secret,
             bringin_api_key,
             bringin_webhook_url,
+            etherscan_api_key,
         }
     }
 }

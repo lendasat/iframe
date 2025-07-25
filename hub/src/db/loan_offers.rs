@@ -6,6 +6,7 @@ use crate::model::LoanOfferStatus;
 use crate::model::LoanPayout;
 use crate::model::RepaymentPlan;
 use anyhow::Result;
+use bitcoin::address::NetworkUnchecked;
 use rust_decimal::Decimal;
 use rust_decimal_macros::dec;
 use sqlx::Pool;
@@ -56,6 +57,7 @@ pub(crate) async fn load_all_available_loan_offers(
             lo.extension_duration_days,
             lo.extension_interest_rate,
             lo.repayment_plan AS "repayment_plan: RepaymentPlan",
+            lo.btc_loan_repayment_address,
             lo.created_at,
             lo.updated_at
         FROM loan_offers lo
@@ -116,6 +118,11 @@ pub(crate) async fn load_all_available_loan_offers(
                 lender_npub: row.lender_npub.parse().expect("valid npub in database"),
                 extension_policy,
                 repayment_plan: row.repayment_plan,
+                btc_loan_repayment_address: row.btc_loan_repayment_address.map(|addr| {
+                    addr.parse::<bitcoin::Address<NetworkUnchecked>>()
+                        .expect("valid address")
+                        .assume_checked()
+                }),
                 created_at: row.created_at,
                 updated_at: row.updated_at,
             })
@@ -183,6 +190,7 @@ pub async fn load_all_loan_offers_by_lender(
             lo.extension_duration_days,
             lo.extension_interest_rate,
             lo.repayment_plan AS "repayment_plan: RepaymentPlan",
+            lo.btc_loan_repayment_address,
             lo.created_at,
             lo.updated_at
         FROM loan_offers lo
@@ -235,6 +243,11 @@ pub async fn load_all_loan_offers_by_lender(
                 lender_npub: row.lender_npub.parse().expect("valid npub in database"),
                 extension_policy,
                 repayment_plan: row.repayment_plan,
+                btc_loan_repayment_address: row.btc_loan_repayment_address.map(|addr| {
+                    addr.parse::<bitcoin::Address<NetworkUnchecked>>()
+                        .expect("valid address")
+                        .assume_checked()
+                }),
                 created_at: row.created_at,
                 updated_at: row.updated_at,
             }
@@ -288,6 +301,7 @@ pub async fn get_loan_offer_by_lender_and_offer_id(
             lo.extension_duration_days,
             lo.extension_interest_rate,
             lo.repayment_plan AS "repayment_plan: RepaymentPlan",
+            lo.btc_loan_repayment_address,
             lo.created_at,
             lo.updated_at
         FROM loan_offers lo
@@ -335,6 +349,11 @@ pub async fn get_loan_offer_by_lender_and_offer_id(
         lender_npub: row.lender_npub.parse().expect("valid npub in database"),
         extension_policy,
         repayment_plan: row.repayment_plan,
+        btc_loan_repayment_address: row.btc_loan_repayment_address.map(|addr| {
+            addr.parse::<bitcoin::Address<NetworkUnchecked>>()
+                .expect("valid address")
+                .assume_checked()
+        }),
         created_at: row.created_at,
         updated_at: row.updated_at,
     };
@@ -418,9 +437,10 @@ pub async fn insert_loan_offer(
           lender_npub,
           extension_duration_days,
           extension_interest_rate,
-          repayment_plan
+          repayment_plan,
+          btc_loan_repayment_address
         )
-        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21, $22, $23)
+        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21, $22, $23, $24)
         RETURNING
           id,
           loan_deal_id,
@@ -446,6 +466,7 @@ pub async fn insert_loan_offer(
           extension_duration_days,
           extension_interest_rate,
           repayment_plan AS "repayment_plan: RepaymentPlan",
+          btc_loan_repayment_address,
           created_at,
           updated_at
         "#,
@@ -472,6 +493,7 @@ pub async fn insert_loan_offer(
         offer.extension_duration_days.unwrap_or_default() as i32,
         extension_interest_rate,
         offer.repayment_plan as RepaymentPlan,
+        None::<String>,
     )
     .fetch_one(&mut *tx)
     .await?;
@@ -505,6 +527,11 @@ pub async fn insert_loan_offer(
         lender_npub: row.lender_npub.parse().expect("valid npub in database"),
         extension_policy,
         repayment_plan: row.repayment_plan,
+        btc_loan_repayment_address: row.btc_loan_repayment_address.map(|addr| {
+            addr.parse::<bitcoin::Address<NetworkUnchecked>>()
+                .expect("valid address")
+                .assume_checked()
+        }),
         created_at: row.created_at,
         updated_at: row.updated_at,
     };
@@ -555,6 +582,7 @@ pub(crate) async fn loan_by_id(
             lo.extension_duration_days,
             lo.extension_interest_rate,
             lo.repayment_plan AS "repayment_plan: RepaymentPlan",
+            lo.btc_loan_repayment_address,
             lo.created_at,
             lo.updated_at
         FROM loan_offers lo
@@ -606,6 +634,11 @@ pub(crate) async fn loan_by_id(
             lender_npub: row.lender_npub.parse().expect("valid npub in database"),
             extension_policy,
             repayment_plan: row.repayment_plan,
+            btc_loan_repayment_address: row.btc_loan_repayment_address.map(|addr| {
+                addr.parse::<bitcoin::Address<NetworkUnchecked>>()
+                    .expect("valid address")
+                    .assume_checked()
+            }),
             created_at: row.created_at,
             updated_at: row.updated_at,
         };

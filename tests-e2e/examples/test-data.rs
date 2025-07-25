@@ -17,6 +17,7 @@ use hub::model::Contract;
 use hub::model::ContractStatus;
 use hub::model::ContractVersion;
 use hub::model::CreateLoanOfferSchema;
+use hub::model::LatePenalty;
 use hub::model::Lender;
 use hub::model::LoanAsset;
 use hub::model::LoanOffer;
@@ -89,6 +90,7 @@ async fn main() -> Result<()> {
         "066a7750b4343aa18fe3677c640ecb2078bf6f7e6a10cb71f085e753c8b5192d".to_string(),
     );
 
+    // TODO: Just skip if the API keys already exist!
     insert_borrower_api_key(&pool, &borrower.id, &api_key_hash).await?;
 
     tracing::info!(
@@ -298,6 +300,7 @@ async fn create_contract_request(
         NonZeroU64::new(duration_days as u64).expect("non-zero"),
         interest_rate,
         loan_amount,
+        LatePenalty::FullLiquidation,
     );
 
     db::installments::insert(pool, installments).await?;

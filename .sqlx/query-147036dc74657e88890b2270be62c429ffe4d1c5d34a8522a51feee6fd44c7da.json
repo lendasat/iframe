@@ -1,6 +1,6 @@
 {
   "db_name": "PostgreSQL",
-  "query": "\n        SELECT\n            lo.id,\n            lo.loan_deal_id,\n            lo.lender_id,\n            lo.name,\n            lo.min_ltv,\n            lo.interest_rate,\n            lo.loan_amount_min,\n            lo.loan_amount_max,\n            lo.duration_days_min,\n            lo.duration_days_max,\n            lo.loan_amount_reserve,\n            COALESCE(\n                lo.loan_amount_reserve - COALESCE(\n                    SUM(\n                        CASE\n                            WHEN c.status NOT IN ('Cancelled', 'RequestExpired')\n                            THEN c.loan_amount\n                            ELSE 0\n                        END\n                    ),\n                    0\n                ),\n                lo.loan_amount_reserve\n            ) AS loan_amount_reserve_remaining,\n            lo.loan_asset AS \"loan_asset: LoanAsset\",\n            lo.loan_payout AS \"loan_payout: LoanPayout\",\n            lo.status AS \"status: LoanOfferStatus\",\n            lo.loan_repayment_address,\n            lo.lender_pk,\n            lo.lender_derivation_path,\n            lo.auto_accept,\n            lo.kyc_link,\n            lo.lender_npub,\n            lo.extension_duration_days,\n            lo.extension_interest_rate,\n            lo.repayment_plan AS \"repayment_plan: RepaymentPlan\",\n            lo.created_at,\n            lo.updated_at\n        FROM loan_offers lo\n            LEFT JOIN\n                contracts c ON lo.id = c.loan_deal_id\n        WHERE lo.lender_id = $1\n        GROUP BY\n            lo.id\n        ",
+  "query": "\n        SELECT\n            lo.id,\n            lo.loan_deal_id,\n            lo.lender_id,\n            lo.name,\n            lo.min_ltv,\n            lo.interest_rate,\n            lo.loan_amount_min,\n            lo.loan_amount_max,\n            lo.duration_days_min,\n            lo.duration_days_max,\n            lo.loan_amount_reserve,\n            COALESCE(\n                lo.loan_amount_reserve - COALESCE(\n                    SUM(\n                        CASE\n                            WHEN c.status NOT IN ('Cancelled', 'RequestExpired')\n                            THEN c.loan_amount\n                            ELSE 0\n                        END\n                    ),\n                    0\n                ),\n                lo.loan_amount_reserve\n            ) AS loan_amount_reserve_remaining,\n            lo.loan_asset AS \"loan_asset: LoanAsset\",\n            lo.loan_payout AS \"loan_payout: LoanPayout\",\n            lo.status AS \"status: LoanOfferStatus\",\n            lo.loan_repayment_address,\n            lo.lender_pk,\n            lo.lender_derivation_path,\n            lo.auto_accept,\n            lo.kyc_link,\n            lo.lender_npub,\n            lo.extension_duration_days,\n            lo.extension_interest_rate,\n            lo.repayment_plan AS \"repayment_plan: RepaymentPlan\",\n            lo.btc_loan_repayment_address,\n            lo.created_at,\n            lo.updated_at\n        FROM loan_offers lo\n            LEFT JOIN\n                contracts c ON lo.id = c.loan_deal_id\n        WHERE lo.lender_id = $1\n        GROUP BY\n            lo.id\n        ",
   "describe": {
     "columns": [
       {
@@ -99,7 +99,8 @@
             "kind": {
               "Enum": [
                 "Direct",
-                "Indirect"
+                "Indirect",
+                "MoonCardMobileApp"
               ]
             }
           }
@@ -179,11 +180,16 @@
       },
       {
         "ordinal": 24,
+        "name": "btc_loan_repayment_address",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 25,
         "name": "created_at",
         "type_info": "Timestamptz"
       },
       {
-        "ordinal": 25,
+        "ordinal": 26,
         "name": "updated_at",
         "type_info": "Timestamptz"
       }
@@ -218,9 +224,10 @@
       false,
       false,
       false,
+      true,
       false,
       false
     ]
   },
-  "hash": "7fe6acd97fa69c49c56b53af41a8768b315cabe1a45ad0e605287fa61b225a94"
+  "hash": "147036dc74657e88890b2270be62c429ffe4d1c5d34a8522a51feee6fd44c7da"
 }

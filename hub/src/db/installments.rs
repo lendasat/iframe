@@ -15,6 +15,7 @@ struct Installment {
     interest: Decimal,
     due_date: OffsetDateTime,
     status: InstallmentStatus,
+    late_penalty: LatePenalty,
     paid_date: Option<OffsetDateTime>,
     payment_id: Option<String>,
 }
@@ -32,6 +33,13 @@ pub enum InstallmentStatus {
     Late,
     /// The installment is no longer expected and was never paid.
     Cancelled,
+}
+
+#[derive(Debug, Clone, Copy, sqlx::Type)]
+#[sqlx(type_name = "late_penalty")]
+pub enum LatePenalty {
+    FullLiquidation,
+    InstallmentRestructure,
 }
 
 pub async fn insert<'a, E>(db: E, rows: Vec<model::Installment>) -> Result<()>
@@ -89,6 +97,7 @@ pub async fn get_all_for_contract_id(
                 interest,
                 due_date,
                 status AS "status: InstallmentStatus",
+                late_penalty AS "late_penalty: LatePenalty",
                 paid_date,
                 payment_id
             FROM installments
@@ -122,6 +131,7 @@ pub async fn get_close_to_due_date_installments(db: &PgPool) -> Result<Vec<model
                 interest,
                 due_date,
                 status AS "status: InstallmentStatus",
+                late_penalty AS "late_penalty: LatePenalty",
                 paid_date,
                 payment_id
             FROM installments
@@ -164,10 +174,36 @@ pub async fn mark_late_installments(db: &PgPool) -> Result<Vec<model::Installmen
                 interest,
                 due_date,
                 status AS "status: InstallmentStatus",
+                late_penalty AS "late_penalty: LatePenalty",
                 paid_date,
                 payment_id
         "#
     )
+    .fetch_all(db)
+    .await?;
+
+    let installments = installments
+        .into_iter()
+        .map(model::Installment::from)
+        .collect();
+
+    Ok(installments)
+}
+
+pub async fn load_late_installments_by_contract(
+    db: &PgPool,
+    contract_id: &str,
+) -> Result<Vec<model::Installment>> {
+    let installments = sqlx::query_as::<_, Installment>(
+        r#"
+            SELECT *
+            FROM installments
+            WHERE contract_id = $1
+                AND status = 'Late'
+            ORDER BY due_date
+        "#,
+    )
+    .bind(contract_id)
     .fetch_all(db)
     .await?;
 
@@ -225,18 +261,17 @@ pub async fn mark_as_confirmed(db: &PgPool, installment_id: Uuid, contract_id: &
     Ok(())
 }
 
-/// The installment is no longer expected. The contract was either cancelled or replaced (via
-/// extension).
-pub async fn mark_as_cancelled(db: &PgPool, installment_id: Uuid, payment_id: &str) -> Result<()> {
+/// The installment is no longer expected.
+pub async fn mark_as_cancelled<'a, E>(db: E, installment_id: Uuid) -> Result<()>
+where
+    E: sqlx::Executor<'a, Database = Postgres>,
+{
     sqlx::query!(
         r#"
             UPDATE installments
-            SET
-                status = 'Paid',
-                payment_id = $1
-            WHERE id = $2
+            SET status = 'Cancelled'
+            WHERE id = $1
         "#,
-        payment_id,
         installment_id
     )
     .execute(db)
@@ -271,8 +306,27 @@ impl From<Installment> for model::Installment {
             interest: value.interest,
             due_date: value.due_date,
             status: value.status.into(),
+            late_penalty: value.late_penalty.into(),
             paid_date: value.paid_date,
             payment_id: value.payment_id,
+        }
+    }
+}
+
+impl From<LatePenalty> for model::LatePenalty {
+    fn from(value: LatePenalty) -> Self {
+        match value {
+            LatePenalty::FullLiquidation => Self::FullLiquidation,
+            LatePenalty::InstallmentRestructure => Self::InstallmentRestructure,
+        }
+    }
+}
+
+impl From<model::LatePenalty> for LatePenalty {
+    fn from(value: model::LatePenalty) -> Self {
+        match value {
+            model::LatePenalty::FullLiquidation => Self::FullLiquidation,
+            model::LatePenalty::InstallmentRestructure => Self::InstallmentRestructure,
         }
     }
 }

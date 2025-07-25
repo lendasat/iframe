@@ -3,6 +3,7 @@ use rust_decimal_macros::dec;
 
 mod contract_liquidation;
 mod discounted_origination_fee;
+mod etherscan;
 mod user_stats;
 
 pub mod api_keys;
@@ -30,6 +31,7 @@ pub mod mempool;
 pub mod model;
 pub mod moon;
 pub mod notifications;
+pub mod process_defaulted_contracts;
 pub mod routes;
 pub mod sideshift;
 pub mod take_loan_application;

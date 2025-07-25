@@ -19,6 +19,7 @@ use hub::mempool;
 use hub::moon;
 use hub::notifications::websocket::NotificationCenter;
 use hub::notifications::Notifications;
+use hub::process_defaulted_contracts::add_process_defaulted_contracts_job;
 use hub::routes::borrower::spawn_borrower_server;
 use hub::routes::lender::spawn_lender_server;
 use hub::routes::AppState;
@@ -68,7 +69,7 @@ async fn main() -> Result<()> {
         return Ok(());
     }
 
-    let network = config.network.clone().parse().context("Invalid network")?;
+    let network = config.network;
     tracing::info!("Running hub on {network}");
 
     let hub_seed = seed_from_file(&config.seed_file).context("Could not load seed from file")?;
@@ -88,7 +89,7 @@ async fn main() -> Result<()> {
     let descriptor_wallet = DescriptorWallet::new(
         config.hub_fee_descriptor.as_str(),
         db_path.as_str(),
-        config.network.clone().as_str(),
+        &network.to_string(),
     )?;
 
     let wallet = Wallet::new(
@@ -127,8 +128,20 @@ async fn main() -> Result<()> {
         db.clone(),
     ));
 
+    let moon_client = Arc::new(moon::Manager::new(
+        db.clone(),
+        config.clone(),
+        notifications.clone(),
+    ));
+
     let (mempool_addr, mempool_mailbox) = xtra::Mailbox::unbounded();
-    let mempool = mempool::Actor::new(db.clone(), network, config.clone(), notifications.clone());
+    let mempool = mempool::Actor::new(
+        db.clone(),
+        network,
+        config.clone(),
+        notifications.clone(),
+        moon_client.clone(),
+    );
 
     tokio::spawn(async {
         let e = xtra::run(mempool_mailbox, mempool).await;
@@ -174,11 +187,6 @@ async fn main() -> Result<()> {
         }
     });
 
-    let moon_client = Arc::new(moon::Manager::new(
-        db.clone(),
-        config.clone(),
-        notifications.clone(),
-    ));
     if config.sync_moon_tx {
         tokio::spawn({
             let moon_client = moon_client.clone();
@@ -219,7 +227,7 @@ async fn main() -> Result<()> {
     let lender_handle = tokio::spawn(lender_server);
 
     // We need the borrower server to be started already for this.
-    tokio::spawn(register_webhook_in_thread(moon_client, network));
+    tokio::spawn(register_webhook_in_thread(moon_client.clone(), network));
 
     let sched = JobScheduler::new().await?;
 
@@ -227,7 +235,9 @@ async fn main() -> Result<()> {
         .await?;
     add_loan_application_expiry_job(&sched, db.clone(), config.clone(), notifications.clone())
         .await?;
-    add_late_installment_job(&sched, config.clone(), db.clone(), notifications.clone()).await?;
+    add_late_installment_job(&sched, db.clone()).await?;
+    add_process_defaulted_contracts_job(&sched, config.clone(), db.clone(), notifications.clone())
+        .await?;
     add_installment_close_to_due_date_job(
         &sched,
         config.clone(),

@@ -10,6 +10,7 @@ expression: installments
         interest: 11.11,
         due_date: 2025-07-11 0:00:00.0 +00:00:00,
         status: Pending,
+        late_penalty: FullLiquidation,
         paid_date: None,
         payment_id: None,
     },

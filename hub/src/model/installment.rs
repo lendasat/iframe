@@ -25,6 +25,7 @@ pub struct Installment {
     pub interest: Decimal,
     pub due_date: OffsetDateTime,
     pub status: InstallmentStatus,
+    pub late_penalty: LatePenalty,
     pub paid_date: Option<OffsetDateTime>,
     pub payment_id: Option<String>,
 }
@@ -44,6 +45,20 @@ pub enum InstallmentStatus {
     Cancelled,
 }
 
+/// What happens when the borrower is late to pay an installment.
+#[derive(Default, Debug, Clone, Copy, Serialize, Deserialize, ToSchema, PartialEq)]
+#[serde(rename_all = "snake_case")]
+pub enum LatePenalty {
+    /// The collateral will be liquidated for the full outstanding balance.
+    #[default]
+    FullLiquidation,
+    /// A new installment plan will replace the existing one.
+    ///
+    /// For example, we may go from a 0-interest bullet loan to 3 monthly installments with
+    /// interest.
+    InstallmentRestructure,
+}
+
 impl Installment {
     pub fn total_amount_due(&self) -> Decimal {
         self.principal + self.interest
@@ -57,6 +72,7 @@ pub fn generate_installments(
     duration_days: NonZeroU64,
     yearly_interest_rate: Decimal,
     loan_amount_usd: Decimal,
+    late_penalty: LatePenalty,
 ) -> Vec<Installment> {
     if loan_amount_usd <= Decimal::ZERO {
         return Vec::new();
@@ -88,6 +104,7 @@ pub fn generate_installments(
 
     let mut installments = Vec::new();
     for i in 1..installment_count {
+        let is_final_installment = false;
         let installment = generate_installment(
             now,
             contract_id,
@@ -96,12 +113,14 @@ pub fn generate_installments(
             0,
             yearly_interest_rate,
             loan_amount_usd,
-            false,
+            is_final_installment,
+            late_penalty,
         );
 
         installments.push(installment);
     }
 
+    let is_final_installment = true;
     let balloon_installment = generate_installment(
         now,
         contract_id,
@@ -110,7 +129,8 @@ pub fn generate_installments(
         extra_days,
         yearly_interest_rate,
         loan_amount_usd,
-        true,
+        is_final_installment,
+        late_penalty,
     );
 
     installments.push(balloon_installment);
@@ -132,6 +152,7 @@ fn generate_installment(
     yearly_interest_rate: Decimal,
     loan_amount_usd: Decimal,
     is_final_installment: bool,
+    late_penalty: LatePenalty,
 ) -> Installment {
     let due_date = now + (interval_days * installment_number + extra_days).std_days();
     let interest = calculate_interest_usd(
@@ -153,6 +174,7 @@ fn generate_installment(
         interest,
         due_date,
         status: InstallmentStatus::Pending,
+        late_penalty,
         paid_date: None,
         payment_id: None,
     }
@@ -329,6 +351,7 @@ pub fn apply_extension_to_installments(
                     .expect("valid duration"),
                 extension_yearly_interest_rate,
                 loan_amount_usd,
+                LatePenalty::FullLiquidation,
             );
 
             return Ok(installments);
@@ -373,6 +396,7 @@ pub fn apply_extension_to_installments(
         extension_duration_days,
         extension_yearly_interest_rate,
         loan_amount_usd,
+        LatePenalty::FullLiquidation,
     );
 
     installments.append(&mut extension_installments);
@@ -405,6 +429,7 @@ mod tests {
             duration_days,
             yearly_interest_rate,
             loan_amount_usd,
+            LatePenalty::default(),
         );
 
         with_settings!({filters => vec![
@@ -431,6 +456,7 @@ mod tests {
             duration_days,
             yearly_interest_rate,
             loan_amount_usd,
+            LatePenalty::default(),
         );
 
         with_settings!({filters => vec![
@@ -457,6 +483,7 @@ mod tests {
             duration_days,
             yearly_interest_rate,
             loan_amount_usd,
+            LatePenalty::default(),
         );
 
         with_settings!({filters => vec![
@@ -483,6 +510,7 @@ mod tests {
             duration_days,
             yearly_interest_rate,
             loan_amount_usd,
+            LatePenalty::default(),
         );
 
         with_settings!({filters => vec![
@@ -509,6 +537,7 @@ mod tests {
             duration_days,
             yearly_interest_rate,
             loan_amount_usd,
+            LatePenalty::default(),
         );
 
         with_settings!({filters => vec![
@@ -535,6 +564,7 @@ mod tests {
             duration_days,
             yearly_interest_rate,
             loan_amount_usd,
+            LatePenalty::default(),
         );
 
         with_settings!({filters => vec![
@@ -561,6 +591,7 @@ mod tests {
             duration_days,
             yearly_interest_rate,
             loan_amount_usd,
+            LatePenalty::default(),
         );
 
         with_settings!({filters => vec![
@@ -588,6 +619,7 @@ mod tests {
             original_duration_days,
             yearly_interest_rate,
             loan_amount_usd,
+            LatePenalty::default(),
         );
 
         let extension_contract_id = "d403c9b8-c05f-4f24-9395-3f60817174c1".parse().unwrap();
@@ -633,6 +665,7 @@ mod tests {
             original_duration_days,
             yearly_interest_rate,
             loan_amount_usd,
+            LatePenalty::default(),
         );
 
         let extension_contract_id = "d403c9b8-c05f-4f24-9395-3f60817174c1".parse().unwrap();
@@ -678,6 +711,7 @@ mod tests {
             original_duration_days,
             yearly_interest_rate,
             loan_amount_usd,
+            LatePenalty::default(),
         );
 
         let extension_contract_id = "d403c9b8-c05f-4f24-9395-3f60817174c1".parse().unwrap();
@@ -717,6 +751,7 @@ mod tests {
                 interest: dec!(10),
                 due_date: datetime!(2025-05-22 0:00 UTC),
                 status: InstallmentStatus::Pending,
+                late_penalty: LatePenalty::FullLiquidation,
                 paid_date: None,
                 payment_id: None,
             },
@@ -727,6 +762,7 @@ mod tests {
                 interest: dec!(10),
                 due_date: datetime!(2025-05-29 0:00 UTC),
                 status: InstallmentStatus::Pending,
+                late_penalty: LatePenalty::FullLiquidation,
                 paid_date: None,
                 payment_id: None,
             },
@@ -754,6 +790,7 @@ mod tests {
             interest: dec!(10),
             due_date: datetime!(2025-05-22 0:00 UTC),
             status: InstallmentStatus::Pending,
+            late_penalty: LatePenalty::FullLiquidation,
             paid_date: None,
             payment_id: None,
         }];
@@ -780,6 +817,7 @@ mod tests {
             interest: dec!(10),
             due_date: datetime!(2025-05-22 0:00 UTC),
             status: InstallmentStatus::Late,
+            late_penalty: LatePenalty::FullLiquidation,
             paid_date: None,
             payment_id: None,
         }];
@@ -806,6 +844,7 @@ mod tests {
             interest: dec!(10),
             due_date: datetime!(2025-05-22 0:00 UTC),
             status: InstallmentStatus::Paid,
+            late_penalty: LatePenalty::FullLiquidation,
             paid_date: None,
             payment_id: None,
         }];
@@ -835,6 +874,7 @@ mod tests {
                 interest: dec!(10),
                 due_date: datetime!(2025-05-22 0:00 UTC),
                 status: InstallmentStatus::Cancelled,
+                late_penalty: LatePenalty::FullLiquidation,
                 paid_date: None,
                 payment_id: None,
             },
@@ -845,6 +885,7 @@ mod tests {
                 interest: dec!(10),
                 due_date: datetime!(2025-05-22 0:00 UTC),
                 status: InstallmentStatus::Confirmed,
+                late_penalty: LatePenalty::FullLiquidation,
                 paid_date: None,
                 payment_id: None,
             },
@@ -855,6 +896,7 @@ mod tests {
                 interest: dec!(10),
                 due_date: datetime!(2025-05-29 0:00 UTC),
                 status: InstallmentStatus::Pending,
+                late_penalty: LatePenalty::FullLiquidation,
                 paid_date: None,
                 payment_id: None,
             },
@@ -895,6 +937,7 @@ mod tests {
                 interest: dec!(10),
                 due_date: datetime!(2025-05-22 0:00 UTC),
                 status: InstallmentStatus::Confirmed,
+                late_penalty: LatePenalty::FullLiquidation,
                 paid_date: None,
                 payment_id: None,
             },
@@ -905,6 +948,7 @@ mod tests {
                 interest: dec!(10),
                 due_date: datetime!(2025-05-29 0:00 UTC),
                 status: InstallmentStatus::Pending,
+                late_penalty: LatePenalty::FullLiquidation,
                 paid_date: None,
                 payment_id: None,
             },
@@ -932,6 +976,7 @@ mod tests {
             interest: dec!(10),
             due_date: datetime!(2025-05-22 0:00 UTC),
             status: InstallmentStatus::Pending,
+            late_penalty: LatePenalty::FullLiquidation,
             paid_date: None,
             payment_id: None,
         }];
@@ -958,6 +1003,7 @@ mod tests {
             interest: dec!(10),
             due_date: datetime!(2025-05-22 0:00 UTC),
             status: InstallmentStatus::Pending,
+            late_penalty: LatePenalty::FullLiquidation,
             paid_date: None,
             payment_id: None,
         }];

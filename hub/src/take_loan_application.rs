@@ -8,6 +8,7 @@ use crate::mempool;
 use crate::mempool::TrackContractFunding;
 use crate::model::generate_installments;
 use crate::model::ContractVersion;
+use crate::model::LatePenalty;
 use crate::notifications::Notifications;
 use crate::routes::lender::loan_applications::TakeLoanApplicationSchema;
 use crate::wallet::Wallet;
@@ -171,6 +172,7 @@ pub async fn take_application(
         non_zero_duration_days,
         loan_application.interest_rate,
         loan_application.loan_amount,
+        LatePenalty::FullLiquidation,
     );
 
     db::installments::insert(db, installments)

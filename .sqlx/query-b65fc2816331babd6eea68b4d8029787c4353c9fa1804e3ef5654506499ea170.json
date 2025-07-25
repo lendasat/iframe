@@ -1,6 +1,6 @@
 {
   "db_name": "PostgreSQL",
-  "query": "\n        SELECT\n            lo.id,\n            lo.loan_deal_id,\n            lo.lender_id,\n            lo.name,\n            lo.min_ltv,\n            lo.interest_rate,\n            lo.loan_amount_min,\n            lo.loan_amount_max,\n            lo.duration_days_min,\n            lo.duration_days_max,\n            lo.loan_amount_reserve,\n            COALESCE(\n                lo.loan_amount_reserve - COALESCE(\n                    SUM(\n                        CASE\n                            WHEN c.status NOT IN ('Cancelled', 'RequestExpired')\n                            THEN c.loan_amount\n                            ELSE 0\n                        END\n                    ),\n                    0\n                ),\n                lo.loan_amount_reserve\n            ) AS loan_amount_reserve_remaining,\n            lo.loan_asset AS \"loan_asset: LoanAsset\",\n            lo.loan_payout AS \"loan_payout: LoanPayout\",\n            lo.status AS \"status: LoanOfferStatus\",\n            lo.loan_repayment_address,\n            lo.lender_pk,\n            lo.lender_derivation_path,\n            lo.auto_accept,\n            lo.kyc_link,\n            lo.lender_npub,\n            lo.extension_duration_days,\n            lo.extension_interest_rate,\n            lo.repayment_plan AS \"repayment_plan: RepaymentPlan\",\n            lo.created_at,\n            lo.updated_at\n        FROM loan_offers lo\n            LEFT JOIN\n                contracts c ON lo.id = c.loan_deal_id\n        WHERE lo.lender_id = $1 and lo.id = $2\n        GROUP BY\n            lo.id\n        ",
+  "query": "\n        SELECT\n            lo.id,\n            lo.loan_deal_id,\n            lo.lender_id,\n            lo.name,\n            lo.min_ltv,\n            lo.interest_rate,\n            lo.loan_amount_min,\n            lo.loan_amount_max,\n            lo.duration_days_min,\n            lo.duration_days_max,\n            lo.loan_amount_reserve,\n            lo.kyc_link,\n            lo.auto_accept,\n            COALESCE(\n                lo.loan_amount_reserve - COALESCE(\n                    SUM(\n                        CASE\n                            WHEN c.status NOT IN ('Cancelled', 'RequestExpired')\n                            THEN c.loan_amount\n                            ELSE 0\n                        END\n                    ),\n                    0\n                ),\n                lo.loan_amount_reserve\n            ) AS loan_amount_reserve_remaining,\n            lo.loan_asset AS \"loan_asset: LoanAsset\",\n            lo.loan_payout AS \"loan_payout: LoanPayout\",\n            lo.status AS \"status: LoanOfferStatus\",\n            lo.loan_repayment_address,\n            lo.lender_pk,\n            lo.lender_derivation_path,\n            lo.lender_npub,\n            lo.extension_duration_days,\n            lo.extension_interest_rate,\n            lo.repayment_plan AS \"repayment_plan: RepaymentPlan\",\n            lo.btc_loan_repayment_address,\n            lo.created_at,\n            lo.updated_at\n        FROM loan_offers lo\n            LEFT JOIN\n                contracts c ON lo.id = c.loan_deal_id\n        WHERE lo.status = 'Available'\n        GROUP BY\n            lo.id\n        ",
   "describe": {
     "columns": [
       {
@@ -60,11 +60,21 @@
       },
       {
         "ordinal": 11,
+        "name": "kyc_link",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 12,
+        "name": "auto_accept",
+        "type_info": "Bool"
+      },
+      {
+        "ordinal": 13,
         "name": "loan_amount_reserve_remaining",
         "type_info": "Numeric"
       },
       {
-        "ordinal": 12,
+        "ordinal": 14,
         "name": "loan_asset: LoanAsset",
         "type_info": {
           "Custom": {
@@ -91,7 +101,7 @@
         }
       },
       {
-        "ordinal": 13,
+        "ordinal": 15,
         "name": "loan_payout: LoanPayout",
         "type_info": {
           "Custom": {
@@ -99,14 +109,15 @@
             "kind": {
               "Enum": [
                 "Direct",
-                "Indirect"
+                "Indirect",
+                "MoonCardMobileApp"
               ]
             }
           }
         }
       },
       {
-        "ordinal": 14,
+        "ordinal": 16,
         "name": "status: LoanOfferStatus",
         "type_info": {
           "Custom": {
@@ -122,28 +133,18 @@
         }
       },
       {
-        "ordinal": 15,
+        "ordinal": 17,
         "name": "loan_repayment_address",
         "type_info": "Varchar"
       },
       {
-        "ordinal": 16,
+        "ordinal": 18,
         "name": "lender_pk",
         "type_info": "Bpchar"
       },
       {
-        "ordinal": 17,
-        "name": "lender_derivation_path",
-        "type_info": "Text"
-      },
-      {
-        "ordinal": 18,
-        "name": "auto_accept",
-        "type_info": "Bool"
-      },
-      {
         "ordinal": 19,
-        "name": "kyc_link",
+        "name": "lender_derivation_path",
         "type_info": "Text"
       },
       {
@@ -179,20 +180,22 @@
       },
       {
         "ordinal": 24,
+        "name": "btc_loan_repayment_address",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 25,
         "name": "created_at",
         "type_info": "Timestamptz"
       },
       {
-        "ordinal": 25,
+        "ordinal": 26,
         "name": "updated_at",
         "type_info": "Timestamptz"
       }
     ],
     "parameters": {
-      "Left": [
-        "Bpchar",
-        "Bpchar"
-      ]
+      "Left": []
     },
     "nullable": [
       false,
@@ -206,7 +209,12 @@
       false,
       false,
       false,
+      true,
+      false,
       null,
+      false,
+      false,
+      false,
       false,
       false,
       false,
@@ -216,12 +224,8 @@
       false,
       true,
       false,
-      false,
-      false,
-      false,
-      false,
       false
     ]
   },
-  "hash": "7ba6475122eb99e6995ef861babcc260feee469d7e90c0a50221e72c1d4660c4"
+  "hash": "b65fc2816331babd6eea68b4d8029787c4353c9fa1804e3ef5654506499ea170"
 }

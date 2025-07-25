@@ -188,6 +188,35 @@ pub async fn get_invoice_by_id(
     Ok(invoice)
 }
 
+pub async fn get_invoice_by_contract_id(
+    pool: &Pool<Postgres>,
+    contract_id: &str,
+) -> Result<Option<MoonInvoice>> {
+    let invoice = sqlx::query_as!(
+        MoonInvoice,
+        r#"
+        SELECT
+            id,
+            address,
+            usd_amount_owed,
+            contract_id,
+            card_id,
+            lender_id,
+            borrower_id,
+            is_paid,
+            created_at,
+            updated_at
+        FROM moon_invoices
+        WHERE contract_id = $1
+        "#,
+        contract_id
+    )
+    .fetch_optional(pool)
+    .await?;
+
+    Ok(invoice)
+}
+
 pub async fn mark_invoice_as_paid(pool: &Pool<Postgres>, invoice_id: Uuid) -> Result<bool> {
     let rows_affected = sqlx::query!(
         r#"

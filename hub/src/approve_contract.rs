@@ -2,6 +2,7 @@ use crate::config::Config;
 use crate::db;
 use crate::mempool;
 use crate::mempool::TrackContractFunding;
+use crate::model::Contract;
 use crate::model::ContractStatus;
 use crate::model::FiatLoanDetailsWrapper;
 use crate::notifications::Notifications;
@@ -52,7 +53,7 @@ pub async fn approve_contract(
     lender_id: &str,
     notifications: Arc<Notifications>,
     fiat_loan_details: Option<FiatLoanDetailsWrapper>,
-) -> Result<(), Error> {
+) -> Result<Contract, Error> {
     let contract = db::contracts::load_contract_by_contract_id_and_lender_id(
         db,
         contract_id.as_str(),
@@ -155,5 +156,5 @@ pub async fn approve_contract(
         .context("Failed to finish DB transaction")
         .map_err(Error::Database)?;
 
-    Ok(())
+    Ok(contract)
 }

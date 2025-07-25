@@ -1,15 +1,19 @@
 use anyhow::Result;
-use bdk::bitcoin::Network;
-use bdk::descriptor::Descriptor;
-use bdk::descriptor::DescriptorPublicKey;
-use bdk::wallet::AddressInfo;
-use bdk::wallet::ChangeSet;
-use bdk::wallet::Wallet;
-use bdk::KeychainKind;
+use bdk_wallet::bitcoin::Network;
+use bdk_wallet::file_store::Store;
+use bdk_wallet::keys::DescriptorPublicKey;
+use bdk_wallet::miniscript::Descriptor;
+use bdk_wallet::AddressInfo;
+use bdk_wallet::ChangeSet;
+use bdk_wallet::CreateParams;
+use bdk_wallet::KeychainKind;
+use bdk_wallet::PersistedWallet;
+use bdk_wallet::Wallet;
 use std::str::FromStr;
 
 pub struct DescriptorWallet {
-    wallet: Wallet,
+    wallet: PersistedWallet<Store<ChangeSet>>,
+    db: Store<ChangeSet>,
 }
 
 impl DescriptorWallet {
@@ -20,23 +24,35 @@ impl DescriptorWallet {
 
         let network = Network::from_str(network)?;
 
-        let db =
-            bdk_file_store::Store::<ChangeSet>::open_or_create_new(b"hub_fee_wallet", db_path)?;
+        let (mut db, _) = Store::<ChangeSet>::load_or_create(b"hub_fee_wallet", db_path)?;
 
-        let wallet = Wallet::new_or_load(descriptor, None, db, network)?;
+        let wallet = Wallet::load()
+            .descriptor(KeychainKind::External, Some(descriptor.clone()))
+            .check_network(network)
+            .load_wallet(&mut db)?;
 
-        Ok(Self { wallet })
+        let wallet = match wallet {
+            Some(wallet) => wallet,
+            None => CreateParams::new_single(descriptor)
+                .network(network)
+                .create_wallet(&mut db)?,
+        };
+
+        Ok(Self { wallet, db })
     }
 
     pub fn get_new_address(&mut self) -> Result<AddressInfo> {
-        self.wallet.reveal_next_address(KeychainKind::Internal)
+        let address = self.wallet.reveal_next_address(KeychainKind::Internal);
+        self.wallet.persist(&mut self.db)?;
+
+        Ok(address)
     }
 }
 
 #[cfg(test)]
 pub mod tests {
     use crate::DescriptorWallet;
-    use bdk::bitcoin::Address;
+    use bdk_wallet::bitcoin::Address;
     use std::str::FromStr;
 
     #[test]

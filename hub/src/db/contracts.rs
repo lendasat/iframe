@@ -50,6 +50,7 @@ pub async fn load_contracts_by_borrower_id(
             lender_derivation_path,
             borrower_loan_address,
             lender_loan_repayment_address,
+            lender_btc_loan_repayment_address,
             loan_type as "loan_type: crate::model::db::LoanType",
             contract_address,
             contract_index,
@@ -107,6 +108,7 @@ pub async fn load_contracts_by_lender_id(
             lender_derivation_path,
             borrower_loan_address,
             lender_loan_repayment_address,
+            lender_btc_loan_repayment_address,
             loan_type as "loan_type: crate::model::db::LoanType",
             contract_address,
             contract_index,
@@ -140,6 +142,69 @@ pub async fn load_contracts_by_lender_id(
     Ok(contracts)
 }
 
+pub async fn load_contracts_by_status(
+    pool: &Pool<Postgres>,
+    statuses: &[ContractStatus],
+) -> Result<Vec<Contract>> {
+    let statuses: Vec<db::ContractStatus> = statuses
+        .iter()
+        .map(|s| db::ContractStatus::from(*s))
+        .collect();
+
+    let contracts = sqlx::query_as!(
+        db::Contract,
+        r#"
+        SELECT
+            id,
+            lender_id,
+            borrower_id,
+            loan_deal_id,
+            initial_ltv,
+            initial_collateral_sats,
+            origination_fee_sats,
+            collateral_sats,
+            loan_amount,
+            borrower_btc_address,
+            borrower_pk,
+            borrower_derivation_path,
+            lender_pk,
+            lender_derivation_path,
+            borrower_loan_address,
+            lender_loan_repayment_address,
+            lender_btc_loan_repayment_address,
+            loan_type as "loan_type: crate::model::db::LoanType",
+            contract_address,
+            contract_index,
+            borrower_npub,
+            lender_npub,
+            status as "status: crate::model::db::ContractStatus",
+            liquidation_status as "liquidation_status: crate::model::db::LiquidationStatus",
+            duration_days,
+            expiry_date,
+            contract_version,
+            interest_rate,
+            client_contract_id,
+            extension_duration_days,
+            extension_interest_rate,
+            asset as "asset: crate::model::LoanAsset",
+            created_at,
+            updated_at
+        FROM contracts
+        WHERE status = ANY($1::contract_status[])
+        "#,
+        statuses as Vec<db::ContractStatus>
+    )
+    .fetch_all(pool)
+    .await?;
+
+    let contracts = contracts
+        .into_iter()
+        .map(Contract::from)
+        .collect::<Vec<Contract>>();
+
+    Ok(contracts)
+}
+
 pub async fn load_contract(pool: &Pool<Postgres>, contract_id: &str) -> Result<Contract> {
     let contract = sqlx::query_as!(
         db::Contract,
@@ -161,6 +226,7 @@ pub async fn load_contract(pool: &Pool<Postgres>, contract_id: &str) -> Result<C
             lender_derivation_path,
             borrower_loan_address,
             lender_loan_repayment_address,
+            lender_btc_loan_repayment_address,
             loan_type as "loan_type: crate::model::db::LoanType",
             contract_address,
             contract_index,
@@ -214,6 +280,7 @@ pub async fn load_contract_by_contract_id_and_borrower_id(
             lender_derivation_path,
             borrower_loan_address,
             lender_loan_repayment_address,
+            lender_btc_loan_repayment_address,
             loan_type as "loan_type: crate::model::db::LoanType",
             contract_address,
             contract_index,
@@ -269,6 +336,7 @@ pub async fn load_contract_by_contract_id_and_lender_id(
             lender_derivation_path,
             borrower_loan_address,
             lender_loan_repayment_address,
+            lender_btc_loan_repayment_address,
             loan_type as "loan_type: crate::model::db::LoanType",
             contract_address,
             contract_index,
@@ -320,6 +388,7 @@ pub async fn load_open_contracts(pool: &Pool<Postgres>) -> Result<Vec<Contract>>
             lender_derivation_path as "lender_derivation_path!",
             borrower_loan_address,
             lender_loan_repayment_address,
+            lender_btc_loan_repayment_address,
             loan_type as "loan_type!: crate::model::db::LoanType",
             contract_address,
             contract_index,
@@ -554,6 +623,7 @@ async fn insert_contract_request(
             lender_derivation_path,
             borrower_loan_address,
             lender_loan_repayment_address,
+            lender_btc_loan_repayment_address,
             loan_type,
             contract_address,
             contract_index,
@@ -567,7 +637,7 @@ async fn insert_contract_request(
             extension_duration_days,
             extension_interest_rate,
             asset
-        ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21, $22, $23, $24, $25, $26, $27, $28, $29, $30, $31, $32)
+        ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21, $22, $23, $24, $25, $26, $27, $28, $29, $30, $31, $32, $33)
         RETURNING
             id,
             lender_id,
@@ -585,6 +655,7 @@ async fn insert_contract_request(
             lender_derivation_path,
             borrower_loan_address,
             lender_loan_repayment_address,
+            lender_btc_loan_repayment_address,
             loan_type as "loan_type: crate::model::db::LoanType",
             contract_address,
             contract_index,
@@ -622,6 +693,7 @@ async fn insert_contract_request(
         lender_derivation_path.to_string(),
         borrower_loan_address,
         lender_loan_repayment_address,
+        None::<String>, // lender_btc_loan_repayment_address
         loan_type as db::LoanType,
         contract_address as Option<String>,
         contract_index as Option<i32>,
@@ -678,6 +750,7 @@ pub async fn accept_contract_request(
             lender_derivation_path,
             borrower_loan_address,
             lender_loan_repayment_address,
+            lender_btc_loan_repayment_address,
             loan_type as "loan_type: crate::model::db::LoanType",
             contract_address,
             contract_index,
@@ -831,6 +904,7 @@ pub async fn reject_contract_request(
             lender_derivation_path,
             borrower_loan_address,
             lender_loan_repayment_address,
+            lender_btc_loan_repayment_address,
             loan_type as "loan_type: crate::model::db::LoanType",
             contract_address,
             contract_index,
@@ -890,6 +964,7 @@ pub(crate) async fn mark_liquidation_state_as(
             lender_derivation_path,
             borrower_loan_address,
             lender_loan_repayment_address,
+            lender_btc_loan_repayment_address,
             loan_type as "loan_type: crate::model::db::LoanType",
             contract_address,
             contract_index,
@@ -969,6 +1044,7 @@ pub(crate) async fn load_open_not_liquidated_contracts_by_currency(
             lender_derivation_path as "lender_derivation_path!",
             borrower_loan_address,
             lender_loan_repayment_address,
+            lender_btc_loan_repayment_address,
             loan_type as "loan_type!: crate::model::db::LoanType",
             contract_address,
             contract_index,
@@ -988,7 +1064,7 @@ pub(crate) async fn load_open_not_liquidated_contracts_by_currency(
             client_contract_id
         FROM contracts_to_be_watched
         WHERE (
-            CASE 
+            CASE
                 WHEN $1 = 'Usd' THEN asset != 'Eur'
                 WHEN $1 = 'Eur' THEN asset = 'Eur'
                 ELSE FALSE
@@ -1165,6 +1241,7 @@ pub async fn update_collateral(
             lender_derivation_path,
             borrower_loan_address,
             lender_loan_repayment_address,
+            lender_btc_loan_repayment_address,
             loan_type as "loan_type: crate::model::db::LoanType",
             contract_address,
             contract_index,

@@ -2,6 +2,7 @@ use crate::config::Config;
 use crate::db;
 use crate::mark_as_principal_given::mark_as_principal_given;
 use crate::model::LoanPayout;
+use crate::moon;
 use crate::notifications::Notifications;
 use anyhow::anyhow;
 use anyhow::Context;
@@ -50,6 +51,7 @@ pub struct Actor {
     is_test_network: bool,
     config: Config,
     notifications: Arc<Notifications>,
+    moon: Arc<moon::Manager>,
 }
 
 #[derive(Debug, Clone)]
@@ -86,6 +88,7 @@ impl Actor {
         network: Network,
         config: Config,
         notifications: Arc<Notifications>,
+        moon: Arc<moon::Manager>,
     ) -> Self {
         let rest_url = config.mempool_rest_url.clone();
         let ws_url = config.mempool_ws_url.clone();
@@ -104,6 +107,7 @@ impl Actor {
             is_test_network,
             config,
             notifications,
+            moon,
         }
     }
 
@@ -204,6 +208,7 @@ async fn update_collateral(
     db: Pool<Postgres>,
     config: Config,
     notifications: Arc<Notifications>,
+    moon: Arc<moon::Manager>,
     contract_id: &str,
     confirmed_collateral_sats: u64,
 ) -> Result<()> {
@@ -245,6 +250,7 @@ async fn update_collateral(
                 &db,
                 &config,
                 &notifications,
+                &moon,
                 contract_id,
                 &contract.lender_id,
                 None,
@@ -539,6 +545,7 @@ impl xtra::Handler<TrackContractFunding> for Actor {
             self.db.clone(),
             self.config.clone(),
             self.notifications.clone(),
+            self.moon.clone(),
             contract_id,
             confirmed_collateral_sats,
         )
@@ -803,6 +810,7 @@ impl xtra::Handler<NewBlockHeight> for Actor {
                 self.db.clone(),
                 self.config.clone(),
                 self.notifications.clone(),
+                self.moon.clone(),
                 &contract.contract_id,
                 updated_confirmed_collateral_sats,
             )

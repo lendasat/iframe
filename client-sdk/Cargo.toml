@@ -13,6 +13,7 @@ hex = "0.4"
 hkdf = { version = "0.12", features = ["std"] }
 log = "0.4"
 miniscript = "12"
+nostr = { version = "0.40.0", default-features = false, features = ["std"] }
 once_cell = { version = "1.19.0", features = ["critical-section"] }
 rand = "0.8"
 sha2 = "0.10"

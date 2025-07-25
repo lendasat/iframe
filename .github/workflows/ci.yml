@@ -123,6 +123,7 @@ jobs:
           envkey_BRINGIN_API_SECRET: "secret"
           envkey_BRINGIN_API_KEY: "key"
           envkey_BRINGIN_WEBHOOK_URL: "https://webhook.site/0be287da-5ac6-4e99-b6fb-d5e26ac3e6b3"
+          envkey_ETHERSCAN_API_KEY: "key"
           file_name: .env
 
       - name: Show disk space before test run
