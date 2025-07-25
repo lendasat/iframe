@@ -1000,6 +1000,64 @@ impl Email {
         .await
     }
 
+    pub async fn send_restructured_contract_borrower(
+        &self,
+        contract_id: &str,
+        borrower: Borrower,
+        loan_url: Url,
+    ) -> Result<()> {
+        let template_name = "restructured_contract_borrower";
+        let handlebars = Self::prepare_template(template_name)?;
+
+        let data = serde_json::json!({
+            "first_name": &borrower.name,
+            "subject": &template_name,
+            "url": loan_url,
+            "notification_settings_url": self.borrower_notification_settings
+        });
+
+        let content_template = handlebars.render(template_name, &data)?;
+
+        if let Some(email) = borrower.email {
+            self.send_email(
+                format!("Your loan contract has been restructured - {contract_id}").as_str(),
+                borrower.name.as_str(),
+                email.as_str(),
+                content_template,
+            )
+            .await?;
+        }
+
+        Ok(())
+    }
+
+    pub async fn send_restructured_contract_lender(
+        &self,
+        lender: Lender,
+        loan_url: Url,
+        contract_id: &str,
+    ) -> Result<()> {
+        let template_name = "restructured_contract_lender";
+        let handlebars = Self::prepare_template(template_name)?;
+
+        let data = serde_json::json!({
+            "first_name": &lender.name,
+            "subject": &template_name,
+            "url": loan_url,
+            "notification_settings_url": self.lender_notification_settings
+        });
+
+        let content_template = handlebars.render(template_name, &data)?;
+
+        self.send_email(
+            format!("A loan contract has been restructured - {contract_id}").as_str(),
+            lender.name.as_str(),
+            lender.email.as_str(),
+            content_template,
+        )
+        .await
+    }
+
     pub async fn send_new_chat_message_notification_lender(
         &self,
         lender: &Lender,

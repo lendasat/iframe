@@ -157,7 +157,53 @@ async fn run_process_defaulted_contracts(
                     contract_id = %contract.id,
                     "Failed to commit DB transaction: {e:#}"
                 );
+                continue;
             }
+
+            tracing::debug!(
+                contract_id = %contract.id,
+                lender_id = contract.lender_id,
+                borrower_id = contract.borrower_id,
+                "Notifying borrower and lender about restructured contract"
+            );
+
+            tokio::spawn({
+                let config = config.clone();
+                let db = db.clone();
+                let notifications = notifications.clone();
+                let contract = contract.clone();
+                async move {
+                    if let Err(e) = notify_borrower_about_restructured_contract(
+                        &db,
+                        &config,
+                        &contract,
+                        notifications.clone(),
+                    )
+                    .await
+                    {
+                        tracing::error!(
+                            contract_id = %contract.id,
+                            lender_id = contract.lender_id,
+                            "Failed to notify borrower about restructured contract: {e:#}"
+                        );
+                    }
+
+                    if let Err(e) = notify_lender_about_restructured_contract(
+                        &db,
+                        &config,
+                        &contract,
+                        notifications.clone(),
+                    )
+                    .await
+                    {
+                        tracing::error!(
+                            contract_id = %contract.id,
+                            lender_id = contract.lender_id,
+                            "Failed notify lender about restructured contract: {e:#}"
+                        );
+                    }
+                }
+            });
 
             continue;
         }
@@ -308,6 +354,82 @@ async fn notify_lender_about_late_installment(
     notifications
         .send_loan_defaulted_lender(lender, loan_url, &contract.id)
         .await;
+
+    Ok(())
+}
+
+async fn notify_borrower_about_restructured_contract(
+    db: &Pool<Postgres>,
+    config: &Config,
+    contract: &Contract,
+    notifications: Arc<Notifications>,
+) -> Result<()> {
+    let emails = db::contract_emails::load_contract_emails(db, &contract.id).await?;
+    if emails.restructured_contract_borrower_sent {
+        // email already sent;
+        return Ok(());
+    }
+
+    let loan_url = config
+        .borrower_frontend_origin
+        .join(&format!("/my-contracts/{}", contract.id))
+        .expect("to be a correct URL");
+
+    let borrower = db::borrowers::get_user_by_id(db, &contract.borrower_id)
+        .await?
+        .context("Could not find borrower")?;
+
+    if let Err(e) = notifications
+        .send_restructured_contract_borrower(contract.id.as_str(), borrower, loan_url)
+        .await
+    {
+        tracing::error!("Could not send restructured contract borrower email: {e:#}");
+        return Ok(());
+    }
+
+    if let Err(e) =
+        db::contract_emails::mark_restructured_contract_borrower_as_sent(db, &contract.id).await
+    {
+        tracing::error!("Failed to mark restructured-contract-borrower email as sent: {e:#}");
+    }
+
+    Ok(())
+}
+
+async fn notify_lender_about_restructured_contract(
+    db: &Pool<Postgres>,
+    config: &Config,
+    contract: &Contract,
+    notifications: Arc<Notifications>,
+) -> Result<()> {
+    let emails = db::contract_emails::load_contract_emails(db, &contract.id).await?;
+    if emails.restructured_contract_lender_sent {
+        // email already sent;
+        return Ok(());
+    }
+
+    let loan_url = config
+        .lender_frontend_origin
+        .join(&format!("/my-contracts/{}", contract.id))
+        .expect("to be a correct URL");
+
+    let lender = db::lenders::get_user_by_id(db, &contract.lender_id)
+        .await?
+        .context("Could not find lender")?;
+
+    if let Err(e) = notifications
+        .send_restructured_contract_lender(lender, loan_url, &contract.id)
+        .await
+    {
+        tracing::error!("Could not send restructured contract lender email: {e:#}");
+        return Ok(());
+    }
+
+    if let Err(e) =
+        db::contract_emails::mark_restructured_contract_lender_as_sent(db, &contract.id).await
+    {
+        tracing::error!("Failed to mark restructured-contract-lender email as sent: {e:#}");
+    }
 
     Ok(())
 }

@@ -32,7 +32,9 @@ where
             defaulted_loan_lender_sent,
             defaulted_loan_liquidated_sent,
             loan_request_expired_borrower_sent,
-            loan_request_expired_lender_sent
+            loan_request_expired_lender_sent,
+            restructured_contract_borrower_sent,
+            restructured_contract_lender_sent
         "#,
         contract_id,
     )
@@ -64,7 +66,9 @@ pub async fn load_contract_emails(
             defaulted_loan_lender_sent,
             defaulted_loan_liquidated_sent,
             loan_request_expired_borrower_sent,
-            loan_request_expired_lender_sent
+            loan_request_expired_lender_sent,
+            restructured_contract_borrower_sent,
+            restructured_contract_lender_sent
         FROM contract_emails
         WHERE contract_id = $1
         "#,
@@ -88,6 +92,8 @@ pub async fn load_contract_emails(
             defaulted_loan_liquidated_sent: false,
             loan_request_expired_borrower_sent: false,
             loan_request_expired_lender_sent: false,
+            restructured_contract_borrower_sent: false,
+            restructured_contract_lender_sent: false,
         }))
 }
 
@@ -312,6 +318,46 @@ pub async fn mark_loan_request_expired_lender_as_sent(
         r#"
         UPDATE contract_emails
             SET loan_request_expired_lender_sent = true
+        WHERE contract_id = $1
+        "#,
+        contract_id,
+    )
+    .execute(pool)
+    .await?;
+
+    Ok(())
+}
+
+pub async fn mark_restructured_contract_borrower_as_sent(
+    pool: &Pool<Postgres>,
+    contract_id: &str,
+) -> Result<()> {
+    let contract_id = contract_id.to_string();
+
+    sqlx::query!(
+        r#"
+        UPDATE contract_emails
+        SET restructured_contract_borrower_sent = true
+        WHERE contract_id = $1
+        "#,
+        contract_id,
+    )
+    .execute(pool)
+    .await?;
+
+    Ok(())
+}
+
+pub async fn mark_restructured_contract_lender_as_sent(
+    pool: &Pool<Postgres>,
+    contract_id: &str,
+) -> Result<()> {
+    let contract_id = contract_id.to_string();
+
+    sqlx::query!(
+        r#"
+        UPDATE contract_emails
+        SET restructured_contract_lender_sent = true
         WHERE contract_id = $1
         "#,
         contract_id,

@@ -909,6 +909,10 @@ pub struct ContractEmails {
     pub loan_request_expired_borrower_sent: bool,
     /// Whether an email was sent to the lender after the we expired a contract request
     pub loan_request_expired_lender_sent: bool,
+    /// Whether an email was sent to the borrower about a restructured contract
+    pub restructured_contract_borrower_sent: bool,
+    /// Whether an email was sent to the lender about a restructured contract
+    pub restructured_contract_lender_sent: bool,
 }
 
 /// Public information about an API key.
@@ -1050,6 +1054,8 @@ pub mod db {
         pub defaulted_loan_liquidated_sent: bool,
         pub loan_request_expired_borrower_sent: bool,
         pub loan_request_expired_lender_sent: bool,
+        pub restructured_contract_borrower_sent: bool,
+        pub restructured_contract_lender_sent: bool,
     }
 }
 
@@ -1312,6 +1318,8 @@ impl From<db::ContractEmails> for ContractEmails {
             defaulted_loan_liquidated_sent: value.defaulted_loan_liquidated_sent,
             loan_request_expired_borrower_sent: value.loan_request_expired_borrower_sent,
             loan_request_expired_lender_sent: value.loan_request_expired_lender_sent,
+            restructured_contract_borrower_sent: value.restructured_contract_borrower_sent,
+            restructured_contract_lender_sent: value.restructured_contract_lender_sent,
         }
     }
 }

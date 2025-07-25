@@ -1,6 +1,6 @@
 {
   "db_name": "PostgreSQL",
-  "query": "\n        INSERT INTO contract_emails (\n            contract_id\n        ) VALUES ($1)\n        RETURNING\n            contract_id,\n            loan_request_sent,\n            loan_request_approved_sent,\n            loan_request_rejected_sent,\n            collateral_funded_sent,\n            loan_paid_out_sent,\n            loan_repaid_sent,\n            loan_auto_accept_notification_sent,\n            defaulted_loan_borrower_sent,\n            defaulted_loan_lender_sent,\n            defaulted_loan_liquidated_sent,\n            loan_request_expired_borrower_sent,\n            loan_request_expired_lender_sent\n        ",
+  "query": "\n        SELECT\n            contract_id,\n            loan_request_sent,\n            loan_request_approved_sent,\n            loan_request_rejected_sent,\n            collateral_funded_sent,\n            loan_paid_out_sent,\n            loan_repaid_sent,\n            loan_auto_accept_notification_sent,\n            defaulted_loan_borrower_sent,\n            defaulted_loan_lender_sent,\n            defaulted_loan_liquidated_sent,\n            loan_request_expired_borrower_sent,\n            loan_request_expired_lender_sent,\n            restructured_contract_borrower_sent,\n            restructured_contract_lender_sent\n        FROM contract_emails\n        WHERE contract_id = $1\n        ",
   "describe": {
     "columns": [
       {
@@ -67,6 +67,16 @@
         "ordinal": 12,
         "name": "loan_request_expired_lender_sent",
         "type_info": "Bool"
+      },
+      {
+        "ordinal": 13,
+        "name": "restructured_contract_borrower_sent",
+        "type_info": "Bool"
+      },
+      {
+        "ordinal": 14,
+        "name": "restructured_contract_lender_sent",
+        "type_info": "Bool"
       }
     ],
     "parameters": {
@@ -87,8 +97,10 @@
       false,
       false,
       false,
+      false,
+      false,
       false
     ]
   },
-  "hash": "d7bd203db89286e87931a2ae5210611646ca709a1fa7cba15629756fd0b7b2b0"
+  "hash": "5bb0f4b81c2d08f34b9520ccef0ee4f82dd373cfb5b0a1238080420c84fb1ea3"
 }

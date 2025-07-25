@@ -1016,6 +1016,40 @@ impl Notifications {
         }
     }
 
+    pub async fn send_restructured_contract_borrower(
+        &self,
+        contract_id: &str,
+        borrower: Borrower,
+        loan_url: Url,
+    ) -> Result<(), anyhow::Error> {
+        let settings = load_borrower_notification_settings(&self.db, borrower.id.as_str()).await;
+
+        if settings.contract_status_changed_email {
+            self.email
+                .send_restructured_contract_borrower(contract_id, borrower, loan_url)
+                .await?;
+        }
+
+        Ok(())
+    }
+
+    pub async fn send_restructured_contract_lender(
+        &self,
+        lender: Lender,
+        loan_url: Url,
+        contract_id: &str,
+    ) -> Result<(), anyhow::Error> {
+        let settings = load_lender_notification_settings(&self.db, lender.id.as_str()).await;
+
+        if settings.contract_status_changed_email {
+            self.email
+                .send_restructured_contract_lender(lender, loan_url, contract_id)
+                .await?;
+        }
+
+        Ok(())
+    }
+
     pub async fn send_contract_extension_enabled(
         &self,
         borrower: Borrower,
