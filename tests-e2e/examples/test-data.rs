@@ -90,6 +90,7 @@ async fn main() -> Result<()> {
         "066a7750b4343aa18fe3677c640ecb2078bf6f7e6a10cb71f085e753c8b5192d".to_string(),
     );
 
+    // TODO: Just skip if the API keys already exist!
     insert_borrower_api_key(&pool, &borrower.id, &api_key_hash).await?;
 
     tracing::info!(
