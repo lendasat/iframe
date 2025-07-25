@@ -211,6 +211,7 @@ pub enum LenderNotificationKind {
         interest_rate: Decimal,
         duration: i32,
     },
+    ContractRestructured,
 }
 
 pub enum BorrowerNotificationKind {
@@ -249,6 +250,7 @@ pub enum BorrowerNotificationKind {
         min_duration: i32,
         max_duration: i32,
     },
+    ContractRestructured,
 }
 
 impl xtra::Handler<Notification> for TelegramBot {
@@ -431,6 +433,18 @@ impl xtra::Handler<Notification> for TelegramBot {
                     format!("Hi, {name}. A new loan offer is available. \
                     You can borrow {min_loan_amount}-{max_loan_amount} {asset} for {interest_rate}% for between {min_duration} days to {max_duration} days. \n You can disable these messages in your settings."),
                     "Go to offer".to_string(),
+                )
+            }
+            NotificationTarget::Borrower(BorrowerNotificationKind::ContractRestructured) => {
+                (
+                    "Your loan contract has been restructured with new terms. Please log in to review the updated contract details and payment schedule.".to_string(),
+                    "Contract Details".to_string(),
+                )
+            }
+            NotificationTarget::Lender(LenderNotificationKind::ContractRestructured) => {
+                (
+                    "A loan contract has been restructured with updated terms. Please log in to review the new contract details and payment schedule.".to_string(),
+                    "Contract Details".to_string(),
                 )
             }
         };

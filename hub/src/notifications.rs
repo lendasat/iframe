@@ -1024,6 +1024,17 @@ impl Notifications {
     ) -> Result<(), anyhow::Error> {
         let settings = load_borrower_notification_settings(&self.db, borrower.id.as_str()).await;
 
+        // Send Telegram notification if enabled
+        if settings.contract_status_changed_telegram {
+            self.send_tg_notification_borrower(
+                borrower.id.as_str(),
+                loan_url.clone(),
+                crate::telegram_bot::BorrowerNotificationKind::ContractRestructured,
+            )
+            .await;
+        }
+
+        // Send email notification if enabled
         if settings.contract_status_changed_email {
             self.email
                 .send_restructured_contract_borrower(contract_id, borrower, loan_url)
@@ -1041,6 +1052,17 @@ impl Notifications {
     ) -> Result<(), anyhow::Error> {
         let settings = load_lender_notification_settings(&self.db, lender.id.as_str()).await;
 
+        // Send Telegram notification if enabled
+        if settings.contract_status_changed_telegram {
+            self.send_tg_notification_lender(
+                lender.id.as_str(),
+                loan_url.clone(),
+                crate::telegram_bot::LenderNotificationKind::ContractRestructured,
+            )
+            .await;
+        }
+
+        // Send email notification if enabled
         if settings.contract_status_changed_email {
             self.email
                 .send_restructured_contract_lender(lender, loan_url, contract_id)
