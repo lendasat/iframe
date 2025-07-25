@@ -420,6 +420,16 @@ impl Wallet {
         Ok(secret_key)
     }
 
+    pub fn npub(&self) -> Result<nostr::key::PublicKey> {
+        let nsec = self.nsec()?;
+        let public_key = nsec.public_key(&Secp256k1::new());
+
+        let npub =
+            nostr::key::PublicKey::from_slice(&public_key.x_only_public_key().0.serialize())?;
+
+        Ok(npub)
+    }
+
     pub fn xpub(&self) -> Xpub {
         Xpub::from_priv(&Secp256k1::new(), &self.xprv)
     }
