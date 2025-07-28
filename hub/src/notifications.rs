@@ -1032,7 +1032,10 @@ impl Notifications {
             self.send_tg_notification_borrower(
                 borrower.id.as_str(),
                 loan_url.clone(),
-                crate::telegram_bot::BorrowerNotificationKind::ContractRestructured,
+                crate::telegram_bot::BorrowerNotificationKind::ContractRestructured {
+                    late_installment: late_installment.clone(),
+                    new_installments: new_installments.clone(),
+                },
             )
             .await;
         }
@@ -1068,7 +1071,10 @@ impl Notifications {
             self.send_tg_notification_lender(
                 lender.id.as_str(),
                 loan_url.clone(),
-                crate::telegram_bot::LenderNotificationKind::ContractRestructured,
+                crate::telegram_bot::LenderNotificationKind::ContractRestructured {
+                    late_installment: late_installment.clone(),
+                    new_installments: new_installments.clone(),
+                },
             )
             .await;
         }
