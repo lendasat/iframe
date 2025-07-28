@@ -100,7 +100,7 @@
               "Enum": [
                 "Direct",
                 "Indirect",
-                "MoonCardMobileApp"
+                "MoonCardInstant"
               ]
             }
           }
@@ -237,7 +237,7 @@
               "Enum": [
                 "Direct",
                 "Indirect",
-                "MoonCardMobileApp"
+                "MoonCardInstant"
               ]
             }
           }

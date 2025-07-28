@@ -1,0 +1,78 @@
+{{#> base}}
+<table role="presentation" class="main">
+    <!-- START MAIN CONTENT AREA -->
+    <tr>
+        <td class="wrapper">
+            <table role="presentation" border="0" cellpadding="0" cellspacing="0">
+                <tr>
+                    <td>
+                        <p>Hi {{first_name}},</p>
+
+                        <p>Your loan contract has been restructured because you missed the following installment:</p>
+
+                        <table role="presentation" border="1" cellpadding="8" cellspacing="0" style="border-collapse: collapse; margin: 20px 0; width: 100%;">
+                            <tr style="background-color: #f8f9fa;">
+                                <th style="text-align: right; padding: 12px; border: 1px solid #dee2e6;">Principal</th>
+                                <th style="text-align: right; padding: 12px; border: 1px solid #dee2e6;">Interest</th>
+                                <th style="text-align: right; padding: 12px; border: 1px solid #dee2e6;">Total Amount</th>
+                                <th style="text-align: right; padding: 12px; border: 1px solid #dee2e6;">Due Date</th>
+                            </tr>
+                            <tr>
+                                <td style="text-align: right; padding: 12px; border: 1px solid #dee2e6;">${{late_installment.principal}}</td>
+                                <td style="text-align: right; padding: 12px; border: 1px solid #dee2e6;">${{late_installment.interest}}</td>
+                                <td style="text-align: right; padding: 12px; border: 1px solid #dee2e6; font-weight: bold;">${{late_installment.amount}}</td>
+                                <td style="text-align: right; padding: 12px; border: 1px solid #dee2e6;">{{late_installment.due_date}}</td>
+                            </tr>
+                        </table>
+
+                        <p>Your new payment schedule consists of {{installment_count}} installments:</p>
+
+                        <table role="presentation" border="1" cellpadding="8" cellspacing="0" style="border-collapse: collapse; margin: 20px 0; width: 100%;">
+                            <tr style="background-color: #f8f9fa;">
+                                <th style="text-align: left; padding: 12px; border: 1px solid #dee2e6;">Installment</th>
+                                <th style="text-align: right; padding: 12px; border: 1px solid #dee2e6;">Principal</th>
+                                <th style="text-align: right; padding: 12px; border: 1px solid #dee2e6;">Interest</th>
+                                <th style="text-align: right; padding: 12px; border: 1px solid #dee2e6;">Total Amount</th>
+                                <th style="text-align: right; padding: 12px; border: 1px solid #dee2e6;">Due Date</th>
+                            </tr>
+                            {{#each new_installments}}
+                            <tr>
+                                <td style="padding: 12px; border: 1px solid #dee2e6;">Payment {{number}}</td>
+                                <td style="text-align: right; padding: 12px; border: 1px solid #dee2e6;">${{principal}}</td>
+                                <td style="text-align: right; padding: 12px; border: 1px solid #dee2e6;">${{interest}}</td>
+                                <td style="text-align: right; padding: 12px; border: 1px solid #dee2e6; font-weight: bold;">${{amount}}</td>
+                                <td style="text-align: right; padding: 12px; border: 1px solid #dee2e6;">{{due_date}}</td>
+                            </tr>
+                            {{/each}}
+                        </table>
+
+                        <p>Please review the updated contract details and make sure to pay according to this new schedule to avoid further penalties.</p>
+
+                        <table role="presentation" border="0" cellpadding="0" cellspacing="0" class="btn btn-primary">
+                            <tbody>
+                                <tr>
+                                    <td align="left">
+                                        <table role="presentation" border="0" cellpadding="0" cellspacing="0">
+                                            <tbody>
+                                                <tr>
+                                                    <td>
+                                                        <a href="{{url}}" target="_blank">View my restructured contract</a>
+                                                    </td>
+                                                </tr>
+                                            </tbody>
+                                        </table>
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+
+                        <p>The Lendasat Team</p>
+                    </td>
+                </tr>
+            </table>
+        </td>
+    </tr>
+
+    <!-- END MAIN CONTENT AREA -->
+</table>
+{{/base}}

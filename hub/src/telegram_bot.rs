@@ -1,4 +1,5 @@
 use crate::db;
+use crate::model::Installment;
 use crate::model::LoanAsset;
 use anyhow::anyhow;
 use anyhow::Result;
@@ -9,6 +10,7 @@ use std::sync::Arc;
 use telegram_bot::DetailsButton;
 use telegram_bot::MessageToUser;
 use telegram_bot::TelegramResponse;
+use time::format_description;
 use time::format_description::well_known::Rfc2822;
 use time::OffsetDateTime;
 use tokio::sync::mpsc;
@@ -211,6 +213,10 @@ pub enum LenderNotificationKind {
         interest_rate: Decimal,
         duration: i32,
     },
+    ContractRestructured {
+        late_installment: Installment,
+        new_installments: Vec<Installment>,
+    },
 }
 
 pub enum BorrowerNotificationKind {
@@ -248,6 +254,10 @@ pub enum BorrowerNotificationKind {
         interest_rate: Decimal,
         min_duration: i32,
         max_duration: i32,
+    },
+    ContractRestructured {
+        late_installment: Installment,
+        new_installments: Vec<Installment>,
     },
 }
 
@@ -431,6 +441,42 @@ impl xtra::Handler<Notification> for TelegramBot {
                     format!("Hi, {name}. A new loan offer is available. \
                     You can borrow {min_loan_amount}-{max_loan_amount} {asset} for {interest_rate}% for between {min_duration} days to {max_duration} days. \n You can disable these messages in your settings."),
                     "Go to offer".to_string(),
+                )
+            }
+            NotificationTarget::Borrower(BorrowerNotificationKind::ContractRestructured { late_installment, new_installments }) => {
+                let format = format_description::parse("[day] [month repr:long]")
+                    .expect("to be valid");
+                let late_due_date = late_installment.due_date.format(&format)
+                    .expect("to be valid");
+                let late_amount = late_installment.principal + late_installment.interest;
+                let late_amount_formatted = format!("${late_amount:.2}");
+
+                (
+                    format!(
+                        "⚠️ Your loan contract has been restructured because you missed an installment of {} due on {}\\. You now have {} new payments to complete\\. Please review your updated payment schedule\\.",
+                        escape_markdown_v2(&late_amount_formatted),
+                        escape_markdown_v2(&late_due_date),
+                        new_installments.len()
+                    ),
+                    "Contract Details".to_string(),
+                )
+            }
+            NotificationTarget::Lender(LenderNotificationKind::ContractRestructured { late_installment, new_installments }) => {
+                let format = format_description::parse("[day] [month repr:long]")
+                    .expect("to be valid");
+                let late_due_date = late_installment.due_date.format(&format)
+                    .expect("to be valid");
+                let late_amount = late_installment.principal + late_installment.interest;
+                let late_amount_formatted = format!("${late_amount:.2}");
+
+                (
+                    format!(
+                        "ℹ️ A loan contract has been restructured\\. The borrower missed a {} payment due on {} and will now repay via {} installments with interest\\.",
+                        escape_markdown_v2(&late_amount_formatted),
+                        escape_markdown_v2(&late_due_date),
+                        new_installments.len()
+                    ),
+                    "Contract Details".to_string(),
                 )
             }
         };

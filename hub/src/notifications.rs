@@ -3,6 +3,7 @@ use crate::db;
 use crate::model;
 use crate::model::Borrower;
 use crate::model::Contract;
+use crate::model::Installment;
 use crate::model::Lender;
 use crate::model::LoanAsset;
 use crate::model::NotificationMessage;
@@ -1014,6 +1015,84 @@ impl Notifications {
                 tracing::error!("Could not send chat notification borrower {e:#}");
             }
         }
+    }
+
+    pub async fn send_restructured_contract_borrower(
+        &self,
+        contract_id: &str,
+        borrower: Borrower,
+        loan_url: Url,
+        late_installment: Installment,
+        new_installments: Vec<Installment>,
+    ) -> Result<(), anyhow::Error> {
+        let settings = load_borrower_notification_settings(&self.db, borrower.id.as_str()).await;
+
+        // Send Telegram notification if enabled
+        if settings.contract_status_changed_telegram {
+            self.send_tg_notification_borrower(
+                borrower.id.as_str(),
+                loan_url.clone(),
+                crate::telegram_bot::BorrowerNotificationKind::ContractRestructured {
+                    late_installment: late_installment.clone(),
+                    new_installments: new_installments.clone(),
+                },
+            )
+            .await;
+        }
+
+        // Send email notification if enabled
+        if settings.contract_status_changed_email {
+            self.email
+                .send_restructured_contract_borrower(
+                    contract_id,
+                    borrower,
+                    loan_url,
+                    late_installment,
+                    new_installments,
+                )
+                .await?;
+        }
+
+        Ok(())
+    }
+
+    pub async fn send_restructured_contract_lender(
+        &self,
+        lender: Lender,
+        loan_url: Url,
+        contract_id: &str,
+        late_installment: Installment,
+        new_installments: Vec<Installment>,
+    ) -> Result<(), anyhow::Error> {
+        let settings = load_lender_notification_settings(&self.db, lender.id.as_str()).await;
+
+        // Send Telegram notification if enabled
+        if settings.contract_status_changed_telegram {
+            self.send_tg_notification_lender(
+                lender.id.as_str(),
+                loan_url.clone(),
+                crate::telegram_bot::LenderNotificationKind::ContractRestructured {
+                    late_installment: late_installment.clone(),
+                    new_installments: new_installments.clone(),
+                },
+            )
+            .await;
+        }
+
+        // Send email notification if enabled
+        if settings.contract_status_changed_email {
+            self.email
+                .send_restructured_contract_lender(
+                    lender,
+                    loan_url,
+                    contract_id,
+                    late_installment,
+                    new_installments,
+                )
+                .await?;
+        }
+
+        Ok(())
     }
 
     pub async fn send_contract_extension_enabled(
