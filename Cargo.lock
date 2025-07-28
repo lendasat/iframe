@@ -1991,6 +1991,7 @@ dependencies = [
  "bitcoin-units",
  "bitmex-stream",
  "descriptor-wallet",
+ "dotenv",
  "futures",
  "handlebars",
  "hex",

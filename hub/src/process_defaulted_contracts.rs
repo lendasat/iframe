@@ -3,6 +3,7 @@ use crate::db;
 use crate::model::generate_installments;
 use crate::model::Contract;
 use crate::model::ContractStatus;
+use crate::model::Installment;
 use crate::model::LatePenalty;
 use crate::model::RepaymentPlan;
 use crate::notifications::Notifications;
@@ -134,7 +135,7 @@ async fn run_process_defaulted_contracts(
                 }
             };
 
-            if let Err(e) = db::installments::insert(&mut *tx, installments).await {
+            if let Err(e) = db::installments::insert(&mut *tx, installments.clone()).await {
                 tracing::error!(
                     contract_id = %contract.id,
                     "Failed to restructure installments: {e:#}"
@@ -177,6 +178,8 @@ async fn run_process_defaulted_contracts(
                         &db,
                         &config,
                         &contract,
+                        late_installments[0].clone(),
+                        installments.clone(),
                         notifications.clone(),
                     )
                     .await
@@ -192,6 +195,8 @@ async fn run_process_defaulted_contracts(
                         &db,
                         &config,
                         &contract,
+                        late_installments[0].clone(),
+                        installments,
                         notifications.clone(),
                     )
                     .await
@@ -362,6 +367,8 @@ async fn notify_borrower_about_restructured_contract(
     db: &Pool<Postgres>,
     config: &Config,
     contract: &Contract,
+    late_installment: Installment,
+    new_installments: Vec<Installment>,
     notifications: Arc<Notifications>,
 ) -> Result<()> {
     let emails = db::contract_emails::load_contract_emails(db, &contract.id).await?;
@@ -380,7 +387,13 @@ async fn notify_borrower_about_restructured_contract(
         .context("Could not find borrower")?;
 
     if let Err(e) = notifications
-        .send_restructured_contract_borrower(contract.id.as_str(), borrower, loan_url)
+        .send_restructured_contract_borrower(
+            contract.id.as_str(),
+            borrower,
+            loan_url,
+            late_installment,
+            new_installments,
+        )
         .await
     {
         tracing::error!("Could not send restructured contract borrower email: {e:#}");
@@ -400,6 +413,8 @@ async fn notify_lender_about_restructured_contract(
     db: &Pool<Postgres>,
     config: &Config,
     contract: &Contract,
+    late_installment: Installment,
+    new_installments: Vec<Installment>,
     notifications: Arc<Notifications>,
 ) -> Result<()> {
     let emails = db::contract_emails::load_contract_emails(db, &contract.id).await?;
@@ -418,7 +433,13 @@ async fn notify_lender_about_restructured_contract(
         .context("Could not find lender")?;
 
     if let Err(e) = notifications
-        .send_restructured_contract_lender(lender, loan_url, &contract.id)
+        .send_restructured_contract_lender(
+            lender,
+            loan_url,
+            &contract.id,
+            late_installment,
+            new_installments,
+        )
         .await
     {
         tracing::error!("Could not send restructured contract lender email: {e:#}");

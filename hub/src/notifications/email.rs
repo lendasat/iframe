@@ -1,6 +1,7 @@
 use crate::config::Config;
 use crate::model::Borrower;
 use crate::model::Contract;
+use crate::model::Installment;
 use crate::model::Lender;
 use anyhow::bail;
 use anyhow::Context;
@@ -1005,15 +1006,53 @@ impl Email {
         contract_id: &str,
         borrower: Borrower,
         loan_url: Url,
+        late_installment: Installment,
+        new_installments: Vec<Installment>,
     ) -> Result<()> {
         let template_name = "restructured_contract_borrower";
         let handlebars = Self::prepare_template(template_name)?;
+
+        // Format the late installment due date
+        let format =
+            format_description::parse("[day] [month repr:long] [year]").expect("to be valid");
+        let late_due_date = late_installment
+            .due_date
+            .format(&format)
+            .expect("to be valid");
+
+        // Format the late installment amount (principal + interest)
+        let late_amount = late_installment.principal + late_installment.interest;
+
+        // Format new installments with due dates and amounts
+        let formatted_new_installments: Vec<serde_json::Value> = new_installments
+            .iter()
+            .enumerate()
+            .map(|(index, installment)| {
+                let due_date = installment.due_date.format(&format).expect("to be valid");
+                let amount = installment.principal + installment.interest;
+                serde_json::json!({
+                    "number": index + 1,
+                    "due_date": due_date,
+                    "amount": format_decimal_with_commas(amount, 2),
+                    "principal": format_decimal_with_commas(installment.principal, 2),
+                    "interest": format_decimal_with_commas(installment.interest, 2)
+                })
+            })
+            .collect();
 
         let data = serde_json::json!({
             "first_name": &borrower.name,
             "subject": &template_name,
             "url": loan_url,
-            "notification_settings_url": self.borrower_notification_settings
+            "notification_settings_url": self.borrower_notification_settings,
+            "late_installment": {
+                "due_date": late_due_date,
+                "amount": format_decimal_with_commas(late_amount, 2),
+                "principal": format_decimal_with_commas(late_installment.principal, 2),
+                "interest": format_decimal_with_commas(late_installment.interest, 2)
+            },
+            "new_installments": formatted_new_installments,
+            "installment_count": new_installments.len()
         });
 
         let content_template = handlebars.render(template_name, &data)?;
@@ -1036,15 +1075,53 @@ impl Email {
         lender: Lender,
         loan_url: Url,
         contract_id: &str,
+        late_installment: Installment,
+        new_installments: Vec<Installment>,
     ) -> Result<()> {
         let template_name = "restructured_contract_lender";
         let handlebars = Self::prepare_template(template_name)?;
+
+        // Format the late installment due date
+        let format =
+            format_description::parse("[day] [month repr:long] [year]").expect("to be valid");
+        let late_due_date = late_installment
+            .due_date
+            .format(&format)
+            .expect("to be valid");
+
+        // Format the late installment amount (principal + interest)
+        let late_amount = late_installment.principal + late_installment.interest;
+
+        // Format new installments with due dates and amounts
+        let formatted_new_installments: Vec<serde_json::Value> = new_installments
+            .iter()
+            .enumerate()
+            .map(|(index, installment)| {
+                let due_date = installment.due_date.format(&format).expect("to be valid");
+                let amount = installment.principal + installment.interest;
+                serde_json::json!({
+                    "number": index + 1,
+                    "due_date": due_date,
+                    "amount": format_decimal_with_commas(amount, 2),
+                    "principal": format_decimal_with_commas(installment.principal, 2),
+                    "interest": format_decimal_with_commas(installment.interest, 2)
+                })
+            })
+            .collect();
 
         let data = serde_json::json!({
             "first_name": &lender.name,
             "subject": &template_name,
             "url": loan_url,
-            "notification_settings_url": self.lender_notification_settings
+            "notification_settings_url": self.lender_notification_settings,
+            "late_installment": {
+                "due_date": late_due_date,
+                "amount": format_decimal_with_commas(late_amount, 2),
+                "principal": format_decimal_with_commas(late_installment.principal, 2),
+                "interest": format_decimal_with_commas(late_installment.interest, 2)
+            },
+            "new_installments": formatted_new_installments,
+            "installment_count": new_installments.len()
         });
 
         let content_template = handlebars.render(template_name, &data)?;
@@ -1235,4 +1312,123 @@ fn format_decimal_with_commas(number: Decimal, decimals: u32) -> String {
     }
 
     result
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::model::InstallmentStatus;
+    use crate::model::LatePenalty;
+    use crate::notifications::email::Email;
+    use time::ext::NumericalDuration;
+    use uuid::Uuid;
+
+    #[ignore]
+    #[tokio::test]
+    async fn test_send_an_email() {
+        tracing_subscriber::fmt()
+            .with_env_filter(
+                "debug,\
+                 hyper=warn,\
+                 reqwest=warn,\
+                 rustls=warn",
+            )
+            .with_test_writer()
+            .init();
+
+        let env_dir = std::env::var("CARGO_MANIFEST_DIR").unwrap();
+        let env_path = format!("{env_dir}/../.env");
+        dotenv::from_filename(env_path).ok();
+
+        let smtp_host = std::env::var("SMTP_HOST").unwrap();
+        let smtp_port = std::env::var("SMTP_PORT").unwrap();
+        let smtp_user = std::env::var("SMTP_USER").unwrap();
+        let smtp_pass = std::env::var("SMTP_PASS").unwrap();
+        let smtp_from = std::env::var("SMTP_FROM").unwrap();
+
+        let email = Email {
+            from: smtp_from,
+            smtp_user,
+            smtp_pass,
+            smtp_host,
+            smtp_port: smtp_port.parse().unwrap(),
+            smtp_disabled: false,
+            borrower_notification_settings: Url::parse("https://www.example.com").unwrap(),
+            lender_notification_settings: Url::parse("https://www.example.com").unwrap(),
+        };
+
+        email
+            .send_restructured_contract_lender(
+                Lender {
+                    id: "borrower".to_string(),
+                    name: "mr borrower".to_string(),
+                    email: "lucas@lendasat.com".to_string(),
+                    password: None,
+                    salt: "".to_string(),
+                    verifier: "".to_string(),
+                    verified: true,
+                    verification_code: None,
+                    invite_code: None,
+                    password_reset_token: None,
+                    timezone: None,
+                    locale: None,
+                    password_reset_at: None,
+                    created_at: OffsetDateTime::now_utc(),
+                    updated_at: OffsetDateTime::now_utc(),
+                },
+                Url::parse("https://www.example.com").unwrap(),
+                "foo",
+                Installment {
+                    id: Uuid::new_v4(),
+                    contract_id: Uuid::new_v4(),
+                    principal: dec!(1_000),
+                    interest: Decimal::ZERO,
+                    due_date: OffsetDateTime::now_utc(),
+                    status: InstallmentStatus::Late,
+                    late_penalty: LatePenalty::InstallmentRestructure,
+                    paid_date: None,
+                    payment_id: None,
+                },
+                vec![
+                    Installment {
+                        id: Uuid::new_v4(),
+                        contract_id: Uuid::new_v4(),
+                        principal: Decimal::ZERO,
+                        interest: dec!(200),
+                        due_date: OffsetDateTime::now_utc() + 30.days(),
+                        status: InstallmentStatus::Pending,
+                        late_penalty: LatePenalty::FullLiquidation,
+                        paid_date: None,
+                        payment_id: None,
+                    },
+                    Installment {
+                        id: Uuid::new_v4(),
+                        contract_id: Uuid::new_v4(),
+                        principal: Decimal::ZERO,
+                        interest: dec!(100),
+                        due_date: OffsetDateTime::now_utc() + 60.days(),
+                        status: InstallmentStatus::Pending,
+                        late_penalty: LatePenalty::FullLiquidation,
+                        paid_date: None,
+                        payment_id: None,
+                    },
+                    Installment {
+                        id: Uuid::new_v4(),
+                        contract_id: Uuid::new_v4(),
+                        principal: dec!(1_000),
+                        interest: dec!(100),
+                        due_date: OffsetDateTime::now_utc() + 90.days(),
+                        status: InstallmentStatus::Pending,
+                        late_penalty: LatePenalty::FullLiquidation,
+                        paid_date: None,
+                        payment_id: None,
+                    },
+                ],
+            )
+            .await
+            .unwrap();
+
+        // Wait for email to be sent (via spawned task) before dropping the runtime.
+        tokio::time::sleep(std::time::Duration::from_secs(5)).await;
+    }
 }
