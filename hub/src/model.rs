@@ -818,51 +818,151 @@ impl From<i32> for ContractVersion {
 #[derive(Clone, Copy, Debug, Deserialize, Serialize, PartialEq, ToSchema)]
 pub enum ContractStatus {
     /// The borrower has sent a contract request based on a loan offer.
+    ///
+    /// - If the lender accepts the contract request, we transition to
+    ///   [`ContractStatus::Accepted`].
+    ///
+    /// - If the lender rejects the contract request, we transition to
+    ///   [`ContractStatus::Rejected`].
+    ///
+    /// - If the request times out, we transition to [`ContractStatus::RequestExpired`].
     Requested,
+    // FIXME: To be removed.
     /// The borrower has sent a request to extend another contract. This state is to be used for
     /// the new contract.
+    ///
+    /// This status is not used and will be removed.
     RenewalRequested,
     /// The lender has accepted the contract request.
+    ///
+    /// - If the borrower funds the Bitcoin collateral contract, we transition to
+    ///   [`ContractStatus::CollateralConfirmed`].
+    ///
+    /// - If the borrower takes too long to fund the collateral contract, we transition to
+    ///   [`ContractStatus::ApprovalExpired`].
     Approved,
     /// The collateral contract has been seen on the blockchain.
-    CollateralSeen,
-    /// The collateral contract has received enough confirmations.
+    ///
+    /// If the collateral contract is _confirmed_ on the blockchain, we transition to
+    /// [`ContractStatus::CollateralConfirmed`].
+    ///
+    /// Currently, this status is unused as we do not monitor the mempool.
+    CollateralSeen(
+        // HACK: This is just here to get around this bug:
+        // https://github.com/juhaku/utoipa/issues/679#issuecomment-1874235656.
+        (),
+    ),
+    /// The collateral contract has received enough confirmations on the blockchain.
+    ///
+    /// - If the lender disburses the principal, we transition to
+    ///   [`ContractStatus::PrincipalGiven`].
+    ///
+    /// - If the lender fails to disburse the principal in a timely manner, the borrower may raise
+    ///   a dispute, transitioning to [`ContractStatus::DisputeBorrowerStarted`].
     CollateralConfirmed,
-    /// The principal has been given to the borrower.
+    /// The lender has disbursed the principal to the borrower. The loan contract is now open.
+    ///
+    /// From this point onwards, the contract may be:
+    ///
+    /// - Repaid in full (according to the borrower), transitioning to
+    ///   [`ContractStatus::RepaymentProvided`].
+    ///
+    /// - Not repaid in time, transitioning to [`ContractStatus::Defaulted`].
+    ///
+    /// - Undercollateralized due to a substantial drop in the price of Bitcoin with respect to the
+    ///   opening price, transitioning to [`ContractStatus::Undercollateralized`].
+    ///
+    /// - Extended before loan term, transitioning to [`ContractStatus::Extended`]. A new contract
+    ///   will be created with status [`ContractStatus::PrincipalGiven`], and this contract will
+    ///   serve as historical data. The contracts will be linked through the `extends_contract` and
+    ///   `extended_by_contract` fields of the `Contract` schema.
     PrincipalGiven,
-    /// The entire principal + interest has been repaid to the lender as claimed by the borrower
+    /// The borrower has repaid the entire outstanding balance to the lender: principal plus
+    /// interest.
+    ///
+    /// - If the lender confirms the repayment, the contract will transition to
+    ///   [`ContractStatus::RepaymentConfirmed`].
+    ///
+    /// - If the lender does not eventually confirm the repayment, either party may raise a
+    ///   dispute, transitioning to either [`ContractStatus::DisputeBorrowerStarted`] or
+    ///   [`ContractStatus::DisputeLenderStarted`].
     RepaymentProvided,
-    /// The entire principal + interest has been repaid to the lender and confirmed by the lender
+    /// The lender has confirmed the repayment of the entire outstanding balance: principal plus
+    /// interest.
+    ///
+    /// If the borrower claims the collateral, we transition to [`ContractStatus::Closing`].
     RepaymentConfirmed,
-    /// The loan is not sufficiently collateralized, so it can be liquidated by the lender.
+    /// The loan contract is not sufficiently collateralized according to the required maximum LTV.
+    ///
+    /// If the lender liquidates their share of the collateral, we transition to
+    /// [`ContractStatus::Closing`].
+    ///
+    /// In theory, the value of the collateral may reduce the LTV enough such that the contract may
+    /// not be considered undercollateralized anymore. In practice, we do not support this at this
+    /// stage: if the contract was ever considered undercollateralized, the collateral will be
+    /// liquidated by the lender.
     Undercollateralized,
-    /// The borrower failed to pay back the loan before expiry.
+    /// The borrower failed to pay back the loan before loan term.
+    ///
+    /// If the lender liquidates their share of the collateral, we transition to
+    /// [`ContractStatus::Closing`].
     Defaulted,
-    /// The collateral claim TX has been broadcasted but not confirmed yet.
+    /// The transaction spending the collateral contract outputs has been published on the
+    /// blockchain, but is not yet confirmed.
+    ///
+    /// If the spend transaction is _confirmed_ on the blockchain, we transition to
+    /// [`ContractStatus::Closed`].
     Closing,
-    /// The loan has been repaid, somehow.
+    /// The transaction spending the collateral contract outputs has been published and confirmed
+    /// on the blockchain. The loan contract is now closed.
+    ///
+    /// This status implies that the borrower paid back the loan.
     Closed,
-    /// Contract is closed after being liquidated
+    /// The transaction spending the collateral contract outputs has been published and confirmed
+    /// on the blockchain. The loan contract is now closed.
+    ///
+    /// This status indicates that the loan contract was liquidated due to undercollateralization.
     ClosedByLiquidation,
-    /// Contract is closed after the borrower defaulted
+    /// The transaction spending the collateral contract outputs has been published and confirmed
+    /// on the blockchain. The loan contract is now closed.
+    ///
+    /// This status indicates that the loan contract was liquidated because the borrower defaulted
+    /// on a loan repayment.
     ClosedByDefaulting,
-    /// The contract has been extended by a new one.
+    /// The loan contract was extended before the loan term.
+    ///
+    /// A new contract was created in place of this one, with status
+    /// [`ContractStatus::PrincipalGiven`]. This contract now serves as historical data. The
+    /// contracts are linked through the `extends_contract` and `extended_by_contract` fields of
+    /// the `Contract` schema.
     Extended,
     /// The contract request was rejected by the lender.
     Rejected,
-    /// A dispute has been started by the borrower
+    /// A dispute has been started by the borrower.
+    ///
+    /// Once the dispute is resolved, the contract will (in most cases) transition back to the
+    /// status before the dispute was raised.
     DisputeBorrowerStarted,
-    /// A dispute has been started by the lender
+    /// A dispute has been started by the lender.
+    ///
+    /// Once the dispute is resolved, the contract will (in most cases) transition back to the
+    /// status before the dispute was raised.
     DisputeLenderStarted,
-    /// The dispute has been resolved by the borrower
+    // FIXME: To be removed.
+    /// The dispute has been resolved by the borrower.
+    ///
+    /// This status is not used and will be removed.
     DisputeBorrowerResolved,
-    /// The dispute has been resolved by the lender
+    // FIXME: To be removed.
+    /// The dispute has been resolved by the lender.
+    ///
+    /// This status is not used and will be removed.
     DisputeLenderResolved,
-    /// The request has been cancelled by the cancelled
+    /// The contract request has been cancelled by the borrower.
     Cancelled,
-    /// The request has expired due to not being accepted nor cancelled
+    /// The contract request has expired because the lender did not respond in time.
     RequestExpired,
-    /// The request has been approved but was not funded in time
+    /// The approved contract has expired because the borrower did not collateralize it in time.
     ApprovalExpired,
 }
 
@@ -1121,7 +1221,7 @@ impl From<db::ContractStatus> for ContractStatus {
             db::ContractStatus::Requested => Self::Requested,
             db::ContractStatus::RenewalRequested => Self::RenewalRequested,
             db::ContractStatus::Approved => Self::Approved,
-            db::ContractStatus::CollateralSeen => Self::CollateralSeen,
+            db::ContractStatus::CollateralSeen => Self::CollateralSeen(()),
             db::ContractStatus::CollateralConfirmed => Self::CollateralConfirmed,
             db::ContractStatus::PrincipalGiven => Self::PrincipalGiven,
             db::ContractStatus::RepaymentProvided => Self::RepaymentProvided,
@@ -1268,7 +1368,7 @@ impl From<ContractStatus> for db::ContractStatus {
             ContractStatus::Requested => Self::Requested,
             ContractStatus::RenewalRequested => Self::RenewalRequested,
             ContractStatus::Approved => Self::Approved,
-            ContractStatus::CollateralSeen => Self::CollateralSeen,
+            ContractStatus::CollateralSeen(_) => Self::CollateralSeen,
             ContractStatus::CollateralConfirmed => Self::CollateralConfirmed,
             ContractStatus::PrincipalGiven => Self::PrincipalGiven,
             ContractStatus::RepaymentProvided => Self::RepaymentProvided,
