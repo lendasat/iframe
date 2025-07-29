@@ -361,6 +361,8 @@ async fn post_contract_request(
     )
     .map_err(Error::origination_fee_calculation)?;
 
+    let borrower_npub = body.borrower_npub.unwrap_or(data.config.fallback_npub);
+
     let contract = db::contracts::insert_new_contract_request(
         &data.db,
         contract_id,
@@ -382,7 +384,7 @@ async fn post_contract_request(
         body.loan_type,
         ContractVersion::TwoOfThree,
         offer.interest_rate,
-        body.borrower_npub,
+        borrower_npub,
         offer.lender_npub,
         body.client_contract_id,
         // The contract inherits the extension policy of the loan offer.

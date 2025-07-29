@@ -159,6 +159,9 @@ mod tests {
             bringin_api_key: "test".to_string(),
             bringin_webhook_url: url::Url::parse("http://localhost").unwrap(),
             etherscan_api_key: "test".to_string(),
+            fallback_npub: "npub16d3ewav9e39xctevl6nwcj6k62nm3dhk2g0jgj7n2vhc2m35989s5ej0d8"
+                .parse()
+                .unwrap(),
         }
     }
 

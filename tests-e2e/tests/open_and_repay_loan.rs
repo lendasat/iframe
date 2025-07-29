@@ -123,9 +123,11 @@ async fn open_and_repay_loan() {
         loan_type: LoanType::StableCoin,
         moon_card_id: None,
         fiat_loan_details: None,
-        borrower_npub: "npub1x4n3a7ld36fluzzanfg2jm4p7tzpxqp0s47xc8rcpjk4adlkz0qstg4xrp"
-            .parse()
-            .unwrap(),
+        borrower_npub: Some(
+            "npub1x4n3a7ld36fluzzanfg2jm4p7tzpxqp0s47xc8rcpjk4adlkz0qstg4xrp"
+                .parse()
+                .unwrap(),
+        ),
         client_contract_id: None,
     };
 

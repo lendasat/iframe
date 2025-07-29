@@ -1,3 +1,4 @@
+use crate::config::Config;
 use crate::model;
 use crate::model::db;
 use crate::model::CreateLoanApplicationSchema;
@@ -206,6 +207,7 @@ pub async fn mark_as_deleted_by_borrower_and_application_id(
 
 pub async fn insert_loan_application(
     pool: &Pool<Postgres>,
+    config: &Config,
     application: CreateLoanApplicationSchema,
     borrower_id: &str,
 ) -> Result<model::LoanApplication> {
@@ -217,6 +219,8 @@ pub async fn insert_loan_application(
     let loan_type = db::LoanType::from(application.loan_type);
 
     let loan_amount = application.loan_amount.round_dp(2);
+
+    let borrower_npub = application.borrower_npub.unwrap_or(config.fallback_npub);
 
     // First, insert the loan deal.
     sqlx::query!(
@@ -292,7 +296,7 @@ pub async fn insert_loan_application(
             .borrower_btc_address
             .assume_checked()
             .to_string(),
-        application.borrower_npub.to_string(),
+        borrower_npub.to_string(),
         application.client_contract_id,
         status as LoanApplicationStatus,
         application.repayment_plan as RepaymentPlan,

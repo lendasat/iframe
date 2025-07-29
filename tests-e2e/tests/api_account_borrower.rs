@@ -138,9 +138,11 @@ async fn api_account_borrower() {
         loan_type: LoanType::StableCoin,
         moon_card_id: None,
         fiat_loan_details: None,
-        borrower_npub: "npub193gpfqmzdpwjrgr6xnct7j2ks4qc5ywyvfzvqtm6twdpxx7m6xfsmvccj4"
-            .parse()
-            .unwrap(),
+        borrower_npub: Some(
+            "npub193gpfqmzdpwjrgr6xnct7j2ks4qc5ywyvfzvqtm6twdpxx7m6xfsmvccj4"
+                .parse()
+                .unwrap(),
+        ),
         client_contract_id: None,
     };
 
