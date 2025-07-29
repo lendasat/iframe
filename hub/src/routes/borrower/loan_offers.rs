@@ -358,7 +358,7 @@ struct LoanOffer {
     repayment_plan: RepaymentPlan,
 }
 
-#[derive(Debug, Deserialize, ToSchema, Clone, Copy)]
+#[derive(Debug, Deserialize, Serialize, ToSchema, Clone, Copy)]
 #[serde(rename_all = "PascalCase")]
 pub enum QueryParamLoanType {
     /// Filter for direct loan offers only.
@@ -371,7 +371,8 @@ pub enum QueryParamLoanType {
     All,
 }
 
-#[derive(Debug, Deserialize, ToSchema)]
+#[derive(Debug, Deserialize, Serialize, ToSchema, Default)]
+#[serde(default)]
 struct LoanOffersQuery {
     loan_type: Option<QueryParamLoanType>,
     /// Filter by asset type: fiat, stable_coins, or all
@@ -390,7 +391,7 @@ struct LoanOffersQuery {
     duration_min: Option<i32>,
 }
 
-#[derive(Debug, Deserialize, ToSchema, Clone, Copy)]
+#[derive(Debug, Deserialize, Serialize, ToSchema, Clone, Copy)]
 #[serde(rename_all = "snake_case")]
 pub enum AssetTypeFilter {
     Fiat,
@@ -398,7 +399,7 @@ pub enum AssetTypeFilter {
     All,
 }
 
-#[derive(Debug, Deserialize, ToSchema, Clone, Copy)]
+#[derive(Debug, Deserialize, Serialize, ToSchema, Clone, Copy)]
 #[serde(rename_all = "snake_case")]
 pub enum KycFilter {
     NoKyc,
