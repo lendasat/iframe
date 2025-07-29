@@ -320,7 +320,7 @@ pub struct CreateLoanApplicationSchema {
     pub borrower_pk: PublicKey,
     #[schema(value_type = String)]
     pub borrower_derivation_path: bip32::DerivationPath,
-    pub borrower_npub: Npub,
+    pub borrower_npub: Option<Npub>,
     pub client_contract_id: Option<Uuid>,
     pub repayment_plan: RepaymentPlan,
     // TODO: do we want to enable KYC for the lender? I.e. the borrower requires the lender to do
@@ -349,7 +349,7 @@ pub struct ContractRequestSchema {
     /// If the borrower chooses a `loan_id` that corresponds to a fiat loan (e.g.
     /// [`LoanType::Fiat`), this field must be present.
     pub fiat_loan_details: Option<FiatLoanDetailsWrapper>,
-    pub borrower_npub: Npub,
+    pub borrower_npub: Option<Npub>,
     /// Optional client id for this contract
     pub client_contract_id: Option<Uuid>,
 }

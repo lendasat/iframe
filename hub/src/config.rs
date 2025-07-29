@@ -1,3 +1,4 @@
+use crate::model::Npub;
 use crate::model::OriginationFee;
 use bitcoin::Network;
 use rust_decimal::Decimal;
@@ -48,6 +49,7 @@ pub struct Config {
     pub bringin_api_key: String,
     pub bringin_webhook_url: Url,
     pub etherscan_api_key: String,
+    pub fallback_npub: Npub,
 }
 
 impl Config {
@@ -191,6 +193,9 @@ impl Config {
         let etherscan_api_key =
             std::env::var("ETHERSCAN_API_KEY").expect("ETHERSCAN_API_KEY must be set");
 
+        let fallback_npub = std::env::var("FALLBACK_NPUB").expect("FALLBACK_NPUB must be set");
+        let fallback_npub = fallback_npub.parse().expect("valid Npub");
+
         Config {
             database_url,
             mempool_rest_url,
@@ -236,6 +241,7 @@ impl Config {
             bringin_api_key,
             bringin_webhook_url,
             etherscan_api_key,
+            fallback_npub,
         }
     }
 }

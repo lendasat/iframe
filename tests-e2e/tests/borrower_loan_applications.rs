@@ -69,7 +69,7 @@ async fn borrower_loan_applications() {
             .expect("to be valid"),
         borrower_pk,
         borrower_derivation_path,
-        borrower_npub,
+        borrower_npub: Some(borrower_npub),
         client_contract_id: Some(Uuid::new_v4()),
         repayment_plan: RepaymentPlan::Bullet,
     };

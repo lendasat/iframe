@@ -91,9 +91,14 @@ async fn create_loan_application(
         });
     }
 
-    let loan = db::loan_applications::insert_loan_application(&data.db, body, user.id.as_str())
-        .await
-        .map_err(Error::database)?;
+    let loan = db::loan_applications::insert_loan_application(
+        &data.db,
+        &data.config,
+        body,
+        user.id.as_str(),
+    )
+    .await
+    .map_err(Error::database)?;
 
     let application_url = data
         .config
@@ -311,15 +316,19 @@ async fn put_edit_loan_application(
         borrower_btc_address: old_application.borrower_btc_address,
         borrower_pk: old_application.borrower_pk,
         borrower_derivation_path: old_application.borrower_derivation_path,
-        borrower_npub: old_application.borrower_npub,
+        borrower_npub: Some(old_application.borrower_npub),
         client_contract_id: old_application.client_contract_id,
         repayment_plan: old_application.repayment_plan,
     };
 
-    let new_application =
-        db::loan_applications::insert_loan_application(&data.db, create_body, user.id.as_str())
-            .await
-            .map_err(Error::database)?;
+    let new_application = db::loan_applications::insert_loan_application(
+        &data.db,
+        &data.config,
+        create_body,
+        user.id.as_str(),
+    )
+    .await
+    .map_err(Error::database)?;
 
     db::loan_applications::mark_as_deleted_by_borrower_and_application_id(
         &data.db,
