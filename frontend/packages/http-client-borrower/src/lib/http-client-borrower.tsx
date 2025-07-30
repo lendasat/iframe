@@ -78,10 +78,28 @@ interface RawLoanApplication
 }
 
 // Define the shape of our client
-// Pagination types
-interface PaginationQuery {
+// Pagination and filtering types
+export enum SortField {
+  CreatedAt = "created_at",
+  LoanAmount = "loan_amount",
+  ExpiryDate = "expiry_date",
+  InterestRate = "interest_rate",
+  Status = "status",
+  CollateralSats = "collateral_sats",
+  UpdatedAt = "updated_at",
+}
+
+export enum SortOrder {
+  Asc = "asc",
+  Desc = "desc",
+}
+
+export interface ContractsQuery {
   page?: number;
   limit?: number;
+  status?: string[]; // Array of ContractStatus values
+  sort_by?: SortField;
+  sort_order?: SortOrder;
 }
 
 interface PaginatedContractsResponse {
@@ -158,7 +176,7 @@ export interface HttpClient {
   cancelContractRequest: (contractId: string) => Promise<void>;
 
   // Contract related methods
-  getContracts: (pagination?: PaginationQuery) => Promise<{
+  getContracts: (query?: ContractsQuery) => Promise<{
     data: Contract[];
     page: number;
     limit: number;
@@ -671,7 +689,7 @@ export const createHttpClient = (
 
   // Contract related methods
   const getContracts = async (
-    pagination?: PaginationQuery,
+    query?: ContractsQuery,
   ): Promise<{
     data: Contract[];
     page: number;
@@ -683,11 +701,20 @@ export const createHttpClient = (
       let url = "/api/contracts";
       const params = new URLSearchParams();
 
-      if (pagination?.page !== undefined) {
-        params.append("page", pagination.page.toString());
+      if (query?.page !== undefined) {
+        params.append("page", query.page.toString());
       }
-      if (pagination?.limit !== undefined) {
-        params.append("limit", pagination.limit.toString());
+      if (query?.limit !== undefined) {
+        params.append("limit", query.limit.toString());
+      }
+      if (query?.sort_by !== undefined) {
+        params.append("sort_by", query.sort_by);
+      }
+      if (query?.sort_order !== undefined) {
+        params.append("sort_order", query.sort_order);
+      }
+      if (query?.status && query.status.length > 0) {
+        params.append("status", query.status.join(","));
       }
 
       if (params.toString()) {

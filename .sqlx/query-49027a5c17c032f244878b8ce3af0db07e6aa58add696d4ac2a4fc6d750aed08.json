@@ -1,0 +1,61 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "\n        SELECT COUNT(*) as count\n        FROM contracts\n        WHERE borrower_id = $1 AND status = ANY($2::contract_status[])\n        ",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "count",
+        "type_info": "Int8"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Bpchar",
+        {
+          "Custom": {
+            "name": "contract_status[]",
+            "kind": {
+              "Array": {
+                "Custom": {
+                  "name": "contract_status",
+                  "kind": {
+                    "Enum": [
+                      "Requested",
+                      "Approved",
+                      "CollateralSeen",
+                      "CollateralConfirmed",
+                      "PrincipalGiven",
+                      "RepaymentProvided",
+                      "RepaymentConfirmed",
+                      "Closing",
+                      "Closed",
+                      "Rejected",
+                      "DisputeBorrowerStarted",
+                      "DisputeLenderStarted",
+                      "DisputeBorrowerResolved",
+                      "DisputeLenderResolved",
+                      "Cancelled",
+                      "RequestExpired",
+                      "Defaulted",
+                      "Undercollateralized",
+                      "RenewalRequested",
+                      "Extended",
+                      "ApprovalExpired",
+                      "ClosedByLiquidation",
+                      "ClosedByDefaulting"
+                    ]
+                  }
+                }
+              }
+            }
+          }
+        }
+      ]
+    },
+    "nullable": [
+      null
+    ]
+  },
+  "hash": "49027a5c17c032f244878b8ce3af0db07e6aa58add696d4ac2a4fc6d750aed08"
+}
