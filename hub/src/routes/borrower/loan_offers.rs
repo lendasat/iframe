@@ -181,17 +181,17 @@ async fn get_available_loan_offers_by_lender(
     Path(lender_id): Path<String>,
     Query(query): Query<LoanOffersQuery>,
 ) -> Result<AppJson<Vec<LoanOffer>>, Error> {
+    let lender = db::lenders::get_user_by_id(&data.db, lender_id.as_str())
+        .await
+        .map_err(Error::database)?
+        .ok_or(Error::MissingLender)?;
+
     let available_loans =
         db::loan_offers::load_available_loan_offers_by_lender(&data.db, lender_id.as_str())
             .await
             .map_err(Error::database)?;
 
     let mut ret = vec![];
-
-    let lender = db::lenders::get_user_by_id(&data.db, &lender_id)
-        .await
-        .map_err(Error::database)?
-        .ok_or(Error::MissingLender)?;
 
     let filter_by = query.loan_type.unwrap_or(QueryParamLoanType::Direct);
 
@@ -558,10 +558,11 @@ impl IntoResponse for Error {
                 // This error is caused by bad user input so don't log it
                 (rejection.status(), rejection.body_text())
             }
-            Error::Database(_) | Error::MissingLender => (
+            Error::Database(_) => (
                 StatusCode::INTERNAL_SERVER_ERROR,
                 "Something went wrong".to_owned(),
             ),
+            Error::MissingLender => (StatusCode::BAD_REQUEST, "Lender not found".to_owned()),
             Error::MissingLoanOffer => (StatusCode::BAD_REQUEST, "Loan offer not found".to_owned()),
         };
 
