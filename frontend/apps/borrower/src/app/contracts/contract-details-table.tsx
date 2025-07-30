@@ -27,6 +27,7 @@ import { Badge } from "@frontend/shadcn";
 import { Alert, AlertDescription, AlertTitle } from "@frontend/shadcn";
 
 export type ColumnFilterKey =
+  | "index"
   | "updatedAt"
   | "amount"
   | "expiry"
@@ -77,6 +78,7 @@ export interface ContractDetailsTableProps {
   sortByColumn: ColumnFilterKey;
   sortAsc: boolean;
   contracts: Contract[];
+  startIndex?: number;
 }
 
 export const ContractDetailsTable = ({
@@ -85,6 +87,7 @@ export const ContractDetailsTable = ({
   sortByColumn,
   sortAsc,
   contracts,
+  startIndex = 1,
 }: ContractDetailsTableProps) => {
   const navigate = useNavigate();
 
@@ -92,6 +95,13 @@ export const ContractDetailsTable = ({
     <Table>
       <TableHeader>
         <TableRow>
+          {shownColumns.index && (
+            <TableHead className="w-16">
+              <span className="text-sm font-medium text-muted-foreground">
+                #
+              </span>
+            </TableHead>
+          )}
           {shownColumns.amount && (
             <TableHead>
               <ColumnHeader
@@ -197,7 +207,7 @@ export const ContractDetailsTable = ({
           </TableRow>
         )}
 
-        {contracts.map((contract) => {
+        {contracts.map((contract, index) => {
           const collateral_btc = contract.collateral_sats / 100000000;
 
           let contractStatus = contractStatusToLabelString(contract.status);
@@ -233,6 +243,11 @@ export const ContractDetailsTable = ({
 
           return (
             <TableRow key={contract.id}>
+              {shownColumns.index && (
+                <TableCell className="w-16 text-sm text-muted-foreground">
+                  {startIndex + index}
+                </TableCell>
+              )}
               {shownColumns.amount && (
                 <TableCell className="font-medium">
                   {formatCurrency(

@@ -84,6 +84,88 @@ pub async fn load_contracts_by_borrower_id(
     Ok(contracts)
 }
 
+pub async fn count_contracts_by_borrower_id(
+    pool: &Pool<Postgres>,
+    borrower_id: &str,
+) -> Result<u64> {
+    let count = sqlx::query_scalar!(
+        r#"
+        SELECT COUNT(*) as count
+        FROM contracts
+        WHERE borrower_id = $1
+        "#,
+        borrower_id
+    )
+    .fetch_one(pool)
+    .await?;
+
+    Ok(count.unwrap_or(0) as u64)
+}
+
+pub async fn load_contracts_by_borrower_id_paginated(
+    pool: &Pool<Postgres>,
+    borrower_id: &str,
+    limit: u32,
+    offset: u32,
+) -> Result<Vec<Contract>> {
+    let contracts = sqlx::query_as!(
+        db::Contract,
+        r#"
+        SELECT
+            id,
+            lender_id,
+            borrower_id,
+            loan_deal_id,
+            initial_ltv,
+            initial_collateral_sats,
+            origination_fee_sats,
+            collateral_sats,
+            loan_amount,
+            borrower_btc_address,
+            borrower_pk,
+            borrower_derivation_path,
+            lender_pk,
+            lender_derivation_path,
+            borrower_loan_address,
+            lender_loan_repayment_address,
+            lender_btc_loan_repayment_address,
+            loan_type as "loan_type: crate::model::db::LoanType",
+            contract_address,
+            contract_index,
+            borrower_npub,
+            lender_npub,
+            status as "status: crate::model::db::ContractStatus",
+            liquidation_status as "liquidation_status: crate::model::db::LiquidationStatus",
+            duration_days,
+            expiry_date,
+            contract_version,
+            interest_rate,
+            client_contract_id,
+            extension_duration_days,
+            extension_interest_rate,
+            asset as "asset: crate::model::LoanAsset",
+            created_at,
+            updated_at
+        FROM contracts
+        WHERE borrower_id = $1
+        ORDER BY created_at DESC
+        LIMIT $2 OFFSET $3
+        "#,
+        borrower_id,
+        limit as i64,
+        offset as i64
+    )
+    .fetch_all(pool)
+    .await?;
+
+    let contracts = contracts
+        .into_iter()
+        .map(Contract::from)
+        .collect::<Vec<Contract>>();
+
+    Ok(contracts)
+}
+
 pub async fn load_contracts_by_lender_id(
     pool: &Pool<Postgres>,
     lender_id: &str,

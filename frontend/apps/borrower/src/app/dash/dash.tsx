@@ -10,7 +10,19 @@ export const Dashboard = () => {
   const { getContracts } = useHttpClientBorrower();
 
   const { loading, value: maybeContracts } = useAsync(async () => {
-    return await getContracts();
+    const allContracts = [];
+    let currentPage = 1;
+    let hasMorePages = true;
+
+    while (hasMorePages) {
+      const response = await getContracts({ page: currentPage, limit: 50 });
+      allContracts.push(...response.data);
+
+      hasMorePages = currentPage < response.total_pages;
+      currentPage++;
+    }
+
+    return allContracts;
   }, []);
 
   const contracts = maybeContracts || [];

@@ -70,6 +70,7 @@ use time::ext::NumericalDuration;
 use time::OffsetDateTime;
 use tracing::instrument;
 use url::Url;
+use utoipa::IntoParams;
 use utoipa::ToSchema;
 use utoipa_axum::router::OpenApiRouter;
 use utoipa_axum::routes;
@@ -566,16 +567,64 @@ async fn cancel_contract_request(
     Ok(())
 }
 
-/// Get all personal contracts.
+#[derive(Debug, Deserialize, ToSchema, IntoParams)]
+struct PaginationQuery {
+    #[serde(default = "default_page")]
+    page: u32,
+    #[serde(default = "default_limit")]
+    limit: u32,
+}
+
+fn default_page() -> u32 {
+    1
+}
+
+fn default_limit() -> u32 {
+    10
+}
+
+impl PaginationQuery {
+    fn offset(&self) -> u32 {
+        (self.page - 1) * self.limit
+    }
+
+    fn validate(&self) -> Result<(), &'static str> {
+        if self.page == 0 {
+            return Err("Page must be greater than 0");
+        }
+        if self.limit == 0 || self.limit > 100 {
+            return Err("Limit must be between 1 and 100");
+        }
+        Ok(())
+    }
+}
+
+#[derive(Debug, Serialize, ToSchema)]
+struct PaginatedContractsResponse {
+    data: Vec<Contract>,
+    page: u32,
+    limit: u32,
+    total: u64,
+    total_pages: u32,
+}
+
+/// Get all personal contracts with pagination support.
 #[utoipa::path(
 get,
 path = "/",
 tag = CONTRACTS_TAG,
+params(
+    PaginationQuery
+),
 responses(
     (
     status = 200,
-    description = "A list of contracts",
-    body = [Contract]
+    description = "Paginated list of contracts",
+    body = PaginatedContractsResponse
+    ),
+    (
+    status = 400,
+    description = "Bad request (invalid pagination parameters)"
     )
 ),
 security(
@@ -584,23 +633,44 @@ security(
     )
 )
 ]
-#[instrument(skip_all, fields(borrower_id = user.id, contract_id), err(Debug))]
+#[instrument(skip_all, fields(borrower_id = user.id, page = pagination.page, limit = pagination.limit), err(Debug))]
 async fn get_contracts(
     State(data): State<Arc<AppState>>,
     Extension(user): Extension<Borrower>,
-) -> Result<AppJson<Vec<Contract>>, Error> {
-    let contracts = db::contracts::load_contracts_by_borrower_id(&data.db, &user.id)
+    Query(pagination): Query<PaginationQuery>,
+) -> Result<AppJson<PaginatedContractsResponse>, Error> {
+    pagination
+        .validate()
+        .map_err(|e| Error::bad_request(anyhow!(e)))?;
+
+    let total = db::contracts::count_contracts_by_borrower_id(&data.db, &user.id)
         .await
         .map_err(Error::database)?;
+
+    let contracts = db::contracts::load_contracts_by_borrower_id_paginated(
+        &data.db,
+        &user.id,
+        pagination.limit,
+        pagination.offset(),
+    )
+    .await
+    .map_err(Error::database)?;
 
     let mut contracts_api = Vec::new();
     for contract in contracts {
         let contract = map_to_api_contract(&data, contract).await?;
-
         contracts_api.push(contract);
     }
 
-    Ok(AppJson(contracts_api))
+    let total_pages = ((total as f64) / (pagination.limit as f64)).ceil() as u32;
+
+    Ok(AppJson(PaginatedContractsResponse {
+        data: contracts_api,
+        page: pagination.page,
+        limit: pagination.limit,
+        total,
+        total_pages,
+    }))
 }
 
 /// Get a specific personal contract.
@@ -1510,6 +1580,8 @@ async fn map_timeline(
 /// All the errors related to the `contracts` REST API.
 #[derive(Debug)]
 enum Error {
+    /// Bad request error for invalid inputs.
+    BadRequest(#[allow(dead_code)] String),
     /// The request body contained invalid JSON.
     JsonRejection(JsonRejection),
     /// Failed to interact with the database.
@@ -1734,6 +1806,10 @@ impl Error {
     fn bad_signature_provided(e: impl std::fmt::Display) -> Self {
         Self::BadSignatureProvided(format!("{e:#}"))
     }
+
+    fn bad_request(e: impl std::fmt::Display) -> Self {
+        Self::BadRequest(format!("{e:#}"))
+    }
 }
 
 impl From<JsonRejection> for Error {
@@ -1798,6 +1874,7 @@ impl IntoResponse for Error {
                 StatusCode::INTERNAL_SERVER_ERROR,
                 "Something went wrong".to_string(),
             ),
+            Error::BadRequest(msg) => (StatusCode::BAD_REQUEST, msg.to_string()),
             Error::MissingBorrowerLoanAddress => (
                 StatusCode::BAD_REQUEST,
                 "Failed to provide borrower loan \

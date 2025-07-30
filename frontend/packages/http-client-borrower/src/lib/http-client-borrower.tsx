@@ -78,6 +78,20 @@ interface RawLoanApplication
 }
 
 // Define the shape of our client
+// Pagination types
+interface PaginationQuery {
+  page?: number;
+  limit?: number;
+}
+
+interface PaginatedContractsResponse {
+  data: RawContract[];
+  page: number;
+  limit: number;
+  total: number;
+  total_pages: number;
+}
+
 export interface HttpClient {
   // Auth related methods
   register: (
@@ -144,7 +158,13 @@ export interface HttpClient {
   cancelContractRequest: (contractId: string) => Promise<void>;
 
   // Contract related methods
-  getContracts: () => Promise<Contract[]>;
+  getContracts: (pagination?: PaginationQuery) => Promise<{
+    data: Contract[];
+    page: number;
+    limit: number;
+    total: number;
+    total_pages: number;
+  }>;
   getContract: (id: string) => Promise<Contract>;
   markInstallmentAsPaid: (
     contractId: string,
@@ -650,11 +670,36 @@ export const createHttpClient = (
   };
 
   // Contract related methods
-  const getContracts = async (): Promise<Contract[]> => {
+  const getContracts = async (
+    pagination?: PaginationQuery,
+  ): Promise<{
+    data: Contract[];
+    page: number;
+    limit: number;
+    total: number;
+    total_pages: number;
+  }> => {
     try {
-      const response: AxiosResponse<RawContract[]> =
-        await axiosClient.get("/api/contracts");
-      return response.data.map((contract: RawContract) => {
+      let url = "/api/contracts";
+      const params = new URLSearchParams();
+
+      if (pagination?.page !== undefined) {
+        params.append("page", pagination.page.toString());
+      }
+      if (pagination?.limit !== undefined) {
+        params.append("limit", pagination.limit.toString());
+      }
+
+      if (params.toString()) {
+        url += `?${params.toString()}`;
+      }
+
+      console.log("Making request to:", url);
+      const response: AxiosResponse<PaginatedContractsResponse> =
+        await axiosClient.get(url);
+      console.log("Response data:", response.data);
+
+      const contracts = response.data.data.map((contract: RawContract) => {
         const createdAt = parseRFC3339Date(contract.created_at);
         if (createdAt === undefined) {
           throw new Error("Missing created_at");
@@ -677,6 +722,14 @@ export const createHttpClient = (
           expiry: expiry,
         };
       });
+
+      return {
+        data: contracts,
+        page: response.data.page,
+        limit: response.data.limit,
+        total: response.data.total,
+        total_pages: response.data.total_pages,
+      };
     } catch (error) {
       handleError(error, "fetching contracts");
       throw error; // Satisfies the linter, though it won't actually be reached.

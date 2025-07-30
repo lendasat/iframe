@@ -28,7 +28,7 @@ import {
 } from "@frontend/shadcn";
 import { Label } from "@frontend/shadcn";
 import { Card, CardContent, CardHeader } from "@frontend/shadcn";
-import { SlidersHorizontal } from "lucide-react";
+import { SlidersHorizontal, ChevronLeft, ChevronRight } from "lucide-react";
 
 enum ContractStatusFilterType {
   All = "All",
@@ -41,17 +41,31 @@ function MyContracts() {
   const [contractStatusFilter, setContractStatusFilter] = useState(
     ContractStatusFilterType.Open,
   );
+  const [currentPage, setCurrentPage] = useState(1);
+  const [pageSize] = useState(10);
 
-  const { value, error } = useAsync(async () => {
-    return getContracts();
-  });
+  const { value, error, loading } = useAsync(async () => {
+    console.log(
+      `Fetching contracts with page: ${currentPage}, limit: ${pageSize}`,
+    );
+    const result = await getContracts({ page: currentPage, limit: pageSize });
+    console.log("API Response:", result);
+    return result;
+  }, [currentPage, pageSize, contractStatusFilter]);
 
   // TODO: handle error properly
   if (error) {
     console.error(`Failed loading contracts ${JSON.stringify(error)}`);
   }
 
-  const unfilteredContracts = value || [];
+  const paginationData = value || {
+    data: [],
+    page: 1,
+    limit: pageSize,
+    total: 0,
+    total_pages: 1,
+  };
+  const unfilteredContracts = paginationData.data;
 
   const BREAKPOINTS = {
     sm: 640,
@@ -61,6 +75,7 @@ function MyContracts() {
   };
 
   const [shownColumns, setShownColumns] = useState<ColumnFilter>({
+    index: true,
     updatedAt: true,
     amount: true,
     expiry: true,
@@ -78,6 +93,7 @@ function MyContracts() {
     if (width < BREAKPOINTS.md) {
       // For small screens, show minimal columns
       setShownColumns({
+        index: true,
         updatedAt: false,
         amount: true,
         expiry: true,
@@ -90,6 +106,7 @@ function MyContracts() {
     } else if (width < BREAKPOINTS.lg) {
       // For medium screens, show more columns
       setShownColumns({
+        index: true,
         updatedAt: false,
         amount: true,
         expiry: true,
@@ -102,6 +119,7 @@ function MyContracts() {
     } else {
       // For large screens, show all columns
       setShownColumns({
+        index: true,
         updatedAt: true,
         amount: true,
         expiry: true,
@@ -191,6 +209,7 @@ function MyContracts() {
     });
 
   const handleContractStatusFilterChange = (value: string) => {
+    setCurrentPage(1); // Reset to first page when filter changes
     switch (value) {
       case "Open":
         setContractStatusFilter(ContractStatusFilterType.Open);
@@ -228,7 +247,13 @@ function MyContracts() {
                     <SlidersHorizontal className="h-4 w-4" />
                   </Button>
                 </DropdownMenuTrigger>
-                <DropdownMenuContent align="end" className="w-56 h-48">
+                <DropdownMenuContent align="end" className="h-48 w-56">
+                  <DropdownMenuCheckboxItem
+                    checked={shownColumns.index}
+                    onClick={(e) => toggleFilterOutContractDetails(e, "index")}
+                  >
+                    Index
+                  </DropdownMenuCheckboxItem>
                   <DropdownMenuCheckboxItem
                     checked={shownColumns.amount}
                     onClick={(e) => toggleFilterOutContractDetails(e, "amount")}
@@ -281,9 +306,6 @@ function MyContracts() {
                 >
                   Show/hide Contracts
                 </Label>
-                <span className="text-xs font-medium">
-                  ({contracts.length}/{unfilteredContracts.length} displayed)
-                </span>
               </div>
               <Select
                 value={contractStatusFilter}
@@ -308,13 +330,56 @@ function MyContracts() {
       </Card>
 
       <div className="px-6 py-4 md:px-8">
-        <ContractDetailsTable
-          shownColumns={shownColumns}
-          toggleSortByColumn={toggleSortByColumn}
-          sortByColumn={sortByColumn}
-          sortAsc={sortAsc}
-          contracts={contracts}
-        />
+        {loading ? (
+          <div className="flex items-center justify-center py-8">
+            <div className="text-muted-foreground text-sm">
+              Loading contracts...
+            </div>
+          </div>
+        ) : (
+          <ContractDetailsTable
+            shownColumns={shownColumns}
+            toggleSortByColumn={toggleSortByColumn}
+            sortByColumn={sortByColumn}
+            sortAsc={sortAsc}
+            contracts={contracts}
+            startIndex={(paginationData.page - 1) * paginationData.limit + 1}
+          />
+        )}
+
+        {/* Pagination */}
+        {paginationData.total_pages > 1 && (
+          <div className="mt-6 flex items-center justify-between">
+            <div className="text-muted-foreground text-sm">
+              Page {paginationData.page} of {paginationData.total_pages} (
+              {paginationData.total} total contracts)
+            </div>
+            <div className="flex items-center space-x-2">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setCurrentPage(Math.max(1, currentPage - 1))}
+                disabled={currentPage <= 1 || loading}
+              >
+                <ChevronLeft className="h-4 w-4" />
+                Previous
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() =>
+                  setCurrentPage(
+                    Math.min(paginationData.total_pages, currentPage + 1),
+                  )
+                }
+                disabled={currentPage >= paginationData.total_pages || loading}
+              >
+                Next
+                <ChevronRight className="h-4 w-4" />
+              </Button>
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );
