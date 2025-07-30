@@ -328,6 +328,34 @@ async fn create_loan_offers(
 
     let (pk, path) = lender_wallet.next_hardened_pk()?;
 
+    let card_app_offer = db::loan_offers::insert_loan_offer(
+        pool,
+        CreateLoanOfferSchema {
+            name: "CardAppInstant".to_string(),
+            min_ltv: dec!(0.5),
+            interest_rate: dec!(0.12),
+            loan_amount_min: dec!(1),
+            loan_amount_max: dec!(100_000),
+            loan_amount_reserve: dec!(100_000),
+            duration_days_min: 7,
+            duration_days_max: ONE_YEAR as i32,
+            loan_asset: LoanAsset::UsdcPol,
+            loan_payout: LoanPayout::MoonCardInstant,
+            loan_repayment_address: loan_repayment_address.to_string(),
+            lender_pk: pk,
+            lender_derivation_path: path,
+            auto_accept: true,
+            kyc_link: None,
+            lender_npub,
+            extension_duration_days: Some(7),
+            extension_interest_rate: Some(dec!(0.12)),
+            repayment_plan: RepaymentPlan::Bullet,
+        },
+        &lender.id,
+    )
+    .await?;
+    let (pk, path) = lender_wallet.next_hardened_pk()?;
+
     let euro_offer = db::loan_offers::insert_loan_offer(
         pool,
         CreateLoanOfferSchema {
@@ -413,7 +441,12 @@ async fn create_loan_offers(
     )
     .await?;
 
-    Ok(vec![euro_offer, poly_offer, direct_poly_offer])
+    Ok(vec![
+        euro_offer,
+        poly_offer,
+        direct_poly_offer,
+        card_app_offer,
+    ])
 }
 
 async fn init_lender(pool: &Pool<Postgres>, network: &str) -> Result<(Lender, Wallet)> {
