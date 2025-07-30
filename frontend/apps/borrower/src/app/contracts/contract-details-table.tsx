@@ -137,14 +137,9 @@ export const ContractDetailsTable = ({
           )}
           {shownColumns.ltv && (
             <TableHead className="min-w-[100px] text-center">
-              <ColumnHeader
-                toggleSortByColumn={toggleSortByColumn}
-                sortByColumn={sortByColumn}
-                sortAsc={sortAsc}
-                currentColumn="ltv"
-                label="LTV"
-                className="justify-center"
-              />
+              <span className="text-sm font-medium text-muted-foreground">
+                LTV
+              </span>
             </TableHead>
           )}
           {shownColumns.collateral && (
@@ -182,13 +177,9 @@ export const ContractDetailsTable = ({
           )}
           {shownColumns.action && (
             <TableHead>
-              <ColumnHeader
-                toggleSortByColumn={toggleSortByColumn}
-                sortByColumn={sortByColumn}
-                sortAsc={sortAsc}
-                currentColumn="action"
-                label="Action"
-              />
+              <span className="text-sm font-medium text-muted-foreground">
+                Action
+              </span>
             </TableHead>
           )}
         </TableRow>
