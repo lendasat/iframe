@@ -22,6 +22,7 @@ export const ContractOverview = ({
     collateral: true,
     status: true,
     action: true,
+    index: false,
   };
 
   const [sortByColumn, setSortByColumn] =
