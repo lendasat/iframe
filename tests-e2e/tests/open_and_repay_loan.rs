@@ -6,6 +6,7 @@ use crate::common::new_wallet;
 use crate::common::random_txid;
 use crate::common::wait_until_contract_status;
 use crate::common::LoanOffer;
+use crate::common::PaginatedContractsResponse;
 use bitcoin::Psbt;
 use hub::model::ConfirmInstallmentPaymentRequest;
 use hub::model::ContractRequestSchema;
@@ -165,7 +166,9 @@ async fn open_and_repay_loan() {
 
     assert!(res.status().is_success());
 
-    let contracts: Vec<Contract> = res.json().await.unwrap();
+    let response: PaginatedContractsResponse = res.json().await.unwrap();
+    let contracts = response.data;
+
     let contract = contracts.iter().find(|c| c.id == contract.id).unwrap();
 
     let total_collateral = contract.initial_collateral_sats + contract.origination_fee_sats;
@@ -249,7 +252,9 @@ async fn open_and_repay_loan() {
 
     assert!(res.status().is_success());
 
-    let contracts: Vec<Contract> = res.json().await.unwrap();
+    let response: PaginatedContractsResponse = res.json().await.unwrap();
+    let contracts = response.data;
+
     let contract = contracts.iter().find(|c| c.id == contract.id).unwrap();
 
     wait_until_contract_status(

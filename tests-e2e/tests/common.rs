@@ -27,6 +27,11 @@ use std::sync::Arc;
 use std::sync::Once;
 use std::time::Duration;
 
+#[derive(Debug, Deserialize)]
+pub struct PaginatedContractsResponse {
+    pub data: Vec<Contract>,
+}
+
 #[derive(Debug, FromRow, Serialize, Deserialize, Clone)]
 pub struct LoanOffer {
     pub id: String,
@@ -115,6 +120,9 @@ pub fn new_wallet(mnemonic: &str, network: &str) -> Wallet {
     wallet
 }
 
+/// waits until we have a contract with status.
+///
+/// Note: this api only works for the borrower
 pub async fn wait_until_contract_status(
     client: &Client,
     url: &str,
@@ -136,7 +144,9 @@ pub async fn wait_until_contract_status(
                 .await
                 .unwrap();
 
-            let contracts: Vec<Contract> = res.json().await.unwrap();
+            let response: PaginatedContractsResponse = res.json().await.unwrap();
+            let contracts = response.data;
+
             let current = match contracts.iter().find(|c| c.id == contract_id) {
                 Some(contract) => {
                     if contract.status == status {
