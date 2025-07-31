@@ -1465,7 +1465,7 @@ pub async fn update_collateral(
                         // really bad idea.
                         bail!("Should not be able to add collateral to a Requested loan");
                     }
-                    ContractStatus::Approved | ContractStatus::CollateralSeen(_) => {
+                    ContractStatus::Approved | ContractStatus::CollateralSeen => {
                         match updated_collateral_sats >= min_collateral {
                             true => {
                                 tracing::debug!(

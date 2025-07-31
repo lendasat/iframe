@@ -571,7 +571,7 @@ async fn cancel_contract_request(
 
 #[derive(Debug, Deserialize, ToSchema)]
 #[serde(rename_all = "snake_case")]
-enum SortField {
+pub enum SortField {
     CreatedAt,
     LoanAmount,
     ExpiryDate,
@@ -589,7 +589,7 @@ impl Default for SortField {
 
 #[derive(Debug, Deserialize, ToSchema)]
 #[serde(rename_all = "lowercase")]
-enum SortOrder {
+pub enum SortOrder {
     Asc,
     Desc,
 }
@@ -1264,7 +1264,7 @@ pub struct Contract {
     pub status: ContractStatus,
     #[schema(value_type = String)]
     borrower_pk: PublicKey,
-    #[schema(value_type = String)]
+    #[schema(value_type = Option<String>)]
     pub borrower_derivation_path: Option<DerivationPath>,
     #[schema(value_type = String)]
     lender_pk: PublicKey,
@@ -1597,7 +1597,7 @@ async fn map_timeline(
         .into_iter()
         .filter_map(|log| {
             let txid = match log.new_status {
-                ContractStatus::CollateralSeen(_) => transactions.iter().find_map(|tx| {
+                ContractStatus::CollateralSeen => transactions.iter().find_map(|tx| {
                     (tx.transaction_type == TransactionType::Funding).then(|| tx.txid.clone())
                 }),
                 ContractStatus::PrincipalGiven => transactions.iter().find_map(|tx| {
