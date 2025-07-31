@@ -10,10 +10,6 @@ on:
         description: 'The branch, tag or SHA to checkout.'
         required: false
         default: 'main'
-      pr_main:
-        description: 'if true, a pr to merge into main will be created (e.g. true, false)'
-        required: false
-        default: 'true'
 
 env:
   CARGO_INCREMENTAL: 0
@@ -134,10 +130,3 @@ jobs:
         run: |
           ssh -v -o StrictHostKeyChecking=no -i  /.ssh/id_rsa ${{secrets.PROD_VM_USERNAME}}@${{secrets.PROD_VM_SSH_HOST}} 'touch /home/${{secrets.PROD_VM_USERNAME}}/uploads/hub-frontend.confirmed'
 
-      - name: Upload hub binary to server
-        run: |
-          scp -v -o StrictHostKeyChecking=no -i /.ssh/id_rsa ./target/release/hub ${{secrets.PROD_VM_USERNAME}}@${{secrets.PROD_VM_SSH_HOST}}:/home/${{secrets.PROD_VM_USERNAME}}/uploads/hub
-
-      - name: Create hub.confirmed file on server
-        run: |
-          ssh -v -o StrictHostKeyChecking=no -i  /.ssh/id_rsa ${{secrets.PROD_VM_USERNAME}}@${{secrets.PROD_VM_SSH_HOST}} 'touch /home/${{secrets.PROD_VM_USERNAME}}/uploads/hub.confirmed'
