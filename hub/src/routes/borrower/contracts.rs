@@ -1,3 +1,5 @@
+#![allow(unused_qualifications)]
+
 use crate::approve_contract;
 use crate::approve_contract::approve_contract;
 use crate::bitmex_index_price_rest::get_bitmex_index_price;
@@ -70,6 +72,7 @@ use time::ext::NumericalDuration;
 use time::OffsetDateTime;
 use tracing::instrument;
 use url::Url;
+use utoipa::IntoParams;
 use utoipa::ToSchema;
 use utoipa_axum::router::OpenApiRouter;
 use utoipa_axum::routes;
@@ -566,16 +569,128 @@ async fn cancel_contract_request(
     Ok(())
 }
 
-/// Get all personal contracts.
+#[derive(Debug, Deserialize, ToSchema)]
+#[serde(rename_all = "snake_case")]
+enum SortField {
+    CreatedAt,
+    LoanAmount,
+    ExpiryDate,
+    InterestRate,
+    Status,
+    CollateralSats,
+    UpdatedAt,
+}
+
+impl Default for SortField {
+    fn default() -> Self {
+        Self::CreatedAt
+    }
+}
+
+#[derive(Debug, Deserialize, ToSchema)]
+#[serde(rename_all = "lowercase")]
+enum SortOrder {
+    Asc,
+    Desc,
+}
+
+impl Default for SortOrder {
+    fn default() -> Self {
+        Self::Desc
+    }
+}
+
+#[derive(Debug, Deserialize, ToSchema, IntoParams)]
+struct ContractsQuery {
+    #[serde(default = "default_page")]
+    page: u32,
+    #[serde(default = "default_limit")]
+    limit: u32,
+    /// Filter contracts by status. Can be provided multiple times to filter by multiple statuses.
+    /// Example: ?status=Requested,Approved
+    #[serde(default, with = "serde_qs::helpers::comma_separated")]
+    status: Vec<ContractStatus>,
+    /// Sort field for ordering results. Default is 'created_at'.
+    #[serde(default)]
+    sort_by: SortField,
+    /// Sort order. Default is 'desc' (newest first).
+    #[serde(default)]
+    sort_order: SortOrder,
+}
+
+fn default_page() -> u32 {
+    1
+}
+
+fn default_limit() -> u32 {
+    10
+}
+
+impl SortField {
+    fn to_sql_column(&self) -> &'static str {
+        match self {
+            SortField::CreatedAt => "created_at",
+            SortField::LoanAmount => "loan_amount",
+            SortField::ExpiryDate => "expiry_date",
+            SortField::InterestRate => "interest_rate",
+            SortField::Status => "status",
+            SortField::CollateralSats => "collateral_sats",
+            SortField::UpdatedAt => "updated_at",
+        }
+    }
+}
+
+impl SortOrder {
+    fn to_sql(&self) -> &'static str {
+        match self {
+            SortOrder::Asc => "ASC",
+            SortOrder::Desc => "DESC",
+        }
+    }
+}
+
+impl ContractsQuery {
+    fn offset(&self) -> u32 {
+        (self.page - 1) * self.limit
+    }
+
+    fn validate(&self) -> Result<(), &'static str> {
+        if self.page == 0 {
+            return Err("Page must be greater than 0");
+        }
+        if self.limit == 0 || self.limit > 100 {
+            return Err("Limit must be between 1 and 100");
+        }
+        Ok(())
+    }
+}
+
+#[derive(Debug, Serialize, ToSchema)]
+struct PaginatedContractsResponse {
+    data: Vec<Contract>,
+    page: u32,
+    limit: u32,
+    total: u64,
+    total_pages: u32,
+}
+
+/// Get all personal contracts with pagination, status filtering, and sorting support.
 #[utoipa::path(
 get,
 path = "/",
 tag = CONTRACTS_TAG,
+params(
+    ContractsQuery
+),
 responses(
     (
     status = 200,
-    description = "A list of contracts",
-    body = [Contract]
+    description = "Paginated list of contracts, optionally filtered by status and sorted by specified field",
+    body = PaginatedContractsResponse
+    ),
+    (
+    status = 400,
+    description = "Bad request (invalid pagination parameters)"
     )
 ),
 security(
@@ -584,23 +699,74 @@ security(
     )
 )
 ]
-#[instrument(skip_all, fields(borrower_id = user.id, contract_id), err(Debug))]
+#[instrument(skip_all, fields(borrower_id = user.id, page = query.page, limit = query.limit, statuses = ?query.status, sort_by = ?query.sort_by, sort_order = ?query.sort_order
+), err(Debug))]
 async fn get_contracts(
     State(data): State<Arc<AppState>>,
     Extension(user): Extension<Borrower>,
-) -> Result<AppJson<Vec<Contract>>, Error> {
-    let contracts = db::contracts::load_contracts_by_borrower_id(&data.db, &user.id)
+    Query(query): Query<ContractsQuery>,
+) -> Result<AppJson<PaginatedContractsResponse>, Error> {
+    query
+        .validate()
+        .map_err(|e| Error::bad_request(anyhow!(e)))?;
+
+    let sort_options = db::contracts::SortOptions {
+        field: query.sort_by.to_sql_column().to_string(),
+        order: query.sort_order.to_sql().to_string(),
+    };
+
+    let total = if query.status.is_empty() {
+        db::contracts::count_contracts_by_borrower_id(&data.db, &user.id)
+            .await
+            .map_err(Error::database)?
+    } else {
+        db::contracts::count_contracts_by_borrower_id_and_statuses(
+            &data.db,
+            &user.id,
+            &query.status,
+        )
         .await
-        .map_err(Error::database)?;
+        .map_err(Error::database)?
+    };
+
+    let contracts = if query.status.is_empty() {
+        db::contracts::load_contracts_by_borrower_id_paginated_with_sort(
+            &data.db,
+            &user.id,
+            query.limit,
+            query.offset(),
+            &sort_options,
+        )
+        .await
+        .map_err(Error::database)?
+    } else {
+        db::contracts::load_contracts_by_borrower_id_and_statuses_paginated_with_sort(
+            &data.db,
+            &user.id,
+            &query.status,
+            query.limit,
+            query.offset(),
+            &sort_options,
+        )
+        .await
+        .map_err(Error::database)?
+    };
 
     let mut contracts_api = Vec::new();
     for contract in contracts {
         let contract = map_to_api_contract(&data, contract).await?;
-
         contracts_api.push(contract);
     }
 
-    Ok(AppJson(contracts_api))
+    let total_pages = ((total as f64) / (query.limit as f64)).ceil() as u32;
+
+    Ok(AppJson(PaginatedContractsResponse {
+        data: contracts_api,
+        page: query.page,
+        limit: query.limit,
+        total,
+        total_pages,
+    }))
 }
 
 /// Get a specific personal contract.
@@ -666,7 +832,7 @@ security(
     (
     "api_key" = [])
     )
-    )
+)
 ]
 #[instrument(
     skip_all,
@@ -768,7 +934,7 @@ security(
     (
     "api_key" = [])
     )
-    )
+)
 ]
 #[instrument(skip_all, fields(borrower_id = user.id, contract_id), ret, err(Debug))]
 async fn put_provide_fiat_loan_details(
@@ -815,7 +981,12 @@ security(
     )
 )
 ]
-#[instrument(skip_all, fields(borrower_id = user.id, contract_id, fee_rate = query_params.fee_rate), ret, err(Debug))]
+#[instrument(
+    skip_all,
+    fields(borrower_id = user.id, contract_id, fee_rate = query_params.fee_rate),
+    ret,
+    err(Debug)
+)]
 async fn get_claim_collateral_psbt(
     State(data): State<Arc<AppState>>,
     Extension(user): Extension<Borrower>,
@@ -905,7 +1076,9 @@ security(
     )
 )
 ]
-#[instrument(skip_all, fields(borrower_id = user.id, contract_id, claim_tx = body.tx), ret, err(Debug))]
+#[instrument(skip_all, fields(borrower_id = user.id, contract_id, claim_tx = body.tx), ret, err(
+    Debug
+))]
 async fn post_claim_tx(
     State(data): State<Arc<AppState>>,
     Extension(user): Extension<Borrower>,
@@ -1031,7 +1204,7 @@ async fn post_extend_contract_request(
         (
         "api_key" = [])
         )
-    )
+)
 ]
 #[instrument(skip_all, fields(borrower_id = user.id, contract_id, body), ret, err(Debug))]
 async fn put_borrower_btc_address(
@@ -1510,6 +1683,8 @@ async fn map_timeline(
 /// All the errors related to the `contracts` REST API.
 #[derive(Debug)]
 enum Error {
+    /// Bad request error for invalid inputs.
+    BadRequest(#[allow(dead_code)] String),
     /// The request body contained invalid JSON.
     JsonRejection(JsonRejection),
     /// Failed to interact with the database.
@@ -1734,6 +1909,10 @@ impl Error {
     fn bad_signature_provided(e: impl std::fmt::Display) -> Self {
         Self::BadSignatureProvided(format!("{e:#}"))
     }
+
+    fn bad_request(e: impl std::fmt::Display) -> Self {
+        Self::BadRequest(format!("{e:#}"))
+    }
 }
 
 impl From<JsonRejection> for Error {
@@ -1798,6 +1977,7 @@ impl IntoResponse for Error {
                 StatusCode::INTERNAL_SERVER_ERROR,
                 "Something went wrong".to_string(),
             ),
+            Error::BadRequest(msg) => (StatusCode::BAD_REQUEST, msg.to_string()),
             Error::MissingBorrowerLoanAddress => (
                 StatusCode::BAD_REQUEST,
                 "Failed to provide borrower loan \

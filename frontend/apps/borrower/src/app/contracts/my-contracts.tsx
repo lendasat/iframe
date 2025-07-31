@@ -1,9 +1,11 @@
 import {
-  isContractClosed,
-  isContractOpen,
+  type ContractsQuery,
+  ContractStatus,
+  SortField,
+  SortOrder,
   useHttpClientBorrower,
 } from "@frontend/http-client-borrower";
-import { useState, MouseEvent, useEffect } from "react";
+import { MouseEvent, useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { useAsync } from "react-use";
 import {
@@ -13,6 +15,14 @@ import {
 } from "./contract-details-table";
 import {
   Button,
+  Card,
+  CardContent,
+  CardHeader,
+  DropdownMenu,
+  DropdownMenuCheckboxItem,
+  DropdownMenuContent,
+  DropdownMenuTrigger,
+  Label,
   Select,
   SelectContent,
   SelectGroup,
@@ -20,15 +30,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@frontend/shadcn";
-import {
-  DropdownMenu,
-  DropdownMenuCheckboxItem,
-  DropdownMenuContent,
-  DropdownMenuTrigger,
-} from "@frontend/shadcn";
-import { Label } from "@frontend/shadcn";
-import { Card, CardContent, CardHeader } from "@frontend/shadcn";
-import { SlidersHorizontal } from "lucide-react";
+import { ChevronLeft, ChevronRight, SlidersHorizontal } from "lucide-react";
 
 enum ContractStatusFilterType {
   All = "All",
@@ -36,22 +38,108 @@ enum ContractStatusFilterType {
   Closed = "Closed",
 }
 
+// Helper function to map ContractStatusFilterType to server-side status arrays
+const getStatusFilterArray = (
+  filter: ContractStatusFilterType,
+): string[] | undefined => {
+  switch (filter) {
+    case ContractStatusFilterType.Open:
+      // Based on isContractOpen function: return all "open" statuses
+      return [
+        ContractStatus.Approved,
+        ContractStatus.CollateralSeen,
+        ContractStatus.CollateralConfirmed,
+        ContractStatus.PrincipalGiven,
+        ContractStatus.RepaymentProvided,
+        ContractStatus.RepaymentConfirmed,
+        ContractStatus.RenewalRequested,
+      ];
+    case ContractStatusFilterType.Closed:
+      // Based on isContractClosed function: return all "closed" statuses
+      return [
+        ContractStatus.Requested,
+        ContractStatus.Undercollateralized,
+        ContractStatus.Defaulted,
+        ContractStatus.Closing,
+        ContractStatus.Closed,
+        ContractStatus.ClosedByDefaulting,
+        ContractStatus.ClosedByLiquidation,
+        ContractStatus.Extended,
+        ContractStatus.Rejected,
+        ContractStatus.Cancelled,
+        ContractStatus.RequestExpired,
+        ContractStatus.ApprovalExpired,
+      ];
+    case ContractStatusFilterType.All:
+      return undefined; // No filtering
+  }
+};
+
+// Helper function to map ColumnFilterKey to SortField
+const getSortField = (column: ColumnFilterKey): SortField => {
+  switch (column) {
+    case "updatedAt":
+      return SortField.UpdatedAt;
+    case "amount":
+      return SortField.LoanAmount;
+    case "expiry":
+      return SortField.ExpiryDate;
+    case "interest":
+      return SortField.InterestRate;
+    case "ltv":
+    case "collateral":
+      return SortField.CollateralSats;
+    case "status":
+      return SortField.Status;
+    default:
+      return SortField.UpdatedAt;
+  }
+};
+
 function MyContracts() {
   const { getContracts } = useHttpClientBorrower();
   const [contractStatusFilter, setContractStatusFilter] = useState(
     ContractStatusFilterType.Open,
   );
+  const [currentPage, setCurrentPage] = useState(1);
+  const [pageSize] = useState(10);
+  const [sortByColumn, setSortByColumn] =
+    useState<ColumnFilterKey>("updatedAt");
+  const [sortAsc, setSortAsc] = useState(false);
 
-  const { value, error } = useAsync(async () => {
-    return getContracts();
-  });
+  const { value, error, loading } = useAsync(async () => {
+    const statusFilter = getStatusFilterArray(contractStatusFilter);
+    const sortField = getSortField(sortByColumn);
+    const sortOrder = sortAsc ? SortOrder.Asc : SortOrder.Desc;
+
+    console.log(
+      `Fetching contracts with page: ${currentPage}, limit: ${pageSize}, status: ${JSON.stringify(statusFilter)}, sort: ${sortField} ${sortOrder}`,
+    );
+
+    const query: ContractsQuery = {
+      page: currentPage,
+      limit: pageSize,
+      status: statusFilter,
+      sort_by: sortField,
+      sort_order: sortOrder,
+    };
+
+    return await getContracts(query);
+  }, [currentPage, pageSize, contractStatusFilter, sortByColumn, sortAsc]);
 
   // TODO: handle error properly
   if (error) {
     console.error(`Failed loading contracts ${JSON.stringify(error)}`);
   }
 
-  const unfilteredContracts = value || [];
+  const paginationData = value || {
+    data: [],
+    page: 1,
+    limit: pageSize,
+    total: 0,
+    total_pages: 1,
+  };
+  const unfilteredContracts = paginationData.data;
 
   const BREAKPOINTS = {
     sm: 640,
@@ -61,6 +149,7 @@ function MyContracts() {
   };
 
   const [shownColumns, setShownColumns] = useState<ColumnFilter>({
+    index: true,
     updatedAt: true,
     amount: true,
     expiry: true,
@@ -78,6 +167,7 @@ function MyContracts() {
     if (width < BREAKPOINTS.md) {
       // For small screens, show minimal columns
       setShownColumns({
+        index: true,
         updatedAt: false,
         amount: true,
         expiry: true,
@@ -90,6 +180,7 @@ function MyContracts() {
     } else if (width < BREAKPOINTS.lg) {
       // For medium screens, show more columns
       setShownColumns({
+        index: true,
         updatedAt: false,
         amount: true,
         expiry: true,
@@ -102,6 +193,7 @@ function MyContracts() {
     } else {
       // For large screens, show all columns
       setShownColumns({
+        index: true,
         updatedAt: true,
         amount: true,
         expiry: true,
@@ -129,10 +221,6 @@ function MyContracts() {
     };
   }, []);
 
-  const [sortByColumn, setSortByColumn] =
-    useState<ColumnFilterKey>("updatedAt");
-  const [sortAsc, setSortAsc] = useState(false);
-
   const toggleFilterOutContractDetails = (
     e: MouseEvent<HTMLDivElement>,
     filterName: ColumnFilterKey,
@@ -145,52 +233,21 @@ function MyContracts() {
   };
 
   function toggleSortByColumn(column: ColumnFilterKey) {
-    setSortByColumn(column);
-    setSortAsc(!sortAsc);
+    if (sortByColumn === column) {
+      // Same column clicked - toggle sort order
+      setSortAsc(!sortAsc);
+    } else {
+      // New column clicked - set column and default to descending
+      setSortByColumn(column);
+      setSortAsc(false);
+    }
   }
 
-  const contracts = unfilteredContracts
-    .filter((contract) => {
-      switch (contractStatusFilter) {
-        case ContractStatusFilterType.Open:
-          return isContractOpen(contract.status);
-        case ContractStatusFilterType.Closed:
-          return isContractClosed(contract.status);
-        case ContractStatusFilterType.All:
-          return true;
-      }
-    })
-    .sort((a, b) => {
-      // biome-ignore lint/suspicious/noImplicitAnyLet: <explanation>
-      let dif;
-      switch (sortByColumn) {
-        case "updatedAt":
-          dif = a.updated_at.getTime() - b.updated_at.getTime();
-          break;
-        case "amount":
-          dif = a.loan_amount - b.loan_amount;
-          break;
-        case "expiry":
-          dif = a.expiry.getTime() - b.expiry.getTime();
-          break;
-        case "interest":
-          dif = a.interest_rate - b.interest_rate;
-          break;
-        case "ltv":
-          // TODO: this is wrong, we should calculate the current LTV
-          dif = a.initial_ltv - b.initial_ltv;
-          break;
-        case "collateral":
-          dif = a.collateral_sats - b.collateral_sats;
-          break;
-        default:
-          dif = a.status.localeCompare(b.status);
-          break;
-      }
-      return sortAsc ? dif : -dif;
-    });
+  // No need for client-side filtering/sorting anymore - data comes pre-filtered and sorted from server
+  const contracts = unfilteredContracts;
 
   const handleContractStatusFilterChange = (value: string) => {
+    setCurrentPage(1); // Reset to first page when filter changes
     switch (value) {
       case "Open":
         setContractStatusFilter(ContractStatusFilterType.Open);
@@ -228,7 +285,13 @@ function MyContracts() {
                     <SlidersHorizontal className="h-4 w-4" />
                   </Button>
                 </DropdownMenuTrigger>
-                <DropdownMenuContent align="end" className="w-56 h-48">
+                <DropdownMenuContent align="end" className="h-48 w-56">
+                  <DropdownMenuCheckboxItem
+                    checked={shownColumns.index}
+                    onClick={(e) => toggleFilterOutContractDetails(e, "index")}
+                  >
+                    Index
+                  </DropdownMenuCheckboxItem>
                   <DropdownMenuCheckboxItem
                     checked={shownColumns.amount}
                     onClick={(e) => toggleFilterOutContractDetails(e, "amount")}
@@ -281,9 +344,6 @@ function MyContracts() {
                 >
                   Show/hide Contracts
                 </Label>
-                <span className="text-xs font-medium">
-                  ({contracts.length}/{unfilteredContracts.length} displayed)
-                </span>
               </div>
               <Select
                 value={contractStatusFilter}
@@ -308,13 +368,56 @@ function MyContracts() {
       </Card>
 
       <div className="px-6 py-4 md:px-8">
-        <ContractDetailsTable
-          shownColumns={shownColumns}
-          toggleSortByColumn={toggleSortByColumn}
-          sortByColumn={sortByColumn}
-          sortAsc={sortAsc}
-          contracts={contracts}
-        />
+        {loading ? (
+          <div className="flex items-center justify-center py-8">
+            <div className="text-muted-foreground text-sm">
+              Loading contracts...
+            </div>
+          </div>
+        ) : (
+          <ContractDetailsTable
+            shownColumns={shownColumns}
+            toggleSortByColumn={toggleSortByColumn}
+            sortByColumn={sortByColumn}
+            sortAsc={sortAsc}
+            contracts={contracts}
+            startIndex={(paginationData.page - 1) * paginationData.limit + 1}
+          />
+        )}
+
+        {/* Pagination */}
+        {paginationData.total_pages > 1 && (
+          <div className="mt-6 flex items-center justify-between">
+            <div className="text-muted-foreground text-sm">
+              Page {paginationData.page} of {paginationData.total_pages} (
+              {paginationData.total} total contracts)
+            </div>
+            <div className="flex items-center space-x-2">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setCurrentPage(Math.max(1, currentPage - 1))}
+                disabled={currentPage <= 1 || loading}
+              >
+                <ChevronLeft className="h-4 w-4" />
+                Previous
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() =>
+                  setCurrentPage(
+                    Math.min(paginationData.total_pages, currentPage + 1),
+                  )
+                }
+                disabled={currentPage >= paginationData.total_pages || loading}
+              >
+                Next
+                <ChevronRight className="h-4 w-4" />
+              </Button>
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );

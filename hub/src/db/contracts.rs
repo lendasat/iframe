@@ -26,6 +26,21 @@ use std::cmp::Ordering;
 use time::OffsetDateTime;
 use uuid::Uuid;
 
+#[derive(Debug, Clone)]
+pub struct SortOptions {
+    pub field: String,
+    pub order: String,
+}
+
+impl Default for SortOptions {
+    fn default() -> Self {
+        Self {
+            field: "created_at".to_string(),
+            order: "DESC".to_string(),
+        }
+    }
+}
+
 pub async fn load_contracts_by_borrower_id(
     pool: &Pool<Postgres>,
     id: &str,
@@ -75,6 +90,323 @@ pub async fn load_contracts_by_borrower_id(
     )
     .fetch_all(pool)
     .await?;
+
+    let contracts = contracts
+        .into_iter()
+        .map(Contract::from)
+        .collect::<Vec<Contract>>();
+
+    Ok(contracts)
+}
+
+pub async fn count_contracts_by_borrower_id(
+    pool: &Pool<Postgres>,
+    borrower_id: &str,
+) -> Result<u64> {
+    let count = sqlx::query_scalar!(
+        r#"
+        SELECT COUNT(*) as count
+        FROM contracts
+        WHERE borrower_id = $1
+        "#,
+        borrower_id
+    )
+    .fetch_one(pool)
+    .await?;
+
+    Ok(count.unwrap_or(0) as u64)
+}
+
+pub async fn count_contracts_by_borrower_id_and_statuses(
+    pool: &Pool<Postgres>,
+    borrower_id: &str,
+    statuses: &[ContractStatus],
+) -> Result<u64> {
+    if statuses.is_empty() {
+        return count_contracts_by_borrower_id(pool, borrower_id).await;
+    }
+
+    let statuses: Vec<db::ContractStatus> = statuses
+        .iter()
+        .map(|s| db::ContractStatus::from(*s))
+        .collect();
+
+    let count = sqlx::query_scalar!(
+        r#"
+        SELECT COUNT(*) as count
+        FROM contracts
+        WHERE borrower_id = $1 AND status = ANY($2::contract_status[])
+        "#,
+        borrower_id,
+        statuses as Vec<db::ContractStatus>
+    )
+    .fetch_one(pool)
+    .await?;
+
+    Ok(count.unwrap_or(0) as u64)
+}
+
+pub async fn load_contracts_by_borrower_id_paginated(
+    pool: &Pool<Postgres>,
+    borrower_id: &str,
+    limit: u32,
+    offset: u32,
+) -> Result<Vec<Contract>> {
+    load_contracts_by_borrower_id_paginated_with_sort(
+        pool,
+        borrower_id,
+        limit,
+        offset,
+        &SortOptions::default(),
+    )
+    .await
+}
+
+pub async fn load_contracts_by_borrower_id_paginated_with_sort(
+    pool: &Pool<Postgres>,
+    borrower_id: &str,
+    limit: u32,
+    offset: u32,
+    sort_options: &SortOptions,
+) -> Result<Vec<Contract>> {
+    // Build the dynamic query with sort options
+    let query_str = format!(
+        r#"
+        SELECT
+            id,
+            lender_id,
+            borrower_id,
+            loan_deal_id,
+            initial_ltv,
+            initial_collateral_sats,
+            origination_fee_sats,
+            collateral_sats,
+            loan_amount,
+            borrower_btc_address,
+            borrower_pk,
+            borrower_derivation_path,
+            lender_pk,
+            lender_derivation_path,
+            borrower_loan_address,
+            lender_loan_repayment_address,
+            lender_btc_loan_repayment_address,
+            loan_type,
+            contract_address,
+            contract_index,
+            borrower_npub,
+            lender_npub,
+            status,
+            liquidation_status,
+            duration_days,
+            expiry_date,
+            contract_version,
+            interest_rate,
+            client_contract_id,
+            extension_duration_days,
+            extension_interest_rate,
+            asset,
+            created_at,
+            updated_at
+        FROM contracts
+        WHERE borrower_id = $1
+        ORDER BY {} {}
+        LIMIT $2 OFFSET $3
+        "#,
+        sort_options.field, sort_options.order
+    );
+
+    let contracts: Vec<db::Contract> = sqlx::query(&query_str)
+        .bind(borrower_id)
+        .bind(limit as i64)
+        .bind(offset as i64)
+        .try_map(|row: sqlx::postgres::PgRow| {
+            use sqlx::Row;
+            Ok(db::Contract {
+                id: row.try_get("id")?,
+                lender_id: row.try_get("lender_id")?,
+                borrower_id: row.try_get("borrower_id")?,
+                loan_deal_id: row.try_get("loan_deal_id")?,
+                initial_ltv: row.try_get("initial_ltv")?,
+                initial_collateral_sats: row.try_get("initial_collateral_sats")?,
+                origination_fee_sats: row.try_get("origination_fee_sats")?,
+                collateral_sats: row.try_get("collateral_sats")?,
+                loan_amount: row.try_get("loan_amount")?,
+                borrower_btc_address: row.try_get("borrower_btc_address")?,
+                borrower_pk: row.try_get("borrower_pk")?,
+                borrower_derivation_path: row.try_get("borrower_derivation_path")?,
+                lender_pk: row.try_get("lender_pk")?,
+                lender_derivation_path: row.try_get("lender_derivation_path")?,
+                borrower_loan_address: row.try_get("borrower_loan_address")?,
+                lender_loan_repayment_address: row.try_get("lender_loan_repayment_address")?,
+                lender_btc_loan_repayment_address: row
+                    .try_get("lender_btc_loan_repayment_address")?,
+                loan_type: row.try_get::<db::LoanType, _>("loan_type")?,
+                contract_address: row.try_get("contract_address")?,
+                contract_index: row.try_get("contract_index")?,
+                borrower_npub: row.try_get("borrower_npub")?,
+                lender_npub: row.try_get("lender_npub")?,
+                status: row.try_get::<db::ContractStatus, _>("status")?,
+                liquidation_status: row
+                    .try_get::<db::LiquidationStatus, _>("liquidation_status")?,
+                duration_days: row.try_get("duration_days")?,
+                expiry_date: row.try_get("expiry_date")?,
+                contract_version: row.try_get("contract_version")?,
+                interest_rate: row.try_get("interest_rate")?,
+                client_contract_id: row.try_get("client_contract_id")?,
+                extension_duration_days: row.try_get("extension_duration_days")?,
+                extension_interest_rate: row.try_get("extension_interest_rate")?,
+                asset: row.try_get::<LoanAsset, _>("asset")?,
+                created_at: row.try_get("created_at")?,
+                updated_at: row.try_get("updated_at")?,
+            })
+        })
+        .fetch_all(pool)
+        .await?;
+
+    let contracts = contracts
+        .into_iter()
+        .map(Contract::from)
+        .collect::<Vec<Contract>>();
+
+    Ok(contracts)
+}
+
+pub async fn load_contracts_by_borrower_id_and_statuses_paginated(
+    pool: &Pool<Postgres>,
+    borrower_id: &str,
+    statuses: &[ContractStatus],
+    limit: u32,
+    offset: u32,
+) -> Result<Vec<Contract>> {
+    load_contracts_by_borrower_id_and_statuses_paginated_with_sort(
+        pool,
+        borrower_id,
+        statuses,
+        limit,
+        offset,
+        &SortOptions::default(),
+    )
+    .await
+}
+
+pub async fn load_contracts_by_borrower_id_and_statuses_paginated_with_sort(
+    pool: &Pool<Postgres>,
+    borrower_id: &str,
+    statuses: &[ContractStatus],
+    limit: u32,
+    offset: u32,
+    sort_options: &SortOptions,
+) -> Result<Vec<Contract>> {
+    if statuses.is_empty() {
+        return load_contracts_by_borrower_id_paginated_with_sort(
+            pool,
+            borrower_id,
+            limit,
+            offset,
+            sort_options,
+        )
+        .await;
+    }
+
+    let statuses: Vec<db::ContractStatus> = statuses
+        .iter()
+        .map(|s| db::ContractStatus::from(*s))
+        .collect();
+
+    // Build the dynamic query with sort options
+    let query_str = format!(
+        r#"
+        SELECT
+            id,
+            lender_id,
+            borrower_id,
+            loan_deal_id,
+            initial_ltv,
+            initial_collateral_sats,
+            origination_fee_sats,
+            collateral_sats,
+            loan_amount,
+            borrower_btc_address,
+            borrower_pk,
+            borrower_derivation_path,
+            lender_pk,
+            lender_derivation_path,
+            borrower_loan_address,
+            lender_loan_repayment_address,
+            lender_btc_loan_repayment_address,
+            loan_type,
+            contract_address,
+            contract_index,
+            borrower_npub,
+            lender_npub,
+            status,
+            liquidation_status,
+            duration_days,
+            expiry_date,
+            contract_version,
+            interest_rate,
+            client_contract_id,
+            extension_duration_days,
+            extension_interest_rate,
+            asset,
+            created_at,
+            updated_at
+        FROM contracts
+        WHERE borrower_id = $1 AND status = ANY($2)
+        ORDER BY {} {}
+        LIMIT $3 OFFSET $4
+        "#,
+        sort_options.field, sort_options.order
+    );
+
+    let contracts: Vec<db::Contract> = sqlx::query(&query_str)
+        .bind(borrower_id)
+        .bind(&statuses)
+        .bind(limit as i64)
+        .bind(offset as i64)
+        .try_map(|row: sqlx::postgres::PgRow| {
+            use sqlx::Row;
+            Ok(db::Contract {
+                id: row.try_get("id")?,
+                lender_id: row.try_get("lender_id")?,
+                borrower_id: row.try_get("borrower_id")?,
+                loan_deal_id: row.try_get("loan_deal_id")?,
+                initial_ltv: row.try_get("initial_ltv")?,
+                initial_collateral_sats: row.try_get("initial_collateral_sats")?,
+                origination_fee_sats: row.try_get("origination_fee_sats")?,
+                collateral_sats: row.try_get("collateral_sats")?,
+                loan_amount: row.try_get("loan_amount")?,
+                borrower_btc_address: row.try_get("borrower_btc_address")?,
+                borrower_pk: row.try_get("borrower_pk")?,
+                borrower_derivation_path: row.try_get("borrower_derivation_path")?,
+                lender_pk: row.try_get("lender_pk")?,
+                lender_derivation_path: row.try_get("lender_derivation_path")?,
+                borrower_loan_address: row.try_get("borrower_loan_address")?,
+                lender_loan_repayment_address: row.try_get("lender_loan_repayment_address")?,
+                lender_btc_loan_repayment_address: row
+                    .try_get("lender_btc_loan_repayment_address")?,
+                loan_type: row.try_get::<db::LoanType, _>("loan_type")?,
+                contract_address: row.try_get("contract_address")?,
+                contract_index: row.try_get("contract_index")?,
+                borrower_npub: row.try_get("borrower_npub")?,
+                lender_npub: row.try_get("lender_npub")?,
+                status: row.try_get::<db::ContractStatus, _>("status")?,
+                liquidation_status: row
+                    .try_get::<db::LiquidationStatus, _>("liquidation_status")?,
+                duration_days: row.try_get("duration_days")?,
+                expiry_date: row.try_get("expiry_date")?,
+                contract_version: row.try_get("contract_version")?,
+                interest_rate: row.try_get("interest_rate")?,
+                client_contract_id: row.try_get("client_contract_id")?,
+                extension_duration_days: row.try_get("extension_duration_days")?,
+                extension_interest_rate: row.try_get("extension_interest_rate")?,
+                asset: row.try_get::<LoanAsset, _>("asset")?,
+                created_at: row.try_get("created_at")?,
+                updated_at: row.try_get("updated_at")?,
+            })
+        })
+        .fetch_all(pool)
+        .await?;
 
     let contracts = contracts
         .into_iter()

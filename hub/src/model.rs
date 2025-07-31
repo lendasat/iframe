@@ -966,6 +966,51 @@ pub enum ContractStatus {
     ApprovalExpired,
 }
 
+impl FromStr for ContractStatus {
+    type Err = String;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        match s.to_lowercase().as_str() {
+            "requested" => Ok(ContractStatus::Requested),
+            "renewalrequested" | "renewal_requested" => Ok(ContractStatus::RenewalRequested),
+            "approved" => Ok(ContractStatus::Approved),
+            "collateralseen" | "collateral_seen" => Ok(ContractStatus::CollateralSeen(())),
+            "collateralconfirmed" | "collateral_confirmed" => {
+                Ok(ContractStatus::CollateralConfirmed)
+            }
+            "principalgiven" | "principal_given" => Ok(ContractStatus::PrincipalGiven),
+            "repaymentprovided" | "repayment_provided" => Ok(ContractStatus::RepaymentProvided),
+            "repaymentconfirmed" | "repayment_confirmed" => Ok(ContractStatus::RepaymentConfirmed),
+            "undercollateralized" => Ok(ContractStatus::Undercollateralized),
+            "defaulted" => Ok(ContractStatus::Defaulted),
+            "closing" => Ok(ContractStatus::Closing),
+            "closed" => Ok(ContractStatus::Closed),
+            "closedbyliquidation" | "closed_by_liquidation" => {
+                Ok(ContractStatus::ClosedByLiquidation)
+            }
+            "closedbydefaulting" | "closed_by_defaulting" => Ok(ContractStatus::ClosedByDefaulting),
+            "extended" => Ok(ContractStatus::Extended),
+            "rejected" => Ok(ContractStatus::Rejected),
+            "disputeborrowerstarted" | "dispute_borrower_started" => {
+                Ok(ContractStatus::DisputeBorrowerStarted)
+            }
+            "disputelenderstarted" | "dispute_lender_started" => {
+                Ok(ContractStatus::DisputeLenderStarted)
+            }
+            "disputeborrowerresolved" | "dispute_borrower_resolved" => {
+                Ok(ContractStatus::DisputeBorrowerResolved)
+            }
+            "disputelenderresolved" | "dispute_lender_resolved" => {
+                Ok(ContractStatus::DisputeLenderResolved)
+            }
+            "cancelled" => Ok(ContractStatus::Cancelled),
+            "requestexpired" | "request_expired" => Ok(ContractStatus::RequestExpired),
+            "approvalexpired" | "approval_expired" => Ok(ContractStatus::ApprovalExpired),
+            _ => Err(format!("Invalid contract status: {s}")),
+        }
+    }
+}
+
 #[derive(Clone, Copy, Debug, Deserialize, Serialize, PartialEq, ToSchema)]
 pub enum LiquidationStatus {
     /// Contract is in a healthy state.
