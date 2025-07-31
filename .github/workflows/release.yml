@@ -105,6 +105,22 @@ jobs:
           git checkout -b release-branch/${{ github.event.inputs.version }}
           git push origin release-branch/${{ github.event.inputs.version }}
 
+      - name: Deploy lender
+        uses: cloudflare/wrangler-action@v3
+        with:
+          packageManager: pnpm
+          workingDirectory: 'frontend'
+          apiToken: ${{ secrets.CLOUDFLARE_SIGNET_TOKEN}}
+          command: pages deploy apps/lender/dist/ --project-name=lendasat-lender
+
+      - name: Deploy borrower
+        uses: cloudflare/wrangler-action@v3
+        with:
+          packageManager: pnpm
+          workingDirectory: 'frontend'
+          apiToken: ${{ secrets.CLOUDFLARE_SIGNET_TOKEN}}
+          command: pages deploy apps/borrower/dist/ --project-name=lendasat-borrower
+
       - name: Create Pull Request to merge into main
         if: ${{ github.event.inputs.pr_main == 'true' }}
         uses: peter-evans/create-pull-request@v7
@@ -131,7 +147,7 @@ jobs:
           fail_on_unmatched_files: true
           generate_release_notes: true
           files: |
-              target/release/hub
+            target/release/hub
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
