@@ -1,4 +1,4 @@
-name: Release
+name: Release Frontends
 
 on:
   workflow_dispatch:
@@ -96,9 +96,6 @@ jobs:
       - name: Build frontend
         run: just release-frontend
 
-      - name: Build the hub
-        run: just release-hub
-
       - name: Push version changes to separate branch
         if: ${{ github.event.inputs.pr_main != 'true' }}
         run: |
@@ -120,36 +117,6 @@ jobs:
           workingDirectory: 'frontend'
           apiToken: ${{ secrets.CLOUDFLARE_SIGNET_TOKEN}}
           command: pages deploy apps/borrower/dist/ --project-name=lendasat-borrower
-
-      - name: Create Pull Request to merge into main
-        if: ${{ github.event.inputs.pr_main == 'true' }}
-        uses: peter-evans/create-pull-request@v7
-        with:
-          branch: release-branch/${{ github.event.inputs.version }}
-          draft: false
-          token: ${{ secrets.LENDASAT_GITHUB_ACTION_TOKEN }}
-          base: main
-          title: Merge back release changes from ${{ github.event.inputs.version }}
-          body: |
-            Changes in this PR have already been released. See https://github.com/lendasat/lendasat/releases
-          labels: |
-            automated pr
-
-      - name: Create GitHub Release
-        id: create_release
-        uses: softprops/action-gh-release@v2
-        with:
-          tag_name: ${{ github.event.inputs.version }}
-          name: ${{ github.event.inputs.version }}
-          target_commitish: ${{inputs.ref}}
-          draft: false
-          prerelease: false
-          fail_on_unmatched_files: true
-          generate_release_notes: true
-          files: |
-            target/release/hub
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Compress frontend directory
         run: tar -czvf hub-frontend.tar.gz ./frontend/apps/borrower/dist ./frontend/apps/lender/dist
