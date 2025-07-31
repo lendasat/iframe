@@ -81,8 +81,8 @@ jobs:
       - name: Make .env file for Vite build
         uses: SpicyPizza/create-envfile@v2.0
         with:
-          envkey_VITE_BORROWER_BASE_URL: "https://borrow.lendasat.com"
-          envkey_VITE_LENDER_BASE_URL: "https://lend.lendasat.com"
+          envkey_VITE_BORROWER_BASE_URL: "https://apiborrow.lendasat.com"
+          envkey_VITE_LENDER_BASE_URL: "https://apilend.lendasat.com"
           envkey_VITE_BITCOIN_NETWORK: "bitcoin"
           envkey_VITE_MEMPOOL_REST_URL: "https://mempool.space"
           envkey_VITE_TELEGRAM_BOT_URL: "https://t.me/lendasatlendernotificationbot"
@@ -105,7 +105,7 @@ jobs:
           git checkout -b release-branch/${{ github.event.inputs.version }}
           git push origin release-branch/${{ github.event.inputs.version }}
 
-      - name: Deploy lender
+      - name: Deploy lender frontend
         uses: cloudflare/wrangler-action@v3
         with:
           packageManager: pnpm
@@ -113,7 +113,7 @@ jobs:
           apiToken: ${{ secrets.CLOUDFLARE_SIGNET_TOKEN}}
           command: pages deploy apps/lender/dist/ --project-name=lendasat-lender
 
-      - name: Deploy borrower
+      - name: Deploy borrower frontend
         uses: cloudflare/wrangler-action@v3
         with:
           packageManager: pnpm
