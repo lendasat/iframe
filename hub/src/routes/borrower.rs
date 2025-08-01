@@ -1,4 +1,5 @@
 use crate::config::Config;
+use crate::model::ContractStatus;
 use crate::routes::borrower::auth::jwt_or_api_auth::auth;
 use crate::routes::borrower_profiles;
 use crate::routes::borrower_profiles::BORROWER_PROFILES_TAG;
@@ -15,8 +16,12 @@ use axum::http::header::CONTENT_TYPE;
 use axum::http::header::ORIGIN;
 use axum::http::HeaderValue;
 use axum::middleware;
+use contracts::SortField;
+use contracts::SortOrder;
 use loan_applications::EditLoanApplicationRequest;
 use loan_applications::LoanApplicationErrorResponse;
+use loan_offers::AssetTypeFilter;
+use loan_offers::KycFilter;
 use loan_offers::QueryParamLoanType;
 use reqwest::Method;
 use std::net::SocketAddr;
@@ -144,7 +149,7 @@ curl -X POST "http://localhost:7337/api/contracts" \
 "#
     ),
     components(
-        schemas(QueryParamLoanType, EditLoanApplicationRequest, LoanApplicationErrorResponse)
+        schemas(QueryParamLoanType, AssetTypeFilter, KycFilter, SortField, SortOrder, ContractStatus, EditLoanApplicationRequest, LoanApplicationErrorResponse)
     ),
     modifiers(&SecurityAddon),
     tags(

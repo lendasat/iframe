@@ -1318,7 +1318,7 @@ async fn map_timeline(
         .into_iter()
         .filter_map(|log| {
             let txid = match log.new_status {
-                ContractStatus::CollateralSeen(_) => transactions.iter().find_map(|tx| {
+                ContractStatus::CollateralSeen => transactions.iter().find_map(|tx| {
                     (tx.transaction_type == TransactionType::Funding).then(|| tx.txid.clone())
                 }),
                 ContractStatus::PrincipalGiven => transactions.iter().find_map(|tx| {
