@@ -185,7 +185,7 @@ responses(
     (
         status = 200,
         description = "Message if the registration was successful",
-        body = [RegistrationResponse]
+        body = RegistrationResponse
     )
 )
 )]
@@ -193,7 +193,7 @@ responses(
 async fn post_register(
     State(data): State<Arc<AppState>>,
     AppJson(body): AppJson<RegisterUserSchema>,
-) -> Result<impl IntoResponse, Error> {
+) -> Result<AppJson<RegistrationResponse>, Error> {
     if !is_valid_email(body.email.as_str()) {
         return Err(Error::InvalidEmail);
     }
@@ -285,7 +285,7 @@ async fn post_register(
         );
     }
 
-    Ok(Json(RegistrationResponse {
+    Ok(AppJson(RegistrationResponse {
         message: format!("We sent an email with a verification code to {email}"),
     }))
 }
