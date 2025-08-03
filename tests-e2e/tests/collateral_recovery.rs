@@ -3,28 +3,22 @@
 use crate::common::init_tracing;
 use crate::common::log_in;
 use crate::common::new_wallet;
-use crate::common::random_txid;
+use crate::common::postgrest;
 use crate::common::wait_until_contract_status;
 use crate::common::LoanOffer;
 use crate::common::PaginatedContractsResponse;
 use bitcoin::Psbt;
-use hub::model::ConfirmInstallmentPaymentRequest;
 use hub::model::ContractRequestSchema;
 use hub::model::ContractStatus;
-use hub::model::CreateApiAccountRequest;
-use hub::model::CreateApiAccountResponse;
 use hub::model::CreateLoanOfferSchema;
-use hub::model::InstallmentPaidRequest;
 use hub::model::LoanAsset;
 use hub::model::LoanPayout;
 use hub::model::LoanType;
 use hub::model::RepaymentPlan;
 use hub::model::ONE_YEAR;
-use hub::routes::borrower::ClaimTx;
 use hub::routes::borrower::Contract;
+use hub::routes::borrower::RecoverTx;
 use hub::routes::borrower::SpendCollateralPsbt;
-use reqwest::header::HeaderMap;
-use reqwest::header::HeaderValue;
 use reqwest::Client;
 use rust_decimal_macros::dec;
 use serde_json::json;
@@ -32,9 +26,12 @@ use serde_json::json;
 pub mod common;
 
 /// Run `just prepare-e2e` before this test.
+///
+/// This test verifies the complete collateral recovery flow when a lender fails to disburse the
+/// principal after the borrower has provided collateral.
 #[ignore]
 #[tokio::test]
-async fn api_account_borrower() {
+async fn e2e_collateral_recovery_flow() {
     let env_dir = std::env::var("CARGO_MANIFEST_DIR").unwrap();
     let env_path = format!("{env_dir}/../.env");
     dotenv::from_filename(env_path).ok();
@@ -43,7 +40,21 @@ async fn api_account_borrower() {
 
     init_tracing();
 
-    // 1. Log in lender.
+    // PostgREST URL - runs on port 3013 in our setup
+    let postgrest_url =
+        std::env::var("POSTGREST_URL").unwrap_or_else(|_| "http://localhost:3013".to_string());
+
+    // Create HTTP client for PostgREST API calls
+    let postgrest_client = Client::new();
+
+    // 0. Log in borrower and lender.
+    let borrower = log_in(
+        7337,
+        "borrower@lendasat.com".to_string(),
+        "password123".to_string(),
+    )
+    .await;
+
     let lender = log_in(
         7338,
         "lender@lendasat.com".to_string(),
@@ -51,16 +62,16 @@ async fn api_account_borrower() {
     )
     .await;
 
-    // 2. Lender creates loan offer.
+    // 1. Lender creates loan offer.
     let mut lender_wallet = new_wallet(
-        "kitchen only catalog nest useless armed minimum orchard auction tourist destroy laugh",
+        "gaze smile arm manual remember session endorse ask mention goose demise garlic",
         &network,
     );
 
     let (lender_pk, lender_derivation_path) = lender_wallet.next_hardened_pk().unwrap();
 
     let loan_offer = CreateLoanOfferSchema {
-        name: "a fantastic loan".to_string(),
+        name: "collateral recovery test loan".to_string(),
         min_ltv: dec!(0.5),
         interest_rate: dec!(0.10),
         loan_amount_min: dec!(500),
@@ -76,7 +87,7 @@ async fn api_account_borrower() {
         lender_derivation_path,
         auto_accept: false,
         kyc_link: None,
-        lender_npub: "npub1eeze2k0yz57p5s8q8fg8p7rs97mj8ya3qkk3m7njgadl7schvktsp7hsxg"
+        lender_npub: "npub1ur9aupjyaettv9rlan886m3khq7ysw3jl902afrkjg2r80uxdcnsmgu6rv"
             .parse()
             .unwrap(),
         extension_duration_days: Some(7),
@@ -91,32 +102,12 @@ async fn api_account_borrower() {
         .await
         .unwrap();
 
-    assert!(res.status().is_success(), "{:?}", res.text().await);
-
+    assert!(res.status().is_success());
     let loan_offer: LoanOffer = res.json().await.unwrap();
 
-    // 3. Create borrower API account.
-
-    let res = Client::new()
-        .post("http://localhost:7337/api/create-api-account")
-        .json(&CreateApiAccountRequest {
-            name: "borrower".to_string(),
-            email: None,
-            timezone: None,
-        })
-        .header("x-api-key", "theboss")
-        .send()
-        .await
-        .unwrap();
-
-    assert!(res.status().is_success());
-
-    let create_api_account_response: CreateApiAccountResponse = res.json().await.unwrap();
-    let borrower_api_key = create_api_account_response.api_key;
-
-    // 4. Borrower takes loan offer by creating a contract request.
+    // 2. Borrower takes loan offer by creating a contract request.
     let mut borrower_wallet = new_wallet(
-        "vibrant wood beach awful abandon assume hungry test mom round trigger suspect",
+        "ribbon remain host witness hawk lesson genius duck route social need juice",
         &network,
     );
 
@@ -140,21 +131,11 @@ async fn api_account_borrower() {
         moon_card_id: None,
         fiat_loan_details: None,
         borrower_npub: Some(
-            "npub193gpfqmzdpwjrgr6xnct7j2ks4qc5ywyvfzvqtm6twdpxx7m6xfsmvccj4"
+            "npub1x4n3a7ld36fluzzanfg2jm4p7tzpxqp0s47xc8rcpjk4adlkz0qstg4xrp"
                 .parse()
                 .unwrap(),
         ),
         client_contract_id: None,
-    };
-
-    let borrower = {
-        let mut headers = HeaderMap::new();
-        headers.insert(
-            "x-api-key",
-            HeaderValue::from_str(&borrower_api_key).unwrap(),
-        );
-
-        Client::builder().default_headers(headers).build().unwrap()
     };
 
     let res = borrower
@@ -164,12 +145,10 @@ async fn api_account_borrower() {
         .await
         .unwrap();
 
-    assert!(res.status().is_success(), "{:?}", res.text().await);
-
+    assert!(res.status().is_success());
     let contract: Contract = res.json().await.unwrap();
 
     // 3. Lender accepts contract request.
-
     let res = lender
         .put(format!(
             "http://localhost:7338/api/contracts/{}/approve",
@@ -181,8 +160,7 @@ async fn api_account_borrower() {
 
     assert!(res.status().is_success());
 
-    // 4. Borrower pays to collateral address.
-
+    // 4. Simulate collateral payment using mempool mock (regtest only)
     let res = borrower
         .get("http://localhost:7337/api/contracts")
         .send()
@@ -190,7 +168,6 @@ async fn api_account_borrower() {
         .unwrap();
 
     assert!(res.status().is_success());
-
     let response: PaginatedContractsResponse = res.json().await.unwrap();
     let contracts = response.data;
     let contract = contracts.iter().find(|c| c.id == contract.id).unwrap();
@@ -278,6 +255,7 @@ async fn api_account_borrower() {
 
     let response: PaginatedContractsResponse = res.json().await.unwrap();
     let contracts = response.data;
+
     let contract = contracts.iter().find(|c| c.id == contract.id).unwrap();
 
     wait_until_contract_status(
@@ -290,78 +268,57 @@ async fn api_account_borrower() {
     .await
     .unwrap();
 
-    // TODO: 6. Hub tells lender to send principal to borrower on Ethereum.
-
-    // 7. Lender confirms principal was disbursed.
-
-    // We need random TXIDs to avoid errors due to rerunning this test without wiping the DB.
-    let loan_txid = random_txid();
-    let res = lender
-        .put(format!(
-            "http://localhost:7338/api/contracts/{}/report-disbursement?txid={loan_txid}",
-            contract.id
-        ))
-        .send()
-        .await
-        .unwrap();
-
-    assert!(res.status().is_success());
-
-    // 8. Repay loan on loan blockchain.
-
-    // Single installment for a bullet loan.
-    let installment_id = contract.installments[0].id;
-
-    let repayment_txid = random_txid();
-    let res = borrower
-        .put(format!(
-            "http://localhost:7337/api/contracts/{}/installment-paid",
-            contract.id
-        ))
-        .json(&InstallmentPaidRequest {
-            installment_id,
-            payment_id: repayment_txid.to_string(),
-        })
-        .send()
-        .await
-        .unwrap();
-
-    assert!(res.status().is_success());
-
-    let res = lender
-        .put(format!(
-            "http://localhost:7338/api/contracts/{}/confirm-installment",
-            contract.id
-        ))
-        .json(&ConfirmInstallmentPaymentRequest { installment_id })
-        .send()
-        .await
-        .unwrap();
-
-    assert!(res.status().is_success());
-
-    // 9. Claim collateral on Bitcoin.
-    // With DLCs, we will need to construct a spend transaction using the loan secret.
-
-    let fee_rate = 1;
-    let res = borrower
+    // 6. Try to recover collateral when contract is NOT in CollateralRecoverable status.
+    let resp = borrower
         .get(format!(
-            "http://localhost:7337/api/contracts/{}/claim?fee_rate={fee_rate}",
+            "http://localhost:7337/api/contracts/{}/recover?fee_rate=1",
             contract.id
         ))
         .send()
         .await
         .unwrap();
 
-    assert!(res.status().is_success());
+    // This should return a 400 error since the contract is not in `CollateralRecoverable` status.
+    assert_eq!(
+        resp.status(),
+        400,
+        "Expected 400 when contract is not recoverable"
+    );
+    tracing::info!("Correctly rejected recovery attempt when not in recoverable state");
+
+    // 7. Set contract to `CollateralRecoverable` status.
+    postgrest::set_contract_status(
+        &postgrest_client,
+        &postgrest_url,
+        &contract.id,
+        ContractStatus::CollateralRecoverable,
+    )
+    .await
+    .expect("Failed to update contract status via PostgREST");
+
+    // 8. Get recovery PSBT first
+    let response = borrower
+        .get(format!(
+            "http://localhost:7337/api/contracts/{}/recover?fee_rate=1",
+            contract.id
+        ))
+        .send()
+        .await
+        .unwrap();
+
+    let status = response.status();
+    if !status.is_success() {
+        let error_text = response.text().await.unwrap();
+        panic!("Failed to get recovery PSBT: {status} - {error_text}");
+    }
 
     let SpendCollateralPsbt {
-        psbt: claim_psbt,
+        psbt: recovery_psbt,
         collateral_descriptor,
         borrower_pk,
-    } = res.json().await.unwrap();
+    } = response.json().await.unwrap();
 
-    let claim_psbt = hex::decode(claim_psbt).unwrap();
+    let claim_psbt = hex::decode(recovery_psbt).unwrap();
     let claim_psbt = Psbt::deserialize(&claim_psbt).unwrap();
 
     let tx = borrower_wallet
@@ -375,12 +332,13 @@ async fn api_account_borrower() {
 
     let tx_hex = bitcoin::consensus::encode::serialize_hex(&tx);
 
+    // 9. Broadcast recovery transaction.
     let res = borrower
         .post(format!(
-            "http://localhost:7337/api/contracts/{}/broadcast-claim",
+            "http://localhost:7337/api/contracts/{}/broadcast-recover",
             contract.id
         ))
-        .json(&ClaimTx { tx: tx_hex })
+        .json(&RecoverTx { tx: tx_hex })
         .send()
         .await
         .unwrap();
@@ -402,7 +360,7 @@ async fn api_account_borrower() {
         &borrower,
         "localhost:7337",
         &contract.id,
-        ContractStatus::Closed,
+        ContractStatus::ClosedByRecovery,
         &network,
     )
     .await

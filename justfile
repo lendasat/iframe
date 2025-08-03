@@ -62,11 +62,16 @@ test: test-rust
 
 prepare-e2e:
     # Start hub DB
-    docker compose up -d
-
+    docker compose up db -d
     just wait-for-db
+
     # Fill hub DB with test data
     just db-test-data
+
+    # Start PostgREST (after db-test-data, so that migrations have run)
+    docker compose up postgrest -d
+    just wait-for-postgrest
+
     # Start mempool mock server in the background
     just mempool-d
     # Start hub in the background
@@ -80,6 +85,15 @@ wait-for-db:
     done
 
     echo "PostgreSQL is ready!"
+
+wait-for-postgrest:
+    #!/usr/bin/env bash
+    until curl -f http://localhost:3013/ >/dev/null 2>&1; do
+      echo "Waiting for PostgREST to be ready..."
+      sleep 2
+    done
+
+    echo "PostgREST is ready!"
 
 e2e:
     cargo test -p tests-e2e -- --ignored

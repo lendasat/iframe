@@ -296,6 +296,39 @@ function LoanStatusInformation({ contract }: LoanStatusInformationProps) {
       // biome-ignore lint/complexity/noUselessFragments: changes too often.
       message = <>This loan request has expired due to inactivity.</>;
       break;
+
+    case ContractStatus.CollateralRecoverable:
+      icon = <LuTriangleAlert className="h-5 w-5 text-red-500 mr-2 mt-0.5" />;
+      bgColor = "bg-red-50";
+      borderColor = "border-red-200";
+      titleColor = "text-red-800";
+      textColor = "text-red-600";
+      title = "Contract Abandoned";
+      message = (
+        // biome-ignore lint/complexity/noUselessFragments: changes too often.
+        <>
+          You failed to disburse the principal in time. The borrower is in the
+          process of recovering their collateral. Any funds you send to the
+          borrower's loan address now will be lost.
+        </>
+      );
+      break;
+
+    case ContractStatus.ClosedByRecovery:
+      icon = <LuCheck className="h-5 w-5 text-gray-500 mr-2 mt-0.5" />;
+      bgColor = "bg-gray-50";
+      borderColor = "border-gray-200";
+      titleColor = "text-gray-800";
+      textColor = "text-gray-600";
+      title = "Loan Closed";
+      message = (
+        // biome-ignore lint/complexity/noUselessFragments: changes too often.
+        <>
+          This loan has been closed after the borrower recovered their
+          collateral.
+        </>
+      );
+      break;
   }
 
   return (

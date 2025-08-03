@@ -1329,7 +1329,8 @@ async fn map_timeline(
                 | ContractStatus::Closed
                 | ContractStatus::Defaulted
                 | ContractStatus::ClosedByLiquidation
-                | ContractStatus::ClosedByDefaulting => transactions.iter().find_map(|tx| {
+                | ContractStatus::ClosedByDefaulting
+                | ContractStatus::ClosedByRecovery => transactions.iter().find_map(|tx| {
                     (tx.transaction_type == TransactionType::ClaimCollateral)
                         .then(|| tx.txid.clone())
                 }),
@@ -1347,7 +1348,8 @@ async fn map_timeline(
                 | ContractStatus::DisputeLenderResolved
                 | ContractStatus::Cancelled
                 | ContractStatus::RequestExpired
-                | ContractStatus::ApprovalExpired => {
+                | ContractStatus::ApprovalExpired
+                | ContractStatus::CollateralRecoverable => {
                     // There are no transactions associated with these events.
                     None
                 }

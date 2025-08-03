@@ -84,8 +84,10 @@ pub(crate) fn router(app_state: Arc<AppState>) -> OpenApiRouter {
         .routes(routes!(get_contract))
         .routes(routes!(put_borrower_btc_address))
         .routes(routes!(get_claim_collateral_psbt))
+        .routes(routes!(get_recover_collateral_psbt))
         .routes(routes!(post_contract_request))
         .routes(routes!(post_claim_tx))
+        .routes(routes!(post_recover_tx))
         .routes(routes!(post_extend_contract_request))
         .routes(routes!(put_installment_paid))
         .routes(routes!(put_provide_fiat_loan_details))
@@ -959,6 +961,9 @@ async fn put_provide_fiat_loan_details(
 }
 
 /// Get a claim-collateral PSBT, to be completed with your own signature on the collateral contract.
+///
+/// The collateral can be claimed when the Lendasat server and the lender have confirmed that the
+/// borrower has repaid the loan.
 #[utoipa::path(
 get,
 path = "/{id}/claim",
@@ -972,7 +977,7 @@ responses(
     (
     status = 200,
     description = "Ok if successful",
-    body = ClaimCollateralPsbt,
+    body = SpendCollateralPsbt,
     )
 ),
 security(
@@ -992,7 +997,7 @@ async fn get_claim_collateral_psbt(
     Extension(user): Extension<Borrower>,
     Path(contract_id): Path<String>,
     query_params: Query<PsbtQueryParams>,
-) -> Result<AppJson<ClaimCollateralPsbt>, Error> {
+) -> Result<AppJson<SpendCollateralPsbt>, Error> {
     let contract = db::contracts::load_contract_by_contract_id_and_borrower_id(
         &data.db,
         &contract_id,
@@ -1043,7 +1048,105 @@ async fn get_claim_collateral_psbt(
 
     let psbt = psbt.serialize_hex();
 
-    let res = ClaimCollateralPsbt {
+    let res = SpendCollateralPsbt {
+        psbt,
+        collateral_descriptor,
+        borrower_pk: contract.borrower_pk,
+    };
+
+    Ok(AppJson(res))
+}
+
+/// Get a recover-collateral PSBT, to be completed with your own signature on the collateral
+/// contract.
+///
+/// The collateral can be recovered when the Lendasat server has deemed that the lender will not
+/// disburse the principal.
+#[utoipa::path(
+get,
+path = "/{id}/recover",
+params(
+    (
+    "id" = String, Path, description = "Contract ID"
+    )
+),
+tag = CONTRACTS_TAG,
+responses(
+    (
+    status = 200,
+    description = "Ok if successful",
+    body = SpendCollateralPsbt,
+    )
+),
+security(
+    (
+    "api_key" = [])
+    )
+)
+]
+#[instrument(
+    skip_all,
+    fields(borrower_id = user.id, contract_id, fee_rate = query_params.fee_rate),
+    ret,
+    err(Debug)
+)]
+async fn get_recover_collateral_psbt(
+    State(data): State<Arc<AppState>>,
+    Extension(user): Extension<Borrower>,
+    Path(contract_id): Path<String>,
+    query_params: Query<PsbtQueryParams>,
+) -> Result<AppJson<SpendCollateralPsbt>, Error> {
+    let contract = db::contracts::load_contract_by_contract_id_and_borrower_id(
+        &data.db,
+        &contract_id,
+        &user.id,
+    )
+    .await
+    .map_err(Error::database)?;
+
+    // Only allow collateral recovery if the contract is in the `CollateralRecoverable` state.
+    if contract.status != ContractStatus::CollateralRecoverable {
+        return Err(Error::InvalidRecoveryRequest {
+            status: contract.status,
+        });
+    }
+
+    let contract_index = contract.contract_index.ok_or(Error::MissingContractIndex)?;
+
+    let contract_address = contract
+        .contract_address
+        .ok_or(Error::MissingCollateralAddress)?;
+
+    let collateral_outputs = data
+        .mempool
+        .send(mempool::GetCollateralOutputs(contract_address))
+        .await
+        .expect("actor to be alive");
+
+    if collateral_outputs.is_empty() {
+        return Err(Error::MissingCollateralOutputs);
+    }
+
+    // We do not collect an origination fee for a contract that was never open.
+    let origination_fee = Amount::ZERO;
+
+    let (psbt, collateral_descriptor) = data
+        .wallet
+        .create_claim_collateral_psbt(
+            contract.borrower_pk,
+            contract.lender_pk,
+            contract_index,
+            collateral_outputs,
+            origination_fee,
+            contract.borrower_btc_address.assume_checked(),
+            query_params.fee_rate,
+            contract.contract_version,
+        )
+        .map_err(Error::create_claim_collateral_psbt)?;
+
+    let psbt = psbt.serialize_hex();
+
+    let res = SpendCollateralPsbt {
         psbt,
         collateral_descriptor,
         borrower_pk: contract.borrower_pk,
@@ -1125,6 +1228,84 @@ async fn post_claim_tx(
         .map_err(Error::database)?;
 
     Ok(claim_txid.to_string())
+}
+
+/// Broadcast recover-collateral transaction.
+#[utoipa::path(
+post,
+path = "/{id}/broadcast-recover",
+params(
+    (
+    "id" = String, Path, description = "Contract ID"
+    )
+),
+request_body = RecoverTx,
+tag = CONTRACTS_TAG,
+responses(
+    (
+    status = 200,
+    description = "Transaction ID of successfully posted recovery transaction",
+    body = String
+    )
+),
+security(
+    (
+    "api_key" = [])
+    )
+)
+]
+#[instrument(skip_all, fields(borrower_id = user.id, contract_id), ret, err(Debug))]
+async fn post_recover_tx(
+    State(data): State<Arc<AppState>>,
+    Extension(user): Extension<Borrower>,
+    Path(contract_id): Path<String>,
+    AppJson(body): AppJson<RecoverTx>,
+) -> Result<String, Error> {
+    let contract = db::contracts::load_contract_by_contract_id_and_borrower_id(
+        &data.db,
+        &contract_id,
+        &user.id,
+    )
+    .await
+    .map_err(Error::database)?;
+
+    // Only allow collateral recovery if the contract is in the `CollateralRecoverable` state.
+    if contract.status != ContractStatus::CollateralRecoverable {
+        return Err(Error::InvalidRecoveryRequest {
+            status: contract.status,
+        });
+    }
+
+    let signed_recovery_tx: Transaction =
+        bitcoin::consensus::encode::deserialize_hex(&body.tx).map_err(Error::ParseClaimTx)?;
+    let recovery_txid = signed_recovery_tx.compute_txid();
+
+    // Track the recovery transaction
+    data.mempool
+        .send(mempool::TrackCollateralClaim {
+            contract_id: contract_id.clone(),
+            claim_txid: recovery_txid,
+            claim_type: mempool::ClaimTxType::Recovery,
+        })
+        .await
+        .expect("actor to be alive")
+        .map_err(Error::track_claim_tx)?;
+
+    data.mempool
+        .send(mempool::PostTx(body.tx))
+        .await
+        .expect("actor to be alive")
+        .map_err(Error::post_claim_tx)?;
+
+    db::transactions::insert_claim_txid(&data.db, &contract_id, &recovery_txid)
+        .await
+        .map_err(Error::database)?;
+
+    db::contracts::mark_contract_as_closed_by_recovery(&data.db, &contract_id)
+        .await
+        .map_err(Error::database)?;
+
+    Ok(recovery_txid.to_string())
 }
 
 /// Post a request to extend the contract.
@@ -1350,7 +1531,7 @@ struct KycInfo {
 }
 
 #[derive(Debug, Serialize, Deserialize, ToSchema)]
-pub struct ClaimCollateralPsbt {
+pub struct SpendCollateralPsbt {
     pub psbt: String,
     #[schema(value_type = String)]
     pub collateral_descriptor: Descriptor<PublicKey>,
@@ -1360,6 +1541,11 @@ pub struct ClaimCollateralPsbt {
 
 #[derive(Debug, Serialize, Deserialize, ToSchema)]
 pub struct ClaimTx {
+    pub tx: String,
+}
+
+#[derive(Debug, Serialize, Deserialize, ToSchema)]
+pub struct RecoverTx {
     pub tx: String,
 }
 
@@ -1616,6 +1802,10 @@ async fn map_timeline(
                 ContractStatus::ClosedByLiquidation => transactions.iter().find_map(|tx| {
                     (tx.transaction_type == TransactionType::Liquidation).then(|| tx.txid.clone())
                 }),
+                ContractStatus::ClosedByRecovery => transactions.iter().find_map(|tx| {
+                    (tx.transaction_type == TransactionType::ClaimCollateral)
+                        .then(|| tx.txid.clone())
+                }),
 
                 ContractStatus::Requested
                 | ContractStatus::RenewalRequested
@@ -1631,7 +1821,8 @@ async fn map_timeline(
                 | ContractStatus::DisputeLenderResolved
                 | ContractStatus::Cancelled
                 | ContractStatus::RequestExpired
-                | ContractStatus::ApprovalExpired => {
+                | ContractStatus::ApprovalExpired
+                | ContractStatus::CollateralRecoverable => {
                     // There are no transactions associated with these events.
                     None
                 }
@@ -1838,6 +2029,10 @@ enum Error {
     /// MoonCardInstant loan type requires MoonCardInstant loan payout.
     InvalidMoonCardInstantPayout {
         actual_payout: LoanPayout,
+    },
+    /// Can't recover collateral from a contract not in `CollateralRecoverable` status.
+    InvalidRecoveryRequest {
+        status: ContractStatus,
     },
 }
 
@@ -2151,6 +2346,10 @@ impl IntoResponse for Error {
                     "MoonCardInstant loan type requires MoonCardInstant \
                          loan payout, but got {actual_payout:?}"
                 ),
+            ),
+            Error::InvalidRecoveryRequest { status } => (
+                StatusCode::BAD_REQUEST,
+                format!("Cannot recover collateral from a contract with status {status:?}"),
             ),
         };
         (status, AppJson(ErrorResponse { message })).into_response()

@@ -43,7 +43,9 @@
                       "Extended",
                       "ApprovalExpired",
                       "ClosedByLiquidation",
-                      "ClosedByDefaulting"
+                      "ClosedByDefaulting",
+                      "CollateralRecoverable",
+                      "ClosedByRecovery"
                     ]
                   }
                 }

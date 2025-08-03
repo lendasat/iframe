@@ -12,5 +12,19 @@ services:
       POSTGRES_PASSWORD: supersecretpassword
       POSTGRES_USER: hub
 
+  postgrest:
+    container_name: postgrest
+    image: postgrest/postgrest:latest
+    ports:
+      - "3013:3000"
+    environment:
+      PGRST_DB_URI: postgres://hub:supersecretpassword@db:5432/hub
+      PGRST_DB_SCHEMAS: hub
+      PGRST_DB_ANON_ROLE: hub
+      PGRST_OPENAPI_SERVER_PROXY_URI: http://localhost:3013
+    depends_on:
+      - db
+    restart: always
+
 volumes:
   postgres:

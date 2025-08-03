@@ -58,9 +58,10 @@ mod dispute;
 mod me;
 mod moon_webhook;
 
-pub use contracts::ClaimCollateralPsbt;
 pub use contracts::ClaimTx;
 pub use contracts::Contract;
+pub use contracts::RecoverTx;
+pub use contracts::SpendCollateralPsbt;
 
 const HEALTH_CHECK_TAG: &str = "health";
 const AUTH_TAG: &str = "auth";

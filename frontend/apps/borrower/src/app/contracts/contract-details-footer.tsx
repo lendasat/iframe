@@ -3,6 +3,7 @@ import AddCollateralDialog from "./add-collateral-dialog";
 import CancelRequestDialog from "./cancel-request-dialog";
 import { LuBan, LuChevronRight, LuDownload } from "react-icons/lu";
 import WithdrawCollateralDialog from "./manage-loan-dialog/withdraw-collateral";
+import RecoverCollateralDialog from "./manage-loan-dialog/recover-collateral";
 import ManageLoanDialog from "./manage-loan-dialog/manage-loan-dialog";
 import {
   Contract,
@@ -94,11 +95,25 @@ export function ContractDetailsFooter({
         </Button>
       </WithdrawCollateralDialog>
     );
+  } else if (contract.status === ContractStatus.CollateralRecoverable) {
+    button = (
+      <RecoverCollateralDialog
+        contract={contract}
+        collateralAmountSats={contract.collateral_sats}
+        collateralAddress={contract.borrower_btc_address}
+      >
+        <Button type={"button"} disabled={buttonDisabled}>
+          <LuDownload className="mr-2 h-4 w-4" />
+          Recover Collateral
+        </Button>
+      </RecoverCollateralDialog>
+    );
   } else if (
     contract.status !== ContractStatus.Cancelled &&
     contract.status !== ContractStatus.Closed &&
     contract.status !== ContractStatus.ClosedByDefaulting &&
     contract.status !== ContractStatus.ClosedByLiquidation &&
+    contract.status !== ContractStatus.ClosedByRecovery &&
     contract.status !== ContractStatus.RepaymentProvided &&
     contract.status !== ContractStatus.Extended &&
     contract.status !== ContractStatus.CollateralConfirmed &&

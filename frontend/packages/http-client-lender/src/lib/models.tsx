@@ -41,6 +41,8 @@ export enum ContractStatus {
   Cancelled = "Cancelled",
   RequestExpired = "RequestExpired",
   ApprovalExpired = "ApprovalExpired",
+  CollateralRecoverable = "CollateralRecoverable",
+  ClosedByRecovery = "ClosedByRecovery",
 }
 
 export const isActionRequired = (status: ContractStatus) => {
@@ -53,12 +55,14 @@ export const isActionRequired = (status: ContractStatus) => {
     case ContractStatus.Closed:
     case ContractStatus.ClosedByDefaulting:
     case ContractStatus.ClosedByLiquidation:
+    case ContractStatus.ClosedByRecovery:
     case ContractStatus.Extended:
     case ContractStatus.Rejected:
     case ContractStatus.Cancelled:
     case ContractStatus.RequestExpired:
     case ContractStatus.ApprovalExpired:
     case ContractStatus.CollateralSeen:
+    case ContractStatus.CollateralRecoverable:
     case ContractStatus.PrincipalGiven:
       return false;
     case ContractStatus.Requested:
@@ -79,6 +83,7 @@ export const isContractOpen = (status: ContractStatus) => {
     case ContractStatus.Closed:
     case ContractStatus.ClosedByLiquidation:
     case ContractStatus.ClosedByDefaulting:
+    case ContractStatus.ClosedByRecovery:
     case ContractStatus.Extended:
     case ContractStatus.Rejected:
     case ContractStatus.Cancelled:
@@ -99,6 +104,7 @@ export const isContractOpen = (status: ContractStatus) => {
     case ContractStatus.DisputeBorrowerResolved:
     case ContractStatus.DisputeLenderResolved:
     case ContractStatus.Defaulted:
+    case ContractStatus.CollateralRecoverable:
       return true;
   }
 };
@@ -380,6 +386,12 @@ export function contractStatusToLabelString(status: ContractStatus): string {
       break;
     case ContractStatus.ApprovalExpired:
       statusText = "Approval Expired";
+      break;
+    case ContractStatus.CollateralRecoverable:
+      statusText = "Abandoned (Collateral Recoverable)";
+      break;
+    case ContractStatus.ClosedByRecovery:
+      statusText = "Closed by Recovery";
       break;
   }
   return statusText;
