@@ -75,8 +75,14 @@ pub(crate) mod jwt_or_api_auth;
 /// Expiry time of a session cookie for the browser.
 const BROWSER_COOKIE_EXPIRY_HOURS: time::Duration = time::Duration::hours(1);
 
+/// Expiry time of a session cookie for mobile.
+const MOBILE_COOKIE_EXPIRY_HOURS: time::Duration = time::Duration::days(7);
+
 /// Expiry time of a JWT for the browser.
 const BROWSER_JWT_EXPIRY_HOURS: time::Duration = time::Duration::hours(1);
+
+/// Expiry time of a JWT for mobile.
+const MOBILE_JWT_EXPIRY_HOURS: time::Duration = time::Duration::days(7);
 
 /// Expiry time of a password reset token.
 const PASSWORD_TOKEN_EXPIRES_IN_MINUTES: i64 = 10;
@@ -89,6 +95,7 @@ pub(crate) fn router(app_state: Arc<AppState>) -> OpenApiRouter {
         .routes(routes!(post_register))
         .routes(routes!(post_pake_login))
         .routes(routes!(post_pake_verify))
+        .routes(routes!(post_pake_verify_mobile))
         .routes(routes!(verify_email_handler))
         .routes(routes!(forgot_password_handler))
         .routes(routes!(reset_password_handler))
@@ -103,6 +110,7 @@ pub(crate) fn router(app_state: Arc<AppState>) -> OpenApiRouter {
     // Routes requiring JWT authentication
     let jwt_routes = OpenApiRouter::new()
         .routes(routes!(refresh_token_handler))
+        .routes(routes!(refresh_token_handler_mobile))
         .route_layer(middleware::from_fn_with_state(
             app_state.clone(),
             jwt_auth::auth,
@@ -391,6 +399,40 @@ async fn post_pake_verify(
         body,
         BROWSER_JWT_EXPIRY_HOURS,
         BROWSER_COOKIE_EXPIRY_HOURS,
+    )
+    .await
+}
+
+/// Complete PAKE authentication verification, for mobile clients.
+#[utoipa::path(
+    post,
+    path = "/pake-verify-mobile",
+    tag = AUTH_TAG,
+    request_body = PakeVerifyRequest,
+    responses(
+        (
+            status = 200,
+            description = "PAKE verification successful, user authenticated",
+            body = PakeVerifyResponse
+        ),
+        (
+            status = 400,
+            description = "Invalid credentials or authentication failed"
+        )
+    )
+)]
+#[instrument(skip_all, fields(borrower_id), err(Debug))]
+async fn post_pake_verify_mobile(
+    State(data): State<Arc<AppState>>,
+    Extension(connection_details): Extension<UserConnectionDetails>,
+    AppJson(body): AppJson<PakeVerifyRequest>,
+) -> Result<impl IntoResponse, Error> {
+    post_pake_verify_aux(
+        data,
+        connection_details,
+        body,
+        MOBILE_JWT_EXPIRY_HOURS,
+        MOBILE_COOKIE_EXPIRY_HOURS,
     )
     .await
 }
@@ -1103,6 +1145,41 @@ async fn refresh_token_handler(
         user_auth,
         BROWSER_COOKIE_EXPIRY_HOURS,
         BROWSER_JWT_EXPIRY_HOURS,
+    )
+    .await
+}
+
+/// Refresh user authentication token, for mobile clients.
+#[utoipa::path(
+    post,
+    path = "/refresh-token-mobile",
+    tag = AUTH_TAG,
+    responses(
+        (
+            status = 200,
+            description = "Token refreshed successfully"
+        ),
+        (
+            status = 401,
+            description = "Invalid or expired token"
+        )
+    ),
+    security(
+        (
+            "api_key" = []
+        )
+    )
+)]
+#[instrument(skip_all, fields(borrower_id), err(Debug))]
+async fn refresh_token_handler_mobile(
+    State(data): State<Arc<AppState>>,
+    Extension(user_auth): Extension<(Borrower, PasswordAuth)>,
+) -> Result<impl IntoResponse, Error> {
+    refresh_token_handler_aux(
+        data,
+        user_auth,
+        MOBILE_COOKIE_EXPIRY_HOURS,
+        MOBILE_JWT_EXPIRY_HOURS,
     )
     .await
 }
