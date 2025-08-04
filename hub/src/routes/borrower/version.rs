@@ -1,5 +1,4 @@
 use crate::routes::borrower::VERSION_TAG;
-use axum::response::IntoResponse;
 use axum::Json;
 use serde::Serialize;
 use utoipa::ToSchema;
@@ -28,11 +27,11 @@ struct Version {
         (
         status = 200,
         description = "Return the deployed version and commit hash",
-        body = [Version]
+        body = Version
         )
     )
 )]
-async fn version() -> impl IntoResponse {
+async fn version() -> Json<Version> {
     Json(Version {
         tag: GIT_TAG.to_owned(),
         commit_hash: GIT_HASH.to_owned(),
