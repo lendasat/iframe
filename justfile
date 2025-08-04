@@ -47,12 +47,6 @@ check-frontend:
 ## ------------------------
 ## Test functions
 ## ------------------------
-# FIXME: we should run our frontend tests
-# test-frontend:
-#     #!/usr/bin/env bash
-#     set -euxo pipefail
-#     cd frontend
-#     pnpm test
 
 test-rust:
     cargo test --workspace
