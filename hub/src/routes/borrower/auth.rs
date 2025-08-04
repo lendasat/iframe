@@ -72,11 +72,11 @@ pub(crate) mod api_account_creator_auth;
 pub(crate) mod jwt_auth;
 pub(crate) mod jwt_or_api_auth;
 
-/// Expiry time of a session cookie.
-const COOKIE_EXPIRY_HOURS: i64 = 1;
+/// Expiry time of a session cookie for the browser.
+const BROWSER_COOKIE_EXPIRY_HOURS: time::Duration = time::Duration::hours(1);
 
-/// Expiry time of a JWT.
-const JWT_EXPIRY_HOURS: i64 = 1;
+/// Expiry time of a JWT for the browser.
+const BROWSER_JWT_EXPIRY_HOURS: time::Duration = time::Duration::hours(1);
 
 /// Expiry time of a password reset token.
 const PASSWORD_TOKEN_EXPIRES_IN_MINUTES: i64 = 10;
@@ -385,6 +385,23 @@ async fn post_pake_verify(
     Extension(connection_details): Extension<UserConnectionDetails>,
     AppJson(body): AppJson<PakeVerifyRequest>,
 ) -> Result<impl IntoResponse, Error> {
+    post_pake_verify_aux(
+        data,
+        connection_details,
+        body,
+        BROWSER_JWT_EXPIRY_HOURS,
+        BROWSER_COOKIE_EXPIRY_HOURS,
+    )
+    .await
+}
+
+async fn post_pake_verify_aux(
+    data: Arc<AppState>,
+    connection_details: UserConnectionDetails,
+    body: PakeVerifyRequest,
+    jwt_expiry_hours: time::Duration,
+    cookie_expiry_hours: time::Duration,
+) -> Result<impl IntoResponse, Error> {
     let email = body.email;
     let (user, password_auth_info) = get_user_by_email(&data.db, email.as_str())
         .await
@@ -429,7 +446,7 @@ async fn post_pake_verify(
 
     let now = OffsetDateTime::now_utc();
     let iat = now.unix_timestamp();
-    let exp = (now + time::Duration::hours(JWT_EXPIRY_HOURS)).unix_timestamp();
+    let exp = (now + jwt_expiry_hours).unix_timestamp();
     let claims: TokenClaims = TokenClaims {
         user_id: borrower_id.clone(),
         exp,
@@ -445,7 +462,7 @@ async fn post_pake_verify(
 
     let cookie = Cookie::build(("token", token.to_owned()))
         .path("/")
-        .max_age(time::Duration::hours(COOKIE_EXPIRY_HOURS))
+        .max_age(cookie_expiry_hours)
         .same_site(SameSite::Lax)
         .http_only(true);
 
@@ -1079,12 +1096,27 @@ async fn post_add_to_waitlist(
 #[instrument(skip_all, fields(borrower_id), err(Debug))]
 async fn refresh_token_handler(
     State(data): State<Arc<AppState>>,
-    Extension(user_aut): Extension<(Borrower, PasswordAuth)>,
+    Extension(user_auth): Extension<(Borrower, PasswordAuth)>,
 ) -> Result<impl IntoResponse, Error> {
-    let user = user_aut.0;
+    refresh_token_handler_aux(
+        data,
+        user_auth,
+        BROWSER_COOKIE_EXPIRY_HOURS,
+        BROWSER_JWT_EXPIRY_HOURS,
+    )
+    .await
+}
+
+async fn refresh_token_handler_aux(
+    data: Arc<AppState>,
+    user_auth: (Borrower, PasswordAuth),
+    jwt_expiry_hours: time::Duration,
+    cookie_expiry_hours: time::Duration,
+) -> Result<impl IntoResponse, Error> {
+    let user = user_auth.0;
     let now = OffsetDateTime::now_utc();
     let iat = now.unix_timestamp();
-    let exp = (now + time::Duration::hours(JWT_EXPIRY_HOURS)).unix_timestamp();
+    let exp = (now + jwt_expiry_hours).unix_timestamp();
     let claims: TokenClaims = TokenClaims {
         user_id: user.id.clone(),
         exp,
@@ -1100,7 +1132,7 @@ async fn refresh_token_handler(
 
     let cookie = Cookie::build(("token", token.to_owned()))
         .path("/")
-        .max_age(time::Duration::hours(COOKIE_EXPIRY_HOURS))
+        .max_age(cookie_expiry_hours)
         .same_site(SameSite::Lax)
         .http_only(true);
 
