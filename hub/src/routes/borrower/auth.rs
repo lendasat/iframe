@@ -72,9 +72,19 @@ pub(crate) mod api_account_creator_auth;
 pub(crate) mod jwt_auth;
 pub(crate) mod jwt_or_api_auth;
 
-/// Expiry time of a session cookie
-const COOKIE_EXPIRY_HOURS: i64 = 1;
-/// Expiry time of a password reset token
+/// Expiry time of a session cookie for the browser.
+const BROWSER_COOKIE_EXPIRY_HOURS: time::Duration = time::Duration::hours(1);
+
+/// Expiry time of a session cookie for mobile.
+const MOBILE_COOKIE_EXPIRY_HOURS: time::Duration = time::Duration::days(7);
+
+/// Expiry time of a JWT for the browser.
+const BROWSER_JWT_EXPIRY_HOURS: time::Duration = time::Duration::hours(1);
+
+/// Expiry time of a JWT for mobile.
+const MOBILE_JWT_EXPIRY_HOURS: time::Duration = time::Duration::days(7);
+
+/// Expiry time of a password reset token.
 const PASSWORD_TOKEN_EXPIRES_IN_MINUTES: i64 = 10;
 const PASSWORD_RESET_TOKEN_LENGTH: usize = 20;
 
@@ -85,6 +95,7 @@ pub(crate) fn router(app_state: Arc<AppState>) -> OpenApiRouter {
         .routes(routes!(post_register))
         .routes(routes!(post_pake_login))
         .routes(routes!(post_pake_verify))
+        .routes(routes!(post_pake_verify_mobile))
         .routes(routes!(verify_email_handler))
         .routes(routes!(forgot_password_handler))
         .routes(routes!(reset_password_handler))
@@ -99,6 +110,7 @@ pub(crate) fn router(app_state: Arc<AppState>) -> OpenApiRouter {
     // Routes requiring JWT authentication
     let jwt_routes = OpenApiRouter::new()
         .routes(routes!(refresh_token_handler))
+        .routes(routes!(refresh_token_handler_mobile))
         .route_layer(middleware::from_fn_with_state(
             app_state.clone(),
             jwt_auth::auth,
@@ -381,6 +393,57 @@ async fn post_pake_verify(
     Extension(connection_details): Extension<UserConnectionDetails>,
     AppJson(body): AppJson<PakeVerifyRequest>,
 ) -> Result<impl IntoResponse, Error> {
+    post_pake_verify_aux(
+        data,
+        connection_details,
+        body,
+        BROWSER_JWT_EXPIRY_HOURS,
+        BROWSER_COOKIE_EXPIRY_HOURS,
+    )
+    .await
+}
+
+/// Complete PAKE authentication verification, for mobile clients.
+#[utoipa::path(
+    post,
+    path = "/pake-verify-mobile",
+    tag = AUTH_TAG,
+    request_body = PakeVerifyRequest,
+    responses(
+        (
+            status = 200,
+            description = "PAKE verification successful, user authenticated",
+            body = PakeVerifyResponse
+        ),
+        (
+            status = 400,
+            description = "Invalid credentials or authentication failed"
+        )
+    )
+)]
+#[instrument(skip_all, fields(borrower_id), err(Debug))]
+async fn post_pake_verify_mobile(
+    State(data): State<Arc<AppState>>,
+    Extension(connection_details): Extension<UserConnectionDetails>,
+    AppJson(body): AppJson<PakeVerifyRequest>,
+) -> Result<impl IntoResponse, Error> {
+    post_pake_verify_aux(
+        data,
+        connection_details,
+        body,
+        MOBILE_JWT_EXPIRY_HOURS,
+        MOBILE_COOKIE_EXPIRY_HOURS,
+    )
+    .await
+}
+
+async fn post_pake_verify_aux(
+    data: Arc<AppState>,
+    connection_details: UserConnectionDetails,
+    body: PakeVerifyRequest,
+    jwt_expiry_hours: time::Duration,
+    cookie_expiry_hours: time::Duration,
+) -> Result<impl IntoResponse, Error> {
     let email = body.email;
     let (user, password_auth_info) = get_user_by_email(&data.db, email.as_str())
         .await
@@ -425,7 +488,7 @@ async fn post_pake_verify(
 
     let now = OffsetDateTime::now_utc();
     let iat = now.unix_timestamp();
-    let exp = (now + time::Duration::hours(COOKIE_EXPIRY_HOURS)).unix_timestamp();
+    let exp = (now + jwt_expiry_hours).unix_timestamp();
     let claims: TokenClaims = TokenClaims {
         user_id: borrower_id.clone(),
         exp,
@@ -441,7 +504,7 @@ async fn post_pake_verify(
 
     let cookie = Cookie::build(("token", token.to_owned()))
         .path("/")
-        .max_age(time::Duration::hours(COOKIE_EXPIRY_HOURS))
+        .max_age(cookie_expiry_hours)
         .same_site(SameSite::Lax)
         .http_only(true);
 
@@ -1075,12 +1138,62 @@ async fn post_add_to_waitlist(
 #[instrument(skip_all, fields(borrower_id), err(Debug))]
 async fn refresh_token_handler(
     State(data): State<Arc<AppState>>,
-    Extension(user_aut): Extension<(Borrower, PasswordAuth)>,
+    Extension(user_auth): Extension<(Borrower, PasswordAuth)>,
 ) -> Result<impl IntoResponse, Error> {
-    let user = user_aut.0;
+    refresh_token_handler_aux(
+        data,
+        user_auth,
+        BROWSER_COOKIE_EXPIRY_HOURS,
+        BROWSER_JWT_EXPIRY_HOURS,
+    )
+    .await
+}
+
+/// Refresh user authentication token, for mobile clients.
+#[utoipa::path(
+    post,
+    path = "/refresh-token-mobile",
+    tag = AUTH_TAG,
+    responses(
+        (
+            status = 200,
+            description = "Token refreshed successfully"
+        ),
+        (
+            status = 401,
+            description = "Invalid or expired token"
+        )
+    ),
+    security(
+        (
+            "api_key" = []
+        )
+    )
+)]
+#[instrument(skip_all, fields(borrower_id), err(Debug))]
+async fn refresh_token_handler_mobile(
+    State(data): State<Arc<AppState>>,
+    Extension(user_auth): Extension<(Borrower, PasswordAuth)>,
+) -> Result<impl IntoResponse, Error> {
+    refresh_token_handler_aux(
+        data,
+        user_auth,
+        MOBILE_COOKIE_EXPIRY_HOURS,
+        MOBILE_JWT_EXPIRY_HOURS,
+    )
+    .await
+}
+
+async fn refresh_token_handler_aux(
+    data: Arc<AppState>,
+    user_auth: (Borrower, PasswordAuth),
+    jwt_expiry_hours: time::Duration,
+    cookie_expiry_hours: time::Duration,
+) -> Result<impl IntoResponse, Error> {
+    let user = user_auth.0;
     let now = OffsetDateTime::now_utc();
     let iat = now.unix_timestamp();
-    let exp = (now + time::Duration::hours(COOKIE_EXPIRY_HOURS)).unix_timestamp();
+    let exp = (now + jwt_expiry_hours).unix_timestamp();
     let claims: TokenClaims = TokenClaims {
         user_id: user.id.clone(),
         exp,
@@ -1096,7 +1209,7 @@ async fn refresh_token_handler(
 
     let cookie = Cookie::build(("token", token.to_owned()))
         .path("/")
-        .max_age(time::Duration::hours(COOKIE_EXPIRY_HOURS))
+        .max_age(cookie_expiry_hours)
         .same_site(SameSite::Lax)
         .http_only(true);
 
