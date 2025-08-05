@@ -18,9 +18,9 @@ use hub::model::LoanPayout;
 use hub::model::LoanType;
 use hub::model::RepaymentPlan;
 use hub::model::ONE_YEAR;
-use hub::routes::borrower::ClaimCollateralPsbt;
 use hub::routes::borrower::ClaimTx;
 use hub::routes::borrower::Contract;
+use hub::routes::borrower::SpendCollateralPsbt;
 use reqwest::Client;
 use rust_decimal_macros::dec;
 use serde_json::json;
@@ -332,7 +332,7 @@ async fn open_and_repay_loan() {
 
     assert!(res.status().is_success());
 
-    let ClaimCollateralPsbt {
+    let SpendCollateralPsbt {
         psbt: claim_psbt,
         collateral_descriptor,
         borrower_pk,

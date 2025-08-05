@@ -195,3 +195,44 @@ pub fn init_tracing() {
             .init()
     })
 }
+
+pub mod postgrest {
+    use anyhow::bail;
+    use anyhow::Result;
+    use hub::model::ContractStatus;
+    use reqwest::Client;
+    use serde::Serialize;
+
+    /// Update a contract's status using the PostgREST API.
+    pub async fn set_contract_status(
+        client: &Client,
+        postgrest_url: &str,
+        contract_id: &str,
+        // HACK: We are using the `model::ContractStatus` even though the database uses a different
+        // type. They just happen to be exactly the same (for now).
+        status: ContractStatus,
+    ) -> Result<()> {
+        #[derive(Serialize)]
+        struct Request {
+            status: ContractStatus,
+        }
+
+        tracing::debug!(?status, "Setting contract status via PostgREST");
+
+        let response = client
+            .patch(format!("{postgrest_url}/contracts"))
+            .header("Content-Type", "application/json")
+            .query(&[("id", format!("eq.{contract_id}"))])
+            .json(&Request { status })
+            .send()
+            .await?;
+
+        let status = response.status();
+        if !status.is_success() {
+            let error_text = response.text().await.unwrap_or_default();
+            bail!("Failed to update contract status via PostgREST: {status} - {error_text}");
+        }
+
+        Ok(())
+    }
+}

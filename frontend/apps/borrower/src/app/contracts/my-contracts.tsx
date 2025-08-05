@@ -53,6 +53,7 @@ const getStatusFilterArray = (
         ContractStatus.RepaymentProvided,
         ContractStatus.RepaymentConfirmed,
         ContractStatus.RenewalRequested,
+        ContractStatus.CollateralRecoverable,
       ];
     case ContractStatusFilterType.Closed:
       // Based on isContractClosed function: return all "closed" statuses
@@ -64,6 +65,7 @@ const getStatusFilterArray = (
         ContractStatus.Closed,
         ContractStatus.ClosedByDefaulting,
         ContractStatus.ClosedByLiquidation,
+        ContractStatus.ClosedByRecovery,
         ContractStatus.Extended,
         ContractStatus.Rejected,
         ContractStatus.Cancelled,

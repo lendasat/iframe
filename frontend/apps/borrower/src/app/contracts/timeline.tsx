@@ -335,5 +335,9 @@ export const contractStatusDescription = (status: ContractStatus): string => {
     case ContractStatus.RequestExpired:
     case ContractStatus.ApprovalExpired:
       return "The contract request has expired.";
+    case ContractStatus.CollateralRecoverable:
+      return "Collateral recovery is now available due to lender inactivity.";
+    case ContractStatus.ClosedByRecovery:
+      return "The contract has been closed after collateral recovery.";
   }
 };

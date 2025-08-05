@@ -198,6 +198,3 @@ jobs:
         run: just check-frontend
       - name: Lint frontend
         run: just lint-frontend
-# TODO: Re-enable the frontend tests.
-#     - name: Run tests
-#       run: just test-frontend

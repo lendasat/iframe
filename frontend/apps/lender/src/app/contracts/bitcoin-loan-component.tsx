@@ -95,6 +95,12 @@ export function contractStatusLabelColor(status?: ContractStatus): string {
     case ContractStatus.ApprovalExpired:
       color = "bg-neutral-100 text-neutral-800";
       break;
+    case ContractStatus.CollateralRecoverable:
+      color = "bg-red-100 text-red-800";
+      break;
+    case ContractStatus.ClosedByRecovery:
+      color = "bg-gray-100 text-gray-800";
+      break;
   }
   return color;
 }

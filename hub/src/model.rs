@@ -923,6 +923,17 @@ impl From<i32> for ContractVersion {
 ///
 /// **ApprovalExpired** - The approved contract has expired because the borrower did not
 /// collateralize it in time.
+///
+/// **CollateralRecoverable** - The lender failed to disburse the principal in time after the
+/// contract was collateralized.
+///
+/// The borrower is now able to recover their collateral.
+///
+/// **ClosedByRecovery** - The transaction spending the collateral contract outputs has been
+/// published and confirmed on the blockchain.
+///
+/// The loan contract is now closed. This status indicates that the loan contract was closed due to
+/// the lender never disbursing the principal.
 #[derive(Clone, Copy, Debug, Deserialize, Serialize, PartialEq, ToSchema)]
 pub enum ContractStatus {
     /// The borrower has sent a contract request based on a loan offer.
@@ -1068,6 +1079,20 @@ pub enum ContractStatus {
     RequestExpired,
     /// The approved contract has expired because the borrower did not collateralize it in time.
     ApprovalExpired,
+    /// The contract has been marked as eligible for collateral recovery by administrators.
+    ///
+    /// This status is set when the lender fails to disburse the principal after the collateral
+    /// has been confirmed. From this status, the borrower can recover their collateral.
+    ///
+    /// If the borrower recovers the collateral, the contract transitions to
+    /// [`ContractStatus::ClosedByRecovery`].
+    CollateralRecoverable,
+    /// The transaction spending the collateral contract outputs has been published and confirmed
+    /// on the blockchain. The loan contract is now closed.
+    ///
+    /// This status indicates that the borrower recovered their collateral due to the lender's
+    /// failure to disburse the principal in a timely manner.
+    ClosedByRecovery,
 }
 
 impl FromStr for ContractStatus {
@@ -1110,6 +1135,10 @@ impl FromStr for ContractStatus {
             "cancelled" => Ok(ContractStatus::Cancelled),
             "requestexpired" | "request_expired" => Ok(ContractStatus::RequestExpired),
             "approvalexpired" | "approval_expired" => Ok(ContractStatus::ApprovalExpired),
+            "collateralrecoverable" | "collateral_recoverable" => {
+                Ok(ContractStatus::CollateralRecoverable)
+            }
+            "closedbyrecovery" | "closed_by_recovery" => Ok(ContractStatus::ClosedByRecovery),
             _ => Err(format!("Invalid contract status: {s}")),
         }
     }
@@ -1252,6 +1281,8 @@ pub mod db {
         DisputeLenderResolved,
         RequestExpired,
         ApprovalExpired,
+        CollateralRecoverable,
+        ClosedByRecovery,
     }
 
     #[derive(Debug, Deserialize, sqlx::Type, Serialize)]
@@ -1388,6 +1419,8 @@ impl From<db::ContractStatus> for ContractStatus {
             db::ContractStatus::Cancelled => Self::Cancelled,
             db::ContractStatus::RequestExpired => Self::RequestExpired,
             db::ContractStatus::ApprovalExpired => Self::ApprovalExpired,
+            db::ContractStatus::CollateralRecoverable => Self::CollateralRecoverable,
+            db::ContractStatus::ClosedByRecovery => Self::ClosedByRecovery,
             db::ContractStatus::ClosedByLiquidation => Self::ClosedByLiquidation,
             db::ContractStatus::ClosedByDefaulting => Self::ClosedByDefaulting,
         }
@@ -1535,6 +1568,8 @@ impl From<ContractStatus> for db::ContractStatus {
             ContractStatus::Cancelled => Self::Cancelled,
             ContractStatus::RequestExpired => Self::RequestExpired,
             ContractStatus::ApprovalExpired => Self::ApprovalExpired,
+            ContractStatus::CollateralRecoverable => Self::CollateralRecoverable,
+            ContractStatus::ClosedByRecovery => Self::ClosedByRecovery,
             ContractStatus::ClosedByLiquidation => Self::ClosedByLiquidation,
             ContractStatus::ClosedByDefaulting => Self::ClosedByDefaulting,
         }

@@ -1191,6 +1191,13 @@ pub async fn mark_contract_as_closed_by_defaulting(
     mark_contract_state_as(pool, contract_id, db::ContractStatus::ClosedByDefaulting).await
 }
 
+pub async fn mark_contract_as_closed_by_recovery(
+    pool: &Pool<Postgres>,
+    contract_id: &str,
+) -> Result<()> {
+    mark_contract_state_as(pool, contract_id, db::ContractStatus::ClosedByRecovery).await
+}
+
 pub async fn mark_contract_as_defaulted(pool: &Pool<Postgres>, contract_id: &str) -> Result<()> {
     mark_contract_state_as(pool, contract_id, db::ContractStatus::Defaulted).await
 }
@@ -1498,7 +1505,9 @@ pub async fn update_collateral(
                     | ContractStatus::DisputeLenderResolved
                     | ContractStatus::Cancelled
                     | ContractStatus::RequestExpired
-                    | ContractStatus::ApprovalExpired => (contract.status, false),
+                    | ContractStatus::ApprovalExpired
+                    | ContractStatus::CollateralRecoverable
+                    | ContractStatus::ClosedByRecovery => (contract.status, false),
                 }
             }
             Ordering::Less => {

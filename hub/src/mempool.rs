@@ -195,6 +195,12 @@ impl Actor {
                         .await
                         .context("Failed to mark contract as closed by defaulting")?;
                 }
+                ClaimTxType::Recovery => {
+                    db::transactions::insert_claim_txid(&self.db, contract_id, claim_txid).await?;
+                    db::contracts::mark_contract_as_closed_by_recovery(&self.db, contract_id)
+                        .await
+                        .context("Failed to mark contract as closed by recovery")?;
+                }
             }
 
             self.tracked_claim_txs.remove(claim_txid);
@@ -624,6 +630,7 @@ pub enum ClaimTxType {
     Repaid,
     Liquidated,
     Defaulted,
+    Recovery,
 }
 
 /// Message to tell the [`Actor`] to track the status of a claim-collateral transaction.

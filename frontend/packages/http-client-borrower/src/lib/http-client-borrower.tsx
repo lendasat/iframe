@@ -193,11 +193,16 @@ export interface HttpClient {
     id: string,
     feeRate: number,
   ) => Promise<ClaimCollateralPsbtResponse>;
+  getRecoverCollateralPsbt: (
+    id: string,
+    feeRate: number,
+  ) => Promise<ClaimCollateralPsbtResponse>;
   getClaimDisputeCollateralPsbt: (
     disputeId: string,
     feeRate: number,
   ) => Promise<ClaimCollateralPsbtResponse>;
   postClaimTx: (contract_id: string, tx: string) => Promise<string>;
+  postBroadcastRecover: (contract_id: string, tx: string) => Promise<string>;
   putFiatDetails: (
     contractId: string,
     fiatDetails: FiatLoanDetails,
@@ -819,6 +824,22 @@ export const createHttpClient = (
     }
   };
 
+  const getRecoverCollateralPsbt = async (
+    id: string,
+    feeRate: number,
+  ): Promise<ClaimCollateralPsbtResponse> => {
+    try {
+      const res: AxiosResponse<ClaimCollateralPsbtResponse> =
+        await axiosClient.get(
+          `/api/contracts/${id}/recover?fee_rate=${feeRate}`,
+        );
+      return res.data;
+    } catch (error) {
+      handleError(error, "getting recover collateral psbt");
+      throw error; // Satisfies the linter, though it won't actually be reached.
+    }
+  };
+
   const getClaimDisputeCollateralPsbt = async (
     disputeId: string,
     feeRate: number,
@@ -847,6 +868,22 @@ export const createHttpClient = (
       return response.data;
     } catch (error) {
       handleError(error, "posting claim psbt");
+      throw error; // Satisfies the linter, though it won't actually be reached.
+    }
+  };
+
+  const postBroadcastRecover = async (
+    contract_id: string,
+    tx: string,
+  ): Promise<string> => {
+    try {
+      const response: AxiosResponse<string> = await axiosClient.post(
+        `/api/contracts/${contract_id}/broadcast-recover`,
+        { tx: tx },
+      );
+      return response.data;
+    } catch (error) {
+      handleError(error, "posting recovery transaction");
       throw error; // Satisfies the linter, though it won't actually be reached.
     }
   };
@@ -1247,8 +1284,10 @@ export const createHttpClient = (
     getContract,
     markInstallmentAsPaid,
     getClaimCollateralPsbt,
+    getRecoverCollateralPsbt,
     getClaimDisputeCollateralPsbt,
     postClaimTx,
+    postBroadcastRecover,
     putFiatDetails,
     startDispute,
     getDispute,

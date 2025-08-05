@@ -35,6 +35,8 @@ export enum ContractStatus {
   Cancelled = "Cancelled",
   RequestExpired = "RequestExpired",
   ApprovalExpired = "ApprovalExpired",
+  CollateralRecoverable = "CollateralRecoverable",
+  ClosedByRecovery = "ClosedByRecovery",
 }
 
 export const isActionRequired = (status: ContractStatus) => {
@@ -56,6 +58,7 @@ export const isActionRequired = (status: ContractStatus) => {
     case ContractStatus.PrincipalGiven:
     case ContractStatus.RepaymentProvided:
     case ContractStatus.RenewalRequested:
+    case ContractStatus.ClosedByRecovery:
       return false;
     case ContractStatus.Approved:
     case ContractStatus.RepaymentConfirmed:
@@ -63,6 +66,7 @@ export const isActionRequired = (status: ContractStatus) => {
     case ContractStatus.DisputeLenderStarted:
     case ContractStatus.DisputeBorrowerResolved:
     case ContractStatus.DisputeLenderResolved:
+    case ContractStatus.CollateralRecoverable:
       return true;
   }
 };
@@ -81,6 +85,7 @@ export const isContractOpen = (status: ContractStatus) => {
     case ContractStatus.Cancelled:
     case ContractStatus.RequestExpired:
     case ContractStatus.ApprovalExpired:
+    case ContractStatus.ClosedByRecovery:
       return false;
     case ContractStatus.Approved:
     case ContractStatus.CollateralSeen:
@@ -93,6 +98,7 @@ export const isContractOpen = (status: ContractStatus) => {
     case ContractStatus.DisputeLenderStarted:
     case ContractStatus.DisputeBorrowerResolved:
     case ContractStatus.DisputeLenderResolved:
+    case ContractStatus.CollateralRecoverable:
       return true;
   }
 };
@@ -147,6 +153,10 @@ export function contractStatusToLabelString(status: ContractStatus): string {
       return "Request Expired";
     case ContractStatus.ApprovalExpired:
       return "Approval Expired";
+    case ContractStatus.CollateralRecoverable:
+      return "Collateral Recoverable";
+    case ContractStatus.ClosedByRecovery:
+      return "Closed by Recovery";
   }
 }
 
@@ -156,6 +166,8 @@ export const actionFromStatus = (status: ContractStatus) => {
       return "Fund it now";
     case ContractStatus.RepaymentConfirmed:
       return "Withdraw collateral";
+    case ContractStatus.CollateralRecoverable:
+      return "Recover collateral";
     case ContractStatus.Requested:
     case ContractStatus.RenewalRequested:
     case ContractStatus.Rejected:
@@ -177,6 +189,7 @@ export const actionFromStatus = (status: ContractStatus) => {
     case ContractStatus.Extended:
     case ContractStatus.Closing:
     case ContractStatus.Cancelled:
+    case ContractStatus.ClosedByRecovery:
       return "Details";
   }
 };
