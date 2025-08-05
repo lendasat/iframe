@@ -28,6 +28,7 @@ use std::str::FromStr;
 use time::macros::datetime;
 use time::OffsetDateTime;
 use url::Url;
+use utoipa::IntoParams;
 use utoipa::ToSchema;
 use uuid::Uuid;
 
@@ -1665,7 +1666,7 @@ pub struct ConfirmInstallmentPaymentRequest {
     pub installment_id: Uuid,
 }
 
-#[derive(Deserialize)]
+#[derive(Deserialize, ToSchema, IntoParams)]
 pub struct PsbtQueryParams {
     // fee rate in sats/vbyte
     pub fee_rate: u64,

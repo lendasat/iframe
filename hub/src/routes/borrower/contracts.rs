@@ -611,7 +611,7 @@ impl Default for SortOrder {
 }
 
 #[derive(Debug, Deserialize, ToSchema, IntoParams)]
-struct ContractsQuery {
+pub struct ContractsQuery {
     #[serde(default = "default_page")]
     page: u32,
     #[serde(default = "default_limit")]
@@ -978,7 +978,8 @@ path = "/{id}/claim",
 params(
     (
     "id" = String, Path, description = "Contract ID"
-    )
+    ),
+    PsbtQueryParams,
 ),
 tag = CONTRACTS_TAG,
 responses(
@@ -1076,7 +1077,8 @@ path = "/{id}/recover",
 params(
     (
     "id" = String, Path, description = "Contract ID"
-    )
+    ),
+    PsbtQueryParams,
 ),
 tag = CONTRACTS_TAG,
 responses(

@@ -1,6 +1,8 @@
 use crate::config::Config;
 use crate::model::ContractStatus;
+use crate::model::PsbtQueryParams;
 use crate::routes::borrower::auth::jwt_or_api_auth::auth;
+use crate::routes::borrower::contracts::ContractsQuery;
 use crate::routes::borrower_profiles;
 use crate::routes::borrower_profiles::BORROWER_PROFILES_TAG;
 use crate::routes::lender_profiles;
@@ -150,7 +152,7 @@ curl -X POST "http://localhost:7337/api/contracts" \
 "#
     ),
     components(
-        schemas(QueryParamLoanType, AssetTypeFilter, KycFilter, SortField, SortOrder, ContractStatus, EditLoanApplicationRequest, LoanApplicationErrorResponse)
+        schemas(QueryParamLoanType, AssetTypeFilter, KycFilter, SortField, SortOrder, ContractStatus, EditLoanApplicationRequest, LoanApplicationErrorResponse, ContractsQuery, PsbtQueryParams)
     ),
     modifiers(&SecurityAddon),
     tags(
