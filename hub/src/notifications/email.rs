@@ -10,6 +10,7 @@ use handlebars::Handlebars;
 use include_dir::include_dir;
 use include_dir::Dir;
 use lettre::message::header::ContentType;
+use lettre::message::Mailbox;
 use lettre::transport::smtp::authentication::Credentials;
 use lettre::AsyncSmtpTransport;
 use lettre::AsyncTransport;
@@ -99,8 +100,12 @@ impl Email {
         user_email: &str,
         html_template: String,
     ) -> Result<()> {
+        let mailbox = Mailbox {
+            name: Some(user_name.to_string()),
+            email: user_email.parse().context("Could not parse email")?,
+        };
         let email = Message::builder()
-            .to(format!("{user_name} <{user_email}>").parse()?)
+            .to(mailbox)
             .reply_to(self.from.as_str().parse()?)
             .from(self.from.as_str().parse()?)
             .subject(subject)
@@ -1320,8 +1325,30 @@ mod tests {
     use crate::model::InstallmentStatus;
     use crate::model::LatePenalty;
     use crate::notifications::email::Email;
+    use std::str::FromStr;
     use time::ext::NumericalDuration;
     use uuid::Uuid;
+
+    #[test]
+    fn test_create_mailbox_from_string_with_plus() {
+        let mailbox = Mailbox {
+            name: Some("test+test4@philipp.ai".to_string()),
+            email: "john+doe@example.com".parse().expect("Valid email address"),
+        };
+
+        assert_eq!(mailbox.name, Some("test+test4@philipp.ai".to_string()));
+        assert_eq!(mailbox.email.to_string(), "john+doe@example.com");
+    }
+
+    #[test]
+    fn test_create_mailbox_from_string_with_plus_fail_but_should_not() {
+        let user_name = "test+test4@philipp.ai".to_string();
+        let user_email = "test+test3@philipp.ai".to_string();
+        let user_email = format!("{user_name} <{user_email}>");
+        let result = Mailbox::from_str(user_email.as_str());
+
+        assert!(result.is_err());
+    }
 
     #[ignore]
     #[tokio::test]
