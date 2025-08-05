@@ -399,15 +399,23 @@ async fn post_contract_request(
     .await
     .map_err(Error::database)?;
 
-    let installments = generate_installments(
-        now,
-        contract_id,
-        offer.repayment_plan,
-        non_zero_duration_days,
-        offer.interest_rate,
-        loan_amount,
-        late_penalty,
-    );
+    let installments = {
+        let interest_rate = match offer.loan_payout {
+            LoanPayout::Direct | LoanPayout::Indirect => offer.interest_rate,
+            // These loans are 0-interest if they are repaid before 30 days pass.
+            LoanPayout::MoonCardInstant => Decimal::ZERO,
+        };
+
+        generate_installments(
+            now,
+            contract_id,
+            offer.repayment_plan,
+            non_zero_duration_days,
+            interest_rate,
+            loan_amount,
+            late_penalty,
+        )
+    };
 
     db::installments::insert(&data.db, installments)
         .await
