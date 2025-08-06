@@ -4,7 +4,7 @@ import { ReactComponent as Defi } from "../../assets/defi.svg";
 import { ReactComponent as Fiat } from "../../assets/fiat.svg";
 import { ReactComponent as Bringin } from "../../assets/bringin.svg";
 import { ReactComponent as MoonCard } from "../../assets/moon_card_satoshi_nakamoto.svg";
-import SingleDurationSelector from "./DurationSelector";
+import SimpleDurationInput from "./SimpleDurationInput";
 import {
   Alert,
   AlertDescription,
@@ -157,7 +157,7 @@ export function LoanAmountAndDurationInputs({
           For how long do you want to borrow?
         </Label>
         <div className="w-full">
-          <SingleDurationSelector
+          <SimpleDurationInput
             selectedDuration={
               selectedLoanDuration
                 ? Number.parseInt(selectedLoanDuration)
