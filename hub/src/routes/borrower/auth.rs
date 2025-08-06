@@ -211,10 +211,6 @@ responses(
         description = "Invalid email, invite code required, or invalid referral code"
     ),
     (
-        status = 409,
-        description = "User with this email already exists"
-    ),
-    (
         status = 500,
         description = "Internal server error during registration process"
     )
