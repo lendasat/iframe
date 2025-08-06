@@ -39,8 +39,20 @@ export const loanOfferSchema = z
 
     loanDuration: z
       .object({
-        min: z.number().min(1, "Minimum duration must be at least 1 day"),
-        max: z.number().min(1, "Maximum duration must be at least 1 day"),
+        min: z
+          .number({
+            required_error: "Minimum duration is required",
+            invalid_type_error: "Minimum duration must be a number",
+          })
+          .min(7, "Minimum duration must be at least 7 days")
+          .max(ONE_YEAR * 4, "Maximum duration cannot exceed 4 years"),
+        max: z
+          .number({
+            required_error: "Maximum duration is required",
+            invalid_type_error: "Maximum duration must be a number",
+          })
+          .min(7, "Maximum duration must be at least 7 days")
+          .max(ONE_YEAR * 4, "Maximum duration cannot exceed 4 years"),
       })
       .refine((data) => data.max >= data.min, {
         message:
