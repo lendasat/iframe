@@ -32,7 +32,7 @@ pub enum NotificationMessage {
     ChatMessage {
         id: Uuid,
         contract_id: String,
-        borrower_name: String,
+        counterparty_name: String,
         #[serde(with = "time::serde::rfc3339")]
         timestamp: OffsetDateTime,
         read: bool,
@@ -79,7 +79,7 @@ impl From<crate::db::notifications::ContractChatMessageNotification> for Notific
         NotificationMessage::ChatMessage {
             id: value.id,
             contract_id: value.contract_id,
-            borrower_name: value.counterparty_name,
+            counterparty_name: value.counterparty_name,
             timestamp: value.created_at,
             read: value.read,
         }
