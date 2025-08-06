@@ -83,6 +83,31 @@ where
     Ok(())
 }
 
+pub async fn get_by_id(db: &PgPool, id: Uuid) -> Result<Option<model::Installment>> {
+    let installment = sqlx::query_as!(
+        Installment,
+        r#"
+            SELECT
+                id,
+                contract_id,
+                principal,
+                interest,
+                due_date,
+                status AS "status: InstallmentStatus",
+                late_penalty AS "late_penalty: LatePenalty",
+                paid_date,
+                payment_id
+            FROM installments
+            WHERE id = $1
+        "#,
+        id
+    )
+    .fetch_optional(db)
+    .await?;
+
+    Ok(installment.map(model::Installment::from))
+}
+
 pub async fn get_all_for_contract_id(
     db: &PgPool,
     contract_id: &str,

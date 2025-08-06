@@ -32,11 +32,13 @@ use utoipa::IntoParams;
 use utoipa::ToSchema;
 use uuid::Uuid;
 
+mod bitcoin_repayment;
 mod installment;
 mod npub;
 
 pub mod notifications;
 
+pub use bitcoin_repayment::*;
 pub use installment::*;
 pub use notifications::*;
 pub use npub::*;
@@ -284,6 +286,7 @@ pub struct CreateLoanOfferSchema {
     pub loan_asset: LoanAsset,
     pub loan_payout: LoanPayout,
     pub loan_repayment_address: String,
+    pub btc_loan_repayment_address: Option<String>,
     #[schema(value_type = String)]
     pub lender_pk: PublicKey,
     #[schema(value_type = String)]

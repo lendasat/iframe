@@ -195,7 +195,7 @@ export interface TimelineEventKind {
 
 export enum TimelineEventType {
   ContractStatusChange = "contract_status_change",
-  Installment = "installment",
+  Installment = "installment_payment",
 }
 
 export interface KycInfo {
