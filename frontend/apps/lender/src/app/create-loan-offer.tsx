@@ -22,7 +22,7 @@ import { FaInfoCircle } from "react-icons/fa";
 import { PiInfo, PiWarningCircle } from "react-icons/pi";
 import { useNavigate } from "react-router-dom";
 import { KycLinkInputField } from "./components/KycLinkInputField";
-import DurationSelector from "./LoanDurationSelector";
+import ArbitraryDurationSelector from "./ArbitraryDurationSelector";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import {
@@ -205,6 +205,7 @@ const CreateLoanOffer = () => {
 
   const disableCreateOfferButton =
     watchLoanAmount.max === 0 ||
+    watchLoanDuration.min === 0 ||
     watchLoanDuration.max === 0 ||
     watchLtv === 0 ||
     loading ||
@@ -368,8 +369,10 @@ const CreateLoanOffer = () => {
                             </span>
                           </div>
                           <FormControl>
-                            <DurationSelector
+                            <ArbitraryDurationSelector
                               onRangeChange={handleRangeChange}
+                              initialMin={watchLoanDuration.min}
+                              initialMax={watchLoanDuration.max}
                             />
                           </FormControl>
                           <FormMessage />
