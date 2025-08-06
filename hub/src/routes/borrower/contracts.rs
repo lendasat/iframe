@@ -1546,7 +1546,7 @@ async fn post_generate_btc_invoice(
         .ok_or(Error::NoPendingInstallments)?;
 
     // Check if there's already a non-expired pending invoice and return it if found.
-    if let Some(existing_invoice) = db::bitcoin_repayment::get_first_non_expired_pending_invoice(
+    if let Some(existing_invoice) = db::bitcoin_repayment::get_newest_non_expired_pending_invoice(
         &data.db,
         next_pending_installment.id,
         now,

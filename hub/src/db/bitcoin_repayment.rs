@@ -91,8 +91,8 @@ pub async fn get_by_id(db: &PgPool, id: Uuid) -> Result<Option<model::BitcoinInv
     Ok(result.map(Into::into))
 }
 
-/// Get the first non-expired pending invoice for the given installment
-pub async fn get_first_non_expired_pending_invoice(
+/// Get the newest non-expired pending invoice for the given installment
+pub async fn get_newest_non_expired_pending_invoice(
     db: &PgPool,
     installment_id: Uuid,
     now: OffsetDateTime,
@@ -115,7 +115,7 @@ pub async fn get_first_non_expired_pending_invoice(
         WHERE installment_id = $1
             AND status = 'Pending'
             AND expires_at > $2
-        ORDER BY created_at ASC
+        ORDER BY created_at DESC
         LIMIT 1
         "#,
         installment_id,
