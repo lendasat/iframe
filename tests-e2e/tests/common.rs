@@ -27,6 +27,17 @@ use std::sync::Arc;
 use std::sync::Once;
 use std::time::Duration;
 
+#[macro_export]
+macro_rules! assert_response {
+    ($res:expr) => {
+        let status = $res.status();
+        if !status.is_success() {
+            let text = $res.text().await.unwrap();
+            panic!("Request failed with status {status}: {text}")
+        }
+    };
+}
+
 #[derive(Debug, Deserialize)]
 pub struct PaginatedContractsResponse {
     pub data: Vec<Contract>,
@@ -205,7 +216,6 @@ pub mod postgrest {
 
     /// Update a contract's status using the PostgREST API.
     pub async fn set_contract_status(
-        client: &Client,
         postgrest_url: &str,
         contract_id: &str,
         // HACK: We are using the `model::ContractStatus` even though the database uses a different
@@ -219,7 +229,7 @@ pub mod postgrest {
 
         tracing::debug!(?status, "Setting contract status via PostgREST");
 
-        let response = client
+        let response = Client::new()
             .patch(format!("{postgrest_url}/contracts"))
             .header("Content-Type", "application/json")
             .query(&[("id", format!("eq.{contract_id}"))])

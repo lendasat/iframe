@@ -428,6 +428,11 @@ async fn put_confirm_installment_payment(
         .await
         .map_err(Error::database)?;
 
+    // Confirm any paid Bitcoin repayment invoices, if it applies to this installment.
+    db::bitcoin_repayment::mark_as_confirmed(&data.db, body.installment_id)
+        .await
+        .map_err(Error::database)?;
+
     let installments = db::installments::get_all_for_contract_id(&data.db, &contract_id)
         .await
         .map_err(Error::database)?;
@@ -1006,7 +1011,7 @@ enum TimelineEventKind {
     ContractStatusChange {
         status: ContractStatus,
     },
-    Installment {
+    InstallmentPayment {
         is_confirmed: bool,
         installment_id: Uuid,
     },
@@ -1302,7 +1307,7 @@ async fn map_timeline(
         if let Some(paid_date) = i.paid_date {
             let event = TimelineEvent {
                 date: paid_date,
-                event: TimelineEventKind::Installment {
+                event: TimelineEventKind::InstallmentPayment {
                     is_confirmed: matches!(i.status, InstallmentStatus::Confirmed),
                     installment_id: i.id,
                 },

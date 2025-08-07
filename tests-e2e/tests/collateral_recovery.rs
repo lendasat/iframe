@@ -38,14 +38,10 @@ async fn e2e_collateral_recovery_flow() {
 
     let network = std::env::var("NETWORK").unwrap_or("regtest".to_string());
 
-    init_tracing();
-
-    // PostgREST URL - runs on port 3013 in our setup
     let postgrest_url =
         std::env::var("POSTGREST_URL").unwrap_or_else(|_| "http://localhost:3013".to_string());
 
-    // Create HTTP client for PostgREST API calls
-    let postgrest_client = Client::new();
+    init_tracing();
 
     // 0. Log in borrower and lender.
     let borrower = log_in(
@@ -83,6 +79,7 @@ async fn e2e_collateral_recovery_flow() {
         loan_payout: LoanPayout::Direct,
         loan_repayment_address:
             "0x055098f73c89ca554f98c0298ce900235d2e1b4205a7ca629ae017518521c2c3".to_string(),
+        btc_loan_repayment_address: None,
         lender_pk,
         lender_derivation_path,
         auto_accept: false,
@@ -288,7 +285,6 @@ async fn e2e_collateral_recovery_flow() {
 
     // 7. Set contract to `CollateralRecoverable` status.
     postgrest::set_contract_status(
-        &postgrest_client,
         &postgrest_url,
         &contract.id,
         ContractStatus::CollateralRecoverable,

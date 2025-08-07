@@ -62,7 +62,9 @@ mod moon_webhook;
 
 pub use contracts::ClaimTx;
 pub use contracts::Contract;
+pub use contracts::GenerateBitcoinInvoiceResponse;
 pub use contracts::RecoverTx;
+pub use contracts::ReportBitcoinPaymentRequest;
 pub use contracts::SpendCollateralPsbt;
 
 const HEALTH_CHECK_TAG: &str = "health";

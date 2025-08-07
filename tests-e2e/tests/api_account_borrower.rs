@@ -72,6 +72,7 @@ async fn api_account_borrower() {
         loan_payout: LoanPayout::Direct,
         loan_repayment_address:
             "0x055098f73c89ca554f98c0298ce900235d2e1b4205a7ca629ae017518521c2c3".to_string(),
+        btc_loan_repayment_address: None,
         lender_pk,
         lender_derivation_path,
         auto_accept: false,

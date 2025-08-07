@@ -4,6 +4,7 @@ use bitcoin::bip32;
 use bitcoin::hex::Case;
 use bitcoin::hex::DisplayHex;
 use bitcoin::Address;
+use bitcoin::Network;
 use bitcoin::PublicKey;
 use client_sdk::wallet::Wallet;
 use hub::api_keys::ApiKeyHash;
@@ -158,6 +159,7 @@ async fn create_sample_contracts(
             pk,
             path,
             npub,
+            borrower_wallet.network(),
         )
         .await?;
 
@@ -170,13 +172,15 @@ async fn create_sample_contracts(
             pk,
             path,
             npub,
+            borrower_wallet.network(),
         )
         .await?;
 
         (contract1, contract2)
     };
 
-    accept_loan_request(pool, &contract2, &lender.id).await?;
+    let contract_address = address_for_network(borrower_wallet.network());
+    accept_loan_request(pool, &contract2, &lender.id, contract_address).await?;
 
     Ok((contract1, contract2))
 }
@@ -224,6 +228,7 @@ async fn accept_loan_request(
     pool: &Pool<Postgres>,
     contract: &Contract,
     lender_id: &str,
+    contract_address: Address,
 ) -> Result<Contract> {
     let mut transaction = pool.begin().await?;
 
@@ -231,9 +236,7 @@ async fn accept_loan_request(
         &mut transaction,
         lender_id,
         contract.id.as_str(),
-        Address::from_str("tb1qtsasnju08gh7ptqg7260qujgasvtexkf9t3yj3")
-            .expect("to be a valid address")
-            .assume_checked(),
+        contract_address,
         1,
     )
     .await?;
@@ -241,6 +244,7 @@ async fn accept_loan_request(
     Ok(contract)
 }
 
+#[allow(clippy::too_many_arguments)]
 async fn create_contract_request(
     pool: &Pool<Postgres>,
     offer: &LoanOffer,
@@ -249,6 +253,7 @@ async fn create_contract_request(
     borrower_pk: PublicKey,
     borrower_derivation_path: bip32::DerivationPath,
     borrower_npub: Npub,
+    network: Network,
 ) -> Result<Contract> {
     let contract_id = Uuid::new_v4();
     let initial_ltv = dec!(0.5);
@@ -262,6 +267,8 @@ async fn create_contract_request(
     // Generated with this mnemonic:
     // pencil say next pact puzzle praise fringe amateur slim attend desk unknown
     let borrower_loan_address = "0x7Df138d358Bf4Fd5737F1eab95Bd80dBBddb3618";
+
+    let borrower_btc_address = address_for_network(network);
 
     let contract = db::contracts::insert_new_contract_request(
         pool,
@@ -278,9 +285,12 @@ async fn create_contract_request(
         borrower_derivation_path,
         offer.lender_pk,
         offer.lender_derivation_path.clone(),
-        Address::from_str("tb1qtsasnju08gh7ptqg7260qujgasvtexkf9t3yj3")
-            .expect("to be valid address"),
+        borrower_btc_address.into_unchecked(),
         offer.loan_repayment_address.clone(),
+        offer
+            .btc_loan_repayment_address
+            .clone()
+            .map(|a| a.to_string()),
         Some(borrower_loan_address),
         LoanType::StableCoin,
         ContractVersion::TwoOfThree,
@@ -328,6 +338,8 @@ async fn create_loan_offers(
 
     let (pk, path) = lender_wallet.next_hardened_pk()?;
 
+    let btc_loan_repayment_address = address_for_network(lender_wallet.network());
+
     let card_app_offer = db::loan_offers::insert_loan_offer(
         pool,
         CreateLoanOfferSchema {
@@ -342,6 +354,7 @@ async fn create_loan_offers(
             loan_asset: LoanAsset::UsdcPol,
             loan_payout: LoanPayout::MoonCardInstant,
             loan_repayment_address: loan_repayment_address.to_string(),
+            btc_loan_repayment_address: Some(btc_loan_repayment_address.to_string()),
             lender_pk: pk,
             lender_derivation_path: path,
             auto_accept: true,
@@ -370,6 +383,7 @@ async fn create_loan_offers(
             loan_asset: LoanAsset::Eur,
             loan_payout: LoanPayout::Direct,
             loan_repayment_address: loan_repayment_address.to_string(),
+            btc_loan_repayment_address: None,
             lender_pk: pk,
             lender_derivation_path: path,
             auto_accept: true,
@@ -399,6 +413,7 @@ async fn create_loan_offers(
             loan_asset: LoanAsset::UsdcPol,
             loan_payout: LoanPayout::Direct,
             loan_repayment_address: loan_repayment_address.to_string(),
+            btc_loan_repayment_address: None,
             lender_pk: pk,
             lender_derivation_path: path,
             auto_accept: true,
@@ -428,6 +443,7 @@ async fn create_loan_offers(
             loan_asset: LoanAsset::UsdcPol,
             loan_payout: LoanPayout::Indirect,
             loan_repayment_address: "0xd835111864Eb1Ce2Cc961fBb1ba3B8f2ce5E6fF2".to_string(),
+            btc_loan_repayment_address: None,
             lender_pk: pk,
             lender_derivation_path: path,
             auto_accept: true,
@@ -611,6 +627,17 @@ pub async fn connect_to_db(db_connection: &str) -> Result<Pool<Postgres>> {
 pub async fn run_migration(pool: &Pool<Postgres>) -> Result<()> {
     sqlx::migrate!("../hub/migrations").run(pool).await?;
     Ok(())
+}
+
+pub fn address_for_network(network: Network) -> Address {
+    match network {
+        Network::Signet => Address::from_str("tb1qtsasnju08gh7ptqg7260qujgasvtexkf9t3yj3")
+            .expect("to be a valid address")
+            .assume_checked(),
+        _ => Address::from_str("bcrt1qm7h898p7fjftemh7hpr40djwhysa9secqyjxlj")
+            .expect("to be a valid address")
+            .assume_checked(),
+    }
 }
 
 pub fn init_tracing(level: LevelFilter, json_format: bool, is_console: bool) -> Result<()> {

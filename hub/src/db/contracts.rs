@@ -769,6 +769,7 @@ pub async fn insert_new_contract_request(
     lender_derivation_path: bip32::DerivationPath,
     borrower_btc_address: Address<NetworkUnchecked>,
     lender_loan_repayment_address: String,
+    lender_btc_loan_repayment_address: Option<String>,
     borrower_loan_address: Option<&str>,
     loan_type: LoanType,
     contract_version: ContractVersion,
@@ -812,6 +813,7 @@ pub async fn insert_new_contract_request(
         lender_derivation_path,
         borrower_loan_address,
         Some(lender_loan_repayment_address),
+        lender_btc_loan_repayment_address,
         initial_collateral_sats,
         origination_fee_sats,
         collateral_sats,
@@ -871,7 +873,12 @@ pub async fn insert_extension_contract_request(
         original_contract.lender_pk,
         original_contract.lender_derivation_path,
         original_contract.borrower_loan_address.as_deref(),
-        original_contract.lender_loan_repayment_address,
+        original_contract
+            .lender_loan_repayment_address
+            .map(|a| a.to_string()),
+        original_contract
+            .lender_btc_loan_repayment_address
+            .map(|a| a.to_string()),
         original_contract.initial_collateral_sats as i64,
         total_origination_fee_sats as i64,
         original_contract.collateral_sats as i64,
@@ -912,6 +919,7 @@ async fn insert_contract_request(
     lender_derivation_path: bip32::DerivationPath,
     borrower_loan_address: Option<&str>,
     lender_loan_repayment_address: Option<String>,
+    lender_btc_loan_repayment_address: Option<String>,
     initial_collateral_sats: i64,
     origination_fee_sats: i64,
     collateral_sats: i64,
@@ -1025,7 +1033,7 @@ async fn insert_contract_request(
         lender_derivation_path.to_string(),
         borrower_loan_address,
         lender_loan_repayment_address,
-        None::<String>, // lender_btc_loan_repayment_address
+        lender_btc_loan_repayment_address as Option<String>,
         loan_type as db::LoanType,
         contract_address as Option<String>,
         contract_index as Option<i32>,
@@ -1885,6 +1893,8 @@ pub async fn insert_new_taken_contract_application(
         lender_derivation_path,
         borrower_loan_address,
         Some(lender_loan_repayment_address),
+        // Loan applications do not support BTC repayment for now.
+        None,
         initial_collateral_sats,
         origination_fee_sats,
         collateral_sats,

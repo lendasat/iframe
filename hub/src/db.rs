@@ -11,6 +11,7 @@ pub(crate) mod telegram_bot;
 
 pub mod api_account_creator;
 pub mod api_keys;
+pub mod bitcoin_repayment;
 pub mod borrower_features;
 pub mod borrowers;
 pub mod borrowers_referral_code;

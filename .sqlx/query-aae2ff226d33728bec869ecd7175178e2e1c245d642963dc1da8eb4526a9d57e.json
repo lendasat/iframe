@@ -1,0 +1,16 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "\n        UPDATE btc_invoices\n        SET status = 'Paid', txid = $2, updated_at = $3\n        WHERE id = $1\n        ",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Uuid",
+        "Text",
+        "Timestamptz"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "aae2ff226d33728bec869ecd7175178e2e1c245d642963dc1da8eb4526a9d57e"
+}

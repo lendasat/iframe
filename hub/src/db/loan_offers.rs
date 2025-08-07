@@ -493,7 +493,7 @@ pub async fn insert_loan_offer(
         offer.extension_duration_days.unwrap_or_default() as i32,
         extension_interest_rate,
         offer.repayment_plan as RepaymentPlan,
-        None::<String>,
+        offer.btc_loan_repayment_address,
     )
     .fetch_one(&mut *tx)
     .await?;

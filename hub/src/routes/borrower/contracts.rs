@@ -13,10 +13,13 @@ use crate::model;
 use crate::model::compute_outstanding_balance;
 use crate::model::compute_total_interest;
 use crate::model::generate_installments;
+use crate::model::BitcoinInvoice;
+use crate::model::BitcoinInvoiceStatus;
 use crate::model::Borrower;
 use crate::model::ContractRequestSchema;
 use crate::model::ContractStatus;
 use crate::model::ContractVersion;
+use crate::model::Currency;
 use crate::model::ExtensionPolicy;
 use crate::model::FiatLoanDetails;
 use crate::model::FiatLoanDetailsWrapper;
@@ -60,6 +63,7 @@ use bitcoin::Address;
 use bitcoin::Amount;
 use bitcoin::PublicKey;
 use bitcoin::Transaction;
+use bitcoin::Txid;
 use miniscript::Descriptor;
 use rust_decimal::Decimal;
 use serde::Deserialize;
@@ -92,6 +96,8 @@ pub(crate) fn router(app_state: Arc<AppState>) -> OpenApiRouter {
         .routes(routes!(put_installment_paid))
         .routes(routes!(put_provide_fiat_loan_details))
         .routes(routes!(cancel_contract_request))
+        .routes(routes!(post_generate_btc_invoice))
+        .routes(routes!(put_report_btc_payment))
         .route_layer(middleware::from_fn_with_state(
             app_state.clone(),
             jwt_or_api_auth::auth,
@@ -339,7 +345,7 @@ async fn post_contract_request(
         min_ltv,
         initial_price,
     )
-    .map_err(Error::initial_collateral_calculation)?;
+    .map_err(Error::currency_conversion)?;
 
     // TODO: Choose origination fee based on loan parameters. For now we only have one origination
     // fee anyway.
@@ -385,6 +391,7 @@ async fn post_contract_request(
         offer.lender_derivation_path,
         body.borrower_btc_address,
         offer.loan_repayment_address,
+        offer.btc_loan_repayment_address.map(|a| a.to_string()),
         borrower_loan_address.as_deref(),
         body.loan_type,
         ContractVersion::TwoOfThree,
@@ -1435,6 +1442,299 @@ async fn put_borrower_btc_address(
     Ok(AppJson(()))
 }
 
+/// Response containing the generated Bitcoin invoice and corresponding installment.
+#[derive(Debug, Serialize, Deserialize, ToSchema)]
+pub struct GenerateBitcoinInvoiceResponse {
+    /// The generated Bitcoin invoice.
+    pub invoice: BitcoinRepaymentInvoiceResponse,
+    /// The installment being paid.
+    pub installment: Installment,
+}
+
+/// Bitcoin repayment invoice response for API.
+#[derive(Debug, Serialize, Deserialize, ToSchema)]
+pub struct BitcoinRepaymentInvoiceResponse {
+    pub id: Uuid,
+    pub installment_id: Uuid,
+    pub amount_sats: u64,
+    #[serde(with = "rust_decimal::serde::float")]
+    pub amount_usd: Decimal,
+    #[schema(value_type = String)]
+    pub address: Address<NetworkUnchecked>,
+    #[serde(with = "time::serde::rfc3339")]
+    pub expires_at: OffsetDateTime,
+    pub status: BitcoinInvoiceStatus,
+    pub txid: Option<String>,
+    #[serde(with = "time::serde::rfc3339")]
+    pub created_at: OffsetDateTime,
+    #[serde(with = "time::serde::rfc3339")]
+    pub updated_at: OffsetDateTime,
+}
+
+/// Generate a Bitcoin repayment invoice for a contract installment.
+///
+/// Creates a Bitcoin invoice based on the current Bitcoin price for the next pending installment.
+/// Only works for USD-based loans and contracts with Bitcoin repayment address configured.
+#[utoipa::path(
+    post,
+    path = "/{id}/generate-btc-invoice",
+    tag = CONTRACTS_TAG,
+    params(
+        ("id", Path, description = "Contract ID")
+    ),
+    responses(
+        (
+            status = 200,
+            description = "Bitcoin invoice generated successfully",
+            body = GenerateBitcoinInvoiceResponse
+        ),
+        (
+            status = 400,
+            description = "Bad request - currency not supported, no BTC address, existing invoice, etc."
+        ),
+        (
+            status = 404,
+            description = "Contract not found"
+        )
+    ),
+    security(
+        ("api_key" = [])
+    )
+)]
+#[instrument(
+    skip_all,
+    fields(
+        borrower_id = user.id,
+        contract_id = %contract_id
+    ),
+    ret,
+    err(Debug)
+)]
+async fn post_generate_btc_invoice(
+    State(data): State<Arc<AppState>>,
+    Path(contract_id): Path<String>,
+    Extension(user): Extension<Borrower>,
+) -> Result<AppJson<GenerateBitcoinInvoiceResponse>, Error> {
+    let now = OffsetDateTime::now_utc();
+
+    let contract = db::contracts::load_contract_by_contract_id_and_borrower_id(
+        &data.db,
+        &contract_id,
+        &user.id,
+    )
+    .await
+    .map_err(Error::database)?;
+
+    if contract.currency() != Currency::Usd {
+        return Err(Error::UnsupportedCurrencyForBitcoinRepayment {
+            currency: contract.currency(),
+        });
+    }
+
+    let btc_address = contract
+        .lender_btc_loan_repayment_address
+        .ok_or(Error::NoBitcoinRepaymentAddress)?;
+
+    let installments = db::installments::get_all_for_contract_id(&data.db, &contract_id)
+        .await
+        .map_err(Error::database)?;
+
+    let next_pending_installment = installments
+        .iter()
+        .filter(|i| matches!(i.status, InstallmentStatus::Pending))
+        .min_by_key(|i| i.due_date)
+        .ok_or(Error::NoPendingInstallments)?;
+
+    // Check if there's already a non-expired pending invoice and return it if found.
+    if let Some(existing_invoice) = db::bitcoin_repayment::get_newest_non_expired_pending_invoice(
+        &data.db,
+        next_pending_installment.id,
+        now,
+    )
+    .await
+    .map_err(Error::database)?
+    {
+        let response = GenerateBitcoinInvoiceResponse {
+            invoice: existing_invoice.into(),
+            installment: Installment::from(next_pending_installment.clone()),
+        };
+        return Ok(AppJson(response));
+    }
+
+    let bitcoin_price_usd = get_bitmex_index_price(&data.config, now, contract.asset)
+        .await
+        .map_err(|e| Error::BitMexPrice(format!("{e:#}")))?;
+
+    let installment_amount_usd = next_pending_installment.total_amount_due();
+
+    let amount_btc = crate::model::usd_to_btc(installment_amount_usd, bitcoin_price_usd)
+        .map_err(Error::currency_conversion)?;
+
+    let bitcoin_invoice = BitcoinInvoice::new(
+        now,
+        next_pending_installment.id,
+        amount_btc,
+        installment_amount_usd,
+        btc_address,
+    );
+
+    db::bitcoin_repayment::insert(&data.db, bitcoin_invoice.clone())
+        .await
+        .map_err(Error::database)?;
+
+    let response = GenerateBitcoinInvoiceResponse {
+        invoice: bitcoin_invoice.into(),
+        installment: Installment::from(next_pending_installment.clone()),
+    };
+
+    Ok(AppJson(response))
+}
+
+#[derive(Debug, Deserialize, Serialize, ToSchema)]
+pub struct ReportBitcoinPaymentRequest {
+    /// Bitcoin transaction ID of the payment.
+    #[schema(value_type = String)]
+    pub txid: Txid,
+    #[schema(value_type = String)]
+    pub invoice_id: Uuid,
+}
+
+/// Report the payment of a Bitcoin repayment invoice.
+///
+/// Allows the borrower to submit a Bitcoin transaction ID to mark an invoice and its corresponding
+/// installment as paid from their perspective.
+#[utoipa::path(
+    put,
+    path = "/{id}/btc-invoice-paid",
+    tag = CONTRACTS_TAG,
+    params(
+        ("id", Path, description = "Bitcoin invoice ID")
+    ),
+    request_body = ReportBitcoinPaymentRequest,
+    responses(
+        (
+            status = 200,
+            description = "Bitcoin payment reported successfully"
+        ),
+        (
+            status = 400,
+            description = "Bad request - invoice expired, invalid state, etc."
+        ),
+        (
+            status = 404,
+            description = "Invoice not found"
+        )
+    ),
+    security(
+        ("api_key" = [])
+    )
+)]
+#[instrument(
+    skip_all,
+    fields(
+        borrower_id = user.id,
+        invoice_id = %body.invoice_id,
+        txid = %body.txid
+    ),
+    ret,
+    err(Debug)
+)]
+async fn put_report_btc_payment(
+    State(data): State<Arc<AppState>>,
+    Path(contract_id): Path<Uuid>,
+    Extension(user): Extension<Borrower>,
+    AppJson(body): AppJson<ReportBitcoinPaymentRequest>,
+) -> Result<(), Error> {
+    let now = OffsetDateTime::now_utc();
+
+    let invoice = db::bitcoin_repayment::get_by_id(&data.db, body.invoice_id)
+        .await
+        .map_err(Error::database)?
+        .ok_or(Error::MissingBitcoinInvoice)?;
+
+    if !invoice.can_report_payment() {
+        return Err(Error::InvalidBitcoinInvoiceState);
+    }
+
+    if invoice.is_expired(now) {
+        return Err(Error::ExpiredBitcoinInvoice);
+    }
+
+    let installment = db::installments::get_by_id(&data.db, invoice.installment_id)
+        .await
+        .map_err(Error::database)?
+        .ok_or(Error::MissingBitcoinInvoice)?;
+
+    let contract = db::contracts::load_contract_by_contract_id_and_borrower_id(
+        &data.db,
+        &installment.contract_id.to_string(),
+        &user.id,
+    )
+    .await
+    .map_err(Error::database)?;
+
+    if contract.id != contract_id.to_string() {
+        return Err(Error::bad_request("Invoice doesn't match contract ID"));
+    }
+
+    db::bitcoin_repayment::mark_as_paid(&data.db, body.invoice_id, body.txid)
+        .await
+        .map_err(Error::database)?;
+
+    db::installments::mark_as_paid(&data.db, invoice.installment_id, &body.txid.to_string())
+        .await
+        .map_err(Error::database)?;
+
+    db::transactions::insert_installment_paid_txid(&data.db, &contract.id, &body.txid.to_string())
+        .await
+        .map_err(Error::database)?;
+
+    // Check if all installments are now paid to mark contract as `RepaymentProvided`.
+    let all_installments = db::installments::get_all_for_contract_id(&data.db, &contract.id)
+        .await
+        .map_err(Error::database)?;
+
+    let is_repayment_provided = !all_installments.is_empty()
+        && all_installments.iter().all(|i| {
+            matches!(
+                i.status,
+                InstallmentStatus::Cancelled
+                    | InstallmentStatus::Paid
+                    | InstallmentStatus::Confirmed
+            )
+        });
+
+    if is_repayment_provided {
+        db::contracts::mark_contract_as_repayment_provided(&data.db, &contract.id)
+            .await
+            .map_err(Error::database)?;
+    }
+
+    let loan_url = data
+        .config
+        .lender_frontend_origin
+        .join(&format!("/my-contracts/{}", contract.id))
+        .expect("to be valid url");
+
+    if let Err(e) = async {
+        let lender = db::lenders::get_user_by_id(&data.db, &contract.lender_id)
+            .await?
+            .context("Failed to find lender")?;
+
+        data.notifications
+            .send_installment_paid(lender, loan_url, installment.id, &contract.id)
+            .await;
+
+        anyhow::Ok(())
+    }
+    .await
+    {
+        tracing::error!("Failed to send email notification: {e:?}");
+    }
+
+    Ok(())
+}
+
 // This struct and some of its fields are public to help with e2e testing.
 #[derive(Debug, Serialize, Deserialize, ToSchema)]
 pub struct Contract {
@@ -1463,6 +1763,7 @@ pub struct Contract {
     borrower_loan_address: Option<String>,
     pub contract_address: Option<String>,
     loan_repayment_address: Option<String>,
+    btc_loan_repayment_address: Option<String>,
     collateral_script: Option<String>,
     lender: LenderStats,
     #[serde(with = "time::serde::rfc3339")]
@@ -1488,11 +1789,11 @@ pub struct Contract {
     #[serde(with = "rust_decimal::serde::float_option")]
     extension_interest_rate: Option<Decimal>,
     extension_origination_fee: Vec<OriginationFee>,
-    pub installments: Vec<CardInstallment>,
+    pub installments: Vec<Installment>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, ToSchema)]
-pub struct CardInstallment {
+pub struct Installment {
     pub id: Uuid,
     #[serde(with = "rust_decimal::serde::float")]
     principal: Decimal,
@@ -1520,8 +1821,8 @@ struct TimelineEvent {
 enum TimelineEventKind {
     #[schema(title = "contract_status_change")]
     ContractStatusChange { status: ContractStatus },
-    #[schema(title = "installment")]
-    Installment {
+    #[schema(title = "installment_payment")]
+    InstallmentPayment {
         is_confirmed: bool,
         installment_id: Uuid,
     },
@@ -1706,6 +2007,9 @@ async fn map_to_api_contract(
             .contract_address
             .map(|c| c.assume_checked().to_string()),
         loan_repayment_address: contract.lender_loan_repayment_address,
+        btc_loan_repayment_address: contract
+            .lender_btc_loan_repayment_address
+            .map(|c| c.to_string()),
         collateral_script,
         lender: lender_stats,
         created_at: contract.created_at,
@@ -1726,10 +2030,7 @@ async fn map_to_api_contract(
         extension_max_duration_days,
         extension_interest_rate,
         extension_origination_fee,
-        installments: installments
-            .into_iter()
-            .map(CardInstallment::from)
-            .collect(),
+        installments: installments.into_iter().map(Installment::from).collect(),
     };
 
     Ok(contract)
@@ -1777,7 +2078,7 @@ async fn map_timeline(
         if let Some(paid_date) = i.paid_date {
             let event = TimelineEvent {
                 date: paid_date,
-                event: TimelineEventKind::Installment {
+                event: TimelineEventKind::InstallmentPayment {
                     is_confirmed: matches!(i.status, InstallmentStatus::Confirmed),
                     installment_id: i.id,
                 },
@@ -1923,8 +2224,8 @@ enum Error {
     MoonInvoiceGeneration(#[allow(dead_code)] String),
     /// Failed to get price from BitMEX.
     BitMexPrice(#[allow(dead_code)] String),
-    /// Failed to calculate initial collateral.
-    InitialCollateralCalculation(#[allow(dead_code)] String),
+    /// Failed to convert between currencies.
+    CurrencyConversion(#[allow(dead_code)] String),
     /// No origination fee configured.
     MissingOriginationFee,
     /// Failed to calculate origination fee in sats.
@@ -2044,6 +2345,20 @@ enum Error {
     InvalidRecoveryRequest {
         status: ContractStatus,
     },
+    /// Bitcoin repayment is not supported for this contract's currency.
+    UnsupportedCurrencyForBitcoinRepayment {
+        currency: Currency,
+    },
+    /// Contract does not have a Bitcoin repayment address configured.
+    NoBitcoinRepaymentAddress,
+    /// No pending installments found for this contract.
+    NoPendingInstallments,
+    /// The Bitcoin repayment invoice was not found.
+    MissingBitcoinInvoice,
+    /// The Bitcoin repayment invoice is expired.
+    ExpiredBitcoinInvoice,
+    /// The Bitcoin repayment invoice cannot accept payment in its current state.
+    InvalidBitcoinInvoiceState,
 }
 
 impl Error {
@@ -2071,8 +2386,8 @@ impl Error {
         Self::BitMexPrice(format!("{e:#}"))
     }
 
-    fn initial_collateral_calculation(e: impl std::fmt::Display) -> Self {
-        Self::InitialCollateralCalculation(format!("{e:#}"))
+    fn currency_conversion(e: impl std::fmt::Display) -> Self {
+        Self::CurrencyConversion(format!("{e:#}"))
     }
 
     fn origination_fee_calculation(e: impl std::fmt::Display) -> Self {
@@ -2160,7 +2475,7 @@ impl IntoResponse for Error {
             | Error::MoonCardGeneration(_)
             | Error::MoonInvoiceGeneration(_)
             | Error::BitMexPrice(_)
-            | Error::InitialCollateralCalculation(_)
+            | Error::CurrencyConversion(_)
             | Error::MissingOriginationFee
             | Error::OriginationFeeCalculation(_)
             | Error::MissingContractIndex
@@ -2361,6 +2676,36 @@ impl IntoResponse for Error {
                 StatusCode::BAD_REQUEST,
                 format!("Cannot recover collateral from a contract with status {status:?}"),
             ),
+            Error::UnsupportedCurrencyForBitcoinRepayment { currency } => (
+                StatusCode::BAD_REQUEST,
+                format!(
+                    "Bitcoin repayment is not supported for {currency} loans. \
+                    Only USD-based loans are supported"
+                ),
+            ),
+            Error::NoBitcoinRepaymentAddress => (
+                StatusCode::BAD_REQUEST,
+                "This contract does not support Bitcoin repayment. The lender must \
+                provide a Bitcoin repayment address"
+                    .to_string(),
+            ),
+            Error::NoPendingInstallments => (
+                StatusCode::BAD_REQUEST,
+                "No pending installments found for this contract".to_string(),
+            ),
+            Error::MissingBitcoinInvoice => (
+                StatusCode::NOT_FOUND,
+                "Bitcoin repayment invoice not found".to_string(),
+            ),
+            Error::ExpiredBitcoinInvoice => (
+                StatusCode::BAD_REQUEST,
+                "This Bitcoin repayment invoice has expired".to_string(),
+            ),
+            Error::InvalidBitcoinInvoiceState => (
+                StatusCode::BAD_REQUEST,
+                "This Bitcoin repayment invoice cannot accept payment in its current state"
+                    .to_string(),
+            ),
         };
         (status, AppJson(ErrorResponse { message })).into_response()
     }
@@ -2471,7 +2816,7 @@ impl From<bringin::Error> for Error {
     }
 }
 
-impl From<model::Installment> for CardInstallment {
+impl From<model::Installment> for Installment {
     fn from(value: model::Installment) -> Self {
         Self {
             id: value.id,
@@ -2481,6 +2826,23 @@ impl From<model::Installment> for CardInstallment {
             status: value.status,
             paid_date: value.paid_date,
             payment_id: value.payment_id,
+        }
+    }
+}
+
+impl From<BitcoinInvoice> for BitcoinRepaymentInvoiceResponse {
+    fn from(invoice: BitcoinInvoice) -> Self {
+        Self {
+            id: invoice.id,
+            created_at: invoice.created_at,
+            updated_at: invoice.updated_at,
+            txid: invoice.txid.map(|t| t.to_string()),
+            amount_sats: invoice.amount.to_sat(),
+            amount_usd: invoice.amount_usd,
+            installment_id: invoice.installment_id,
+            address: invoice.address.into_unchecked(),
+            expires_at: invoice.expires_at,
+            status: invoice.status,
         }
     }
 }
