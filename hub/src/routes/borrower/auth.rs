@@ -188,6 +188,13 @@ async fn get_is_registered(
 
 /// Register a new user with email and password. To create borrower API accounts (using a master API
 /// key), refer to /api/create-api-account.
+///
+/// Possible error types:
+/// - Invalid Email: The provided email address format is invalid
+/// - User Exists: A user with this email address already exists
+/// - Invite Code Required: No invite code was provided (required at this time)
+/// - Invalid Referral Code: The provided referral/invite code is invalid or expired
+/// - Database Error: Internal database error during user creation or referral code processing
 #[utoipa::path(
 post,
 request_body = RegisterUserSchema,
@@ -198,6 +205,14 @@ responses(
         status = 200,
         description = "Message if the registration was successful",
         body = RegistrationResponse
+    ),
+    (
+        status = 400,
+        description = "Invalid email, invite code required, or invalid referral code"
+    ),
+    (
+        status = 500,
+        description = "Internal server error during registration process"
     )
 )
 )]
