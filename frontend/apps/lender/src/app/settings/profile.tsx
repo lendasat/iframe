@@ -14,8 +14,10 @@ import { GoVerified } from "react-icons/go";
 import { MdEdit } from "react-icons/md";
 import { BiSolidError } from "react-icons/bi";
 import { IoIosUnlock } from "react-icons/io";
+import { MdContentCopy } from "react-icons/md";
 import { useAuth, useLenderHttpClient } from "@frontend/http-client-lender";
 import { EditableTimezoneField, i18n } from "@frontend/ui-shared";
+import { toast } from "sonner";
 
 export function Profile() {
   const { user, refreshUser } = useAuth();
@@ -24,6 +26,18 @@ export function Profile() {
   const [isLoading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
+
+  const handleCopyUserId = async () => {
+    if (user?.id) {
+      try {
+        await navigator.clipboard.writeText(user.id);
+        toast.success("User ID copied to clipboard!");
+      } catch (err) {
+        console.error("Failed to copy user ID:", err);
+        toast.error("Failed to copy user ID");
+      }
+    }
+  };
 
   const handleResetPassword = async () => {
     setLoading(true);
@@ -72,6 +86,23 @@ export function Profile() {
               >
                 {user.name}
               </Heading>
+              <Flex align={"center"} gap={"2"}>
+                <Text
+                  size={"1"}
+                  className="text-font/30 dark:text-font-dark/30 font-mono"
+                >
+                  ID: {user.id}
+                </Text>
+                <Button
+                  size={"1"}
+                  variant={"ghost"}
+                  onClick={handleCopyUserId}
+                  className="h-4 w-4 p-0 hover:bg-gray-100 dark:hover:bg-gray-800"
+                  title="Copy User ID"
+                >
+                  <MdContentCopy size={12} />
+                </Button>
+              </Flex>
               <Text size={"2"} className="text-font/50 dark:text-font-dark/50">
                 {new Date(user.created_at).toLocaleDateString("en-CA", options)}
               </Text>
