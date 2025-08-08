@@ -57,7 +57,7 @@ impl Token {
 
     fn decimal_places(&self) -> u8 {
         match self {
-            Token::Usdc => 18,
+            Token::Usdc => 6,
             Token::ChainLink => 18,
         }
     }
