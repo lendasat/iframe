@@ -38,6 +38,13 @@ export enum LoanAsset {
 export enum LoanPayout {
   Direct = "Direct",
   Indirect = "Indirect",
+  MoonCardInstant = "MoonCardInstant",
+}
+
+export enum RepaymentPlan {
+  Bullet = "Bullet",
+  InterestOnlyWeekly = "InterestOnlyWeekly",
+  InterestOnlyMonthly = "InterestOnlyMonthly",
 }
 
 export function parseLoanAsset(value: string): LoanAsset {
