@@ -2045,3 +2045,31 @@ pub async fn update_borrower_btc_address(
 
     Ok(rows_affected > 0)
 }
+
+pub async fn update_expiry_date<'a, E>(
+    db: E,
+    contract_id: &str,
+    new_expiry_date: OffsetDateTime,
+) -> Result<()>
+where
+    E: sqlx::Executor<'a, Database = Postgres>,
+{
+    let rows_affected = sqlx::query!(
+        r#"
+        UPDATE contracts
+        SET expiry_date = $1
+        WHERE id = $2
+        "#,
+        new_expiry_date,
+        contract_id,
+    )
+    .execute(db)
+    .await?
+    .rows_affected();
+
+    if rows_affected == 0 {
+        return Err(anyhow::anyhow!("Could not update expiry date"));
+    }
+
+    Ok(())
+}

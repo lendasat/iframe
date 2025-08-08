@@ -107,6 +107,7 @@ async fn run_process_defaulted_contracts(
             )
         {
             let now = OffsetDateTime::now_utc();
+            let new_duration_days = 90;
 
             // Restructure the (0-interest) installment into three, with interest.
 
@@ -114,7 +115,7 @@ async fn run_process_defaulted_contracts(
                 now,
                 contract.id.parse().expect("UUID"),
                 RepaymentPlan::InterestOnlyMonthly,
-                NonZeroU64::new(90).expect("non-zero"),
+                NonZeroU64::new(new_duration_days).expect("non-zero"),
                 contract.interest_rate,
                 contract.loan_amount,
                 LatePenalty::FullLiquidation,
@@ -134,6 +135,17 @@ async fn run_process_defaulted_contracts(
                     continue;
                 }
             };
+
+            let new_expiry = now + time::Duration::days(new_duration_days as i64);
+            if let Err(e) =
+                db::contracts::update_expiry_date(&mut *tx, &contract.id, new_expiry).await
+            {
+                tracing::error!(
+                    contract_id = %contract.id,
+                    "Failed to update contract expiry: {e:#}"
+                );
+                continue;
+            }
 
             if let Err(e) = db::installments::insert(&mut *tx, installments.clone()).await {
                 tracing::error!(
