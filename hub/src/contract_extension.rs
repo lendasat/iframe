@@ -74,10 +74,11 @@ pub async fn request_contract_extension(
             }
         };
 
-    let installments = db::installments::get_all_for_contract_id(pool, original_contract_id)
-        .await
-        .context("failed to load installments")
-        .map_err(Error::Database)?;
+    let original_installments =
+        db::installments::get_all_for_contract_id(pool, original_contract_id)
+            .await
+            .context("failed to load installments")
+            .map_err(Error::Database)?;
 
     let offer = db::loan_deals::get_loan_deal_by_id(pool, &original_contract.loan_id)
         .await
@@ -97,7 +98,7 @@ pub async fn request_contract_extension(
     // replaces the old one, we keep most of the history intact and add new installments.
     let new_installments = apply_extension_to_installments(
         new_contract_id,
-        &installments,
+        &original_installments,
         non_zero_original_duration_days,
         non_zero_extension_duration_days,
         extension_interest_rate,
@@ -177,6 +178,12 @@ pub async fn request_contract_extension(
     db::contract_status_log::duplicate(&mut *db_tx, original_contract_id, new_contract.id.as_str())
         .await
         .map_err(|e| Error::Database(anyhow!(e)))?;
+
+    for original_installment in original_installments {
+        db::installments::mark_as_cancelled(&mut *db_tx, original_installment.id)
+            .await
+            .map_err(|e| Error::Database(anyhow!(e)))?;
+    }
 
     let contract_address = new_contract
         .contract_address
