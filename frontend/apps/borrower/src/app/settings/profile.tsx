@@ -20,7 +20,7 @@ import {
 } from "@frontend/shadcn";
 import { ReferralCodesTable } from "./referral-codes";
 import { format } from "date-fns";
-import { LuCircleAlert, LuLoader, LuPencil } from "react-icons/lu";
+import { LuCircleAlert, LuLoader, LuPencil, LuCopy } from "react-icons/lu";
 import { toast } from "sonner";
 
 export function Profile() {
@@ -30,6 +30,18 @@ export function Profile() {
   const [isLoading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
+
+  const handleCopyUserId = async () => {
+    if (user?.id) {
+      try {
+        await navigator.clipboard.writeText(user.id);
+        toast.success("User ID copied to clipboard!");
+      } catch (err) {
+        console.error("Failed to copy user ID:", err);
+        toast.error("Failed to copy user ID");
+      }
+    }
+  };
 
   const handleResetPassword = async () => {
     setLoading(true);
@@ -68,6 +80,18 @@ export function Profile() {
             </Avatar>
             <div className="flex flex-col gap-0.5">
               <h4 className="text-base font-medium">{user.name}</h4>
+              <div className="flex items-center gap-2">
+                <p className="text-xs font-mono text-gray-400">ID: {user.id}</p>
+                <Button
+                  size="sm"
+                  variant="ghost"
+                  onClick={handleCopyUserId}
+                  className="h-4 w-4 p-0 hover:bg-gray-100"
+                  title="Copy User ID"
+                >
+                  <LuCopy size={10} />
+                </Button>
+              </div>
               <p className="text-xs text-gray-500">
                 {format(user.created_at, "MMM, dd yyyy - p")}
               </p>
