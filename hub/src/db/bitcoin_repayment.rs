@@ -13,17 +13,17 @@ use time::OffsetDateTime;
 use uuid::Uuid;
 
 #[derive(Debug, FromRow)]
-pub struct BitcoinInvoice {
-    pub id: Uuid,
-    pub created_at: OffsetDateTime,
-    pub updated_at: OffsetDateTime,
-    pub txid: Option<String>,
-    pub amount_sats: i64,
-    pub amount_usd: Decimal,
-    pub installment_id: Uuid,
-    pub address: String,
-    pub expires_at: OffsetDateTime,
-    pub status: BitcoinInvoiceStatus,
+struct BitcoinInvoice {
+    id: Uuid,
+    created_at: OffsetDateTime,
+    updated_at: OffsetDateTime,
+    txid: Option<String>,
+    amount_sats: i64,
+    amount_usd: Decimal,
+    installment_id: Uuid,
+    address: String,
+    expires_at: OffsetDateTime,
+    status: BitcoinInvoiceStatus,
 }
 
 #[derive(Debug, Clone, Copy, sqlx::Type)]

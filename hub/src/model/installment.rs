@@ -1,5 +1,6 @@
 use crate::model::calculate_interest_usd;
 use crate::model::usd_to_btc;
+use crate::model::BitcoinInvoiceStatus;
 use crate::model::RepaymentPlan;
 use crate::model::ONE_MONTH;
 use anyhow::bail;
@@ -28,6 +29,18 @@ pub struct Installment {
     pub late_penalty: LatePenalty,
     pub paid_date: Option<OffsetDateTime>,
     pub payment_id: Option<String>,
+}
+
+/// A regular [`Installment`] with optional Bitcoin invoice payment fields.
+///
+/// The Bitcoin payment fields are present if the installment was paid (or attempted to be paid)
+/// with Bitcoin.
+#[derive(Debug)]
+pub struct InstallmentWithBitcoinInvoice {
+    pub installment: Installment,
+    pub invoice_id: Option<Uuid>,
+    pub invoice_amount_sats: Option<Amount>,
+    pub invoice_status: Option<BitcoinInvoiceStatus>,
 }
 
 #[derive(Debug, Clone, Copy, Serialize, Deserialize, ToSchema, PartialEq)]

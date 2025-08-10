@@ -9,6 +9,7 @@ use crate::mempool;
 use crate::model;
 use crate::model::compute_outstanding_balance;
 use crate::model::compute_total_interest;
+use crate::model::BitcoinInvoiceStatus;
 use crate::model::ConfirmInstallmentPaymentRequest;
 use crate::model::ContractStatus;
 use crate::model::ExtensionPolicy;
@@ -994,6 +995,13 @@ struct Installment {
     #[serde(with = "time::serde::rfc3339::option")]
     paid_date: Option<OffsetDateTime>,
     payment_id: Option<String>,
+    /// Bitcoin invoice ID, if an invoice was ever generated to pay this installment with Bitcoin.
+    btc_invoice_id: Option<Uuid>,
+    /// Bitcoin invoice amount in sats, if an invoice was ever generated to pay this installment
+    /// with Bitcoin.
+    btc_invoice_amount_sats: Option<u64>,
+    /// Whether the installment was paid with Bitcoin or not, at least according to the borrower.
+    is_paid_with_bitcoin: Option<bool>,
 }
 
 #[derive(Debug, Serialize, Deserialize, utoipa::ToSchema)]
@@ -1198,9 +1206,15 @@ async fn map_to_api_contract(
         None => None,
     };
 
-    let installments = db::installments::get_all_for_contract_id(&data.db, &contract.id)
-        .await
-        .map_err(Error::database)?;
+    let installments_with_invoices =
+        db::installments::get_all_for_contract_id_with_bitcoin_invoices(&data.db, &contract.id)
+            .await
+            .map_err(Error::database)?;
+
+    let installments: Vec<model::Installment> = installments_with_invoices
+        .iter()
+        .map(|i| i.installment.clone())
+        .collect();
 
     let liquidation_price = contract.liquidation_price(&installments);
 
@@ -1259,7 +1273,10 @@ async fn map_to_api_contract(
         timeline,
         extension_max_duration_days,
         extension_interest_rate,
-        installments: installments.into_iter().map(Installment::from).collect(),
+        installments: installments_with_invoices
+            .into_iter()
+            .map(Installment::from)
+            .collect(),
     };
 
     Ok(contract)
@@ -1626,16 +1643,31 @@ impl From<approve_contract::Error> for Error {
     }
 }
 
-impl From<model::Installment> for Installment {
-    fn from(value: model::Installment) -> Self {
+impl From<model::InstallmentWithBitcoinInvoice> for Installment {
+    fn from(value: model::InstallmentWithBitcoinInvoice) -> Self {
+        let is_paid_with_bitcoin = value.invoice_status.map(|s| match s {
+            // We don't know if it was paid with Bitcoin or not, we just know that the borrower
+            // generated a Bitcoin invoice at some point.
+            BitcoinInvoiceStatus::Pending => false,
+            // The borrower claims that they have paid with Bitcoin and we trust them. Rare edge
+            // cases could prove this untrue e.g. Bitcoin payment drops from mempool and borrower
+            // pays with loan asset afterwards.
+            BitcoinInvoiceStatus::Paid => true,
+            // The lender confirms that they payment was made Bitcoin.
+            BitcoinInvoiceStatus::Confirmed => true,
+        });
+
         Self {
-            id: value.id,
-            principal: value.principal,
-            interest: value.interest,
-            due_date: value.due_date,
-            status: value.status,
-            paid_date: value.paid_date,
-            payment_id: value.payment_id,
+            id: value.installment.id,
+            principal: value.installment.principal,
+            interest: value.installment.interest,
+            due_date: value.installment.due_date,
+            status: value.installment.status,
+            paid_date: value.installment.paid_date,
+            payment_id: value.installment.payment_id,
+            btc_invoice_id: value.invoice_id,
+            btc_invoice_amount_sats: value.invoice_amount_sats.map(Amount::to_sat),
+            is_paid_with_bitcoin,
         }
     }
 }

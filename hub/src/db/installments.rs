@@ -1,6 +1,8 @@
+use crate::db;
 use crate::model;
 use anyhow::bail;
 use anyhow::Result;
+use bitcoin::Amount;
 use rust_decimal::Decimal;
 use sqlx::PgPool;
 use sqlx::Postgres;
@@ -136,6 +138,77 @@ pub async fn get_all_for_contract_id(
     let installments = installments
         .into_iter()
         .map(model::Installment::from)
+        .collect();
+
+    Ok(installments)
+}
+
+pub async fn get_all_for_contract_id_with_bitcoin_invoices(
+    db: &PgPool,
+    contract_id: &str,
+) -> Result<Vec<model::InstallmentWithBitcoinInvoice>> {
+    // Use LEFT JOIN LATERAL to handle multiple Bitcoin invoices per installment.
+    // The LATERAL subquery ensures we get exactly one row per installment by selecting
+    // the most relevant invoice using priority: Confirmed > Paid > Pending > newest.
+    // This prevents duplicate installment rows that would occur with a simple LEFT JOIN.
+    let rows = sqlx::query!(
+        r#"
+            SELECT
+                i.id,
+                i.contract_id,
+                i.principal,
+                i.interest,
+                i.due_date,
+                i.status AS "status: InstallmentStatus",
+                i.late_penalty AS "late_penalty: LatePenalty",
+                i.paid_date,
+                i.payment_id,
+                bi.id AS "invoice_id?",
+                bi.amount_sats AS "invoice_amount_sats?",
+                bi.status AS "invoice_status?: db::bitcoin_repayment::BitcoinInvoiceStatus"
+            FROM installments i
+            LEFT JOIN LATERAL (
+                SELECT id, amount_sats, status
+                FROM btc_invoices
+                WHERE installment_id = i.id
+                ORDER BY
+                    CASE
+                        WHEN status = 'Confirmed' THEN 1
+                        WHEN status = 'Paid' THEN 2
+                        WHEN status = 'Pending' THEN 3
+                        ELSE 4
+                    END,
+                    created_at DESC
+                LIMIT 1
+            ) bi ON true
+            WHERE i.contract_id = $1
+            ORDER BY i.due_date
+        "#,
+        contract_id
+    )
+    .fetch_all(db)
+    .await?;
+
+    let installments = rows
+        .into_iter()
+        .map(|row| model::InstallmentWithBitcoinInvoice {
+            installment: Installment {
+                id: row.id,
+                contract_id: row.contract_id,
+                principal: row.principal,
+                interest: row.interest,
+                due_date: row.due_date,
+                status: row.status,
+                late_penalty: row.late_penalty,
+                paid_date: row.paid_date,
+                payment_id: row.payment_id,
+            }
+            .into(),
+            invoice_id: row.invoice_id,
+            invoice_amount_sats: row.invoice_amount_sats.map(|a| Amount::from_sat(a as u64)),
+            // invoice_status: row.invoice_status.map(|a| a.into()),
+            invoice_status: None,
+        })
         .collect();
 
     Ok(installments)
