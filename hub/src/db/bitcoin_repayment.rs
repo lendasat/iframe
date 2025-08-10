@@ -150,8 +150,8 @@ where
     Ok(())
 }
 
-/// Update a paid invoice to mark it as confirmed.
-pub async fn mark_as_confirmed<'a, E>(db: E, id: Uuid) -> Result<()>
+/// Update all paid invoices for an installment to mark them as confirmed.
+pub async fn mark_as_confirmed<'a, E>(db: E, installment_id: Uuid) -> Result<()>
 where
     E: sqlx::Executor<'a, Database = Postgres>,
 {
@@ -161,9 +161,9 @@ where
         r#"
         UPDATE btc_invoices
         SET status = 'Confirmed', updated_at = $2
-        WHERE id = $1 AND status = 'Paid'
+        WHERE installment_id = $1 AND status = 'Paid'
         "#,
-        id,
+        installment_id,
         now
     )
     .execute(db)
