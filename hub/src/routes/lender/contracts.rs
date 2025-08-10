@@ -955,6 +955,7 @@ struct Contract {
     contract_address: Option<String>,
     collateral_script: Option<String>,
     loan_repayment_address: Option<String>,
+    btc_loan_repayment_address: Option<String>,
     borrower: BorrowerProfile,
     #[serde(with = "time::serde::rfc3339")]
     created_at: OffsetDateTime,
@@ -1251,6 +1252,9 @@ async fn map_to_api_contract(
             .map(|c| c.assume_checked().to_string()),
         collateral_script,
         loan_repayment_address: contract.lender_loan_repayment_address,
+        btc_loan_repayment_address: contract
+            .lender_btc_loan_repayment_address
+            .map(|a| a.to_string()),
         borrower: BorrowerProfile {
             id: borrower.id,
             name: borrower.name,
