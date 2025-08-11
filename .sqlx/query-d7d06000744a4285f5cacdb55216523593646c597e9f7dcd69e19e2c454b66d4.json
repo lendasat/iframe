@@ -1,0 +1,122 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "\n            SELECT\n                i.id,\n                i.contract_id,\n                i.principal,\n                i.interest,\n                i.due_date,\n                i.status AS \"status: InstallmentStatus\",\n                i.late_penalty AS \"late_penalty: LatePenalty\",\n                i.paid_date,\n                i.payment_id,\n                bi.id AS \"invoice_id?\",\n                bi.amount_sats AS \"invoice_amount_sats?\",\n                bi.status AS \"invoice_status?: db::bitcoin_repayment::BitcoinInvoiceStatus\"\n            FROM installments i\n            LEFT JOIN LATERAL (\n                SELECT id, amount_sats, status\n                FROM btc_invoices\n                WHERE installment_id = i.id\n                ORDER BY\n                    CASE\n                        WHEN status = 'Confirmed' THEN 1\n                        WHEN status = 'Paid' THEN 2\n                        WHEN status = 'Pending' THEN 3\n                        ELSE 4\n                    END,\n                    created_at DESC\n                LIMIT 1\n            ) bi ON true\n            WHERE i.contract_id = $1\n            ORDER BY i.due_date\n        ",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "id",
+        "type_info": "Uuid"
+      },
+      {
+        "ordinal": 1,
+        "name": "contract_id",
+        "type_info": "Bpchar"
+      },
+      {
+        "ordinal": 2,
+        "name": "principal",
+        "type_info": "Numeric"
+      },
+      {
+        "ordinal": 3,
+        "name": "interest",
+        "type_info": "Numeric"
+      },
+      {
+        "ordinal": 4,
+        "name": "due_date",
+        "type_info": "Timestamptz"
+      },
+      {
+        "ordinal": 5,
+        "name": "status: InstallmentStatus",
+        "type_info": {
+          "Custom": {
+            "name": "installment_status",
+            "kind": {
+              "Enum": [
+                "Pending",
+                "Paid",
+                "Confirmed",
+                "Late",
+                "Cancelled"
+              ]
+            }
+          }
+        }
+      },
+      {
+        "ordinal": 6,
+        "name": "late_penalty: LatePenalty",
+        "type_info": {
+          "Custom": {
+            "name": "late_penalty",
+            "kind": {
+              "Enum": [
+                "FullLiquidation",
+                "InstallmentRestructure"
+              ]
+            }
+          }
+        }
+      },
+      {
+        "ordinal": 7,
+        "name": "paid_date",
+        "type_info": "Timestamptz"
+      },
+      {
+        "ordinal": 8,
+        "name": "payment_id",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 9,
+        "name": "invoice_id?",
+        "type_info": "Uuid"
+      },
+      {
+        "ordinal": 10,
+        "name": "invoice_amount_sats?",
+        "type_info": "Int8"
+      },
+      {
+        "ordinal": 11,
+        "name": "invoice_status?: db::bitcoin_repayment::BitcoinInvoiceStatus",
+        "type_info": {
+          "Custom": {
+            "name": "btc_invoice_status",
+            "kind": {
+              "Enum": [
+                "Pending",
+                "Paid",
+                "Confirmed"
+              ]
+            }
+          }
+        }
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Bpchar"
+      ]
+    },
+    "nullable": [
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      true,
+      true,
+      false,
+      false,
+      false
+    ]
+  },
+  "hash": "d7d06000744a4285f5cacdb55216523593646c597e9f7dcd69e19e2c454b66d4"
+}

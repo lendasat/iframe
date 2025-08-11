@@ -13,17 +13,17 @@ use time::OffsetDateTime;
 use uuid::Uuid;
 
 #[derive(Debug, FromRow)]
-pub struct BitcoinInvoice {
-    pub id: Uuid,
-    pub created_at: OffsetDateTime,
-    pub updated_at: OffsetDateTime,
-    pub txid: Option<String>,
-    pub amount_sats: i64,
-    pub amount_usd: Decimal,
-    pub installment_id: Uuid,
-    pub address: String,
-    pub expires_at: OffsetDateTime,
-    pub status: BitcoinInvoiceStatus,
+struct BitcoinInvoice {
+    id: Uuid,
+    created_at: OffsetDateTime,
+    updated_at: OffsetDateTime,
+    txid: Option<String>,
+    amount_sats: i64,
+    amount_usd: Decimal,
+    installment_id: Uuid,
+    address: String,
+    expires_at: OffsetDateTime,
+    status: BitcoinInvoiceStatus,
 }
 
 #[derive(Debug, Clone, Copy, sqlx::Type)]
@@ -150,8 +150,8 @@ where
     Ok(())
 }
 
-/// Update a paid invoice to mark it as confirmed.
-pub async fn mark_as_confirmed<'a, E>(db: E, id: Uuid) -> Result<()>
+/// Update all paid invoices for an installment to mark them as confirmed.
+pub async fn mark_as_confirmed<'a, E>(db: E, installment_id: Uuid) -> Result<()>
 where
     E: sqlx::Executor<'a, Database = Postgres>,
 {
@@ -161,9 +161,9 @@ where
         r#"
         UPDATE btc_invoices
         SET status = 'Confirmed', updated_at = $2
-        WHERE id = $1 AND status = 'Paid'
+        WHERE installment_id = $1 AND status = 'Paid'
         "#,
-        id,
+        installment_id,
         now
     )
     .execute(db)
