@@ -385,6 +385,237 @@ pub async fn mark_as_deleted_by_lender_and_offer_id(
     Ok(())
 }
 
+async fn mark_as_deleted_by_lender_and_offer_id_tx(
+    tx: &mut sqlx::Transaction<'_, Postgres>,
+    lender_id: &str,
+    offer_id: &str,
+) -> Result<()> {
+    sqlx::query_as!(
+        LoanOffer,
+        r#"
+        UPDATE loan_offers set
+            status = $1,
+            updated_at = $2
+        WHERE lender_id = $3 and id = $4
+        "#,
+        LoanOfferStatus::Deleted as LoanOfferStatus,
+        OffsetDateTime::now_utc(),
+        lender_id,
+        offer_id
+    )
+    .execute(&mut **tx)
+    .await?;
+
+    Ok(())
+}
+
+#[allow(clippy::too_many_arguments)]
+pub async fn update_loan_offer(
+    pool: &Pool<Postgres>,
+    offer_id: &str,
+    lender_id: &str,
+    name: Option<String>,
+    min_ltv: Option<Decimal>,
+    interest_rate: Option<Decimal>,
+    loan_amount_min: Option<Decimal>,
+    loan_amount_max: Option<Decimal>,
+    loan_amount_reserve: Option<Decimal>,
+    duration_days_min: Option<i32>,
+    duration_days_max: Option<i32>,
+    auto_accept: Option<bool>,
+    loan_repayment_address: Option<String>,
+    btc_loan_repayment_address: Option<bitcoin::Address>,
+    extension_duration_days: Option<i32>,
+    extension_interest_rate: Option<Decimal>,
+    kyc_link: Option<String>,
+) -> Result<Option<LoanOffer>> {
+    let current_offer = get_loan_offer_by_lender_and_offer_id(pool, lender_id, offer_id).await?;
+
+    // Start a transaction
+    let mut tx = pool.begin().await?;
+
+    // Mark the old offer as deleted
+    mark_as_deleted_by_lender_and_offer_id_tx(&mut tx, lender_id, offer_id).await?;
+
+    // Create new offer with updated values
+    let new_name = name.unwrap_or(current_offer.name);
+    let new_min_ltv = min_ltv.unwrap_or(current_offer.min_ltv);
+    let new_interest_rate = interest_rate.unwrap_or(current_offer.interest_rate);
+    let new_loan_amount_min = loan_amount_min.unwrap_or(current_offer.loan_amount_min);
+    let new_loan_amount_max = loan_amount_max.unwrap_or(current_offer.loan_amount_max);
+    let new_loan_amount_reserve = loan_amount_reserve.unwrap_or(current_offer.loan_amount_reserve);
+    let new_duration_days_min = duration_days_min.unwrap_or(current_offer.duration_days_min);
+    let new_duration_days_max = duration_days_max.unwrap_or(current_offer.duration_days_max);
+    let new_auto_accept = auto_accept.unwrap_or(current_offer.auto_accept);
+    let new_loan_repayment_address =
+        loan_repayment_address.unwrap_or(current_offer.loan_repayment_address);
+    let new_btc_loan_repayment_address =
+        btc_loan_repayment_address.or(current_offer.btc_loan_repayment_address);
+    let new_btc_loan_repayment_address =
+        new_btc_loan_repayment_address.map(|address| address.to_string());
+
+    // Handle extension fields
+    let new_extension_duration_days =
+        extension_duration_days.unwrap_or(match current_offer.extension_policy {
+            crate::model::ExtensionPolicy::DoNotExtend => 0,
+            crate::model::ExtensionPolicy::AfterHalfway {
+                max_duration_days, ..
+            } => max_duration_days as i32,
+        });
+
+    let new_extension_interest_rate =
+        extension_interest_rate.unwrap_or_else(|| match current_offer.extension_policy {
+            crate::model::ExtensionPolicy::DoNotExtend => dec!(0.20),
+            crate::model::ExtensionPolicy::AfterHalfway { interest_rate, .. } => interest_rate,
+        });
+
+    let new_kyc_link = kyc_link.or(current_offer.kyc_link.map(|url| url.to_string()));
+
+    let new_id = uuid::Uuid::new_v4().to_string();
+    let status = LoanOfferStatus::Available;
+
+    // First, insert the loan deal.
+    sqlx::query!(
+        r#"
+        INSERT INTO loan_deals (
+          id,
+          type
+        )
+        VALUES ($1, 'offer')
+        "#,
+        new_id,
+    )
+    .execute(&mut *tx)
+    .await?;
+
+    let row = sqlx::query!(
+        r#"
+        INSERT INTO loan_offers (
+          id,
+          loan_deal_id,
+          lender_id,
+          name,
+          min_ltv,
+          interest_rate,
+          loan_amount_min,
+          loan_amount_max,
+          loan_amount_reserve,
+          duration_days_min,
+          duration_days_max,
+          loan_asset,
+          loan_payout,
+          status,
+          loan_repayment_address,
+          lender_pk,
+          lender_derivation_path,
+          auto_accept,
+          kyc_link,
+          lender_npub,
+          extension_duration_days,
+          extension_interest_rate,
+          repayment_plan,
+          btc_loan_repayment_address
+        )
+        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21, $22, $23, $24)
+        RETURNING
+          id,
+          loan_deal_id,
+          lender_id,
+          name,
+          min_ltv,
+          interest_rate,
+          loan_amount_min,
+          loan_amount_max,
+          loan_amount_reserve,
+          loan_amount_reserve as loan_amount_reserve_remaining,
+          duration_days_min,
+          duration_days_max,
+          loan_asset AS "loan_asset: LoanAsset",
+          loan_payout AS "loan_payout: LoanPayout",
+          status AS "status: crate::model::LoanOfferStatus",
+          loan_repayment_address,
+          lender_pk,
+          lender_derivation_path,
+          auto_accept,
+          kyc_link,
+          lender_npub,
+          extension_duration_days,
+          extension_interest_rate,
+          repayment_plan AS "repayment_plan: RepaymentPlan",
+          btc_loan_repayment_address,
+          created_at,
+          updated_at
+        "#,
+        new_id,
+        new_id,
+        lender_id,
+        new_name,
+        new_min_ltv,
+        new_interest_rate,
+        new_loan_amount_min,
+        new_loan_amount_max,
+        new_loan_amount_reserve,
+        new_duration_days_min,
+        new_duration_days_max,
+        current_offer.loan_asset as LoanAsset,
+        current_offer.loan_payout as LoanPayout,
+        status as LoanOfferStatus,
+        new_loan_repayment_address,
+        current_offer.lender_pk.to_string(),
+        current_offer.lender_derivation_path.to_string(),
+        new_auto_accept,
+        new_kyc_link,
+        current_offer.lender_npub.to_string(),
+        // Use new extension values
+        new_extension_duration_days,
+        new_extension_interest_rate,
+        current_offer.repayment_plan as RepaymentPlan,
+        new_btc_loan_repayment_address,
+    )
+    .fetch_one(&mut *tx)
+    .await?;
+
+    // Commit the transaction
+    tx.commit().await?;
+
+    let extension_policy =
+        map_to_model_extension_policy(row.extension_duration_days, row.extension_interest_rate);
+
+    let loan_offer = LoanOffer {
+        loan_deal_id: row.loan_deal_id,
+        lender_id: row.lender_id,
+        name: row.name,
+        min_ltv: row.min_ltv,
+        interest_rate: row.interest_rate,
+        loan_amount_min: row.loan_amount_min,
+        loan_amount_max: row.loan_amount_max,
+        loan_amount_reserve: row.loan_amount_reserve,
+        loan_amount_reserve_remaining: row.loan_amount_reserve_remaining,
+        duration_days_min: row.duration_days_min,
+        duration_days_max: row.duration_days_max,
+        loan_asset: row.loan_asset,
+        loan_payout: row.loan_payout,
+        status: row.status,
+        loan_repayment_address: row.loan_repayment_address,
+        lender_pk: row.lender_pk.parse().expect("valid PK"),
+        lender_derivation_path: row.lender_derivation_path.parse().expect("valid path"),
+        auto_accept: row.auto_accept,
+        kyc_link: row.kyc_link.map(|l| Url::parse(&l).expect("valid URL")),
+        lender_npub: row.lender_npub.parse().expect("valid npub in database"),
+        extension_policy,
+        repayment_plan: row.repayment_plan,
+        btc_loan_repayment_address: row.btc_loan_repayment_address.map(|addr| {
+            addr.parse::<bitcoin::Address<NetworkUnchecked>>()
+                .expect("valid address")
+                .assume_checked()
+        }),
+        created_at: row.created_at,
+        updated_at: row.updated_at,
+    };
+
+    Ok(Some(loan_offer))
+}
+
 pub async fn insert_loan_offer(
     pool: &Pool<Postgres>,
     offer: CreateLoanOfferSchema,

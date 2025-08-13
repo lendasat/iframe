@@ -64,25 +64,22 @@ async fn get_cards(
         .await
         .map_err(Error::database)?;
 
-    let mut refreshed_cards = vec![];
-    for card in cards.iter() {
-        match data.moon.fetch_card_details_from_moon(card).await {
-            Ok(card) => {
-                refreshed_cards.push(card);
-            }
-            Err(error) => {
-                tracing::error!(
-                    card_id = card.id.to_string(),
-                    "Failed to fetch card details: {error:#}"
-                )
-            }
-        }
-    }
+    // let mut refreshed_cards = vec![];
+    // for card in cards.iter() {
+    //     match data.moon.fetch_card_details_from_moon(card).await {
+    //         Ok(card) => {
+    //             refreshed_cards.push(card);
+    //         }
+    //         Err(error) => {
+    //             tracing::error!(
+    //                 card_id = card.id.to_string(),
+    //                 "Failed to fetch card details: {error:#}"
+    //             )
+    //         }
+    //     }
+    // }
 
-    let cards = refreshed_cards
-        .into_iter()
-        .map(Card::from)
-        .collect::<Vec<_>>();
+    let cards = cards.into_iter().map(Card::from).collect::<Vec<_>>();
 
     Ok(AppJson(cards))
 }

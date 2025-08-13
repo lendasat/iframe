@@ -29,6 +29,7 @@ use rust_decimal::Decimal;
 use rust_decimal_macros::dec;
 use serde::Deserialize;
 use serde::Serialize;
+use std::str::FromStr;
 use std::sync::Arc;
 use time::OffsetDateTime;
 use tracing::instrument;
@@ -41,6 +42,7 @@ pub(crate) fn router(app_state: Arc<AppState>) -> OpenApiRouter {
         .routes(routes!(create_loan_offer))
         .routes(routes!(get_my_loan_offers))
         .routes(routes!(get_loan_offer_by_lender_and_offer_id))
+        .routes(routes!(put_update_loan_offer))
         .routes(routes!(delete_loan_offer_by_lender_and_offer_id))
         .routes(routes!(get_loan_offers))
         .routes(routes!(get_latest_stats))
@@ -167,6 +169,9 @@ async fn create_loan_offer(
         status: offer.status,
         auto_accept: offer.auto_accept,
         loan_repayment_address: offer.loan_repayment_address,
+        btc_loan_repayment_address: offer
+            .btc_loan_repayment_address
+            .map(|addr| addr.to_string()),
         origination_fee,
         kyc_link: offer.kyc_link,
         extension_max_duration_days,
@@ -243,6 +248,9 @@ async fn get_my_loan_offers(
             status: offer.status,
             auto_accept: offer.auto_accept,
             loan_repayment_address: offer.loan_repayment_address,
+            btc_loan_repayment_address: offer
+                .btc_loan_repayment_address
+                .map(|addr| addr.to_string()),
             origination_fee: origination_fee.clone(),
             kyc_link: offer.kyc_link,
             extension_max_duration_days,
@@ -329,6 +337,9 @@ async fn get_loan_offer_by_lender_and_offer_id(
         status: offer.status,
         auto_accept: offer.auto_accept,
         loan_repayment_address: offer.loan_repayment_address,
+        btc_loan_repayment_address: offer
+            .btc_loan_repayment_address
+            .map(|addr| addr.to_string()),
         origination_fee,
         kyc_link: offer.kyc_link,
         extension_max_duration_days,
@@ -339,6 +350,137 @@ async fn get_loan_offer_by_lender_and_offer_id(
     };
 
     Ok(AppJson(loan))
+}
+
+/// Update a loan offer.
+#[utoipa::path(
+    put,
+    path = "/{offer_id}",
+    tag = LOAN_OFFERS_TAG,
+    request_body = UpdateLoanOfferRequest,
+    params(
+        ("offer_id" = String, Path, description = "Loan offer ID")
+    ),
+    responses(
+        (
+            status = 200,
+            description = "Loan offer updated successfully",
+            body = LoanOffer
+        ),
+        (
+            status = 404,
+            description = "Loan offer not found"
+        )
+    ),
+    security(
+        ("api_key" = [])
+    )
+)]
+#[instrument(skip_all, fields(lender_id = user.id, offer_id, body = ?body), ret, err(Debug))]
+async fn put_update_loan_offer(
+    State(data): State<Arc<AppState>>,
+    Extension(user): Extension<Lender>,
+    Path(offer_id): Path<String>,
+    AppJson(body): AppJson<UpdateLoanOfferRequest>,
+) -> Result<AppJson<LoanOffer>, Error> {
+    if let Some(min_ltv) = body.min_ltv {
+        if min_ltv > dec!(1.0) || min_ltv < Decimal::zero() {
+            return Err(Error::InvalidLtv { ltv: min_ltv });
+        }
+    }
+
+    if let Some(interest_rate) = body.interest_rate {
+        if interest_rate > dec!(1.0) || interest_rate < Decimal::zero() {
+            return Err(Error::InvalidInterestRate {
+                rate: interest_rate,
+            });
+        }
+    }
+
+    let btc_loan_repayment_address = match body.btc_loan_repayment_address {
+        None => None,
+        Some(address) => Some(
+            bitcoin::Address::from_str(address.as_str())
+                .map_err(|_| Error::InvalidBtcRepaymentAddress)?
+                .assume_checked(),
+        ),
+    };
+
+    let updated_offer = db::loan_offers::update_loan_offer(
+        &data.db,
+        &offer_id,
+        &user.id,
+        body.name,
+        body.min_ltv,
+        body.interest_rate,
+        body.loan_amount_min,
+        body.loan_amount_max,
+        body.loan_amount_reserve,
+        body.duration_days_min,
+        body.duration_days_max,
+        body.auto_accept,
+        body.loan_repayment_address,
+        btc_loan_repayment_address,
+        body.extension_duration_days,
+        body.extension_interest_rate,
+        body.kyc_link,
+    )
+    .await
+    .map_err(Error::database)?
+    .ok_or_else(|| Error::MissingLoanOffer {
+        offer_id: offer_id.clone(),
+    })?;
+
+    let lender = db::lenders::get_user_by_id(&data.db, &updated_offer.lender_id)
+        .await
+        .map_err(Error::database)?
+        .ok_or(Error::MissingLender)?;
+
+    let origination_fee = data.config.origination_fee.clone();
+
+    let lender_stats = user_stats::get_lender_stats(&data.db, lender.id.as_str())
+        .await
+        .map_err(|e| Error::database(anyhow!("{:?}", e)))?;
+
+    let (extension_max_duration_days, extension_interest_rate) =
+        match updated_offer.extension_policy {
+            ExtensionPolicy::DoNotExtend => (0, None),
+            ExtensionPolicy::AfterHalfway {
+                interest_rate,
+                max_duration_days,
+            } => (max_duration_days, Some(interest_rate)),
+        };
+
+    let offer = LoanOffer {
+        id: updated_offer.loan_deal_id,
+        lender: lender_stats,
+        name: updated_offer.name,
+        min_ltv: updated_offer.min_ltv,
+        interest_rate: updated_offer.interest_rate,
+        loan_amount_min: updated_offer.loan_amount_min,
+        loan_amount_max: updated_offer.loan_amount_max,
+        loan_amount_reserve: updated_offer.loan_amount_reserve,
+        loan_amount_reserve_remaining: updated_offer.loan_amount_reserve_remaining,
+        duration_days_min: updated_offer.duration_days_min,
+        duration_days_max: updated_offer.duration_days_max,
+        loan_asset: updated_offer.loan_asset,
+        loan_payout: updated_offer.loan_payout,
+        status: updated_offer.status,
+        auto_accept: updated_offer.auto_accept,
+        loan_repayment_address: updated_offer.loan_repayment_address,
+        btc_loan_repayment_address: updated_offer
+            .btc_loan_repayment_address
+            .map(|addr| addr.to_string()),
+        origination_fee,
+        kyc_link: updated_offer.kyc_link,
+        extension_max_duration_days,
+        extension_interest_rate,
+        repayment_plan: updated_offer.repayment_plan,
+        created_at: updated_offer.created_at,
+        updated_at: updated_offer.updated_at,
+    };
+
+    Ok(AppJson(offer))
 }
 
 /// Get all available loan offers from all lenders.
@@ -402,6 +544,9 @@ async fn get_loan_offers(
             status: offer.status,
             auto_accept: offer.auto_accept,
             loan_repayment_address: offer.loan_repayment_address,
+            btc_loan_repayment_address: offer
+                .btc_loan_repayment_address
+                .map(|addr| addr.to_string()),
             origination_fee,
             kyc_link: offer.kyc_link,
             extension_max_duration_days,
@@ -492,7 +637,45 @@ async fn get_latest_stats(State(data): State<Arc<AppState>>) -> Result<AppJson<S
     }))
 }
 
-#[derive(Debug, Serialize, Deserialize, Clone)]
+#[derive(Debug, Deserialize, utoipa::ToSchema)]
+struct UpdateLoanOfferRequest {
+    /// New offer name
+    name: Option<String>,
+    /// New minimum LTV
+    #[serde(with = "rust_decimal::serde::float_option")]
+    min_ltv: Option<Decimal>,
+    /// New interest rate
+    #[serde(with = "rust_decimal::serde::float_option")]
+    interest_rate: Option<Decimal>,
+    /// New minimum loan amount
+    #[serde(with = "rust_decimal::serde::float_option")]
+    loan_amount_min: Option<Decimal>,
+    /// New maximum loan amount
+    #[serde(with = "rust_decimal::serde::float_option")]
+    loan_amount_max: Option<Decimal>,
+    /// New reserve amount
+    #[serde(with = "rust_decimal::serde::float_option")]
+    loan_amount_reserve: Option<Decimal>,
+    /// New minimum duration
+    duration_days_min: Option<i32>,
+    /// New maximum duration
+    duration_days_max: Option<i32>,
+    /// New auto-accept setting
+    auto_accept: Option<bool>,
+    /// New loan repayment address
+    loan_repayment_address: Option<String>,
+    /// New BTC loan repayment address
+    btc_loan_repayment_address: Option<String>,
+    /// New extension duration in days
+    extension_duration_days: Option<i32>,
+    /// New extension interest rate
+    #[serde(with = "rust_decimal::serde::float_option")]
+    extension_interest_rate: Option<Decimal>,
+    /// New KYC link
+    kyc_link: Option<String>,
+}
+
+#[derive(Debug, Serialize, Clone, utoipa::ToSchema)]
 struct LoanOffer {
     id: String,
     lender: LenderStats,
@@ -516,6 +699,7 @@ struct LoanOffer {
     loan_payout: LoanPayout,
     status: LoanOfferStatus,
     loan_repayment_address: String,
+    btc_loan_repayment_address: Option<String>,
     origination_fee: Vec<OriginationFee>,
     kyc_link: Option<Url>,
     extension_max_duration_days: u64,
@@ -605,6 +789,8 @@ enum Error {
     InvalidLtv { ltv: Decimal },
     /// Invalid interest rate value.
     InvalidInterestRate { rate: Decimal },
+    /// Invalid repayment address
+    InvalidBtcRepaymentAddress,
     /// Referenced lender does not exist.
     MissingLender,
     /// Auto approve feature is not enabled.
@@ -615,6 +801,8 @@ enum Error {
     IndirectPayoutRequiresAutoAccept,
     /// Invalid url, e.g. couldn't parse an url
     InvalidUrl(#[allow(dead_code)] String),
+    /// Referenced loan offer does not exist.
+    MissingLoanOffer { offer_id: String },
 }
 
 impl Error {
@@ -667,9 +855,17 @@ impl IntoResponse for Error {
                 StatusCode::BAD_REQUEST,
                 format!("Interest rate needs to be between 0.00 and 1.00 but was {rate}",),
             ),
+            Error::InvalidBtcRepaymentAddress => (
+                StatusCode::BAD_REQUEST,
+                "Invalid BTC repayment address".to_string(),
+            ),
             Error::InvalidUrl(_) => (
                 StatusCode::INTERNAL_SERVER_ERROR,
                 "Something went wrong".to_owned(),
+            ),
+            Error::MissingLoanOffer { offer_id } => (
+                StatusCode::NOT_FOUND,
+                format!("Loan offer not found: {offer_id}"),
             ),
         };
 
