@@ -50,6 +50,13 @@ pub struct Config {
     pub bringin_webhook_url: Url,
     pub etherscan_api_key: String,
     pub fallback_npub: Npub,
+    /// The URL of the Electrum server used for transaction monitoring.
+    ///
+    /// Currently this is only used for monitoring collateral transactions, with a focus on
+    /// mempool.
+    ///
+    /// If configured, we expect a value like `tcp://electrum.blockstream.info:50001`.
+    pub electrum_url: Option<Url>,
 }
 
 impl Config {
@@ -196,6 +203,10 @@ impl Config {
         let fallback_npub = std::env::var("FALLBACK_NPUB").expect("FALLBACK_NPUB must be set");
         let fallback_npub = fallback_npub.parse().expect("valid Npub");
 
+        let electrum_url = std::env::var("ELECTRUM_URL")
+            .map(|url| Url::parse(url.as_str()).expect("to be a valid URL"))
+            .ok();
+
         Config {
             database_url,
             mempool_rest_url,
@@ -242,6 +253,7 @@ impl Config {
             bringin_webhook_url,
             etherscan_api_key,
             fallback_npub,
+            electrum_url,
         }
     }
 }

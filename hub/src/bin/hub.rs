@@ -10,6 +10,7 @@ use hub::contract_request_expiry::add_contract_request_expiry_job;
 use hub::daily_digest::add_daily_digest_job;
 use hub::db::connect_to_db;
 use hub::db::run_migration;
+use hub::electrum;
 use hub::installment_close_to_due_date::add_installment_close_to_due_date_job;
 use hub::late_installments::add_late_installment_job;
 use hub::liquidation_engine::monitor_positions;
@@ -151,6 +152,41 @@ async fn main() -> Result<()> {
         panic!("Dying because we can't continue without mempool actor");
     });
 
+    let open_contracts = hub::db::contracts::load_open_contracts(&db).await?;
+
+    let tracked_contracts = open_contracts
+        .iter()
+        .filter_map(|c| {
+            c.contract_address
+                .as_ref()
+                .map(|address| (c.id.clone(), address.clone().assume_checked()))
+        })
+        .collect();
+
+    let electrum_addr = match config.electrum_url {
+        Some(ref electrum_url) => {
+            tracing::info!(
+                %electrum_url,
+                "Starting hub with Electrum actor"
+            );
+
+            let (electrum_addr, electrum_mailbox) = xtra::Mailbox::unbounded();
+            let electrum =
+                electrum::Actor::new(electrum_url.to_string(), tracked_contracts, network)?;
+
+            tokio::spawn(async {
+                let e = xtra::run(electrum_mailbox, electrum).await;
+                tracing::error!("Electrum actor stopped: {e:#}");
+
+                // TODO: Supervise [`electrum::Actor`].
+                panic!("Dying because we can't continue without electrum actor");
+            });
+
+            Some(electrum_addr)
+        }
+        None => None,
+    };
+
     // Create a channel with a buffer size of 100
     let (bitmex_tx, mut bitmex_rx) = mpsc::channel(100);
     let (liquidation_tx, liquidation_rx) = mpsc::channel(100);
@@ -213,6 +249,7 @@ async fn main() -> Result<()> {
         wallet: wallet.clone(),
         config: config.clone(),
         mempool: mempool_addr,
+        electrum: electrum_addr,
         price_feed_ws_connections: broadcast_state.clone(),
         moon: moon_client.clone(),
         sideshift,

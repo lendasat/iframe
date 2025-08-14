@@ -1232,6 +1232,17 @@ pub struct MeResponse {
     pub user: FilteredUser,
 }
 
+#[derive(Debug, Serialize, ToSchema)]
+pub struct GetCollateralTransactionsResponse {
+    pub contract_id: String,
+    pub contract_status: ContractStatus,
+    pub address: Option<String>,
+    pub unconfirmed_transactions: Vec<String>,
+    pub confirmed_transactions: Vec<String>,
+    #[serde(with = "time::serde::rfc3339")]
+    pub last_updated: OffsetDateTime,
+}
+
 impl From<PersonalReferralCode> for PersonalReferralCodeResponse {
     fn from(value: PersonalReferralCode) -> Self {
         PersonalReferralCodeResponse {

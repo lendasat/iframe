@@ -821,3 +821,12 @@ export interface TopupCardResponse {
   currency: Currency;
   expires_at: string;
 }
+
+export interface GetCollateralTransactionsResponse {
+  contract_id: string;
+  contract_status: ContractStatus;
+  address: string;
+  unconfirmed_transactions: string[];
+  confirmed_transactions: string[];
+  last_updated: string;
+}

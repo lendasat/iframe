@@ -273,6 +273,7 @@ async fn put_approve_contract(
         &data.wallet,
         &data.mempool,
         &data.config,
+        data.electrum.as_ref(),
         contract_id,
         &user.id,
         data.notifications.clone(),

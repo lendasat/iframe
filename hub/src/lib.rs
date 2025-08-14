@@ -19,6 +19,7 @@ pub mod contract_request_expiry;
 pub mod contract_requests;
 pub mod daily_digest;
 pub mod db;
+pub mod electrum;
 pub mod expiry;
 pub mod geo_location;
 pub mod installment_close_to_due_date;

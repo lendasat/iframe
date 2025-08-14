@@ -3,12 +3,20 @@ import { Skeleton } from "@frontend/shadcn";
 import { LuInfo, LuTriangleAlert, LuCheck, LuX, LuClock } from "react-icons/lu";
 import { add, format, formatDistanceToNowStrict } from "date-fns";
 import { Link } from "@radix-ui/themes";
+import { useCollateralTxMonitor } from "./useCollateralTxMonitor";
+import CollateralTransactions from "./collateral-transactions";
 
 interface LoanStatusInformationProps {
   contract?: Contract;
 }
 
 function LoanStatusInformation({ contract }: LoanStatusInformationProps) {
+  const collateralTxMonitor = useCollateralTxMonitor({
+    contractId: contract?.id || "",
+    contractStatus: contract?.status || ContractStatus.Requested,
+    enabled: !!contract?.id,
+  });
+
   if (contract === undefined) {
     return (
       <div className="bg-gray-50 p-4 rounded-md border border-gray-200 flex items-start">
@@ -57,10 +65,18 @@ function LoanStatusInformation({ contract }: LoanStatusInformationProps) {
       title = "Loan Approved";
       message = (
         <>
-          Your loan has been approved! Please provide collateral to proceed
-          within <span className="font-bold">{actionExpiresIn}</span> but not
-          later than{" "}
-          <span className="font-bold">{actionExpiryDateFormated}</span>.
+          <>
+            Your loan has been approved! Please provide collateral to proceed
+            within <span className="font-bold">{actionExpiresIn}</span> but not
+            later than{" "}
+            <span className="font-bold">{actionExpiryDateFormated}</span>.
+          </>
+          <CollateralTransactions
+            data={collateralTxMonitor.data}
+            loading={collateralTxMonitor.loading}
+            error={collateralTxMonitor.error}
+            lastUpdated={collateralTxMonitor.lastUpdated}
+          />
         </>
       );
       break;
@@ -314,15 +330,17 @@ function LoanStatusInformation({ contract }: LoanStatusInformationProps) {
   }
 
   return (
-    <div
-      className={`${bgColor} p-4 rounded-md border ${borderColor} flex items-start`}
-    >
-      {icon}
-      <div>
-        <p className={`text-sm font-medium ${titleColor}`}>{title}</p>
-        <p className={`text-sm ${textColor}`}>{message}</p>
+    <>
+      <div
+        className={`${bgColor} p-4 rounded-md border ${borderColor} flex items-start`}
+      >
+        {icon}
+        <div>
+          <p className={`text-sm font-medium ${titleColor}`}>{title}</p>
+          <p className={`text-sm ${textColor}`}>{message}</p>
+        </div>
       </div>
-    </div>
+    </>
   );
 }
 
