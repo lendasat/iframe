@@ -950,12 +950,6 @@ pub enum ContractStatus {
     ///
     /// - If the request times out, we transition to [`ContractStatus::RequestExpired`].
     Requested,
-    // FIXME: To be removed.
-    /// The borrower has sent a request to extend another contract. This state is to be used for
-    /// the new contract.
-    ///
-    /// This status is not used and will be removed.
-    RenewalRequested,
     /// The lender has accepted the contract request.
     ///
     /// - If the borrower funds the Bitcoin collateral contract, we transition to
@@ -1067,16 +1061,6 @@ pub enum ContractStatus {
     /// Once the dispute is resolved, the contract will (in most cases) transition back to the
     /// status before the dispute was raised.
     DisputeLenderStarted,
-    // FIXME: To be removed.
-    /// The dispute has been resolved by the borrower.
-    ///
-    /// This status is not used and will be removed.
-    DisputeBorrowerResolved,
-    // FIXME: To be removed.
-    /// The dispute has been resolved by the lender.
-    ///
-    /// This status is not used and will be removed.
-    DisputeLenderResolved,
     /// The contract request has been cancelled by the borrower.
     Cancelled,
     /// The contract request has expired because the lender did not respond in time.
@@ -1105,7 +1089,6 @@ impl FromStr for ContractStatus {
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         match s.to_lowercase().as_str() {
             "requested" => Ok(ContractStatus::Requested),
-            "renewalrequested" | "renewal_requested" => Ok(ContractStatus::RenewalRequested),
             "approved" => Ok(ContractStatus::Approved),
             "collateralseen" | "collateral_seen" => Ok(ContractStatus::CollateralSeen),
             "collateralconfirmed" | "collateral_confirmed" => {
@@ -1129,12 +1112,6 @@ impl FromStr for ContractStatus {
             }
             "disputelenderstarted" | "dispute_lender_started" => {
                 Ok(ContractStatus::DisputeLenderStarted)
-            }
-            "disputeborrowerresolved" | "dispute_borrower_resolved" => {
-                Ok(ContractStatus::DisputeBorrowerResolved)
-            }
-            "disputelenderresolved" | "dispute_lender_resolved" => {
-                Ok(ContractStatus::DisputeLenderResolved)
             }
             "cancelled" => Ok(ContractStatus::Cancelled),
             "requestexpired" | "request_expired" => Ok(ContractStatus::RequestExpired),
@@ -1263,7 +1240,6 @@ pub mod db {
     #[sqlx(type_name = "contract_status")]
     pub enum ContractStatus {
         Requested,
-        RenewalRequested,
         Approved,
         CollateralSeen,
         CollateralConfirmed,
@@ -1281,8 +1257,6 @@ pub mod db {
         Rejected,
         DisputeBorrowerStarted,
         DisputeLenderStarted,
-        DisputeBorrowerResolved,
-        DisputeLenderResolved,
         RequestExpired,
         ApprovalExpired,
         CollateralRecoverable,
@@ -1403,7 +1377,6 @@ impl From<db::ContractStatus> for ContractStatus {
     fn from(value: db::ContractStatus) -> Self {
         match value {
             db::ContractStatus::Requested => Self::Requested,
-            db::ContractStatus::RenewalRequested => Self::RenewalRequested,
             db::ContractStatus::Approved => Self::Approved,
             db::ContractStatus::CollateralSeen => Self::CollateralSeen,
             db::ContractStatus::CollateralConfirmed => Self::CollateralConfirmed,
@@ -1418,8 +1391,6 @@ impl From<db::ContractStatus> for ContractStatus {
             db::ContractStatus::Rejected => Self::Rejected,
             db::ContractStatus::DisputeBorrowerStarted => Self::DisputeBorrowerStarted,
             db::ContractStatus::DisputeLenderStarted => Self::DisputeLenderStarted,
-            db::ContractStatus::DisputeBorrowerResolved => Self::DisputeBorrowerResolved,
-            db::ContractStatus::DisputeLenderResolved => Self::DisputeLenderResolved,
             db::ContractStatus::Cancelled => Self::Cancelled,
             db::ContractStatus::RequestExpired => Self::RequestExpired,
             db::ContractStatus::ApprovalExpired => Self::ApprovalExpired,
@@ -1552,7 +1523,6 @@ impl From<ContractStatus> for db::ContractStatus {
     fn from(value: ContractStatus) -> Self {
         match value {
             ContractStatus::Requested => Self::Requested,
-            ContractStatus::RenewalRequested => Self::RenewalRequested,
             ContractStatus::Approved => Self::Approved,
             ContractStatus::CollateralSeen => Self::CollateralSeen,
             ContractStatus::CollateralConfirmed => Self::CollateralConfirmed,
@@ -1567,8 +1537,6 @@ impl From<ContractStatus> for db::ContractStatus {
             ContractStatus::Rejected => Self::Rejected,
             ContractStatus::DisputeBorrowerStarted => Self::DisputeBorrowerStarted,
             ContractStatus::DisputeLenderStarted => Self::DisputeLenderStarted,
-            ContractStatus::DisputeBorrowerResolved => Self::DisputeBorrowerResolved,
-            ContractStatus::DisputeLenderResolved => Self::DisputeLenderResolved,
             ContractStatus::Cancelled => Self::Cancelled,
             ContractStatus::RequestExpired => Self::RequestExpired,
             ContractStatus::ApprovalExpired => Self::ApprovalExpired,

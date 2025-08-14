@@ -1496,7 +1496,6 @@ pub async fn update_collateral(
                     }
                     ContractStatus::CollateralConfirmed
                     | ContractStatus::PrincipalGiven
-                    | ContractStatus::RenewalRequested
                     | ContractStatus::RepaymentProvided
                     | ContractStatus::RepaymentConfirmed
                     | ContractStatus::Undercollateralized
@@ -1509,8 +1508,6 @@ pub async fn update_collateral(
                     | ContractStatus::Rejected
                     | ContractStatus::DisputeBorrowerStarted
                     | ContractStatus::DisputeLenderStarted
-                    | ContractStatus::DisputeBorrowerResolved
-                    | ContractStatus::DisputeLenderResolved
                     | ContractStatus::Cancelled
                     | ContractStatus::RequestExpired
                     | ContractStatus::ApprovalExpired

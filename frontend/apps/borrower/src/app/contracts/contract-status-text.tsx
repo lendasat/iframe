@@ -37,7 +37,6 @@ function LoanStatusInformation({ contract }: LoanStatusInformationProps) {
 
   switch (contract.status) {
     case ContractStatus.Requested:
-    case ContractStatus.RenewalRequested:
       icon = <LuClock className="h-5 w-5 text-blue-500 mr-2 mt-0.5" />;
       message = (
         <>
@@ -261,18 +260,6 @@ function LoanStatusInformation({ contract }: LoanStatusInformationProps) {
           communication channel.
         </>
       );
-      break;
-
-    case ContractStatus.DisputeBorrowerResolved:
-    case ContractStatus.DisputeLenderResolved:
-      icon = <LuCheck className="h-5 w-5 text-lime-500 mr-2 mt-0.5" />;
-      bgColor = "bg-lime-50";
-      borderColor = "border-lime-200";
-      titleColor = "text-lime-800";
-      textColor = "text-lime-600";
-      title = "Dispute Resolved";
-      // biome-ignore lint/complexity/noUselessFragments: wanted fragment.
-      message = <>The dispute for this loan has been resolved.</>;
       break;
 
     case ContractStatus.Cancelled:

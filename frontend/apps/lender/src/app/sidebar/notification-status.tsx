@@ -79,7 +79,6 @@ const mapToInnerNotification = (
       console.log(`Contract status ${update.status}`);
       switch (update.status) {
         case ContractStatus.Requested:
-        case ContractStatus.RenewalRequested:
           message = "A new contract has been requested";
           break;
         case ContractStatus.CollateralSeen:
@@ -105,10 +104,6 @@ const mapToInnerNotification = (
         case ContractStatus.DisputeBorrowerStarted:
         case ContractStatus.DisputeLenderStarted:
           message = "A dispute has been started";
-          break;
-        case ContractStatus.DisputeBorrowerResolved:
-        case ContractStatus.DisputeLenderResolved:
-          message = "A dispute has been resolved";
           break;
         case ContractStatus.Cancelled:
           message = "Contract request was cancelled";

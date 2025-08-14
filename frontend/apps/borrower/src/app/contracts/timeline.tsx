@@ -294,8 +294,6 @@ export const contractStatusDescription = (status: ContractStatus): string => {
   switch (status) {
     case ContractStatus.Requested:
       return "Waiting for your request to be approved.";
-    case ContractStatus.RenewalRequested:
-      return "Waiting for your renewal request to be approved.";
     case ContractStatus.Approved:
       return "The lender has approved your contract.";
     case ContractStatus.CollateralSeen:
@@ -327,9 +325,6 @@ export const contractStatusDescription = (status: ContractStatus): string => {
     case ContractStatus.DisputeBorrowerStarted:
     case ContractStatus.DisputeLenderStarted:
       return "A dispute has been opened.";
-    case ContractStatus.DisputeBorrowerResolved:
-    case ContractStatus.DisputeLenderResolved:
-      return "The dispute has been resolved.";
     case ContractStatus.Cancelled:
       return "The contract request has been cancelled.";
     case ContractStatus.RequestExpired:

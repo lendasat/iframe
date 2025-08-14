@@ -2120,7 +2120,6 @@ async fn map_timeline(
                 }),
 
                 ContractStatus::Requested
-                | ContractStatus::RenewalRequested
                 | ContractStatus::Approved
                 | ContractStatus::RepaymentProvided
                 | ContractStatus::RepaymentConfirmed
@@ -2129,8 +2128,6 @@ async fn map_timeline(
                 | ContractStatus::Rejected
                 | ContractStatus::DisputeBorrowerStarted
                 | ContractStatus::DisputeLenderStarted
-                | ContractStatus::DisputeBorrowerResolved
-                | ContractStatus::DisputeLenderResolved
                 | ContractStatus::Cancelled
                 | ContractStatus::RequestExpired
                 | ContractStatus::ApprovalExpired
@@ -2232,7 +2229,7 @@ enum Error {
     /// Failed to calculate origination fee in sats.
     OriginationFeeCalculation(#[allow(dead_code)] String),
     /// Can't approve a contract request with a [`ContractStatus`] different to
-    /// [`ContractStatus::Requested`] or [`ContractStatus::RenewalRequested`].
+    /// [`ContractStatus::Requested`].
     InvalidApproveRequest {
         status: ContractStatus,
     },

@@ -63,9 +63,7 @@ pub async fn approve_contract(
     .map_err(Error::Database)?
     .ok_or(Error::MissingContract(contract_id.clone()))?;
 
-    if contract.status != ContractStatus::Requested
-        && contract.status != ContractStatus::RenewalRequested
-    {
+    if contract.status != ContractStatus::Requested {
         return Err(Error::InvalidApproveRequest {
             status: contract.status,
         });

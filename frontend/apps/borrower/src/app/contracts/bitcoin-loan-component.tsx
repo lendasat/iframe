@@ -38,7 +38,6 @@ export function contractStatusLabelColor(status?: ContractStatus): string {
 
   switch (status) {
     case ContractStatus.Requested:
-    case ContractStatus.RenewalRequested:
       return "bg-blue-100 text-blue-800";
     case ContractStatus.Approved:
       return "bg-indigo-100 text-indigo-800";
@@ -70,9 +69,6 @@ export function contractStatusLabelColor(status?: ContractStatus): string {
     case ContractStatus.DisputeBorrowerStarted:
     case ContractStatus.DisputeLenderStarted:
       return "bg-orange-100 text-orange-800";
-    case ContractStatus.DisputeBorrowerResolved:
-    case ContractStatus.DisputeLenderResolved:
-      return "bg-lime-100 text-lime-800";
     case ContractStatus.Cancelled:
       return "bg-zinc-100 text-zinc-800";
     case ContractStatus.RequestExpired:

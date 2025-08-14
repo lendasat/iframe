@@ -19,7 +19,6 @@ export interface WalletBackupData {
 
 export enum ContractStatus {
   Requested = "Requested",
-  RenewalRequested = "RenewalRequested",
   Approved = "Approved",
   CollateralSeen = "CollateralSeen",
   CollateralConfirmed = "CollateralConfirmed",
@@ -36,8 +35,6 @@ export enum ContractStatus {
   Rejected = "Rejected",
   DisputeBorrowerStarted = "DisputeBorrowerStarted",
   DisputeLenderStarted = "DisputeLenderStarted",
-  DisputeBorrowerResolved = "DisputeBorrowerResolved",
-  DisputeLenderResolved = "DisputeLenderResolved",
   Cancelled = "Cancelled",
   RequestExpired = "RequestExpired",
   ApprovalExpired = "ApprovalExpired",
@@ -49,8 +46,6 @@ export const isActionRequired = (status: ContractStatus) => {
   switch (status) {
     case ContractStatus.Approved:
     case ContractStatus.RepaymentConfirmed:
-    case ContractStatus.DisputeBorrowerResolved:
-    case ContractStatus.DisputeLenderResolved:
     case ContractStatus.Closing:
     case ContractStatus.Closed:
     case ContractStatus.ClosedByDefaulting:
@@ -72,7 +67,6 @@ export const isActionRequired = (status: ContractStatus) => {
     case ContractStatus.Defaulted:
     case ContractStatus.CollateralConfirmed:
     case ContractStatus.RepaymentProvided:
-    case ContractStatus.RenewalRequested:
       return true;
   }
 };
@@ -98,11 +92,8 @@ export const isContractOpen = (status: ContractStatus) => {
     case ContractStatus.PrincipalGiven:
     case ContractStatus.RepaymentProvided:
     case ContractStatus.RepaymentConfirmed:
-    case ContractStatus.RenewalRequested:
     case ContractStatus.DisputeBorrowerStarted:
     case ContractStatus.DisputeLenderStarted:
-    case ContractStatus.DisputeBorrowerResolved:
-    case ContractStatus.DisputeLenderResolved:
     case ContractStatus.Defaulted:
     case ContractStatus.CollateralRecoverable:
       return true;
@@ -299,7 +290,6 @@ export const actionFromStatus = (contract: Contract) => {
 
   let statusText = "";
   switch (contract.status) {
-    case ContractStatus.RenewalRequested:
     case ContractStatus.Requested:
       statusText = "Approve or Reject";
       break;
@@ -324,8 +314,6 @@ export const actionFromStatus = (contract: Contract) => {
     case ContractStatus.RepaymentConfirmed:
     case ContractStatus.DisputeBorrowerStarted:
     case ContractStatus.DisputeLenderStarted:
-    case ContractStatus.DisputeBorrowerResolved:
-    case ContractStatus.DisputeLenderResolved:
     case ContractStatus.Closed:
     case ContractStatus.ClosedByLiquidation:
     case ContractStatus.ClosedByDefaulting:
@@ -343,9 +331,6 @@ export function contractStatusToLabelString(status: ContractStatus): string {
   switch (status) {
     case ContractStatus.Requested:
       statusText = "Requested";
-      break;
-    case ContractStatus.RenewalRequested:
-      statusText = "Renewal Requested";
       break;
     case ContractStatus.Approved:
       statusText = "Approved";
@@ -392,10 +377,6 @@ export function contractStatusToLabelString(status: ContractStatus): string {
     case ContractStatus.DisputeBorrowerStarted:
     case ContractStatus.DisputeLenderStarted:
       statusText = "Dispute Open";
-      break;
-    case ContractStatus.DisputeBorrowerResolved:
-    case ContractStatus.DisputeLenderResolved:
-      statusText = "Dispute Resolved";
       break;
     case ContractStatus.Cancelled:
       statusText = "Cancelled";

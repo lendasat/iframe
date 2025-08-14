@@ -52,7 +52,6 @@ const getStatusFilterArray = (
         ContractStatus.PrincipalGiven,
         ContractStatus.RepaymentProvided,
         ContractStatus.RepaymentConfirmed,
-        ContractStatus.RenewalRequested,
         ContractStatus.CollateralRecoverable,
       ];
     case ContractStatusFilterType.Closed:

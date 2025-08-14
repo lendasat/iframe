@@ -1361,7 +1361,6 @@ async fn map_timeline(
                         .then(|| tx.txid.clone())
                 }),
                 ContractStatus::Requested
-                | ContractStatus::RenewalRequested
                 | ContractStatus::Approved
                 | ContractStatus::RepaymentProvided
                 | ContractStatus::RepaymentConfirmed
@@ -1370,8 +1369,6 @@ async fn map_timeline(
                 | ContractStatus::Rejected
                 | ContractStatus::DisputeBorrowerStarted
                 | ContractStatus::DisputeLenderStarted
-                | ContractStatus::DisputeBorrowerResolved
-                | ContractStatus::DisputeLenderResolved
                 | ContractStatus::Cancelled
                 | ContractStatus::RequestExpired
                 | ContractStatus::ApprovalExpired
@@ -1450,7 +1447,7 @@ enum Error {
     TrackTransaction(#[allow(dead_code)] String),
     /// Failed to track transaction using Mempool API.
     PostTransaction(#[allow(dead_code)] String),
-    /// The contract was in an invalid state to approve a request or an extension.
+    /// The contract was in an invalid state to approve a request.
     InvalidApproveRequest { status: ContractStatus },
     /// Referenced borrower does not exist.
     MissingBorrower,
