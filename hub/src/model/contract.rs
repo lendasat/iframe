@@ -16,6 +16,7 @@ use bitcoin::bip32;
 use bitcoin::Address;
 use bitcoin::Amount;
 use bitcoin::PublicKey;
+use enum_iterator::Sequence;
 use rust_decimal::prelude::FromPrimitive;
 use rust_decimal::Decimal;
 use serde::Deserialize;
@@ -299,7 +300,7 @@ impl Contract {
 ///
 /// The loan contract is now closed. This status indicates that the loan contract was closed due to
 /// the lender never disbursing the principal.
-#[derive(Clone, Copy, Debug, Deserialize, Serialize, PartialEq, ToSchema)]
+#[derive(Clone, Copy, Debug, Deserialize, Serialize, PartialEq, ToSchema, Sequence)]
 pub enum ContractStatus {
     /// The borrower has sent a contract request based on a loan offer.
     ///
@@ -442,6 +443,60 @@ pub enum ContractStatus {
     /// This status indicates that the borrower recovered their collateral due to the lender's
     /// failure to disburse the principal in a timely manner.
     ClosedByRecovery,
+}
+
+impl ContractStatus {
+    // We explicitly match against every variant so that adding/removing a variant is a breaking
+    // change and we are forced to handle it explicitly.
+    fn can_be_checked_for_undercollateralization(&self) -> bool {
+        match self {
+            ContractStatus::Requested
+            | ContractStatus::Approved
+            | ContractStatus::CollateralSeen
+            | ContractStatus::CollateralConfirmed
+            | ContractStatus::RepaymentConfirmed
+            | ContractStatus::Closing
+            | ContractStatus::Closed
+            | ContractStatus::ClosedByLiquidation
+            | ContractStatus::ClosedByDefaulting
+            | ContractStatus::Extended
+            | ContractStatus::Rejected
+            | ContractStatus::DisputeLenderStarted
+            | ContractStatus::Cancelled
+            | ContractStatus::RequestExpired
+            | ContractStatus::ApprovalExpired
+            | ContractStatus::CollateralRecoverable
+            | ContractStatus::ClosedByRecovery => false,
+            // We give the borrower the benefit of the doubt. TODO: Ensure that we act fast to
+            // ensure that the lender does not lose money.
+            ContractStatus::RepaymentProvided => false,
+            // Already marked as such.
+            ContractStatus::Undercollateralized => false,
+            // Already lost control of the collateral for a different reason.
+            ContractStatus::Defaulted => false,
+            // We guard against this scenario:
+            //
+            // 1. Borrower repays: contract transitions to `RepaymentProvided`.
+            //
+            // 2. Lender fails to confirm the payment.
+            //
+            // 3. Borrower chooses to open a dispute: contract transitions to
+            //    `DisputeBorrowerStarted`.
+            //
+            // 4. The price of Bitcoin falls sufficiently: the borrower gets liquidated even though
+            // they already repaid the loan.
+            //
+            // TODO: This calls for a redesign of the `ContractStatus` enum. The inclusion of the
+            // `DisputeX` statuses can be convenient, but it also hides the "true state" of the
+            // contract, like it does here.
+            ContractStatus::DisputeBorrowerStarted => false,
+            ContractStatus::PrincipalGiven => true,
+        }
+    }
+
+    pub fn can_be_checked_for_undercollateralization_variants() -> impl Iterator<Item = Self> {
+        enum_iterator::all::<Self>().filter(|s| s.can_be_checked_for_undercollateralization())
+    }
 }
 
 impl FromStr for ContractStatus {

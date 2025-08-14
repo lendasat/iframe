@@ -1366,11 +1366,15 @@ where
     Ok(())
 }
 
-pub(crate) async fn load_open_not_liquidated_contracts_by_currency(
+pub(crate) async fn load_contracts_that_can_be_checked_for_undercollateralization_by_currency(
     pool: &Pool<Postgres>,
     currency: Currency,
 ) -> Result<Vec<Contract>> {
+    let statuses = ContractStatus::can_be_checked_for_undercollateralization_variants()
+        .map(db::ContractStatus::from)
+        .collect::<Vec<_>>();
     let currency = currency.to_string();
+
     let contracts = sqlx::query_as!(
         db::Contract,
         r#"
@@ -1409,7 +1413,7 @@ pub(crate) async fn load_open_not_liquidated_contracts_by_currency(
             created_at as "created_at!",
             updated_at as "updated_at!",
             client_contract_id
-        FROM contracts_to_be_watched
+        FROM contracts
         WHERE (
             CASE
                 WHEN $1 = 'Usd' THEN asset != 'Eur'
@@ -1417,10 +1421,11 @@ pub(crate) async fn load_open_not_liquidated_contracts_by_currency(
                 ELSE FALSE
             END
         )
-          AND status NOT IN ('Defaulted', 'Undercollateralized')
+          AND status = ANY($2::contract_status[])
           AND liquidation_status != 'Liquidated'
         "#,
-        currency
+        currency,
+        statuses as Vec<db::ContractStatus>,
     )
     .fetch_all(pool)
     .await?;

@@ -114,7 +114,11 @@ async fn check_margin_call_or_liquidation(
 ) {
     // TODO: For performance reasons, we should not constantly load from the DB but use some form of
     // in-memory cache instead.
-    match db::contracts::load_open_not_liquidated_contracts_by_currency(db, currency).await {
+    match db::contracts::load_contracts_that_can_be_checked_for_undercollateralization_by_currency(
+        db, currency,
+    )
+    .await
+    {
         Ok(contracts) => {
             tracing::trace!(
                 currency = ?currency,

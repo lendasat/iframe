@@ -17,6 +17,7 @@ bitcoin = { version = "0.32.2", features = ["bitcoinconsensus", "serde"] }
 bitcoin-units = "0.1.2"
 bitmex-stream = { git = "https://github.com/get10101/bitmex-stream", rev = "c68668b" }
 descriptor-wallet = { path = "../descriptor-wallet" }
+enum-iterator = "2.1.0"
 futures = "0.3"
 handlebars = "4.3.7"
 hex = "0.4.3"
