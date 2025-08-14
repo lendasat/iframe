@@ -421,6 +421,7 @@ pub fn apply_extension_to_installments(
 mod tests {
     use super::*;
     use crate::model::RepaymentPlan;
+    use crate::model::ONE_YEAR;
     use insta::assert_debug_snapshot;
     use insta::with_settings;
     use rust_decimal_macros::dec;
@@ -1032,5 +1033,71 @@ mod tests {
         );
 
         assert!(res.is_err());
+    }
+
+    #[test]
+    fn test_calculate_lender_liquidation_amount() {
+        let duration_days = NonZeroU64::new(ONE_MONTH as u64 * 3).unwrap();
+        let yearly_interest_rate = dec!(0.12);
+        let loan_amount_usd = dec!(1_000);
+
+        let installments = generate_installments(
+            OffsetDateTime::now_utc(),
+            Uuid::new_v4(),
+            RepaymentPlan::Bullet,
+            duration_days,
+            yearly_interest_rate,
+            loan_amount_usd,
+            LatePenalty::FullLiquidation,
+        );
+
+        let outstanding_balance_usd = compute_outstanding_balance(&installments);
+
+        let price = dec!(100_000);
+        let outstanding_balance_btc = outstanding_balance_usd.as_btc(price).unwrap();
+
+        assert_eq!(outstanding_balance_btc.total().to_sat(), 1_030_000);
+
+        let duration_days = NonZeroU64::new(ONE_MONTH as u64 * 18).unwrap();
+        let yearly_interest_rate = dec!(0.20);
+        let loan_amount_usd = dec!(10_000);
+
+        let installments = generate_installments(
+            OffsetDateTime::now_utc(),
+            Uuid::new_v4(),
+            RepaymentPlan::Bullet,
+            duration_days,
+            yearly_interest_rate,
+            loan_amount_usd,
+            LatePenalty::FullLiquidation,
+        );
+
+        let outstanding_balance_usd = compute_outstanding_balance(&installments);
+
+        let price = dec!(50_000);
+        let outstanding_balance_btc = outstanding_balance_usd.as_btc(price).unwrap();
+
+        assert_eq!(outstanding_balance_btc.total().to_sat(), 26_000_000);
+
+        let duration_days = NonZeroU64::new(ONE_YEAR as u64).unwrap();
+        let yearly_interest_rate = dec!(0.12);
+        let loan_amount_usd = dec!(1_000);
+
+        let installments = generate_installments(
+            OffsetDateTime::now_utc(),
+            Uuid::new_v4(),
+            RepaymentPlan::Bullet,
+            duration_days,
+            yearly_interest_rate,
+            loan_amount_usd,
+            LatePenalty::FullLiquidation,
+        );
+
+        let outstanding_balance_usd = compute_outstanding_balance(&installments);
+
+        let price = dec!(0);
+        let res = outstanding_balance_usd.as_btc(price);
+
+        assert!(res.is_err())
     }
 }
