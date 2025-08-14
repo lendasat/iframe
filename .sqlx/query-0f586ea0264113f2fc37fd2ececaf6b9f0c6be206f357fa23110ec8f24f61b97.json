@@ -1,6 +1,6 @@
 {
   "db_name": "PostgreSQL",
-  "query": "\n        SELECT\n            id,\n            address,\n            usd_amount_owed,\n            contract_id,\n            card_id,\n            lender_id,\n            borrower_id,\n            is_paid,\n            created_at,\n            updated_at\n        FROM moon_invoices\n        WHERE contract_id = $1\n        ",
+  "query": "\n        SELECT\n            id,\n            address,\n            usd_amount_owed,\n            crypto_amount_owed,\n            contract_id,\n            card_id,\n            lender_id,\n            borrower_id,\n            is_paid,\n            expires_at,\n            created_at,\n            updated_at\n        FROM moon_invoices\n        WHERE contract_id = $1\n        ",
   "describe": {
     "columns": [
       {
@@ -20,36 +20,46 @@
       },
       {
         "ordinal": 3,
+        "name": "crypto_amount_owed",
+        "type_info": "Numeric"
+      },
+      {
+        "ordinal": 4,
         "name": "contract_id",
         "type_info": "Bpchar"
       },
       {
-        "ordinal": 4,
+        "ordinal": 5,
         "name": "card_id",
         "type_info": "Bpchar"
       },
       {
-        "ordinal": 5,
+        "ordinal": 6,
         "name": "lender_id",
         "type_info": "Bpchar"
       },
       {
-        "ordinal": 6,
+        "ordinal": 7,
         "name": "borrower_id",
         "type_info": "Bpchar"
       },
       {
-        "ordinal": 7,
+        "ordinal": 8,
         "name": "is_paid",
         "type_info": "Bool"
       },
       {
-        "ordinal": 8,
+        "ordinal": 9,
+        "name": "expires_at",
+        "type_info": "Timestamptz"
+      },
+      {
+        "ordinal": 10,
         "name": "created_at",
         "type_info": "Timestamptz"
       },
       {
-        "ordinal": 9,
+        "ordinal": 11,
         "name": "updated_at",
         "type_info": "Timestamptz"
       }
@@ -64,7 +74,9 @@
       false,
       false,
       false,
+      false,
       true,
+      false,
       false,
       false,
       false,
@@ -72,5 +84,5 @@
       false
     ]
   },
-  "hash": "9a33a547853c66f31ae1f8e8688826bccdcbf503454024a59c4f03447f436e90"
+  "hash": "0f586ea0264113f2fc37fd2ececaf6b9f0c6be206f357fa23110ec8f24f61b97"
 }

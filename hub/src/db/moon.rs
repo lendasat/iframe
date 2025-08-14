@@ -125,19 +125,23 @@ pub async fn insert_moon_invoice(pool: &Pool<Postgres>, invoice: &moon::Invoice)
             id,
             address,
             usd_amount_owed,
+            crypto_amount_owed,
             contract_id,
             card_id,
             lender_id,
-            borrower_id
-        ) VALUES ($1, $2, $3, $4, $5, $6, $7)
+            borrower_id,
+            expires_at
+        ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
         "#,
         id,
         invoice.address,
         invoice.usd_amount_owed,
+        invoice.crypto_amount_owed,
         invoice.contract_id,
         invoice.card_id.map(|c| c.to_string()),
         invoice.lender_id,
         invoice.borrower_id,
+        invoice.expires_at,
     )
     .execute(pool)
     .await?;
@@ -150,11 +154,13 @@ pub struct MoonInvoice {
     pub id: Uuid,
     pub address: String,
     pub usd_amount_owed: Decimal,
+    pub crypto_amount_owed: Decimal,
     pub contract_id: String,
     pub card_id: Option<String>,
     pub lender_id: String,
     pub borrower_id: String,
     pub is_paid: bool,
+    pub expires_at: OffsetDateTime,
     pub created_at: OffsetDateTime,
     pub updated_at: OffsetDateTime,
 }
@@ -170,11 +176,13 @@ pub async fn get_invoice_by_id(
             id,
             address,
             usd_amount_owed,
+            crypto_amount_owed,
             contract_id,
             card_id,
             lender_id,
             borrower_id,
             is_paid,
+            expires_at,
             created_at,
             updated_at
         FROM moon_invoices
@@ -199,11 +207,13 @@ pub async fn get_invoice_by_contract_id(
             id,
             address,
             usd_amount_owed,
+            crypto_amount_owed,
             contract_id,
             card_id,
             lender_id,
             borrower_id,
             is_paid,
+            expires_at,
             created_at,
             updated_at
         FROM moon_invoices

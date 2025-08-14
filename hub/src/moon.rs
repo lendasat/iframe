@@ -13,6 +13,7 @@ use sqlx::Pool;
 use sqlx::Postgres;
 use std::str::FromStr;
 use std::sync::Arc;
+use time::OffsetDateTime;
 use uuid::Uuid;
 
 pub const MOON_CARD_MAX_BALANCE: Decimal = dec!(5_000);
@@ -42,11 +43,13 @@ pub struct Invoice {
     /// Where the lender needs to send the funds.
     pub address: String,
     pub usd_amount_owed: Decimal,
+    pub crypto_amount_owed: Decimal,
     pub contract_id: String,
     /// Optional to retain backwards-compatibility.
     pub card_id: Option<Uuid>,
     pub lender_id: String,
     pub borrower_id: String,
+    pub expires_at: OffsetDateTime,
 }
 
 #[derive(Clone)]
@@ -178,11 +181,13 @@ impl Manager {
         let invoice = Invoice {
             id: res.id,
             address: res.address,
-            usd_amount_owed: res.crypto_amount_owed,
+            usd_amount_owed: res.usd_amount_owed,
+            crypto_amount_owed: res.crypto_amount_owed,
             contract_id,
             card_id: Some(card_id),
             lender_id,
             borrower_id: borrower_id.to_string(),
+            expires_at: res.exchange_rate_lock_expiration,
         };
 
         Ok(invoice)
