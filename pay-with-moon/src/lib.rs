@@ -339,12 +339,14 @@ pub struct MoonCardClient {
 pub enum Blockchain {
     Polygon,
     Bitcoin,
+    Tron,
 }
 
 #[derive(Clone, Copy, Serialize, Deserialize, Debug, PartialEq)]
 #[serde(rename_all = "UPPERCASE")]
 pub enum Currency {
     Usdc,
+    Usdt,
     Btc,
 }
 

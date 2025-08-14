@@ -61,6 +61,12 @@ pub struct Manager {
     notifications: Arc<Notifications>,
 }
 
+pub enum Currency {
+    UsdcPolygon,
+    Bitcoin,
+    UsdtTron,
+}
+
 impl Manager {
     pub fn new(db: Pool<Postgres>, config: Config, notifications: Arc<Notifications>) -> Self {
         let api_key = config.moon_api_key.clone();
@@ -165,14 +171,26 @@ impl Manager {
         card_id: Uuid,
         lender_id: String,
         borrower_id: &str,
+        currency: Currency,
     ) -> Result<Invoice> {
-        let res = self
-            .client
-            .generate_invoice(
-                usd_amount,
+        let (chain, currency) = match currency {
+            Currency::UsdcPolygon => (
                 pay_with_moon::Blockchain::Polygon,
                 pay_with_moon::Currency::Usdc,
-            )
+            ),
+            Currency::Bitcoin => (
+                pay_with_moon::Blockchain::Bitcoin,
+                pay_with_moon::Currency::Btc,
+            ),
+            Currency::UsdtTron => (
+                pay_with_moon::Blockchain::Tron,
+                pay_with_moon::Currency::Usdt,
+            ),
+        };
+
+        let res = self
+            .client
+            .generate_invoice(usd_amount, chain, currency)
             .await
             .context("Moon error")?;
 
