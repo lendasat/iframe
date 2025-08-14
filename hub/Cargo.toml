@@ -52,7 +52,8 @@ tokio-cron-scheduler = "0.13.0"
 tokio-tungstenite = { version = "0.23.1", features = ["native-tls"] }
 tower = { version = "0.5.2" }
 tower-http = { version = "0.5.2", features = ["cors", "fs"] }
-tracing = "0.1.37"
+tracing = { version = "0.1.37", features = ["log"] }
+tracing-log = "0.2.0"
 tracing-subscriber = { version = "0.3", default-features = false, features = ["fmt", "ansi", "env-filter", "time", "tracing-log", "json"] }
 tzdb = "0.7.2"
 url = { version = "2", features = ["serde"] }
