@@ -39,7 +39,6 @@ import TakeLoanApplication from "./loan-applications/loan-applications";
 import { Layout } from "./layout";
 import { Toaster } from "sonner";
 import "@frontend/ui-shared";
-import { CreateLoanOfferForm } from "./loan-offers/CreateLoanOfferForm";
 
 function MainLayoutComponents() {
   const { backendVersion, user: lenderUser, logout } = useAuth();
@@ -106,10 +105,6 @@ function MainLayoutComponents() {
           <Route
             path="/resetpassword/:token/:email"
             element={<ResetPassword />}
-          />
-          <Route
-            path="/test-loan-offer-form"
-            element={<CreateLoanOfferForm />}
           />
           <Route path="*" element={<Dashboard />} />
         </Routes>

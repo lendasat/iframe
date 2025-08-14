@@ -33,6 +33,7 @@ import { toast } from "sonner";
 import {
   LoanAsset,
   LoanAssetHelper,
+  LoanAddressInputField,
   LoanPayout,
   ONE_YEAR,
 } from "@frontend/ui-shared";
@@ -581,24 +582,30 @@ export function CreateLoanOfferForm({
                 <FormField
                   control={form.control}
                   name="loan_repayment_address"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel className="flex items-center gap-2">
-                        <CreditCard className="h-4 w-4" />
-                        Repayment Address
-                      </FormLabel>
-                      <FormControl>
-                        <Input
-                          placeholder="Enter repayment wallet address"
-                          {...field}
-                        />
-                      </FormControl>
-                      <FormDescription>
-                        Address where loan repayments will be sent
-                      </FormDescription>
-                      <FormMessage />
-                    </FormItem>
-                  )}
+                  render={({ field }) => {
+                    const loanAsset = form.watch("loan_asset");
+                    return (
+                      <FormItem>
+                        <FormLabel className="flex items-center gap-2">
+                          <CreditCard className="h-4 w-4" />
+                          Repayment Address
+                        </FormLabel>
+                        <FormControl>
+                          <LoanAddressInputField
+                            loanAddress={field.value}
+                            setLoanAddress={field.onChange}
+                            loanAsset={loanAsset}
+                            renderWarning={true}
+                            placeholder="Enter repayment wallet address"
+                          />
+                        </FormControl>
+                        <FormDescription>
+                          Address where loan repayments will be sent
+                        </FormDescription>
+                        <FormMessage />
+                      </FormItem>
+                    );
+                  }}
                 />
 
                 {kycOffersEnabled && (

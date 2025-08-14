@@ -1,47 +1,54 @@
-import { faInfoCircle } from "@fortawesome/free-solid-svg-icons";
-import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-import { Button, Callout, Flex, TextField } from "@radix-ui/themes";
-import { ConnectButton } from "@rainbow-me/rainbowkit";
-import type { ChangeEvent } from "react";
 import { useState } from "react";
+import type { ChangeEvent } from "react";
 import { connect } from "starknetkit";
+import { ConnectButton } from "@rainbow-me/rainbowkit";
 import { LoanAsset, LoanAssetHelper } from "../models";
+import { Alert, AlertDescription, Button, Input } from "@frontend/shadcn";
+import { Info } from "lucide-react";
 
 interface LoanAddressInputFieldProps {
   loanAddress: string;
   setLoanAddress: (value: string) => void;
   loanAsset: LoanAsset;
-  hideButton: boolean;
+  hideButton?: boolean;
   renderWarning?: boolean;
-  setHideButton: (value: boolean) => void;
+  setHideButton?: (value: boolean) => void;
+  placeholder?: string;
+  disabled?: boolean;
 }
 
 export function LoanAddressInputField({
   loanAddress,
   setLoanAddress,
   loanAsset,
-  hideButton,
+  hideButton = false,
+  renderWarning = true,
   setHideButton,
-  renderWarning,
+  placeholder = "Enter a valid address",
+  disabled = false,
 }: LoanAddressInputFieldProps) {
   const [manualInput, setManualInput] = useState(true);
 
   const loanAssetChain = LoanAssetHelper.toChain(loanAsset);
 
   let warning = "";
-  if (manualInput) {
+  if (manualInput && renderWarning) {
     warning = `Provide a valid address on the ${loanAssetChain} network. Providing an incorrect address here will lead to loss of funds.`;
   }
 
   function onInputChange(e: ChangeEvent<HTMLInputElement>) {
     setManualInput(true);
-    setHideButton(false);
+    if (setHideButton) {
+      setHideButton(false);
+    }
     setLoanAddress(e.target.value);
   }
 
   const onAddressFetched = (address: string) => {
     setLoanAddress(address);
-    setHideButton(true);
+    if (setHideButton) {
+      setHideButton(true);
+    }
     setManualInput(false);
   };
 
@@ -55,27 +62,26 @@ export function LoanAddressInputField({
   const isLiquid = loanAsset === LoanAsset.USDT_Liquid;
 
   return (
-    <Flex direction={"column"} gap={"2"} className="w-full">
+    <div className="w-full space-y-2">
       {warning && renderWarning && (
-        <Callout.Root color="amber" className="mb-3">
-          <Callout.Icon>
-            <FontAwesomeIcon icon={faInfoCircle} />
-          </Callout.Icon>
-          <Callout.Text>{warning}</Callout.Text>
-        </Callout.Root>
+        <Alert variant={"warning"}>
+          <Info className="h-4 w-4" />
+          <AlertDescription>{warning.trim()}</AlertDescription>
+        </Alert>
       )}
 
-      <TextField.Root
-        className="text-font dark:text-font-dark flex w-full items-center border-0 font-semibold"
-        size={"3"}
-        variant="surface"
-        placeholder="Enter a valid address"
-        type="text"
-        value={loanAddress}
-        onChange={onInputChange}
-      >
+      <div className="relative flex w-full items-center gap-2">
+        <Input
+          className="pr-32"
+          placeholder={placeholder}
+          type="text"
+          value={loanAddress}
+          onChange={onInputChange}
+          disabled={disabled}
+        />
+
         {!isStarknet && !isSolana && !isLiquid && !hideButton && (
-          <TextField.Slot side={"right"}>
+          <div className="absolute right-2">
             <ConnectButton.Custom>
               {({
                 account,
@@ -102,10 +108,8 @@ export function LoanAddressInputField({
                       if (!connected) {
                         return (
                           <Button
-                            variant="solid"
-                            size={"1"}
-                            className="rounded-lg"
-                            color={"blue"}
+                            variant="default"
+                            size="sm"
                             onClick={openConnectModal}
                             type="button"
                           >
@@ -117,10 +121,8 @@ export function LoanAddressInputField({
                       if (chain.unsupported) {
                         return (
                           <Button
-                            variant="solid"
-                            size={"1"}
-                            className="rounded-lg"
-                            color={"blue"}
+                            variant="destructive"
+                            size="sm"
                             onClick={openChainModal}
                             type="button"
                           >
@@ -131,10 +133,8 @@ export function LoanAddressInputField({
 
                       return (
                         <Button
-                          variant="solid"
-                          size={"1"}
-                          className="rounded-lg"
-                          color={"blue"}
+                          variant="default"
+                          size="sm"
                           onClick={() => {
                             onAddressFetched(account.address);
                           }}
@@ -148,15 +148,14 @@ export function LoanAddressInputField({
                 );
               }}
             </ConnectButton.Custom>
-          </TextField.Slot>
+          </div>
         )}
+
         {isStarknet && !hideButton && (
           <Button
-            variant="solid"
-            size={"1"}
-            className="rounded-lg"
-            color={"blue"}
-            type={"button"}
+            variant="default"
+            size="sm"
+            type="button"
             onClick={async () => {
               const { wallet, connectorData } = await connect({});
               console.log(`Wallet name : ${wallet?.name}`);
@@ -169,7 +168,7 @@ export function LoanAddressInputField({
             Get Address
           </Button>
         )}
-      </TextField.Root>
-    </Flex>
+      </div>
+    </div>
   );
 }

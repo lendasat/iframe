@@ -14,7 +14,12 @@ import {
   useAuth,
   LenderFeatureFlags,
 } from "@frontend/http-client-lender";
-import { formatCurrency, LoanAssetHelper, ONE_YEAR } from "@frontend/ui-shared";
+import {
+  formatCurrency,
+  LoanAssetHelper,
+  LoanAddressInputField,
+  ONE_YEAR,
+} from "@frontend/ui-shared";
 import { LoanAssetDescription } from "@frontend/ui-shared/src/lib/loan-asset-info";
 
 import {
@@ -956,9 +961,12 @@ function MyLoanOfferDetails() {
                       </FormLabel>
                       <FormControl>
                         {isEditing ? (
-                          <Input
+                          <LoanAddressInputField
+                            loanAddress={field.value || ""}
+                            setLoanAddress={field.onChange}
+                            loanAsset={loanAsset}
+                            renderWarning={true}
                             placeholder="Enter repayment wallet address"
-                            {...field}
                           />
                         ) : (
                           <div className="bg-muted break-all rounded-lg border px-3 py-2 text-sm">
