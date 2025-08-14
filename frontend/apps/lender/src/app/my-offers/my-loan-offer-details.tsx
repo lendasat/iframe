@@ -639,7 +639,7 @@ function MyLoanOfferDetails() {
                                   }
 
                                   const numValue = parseFloat(value);
-                                  if (!isNaN(numValue)) {
+                                  if (!Number.isNaN(numValue)) {
                                     field.onChange(numValue);
                                   }
                                 }
@@ -649,7 +649,7 @@ function MyLoanOfferDetails() {
                                 const value = e.target.value;
                                 if (value !== "") {
                                   const numValue = parseFloat(value);
-                                  if (!isNaN(numValue)) {
+                                  if (!Number.isNaN(numValue)) {
                                     field.onChange(numValue);
                                     e.target.value = numValue.toString();
                                   }
@@ -700,7 +700,10 @@ function MyLoanOfferDetails() {
                                   }
 
                                   const numValue = parseFloat(value);
-                                  if (!isNaN(numValue) && numValue <= 100) {
+                                  if (
+                                    !Number.isNaN(numValue) &&
+                                    numValue <= 100
+                                  ) {
                                     field.onChange(numValue);
                                   }
                                 }
@@ -710,7 +713,10 @@ function MyLoanOfferDetails() {
                                 const value = e.target.value;
                                 if (value !== "") {
                                   const numValue = parseFloat(value);
-                                  if (!isNaN(numValue) && numValue <= 100) {
+                                  if (
+                                    !Number.isNaN(numValue) &&
+                                    numValue <= 100
+                                  ) {
                                     field.onChange(numValue);
                                     e.target.value = numValue.toString();
                                   }
@@ -897,7 +903,7 @@ function MyLoanOfferDetails() {
                                       }
 
                                       const numValue = parseFloat(value);
-                                      if (!isNaN(numValue)) {
+                                      if (!Number.isNaN(numValue)) {
                                         field.onChange(numValue);
                                       }
                                     }
@@ -907,7 +913,7 @@ function MyLoanOfferDetails() {
                                     const value = e.target.value;
                                     if (value !== "") {
                                       const numValue = parseFloat(value);
-                                      if (!isNaN(numValue)) {
+                                      if (!Number.isNaN(numValue)) {
                                         field.onChange(numValue);
                                         e.target.value = numValue.toString();
                                       }

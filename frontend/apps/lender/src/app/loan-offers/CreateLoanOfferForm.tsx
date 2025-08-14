@@ -174,6 +174,7 @@ export function CreateLoanOfferForm({
 
       form.reset();
     } catch (error) {
+      console.error(`Failed creating loan offer ${error}`);
       toast.error("Error creating loan offer", {
         description: "Please check your inputs and try again.",
       });

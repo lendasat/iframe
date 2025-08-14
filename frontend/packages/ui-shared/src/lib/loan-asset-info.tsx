@@ -7,13 +7,22 @@ export const LoanAssetDescription = ({ asset }: { asset: LoanAsset }) => {
   const isFiat = LoanAssetHelper.isFiat(asset);
 
   if (isFiat) {
-    const fiatDescriptions: Record<LoanAsset, string> = {
+    const fiatDescriptions: Record<
+      LoanAsset.USD | LoanAsset.EUR | LoanAsset.CHF | LoanAsset.MXN,
+      string
+    > = {
       [LoanAsset.USD]: "United States Dollar (USD) - Fiat currency",
       [LoanAsset.EUR]: "Euro (EUR) - Fiat currency",
       [LoanAsset.CHF]: "Swiss Franc (CHF) - Fiat currency",
       [LoanAsset.MXN]: "Mexican Peso (MXN) - Fiat currency",
     };
-    return <>{fiatDescriptions[asset] || `${coin} - Fiat currency`}</>;
+    return (
+      <>
+        {fiatDescriptions[
+          asset as LoanAsset.USD | LoanAsset.EUR | LoanAsset.CHF | LoanAsset.MXN
+        ] || `${coin} - Fiat currency`}
+      </>
+    );
   }
 
   // For USDT on Liquid, we need the blockstream URL
