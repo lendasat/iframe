@@ -473,7 +473,21 @@ impl Notifications {
         }
     }
 
-    pub async fn send_loan_collateralized(&self, lender: Lender, url: Url, contract_id: &str) {
+    pub async fn send_loan_collateralized_borrower(&self, borrower: Borrower, contract_id: &str) {
+        self.notify_borrower_frontend_contract_status(
+            contract_id,
+            borrower.id.as_str(),
+            model::db::ContractStatus::CollateralConfirmed,
+        )
+        .await;
+    }
+
+    pub async fn send_loan_collateralized_lender(
+        &self,
+        lender: Lender,
+        url: Url,
+        contract_id: &str,
+    ) {
         let settings = load_lender_notification_settings(&self.db, lender.id.as_str()).await;
 
         self.notify_lender_frontend_contract_status(
