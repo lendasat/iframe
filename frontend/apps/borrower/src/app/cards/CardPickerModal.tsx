@@ -1,4 +1,9 @@
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@frontend/shadcn";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "@frontend/shadcn";
 import { Button } from "@frontend/shadcn";
 import { Badge } from "@frontend/shadcn";
 import { Card } from "@frontend/shadcn";
@@ -16,15 +21,14 @@ interface CardPickerModalProps {
   isCardExpired: (expirationDate: string) => boolean;
 }
 
-export function CardPickerModal({ 
-  open, 
-  onOpenChange, 
-  cards, 
-  activeCardIndex, 
+export function CardPickerModal({
+  open,
+  onOpenChange,
+  cards,
+  activeCardIndex,
   onSelectCard,
-  isCardExpired
+  isCardExpired,
 }: CardPickerModalProps) {
-  
   const getStatusColor = (card: UserCardDetail) => {
     if (isCardExpired(card.expiration)) {
       return "border-red-200 bg-red-100 text-red-800";
@@ -51,21 +55,19 @@ export function CardPickerModal({
           <DialogTitle className="text-xl font-semibold">
             Select Card
           </DialogTitle>
-          <p className="text-muted-foreground">
-            Choose which card to display
-          </p>
+          <p className="text-muted-foreground">Choose which card to display</p>
         </DialogHeader>
 
         <div className="space-y-3">
           {cards.map((card, index) => {
             const isSelected = index === activeCardIndex;
-            
+
             return (
               <Card
                 key={card.id}
                 className={cn(
                   "p-4 cursor-pointer transition-colors hover:bg-secondary/50",
-                  isSelected && "ring-2 ring-primary"
+                  isSelected && "ring-2 ring-primary",
                 )}
                 onClick={() => handleSelectCard(index)}
               >
@@ -91,7 +93,7 @@ export function CardPickerModal({
                         </div>
                       )}
                     </div>
-                    
+
                     <div className="flex items-center justify-between">
                       <Badge className={getStatusColor(card)}>
                         {getStatusText(card)}
@@ -100,7 +102,9 @@ export function CardPickerModal({
                         <p className="font-semibold">
                           <CurrencyFormatter value={card.available_balance} />
                         </p>
-                        <p className="text-xs text-muted-foreground">Available</p>
+                        <p className="text-xs text-muted-foreground">
+                          Available
+                        </p>
                       </div>
                     </div>
                   </div>
@@ -111,10 +115,7 @@ export function CardPickerModal({
         </div>
 
         <div className="flex justify-end pt-4">
-          <Button
-            variant="outline"
-            onClick={() => onOpenChange(false)}
-          >
+          <Button variant="outline" onClick={() => onOpenChange(false)}>
             Cancel
           </Button>
         </div>

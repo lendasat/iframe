@@ -40,9 +40,9 @@ export const Layout: FC<LayoutProps> = ({ children, user, logout }) => {
     >
       <SidebarProvider>
         <AppSidebar onLogout={logout} username={user.name} />
-        <SidebarInset>
+        <SidebarInset className="flex flex-col h-full overflow-hidden">
           <SiteHeader />
-          <div className="flex flex-1 flex-col">
+          <div className="flex flex-1 flex-col overflow-auto">
             <div className="@container/main flex flex-1 flex-col gap-2">
               <App children={children} />
             </div>

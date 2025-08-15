@@ -19,12 +19,14 @@ import {
 import NoCreditCard from "./../../assets/creditcard-illustration.png";
 import CardHistory from "./CardHistory";
 import { CardPickerModal } from "./CardPickerModal";
+import { TopUpModal } from "./TopUpModal";
 
 export default function Cards() {
   const [visible, setVisible] = useState<boolean>(false);
   const [activeCardIndex, setActiveCardIndex] = useState<number>(0);
   const [copiedField, setCopiedField] = useState<string | null>(null);
   const [cardPickerOpen, setCardPickerOpen] = useState<boolean>(false);
+  const [topUpModalOpen, setTopUpModalOpen] = useState<boolean>(false);
 
   const { getUserCards } = useHttpClientBorrower();
 
@@ -48,6 +50,7 @@ export default function Cards() {
     );
   }
 
+  console.log(`maybeUserCardDetails: ${maybeUserCardDetails?.length}`);
   const userCardDetails = maybeUserCardDetails || [];
   const activeCard = userCardDetails[activeCardIndex];
 
@@ -253,12 +256,16 @@ export default function Cards() {
 
                 {/* Action Buttons */}
                 <div className="flex flex-col gap-3 sm:flex-row">
-                  <Button disabled className="flex-1" variant="outline">
+                  <Button
+                    onClick={() => setTopUpModalOpen(true)}
+                    className="flex-1"
+                    variant="outline"
+                  >
                     <DollarSign className="mr-2 h-4 w-4" />
                     Add Funds
                   </Button>
                   <Button asChild className="flex-1">
-                    <Link to="/requests">
+                    <Link to="/requests?product=pay_with_moon">
                       <Plus className="mr-2 h-4 w-4" />
                       Request New Card
                     </Link>
@@ -297,6 +304,16 @@ export default function Cards() {
           onSelectCard={setActiveCardIndex}
           isCardExpired={isCardExpired}
         />
+
+        {/* Top Up Modal */}
+        {activeCard && (
+          <TopUpModal
+            open={topUpModalOpen}
+            onOpenChange={setTopUpModalOpen}
+            cardId={activeCard.id}
+            cardName="Lendasat Card"
+          />
+        )}
       </div>
     </div>
   );

@@ -64,7 +64,8 @@ pub struct Invoice {
     pub lendasat_fee: Decimal,
     /// Lendasat ID is our internal custom id to know where this invoice belongs to.
     ///
-    /// It might be a contract_id (if the invoice belongs to a contract), or a custom id (if the invoice belongs to a custom topup)
+    /// It might be a contract_id (if the invoice belongs to a contract), or a custom id (if the
+    /// invoice belongs to a custom topup)
     pub lendasat_id: String,
     /// Optional to retain backwards-compatibility.
     pub card_id: Option<Uuid>,

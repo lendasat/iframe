@@ -35,6 +35,8 @@ import type {
   FiatLoanDetails,
   PaginatedNotificationResponse,
   BorrowerNotificationSettings,
+  TopupCardRequest,
+  TopupCardResponse,
 } from "./models";
 import { isAllowedPageWithoutLogin, parseRFC3339Date } from "./utils";
 import { IsRegisteredResponse } from "@frontend/base-http-client";
@@ -237,6 +239,7 @@ export interface HttpClient {
   // Card moon methods
   getUserCards: () => Promise<UserCardDetail[]>;
   getCardTransactions: (cardId: string) => Promise<CardTransaction[]>;
+  topupCard: (request: TopupCardRequest) => Promise<TopupCardResponse>;
 
   newChatNotification: (request: NotifyUser) => Promise<void>;
 
@@ -1099,6 +1102,21 @@ export const createHttpClient = (
     }
   };
 
+  const topupCard = async (
+    request: TopupCardRequest,
+  ): Promise<TopupCardResponse> => {
+    try {
+      const response: AxiosResponse<TopupCardResponse> = await axiosClient.post(
+        "/api/moon/topup",
+        request,
+      );
+      return response.data;
+    } catch (error) {
+      handleError(error, "topping up card");
+      throw error; // Satisfies the linter, though it won't actually be reached.
+    }
+  };
+
   const putUpdateProfile = async (request: PutUpdateProfile): Promise<void> => {
     try {
       await axiosClient.put("/api/users/", request);
@@ -1298,6 +1316,7 @@ export const createHttpClient = (
     getBorrowerProfile,
     getUserCards,
     getCardTransactions,
+    topupCard,
     putUpdateProfile,
     putUpdateLocale,
     newChatNotification,
