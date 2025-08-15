@@ -23,6 +23,7 @@ import {
   LiquidationStatus,
   useAuth,
   useHttpClientBorrower,
+  useNotificationHandlers,
 } from "@frontend/http-client-borrower";
 import { useAsyncRetry } from "react-use";
 import { ContractDetailsFooter } from "./contract-details-footer";
@@ -87,6 +88,7 @@ const EnhancedBitcoinLoan = () => {
   const { id } = useParams();
   const { newChatNotification } = useHttpClientBorrower();
   const { user } = useAuth();
+  const { onContractUpdate } = useNotificationHandlers();
 
   const {
     value: contract,
@@ -104,6 +106,12 @@ const EnhancedBitcoinLoan = () => {
   if (error) {
     console.error(`Failed to load contract: ${error.message}`);
   }
+
+  onContractUpdate((contractUpdate) => {
+    if (contract?.status !== contractUpdate.status) {
+      refreshContract();
+    }
+  });
 
   const currentStateColor = contractStatusLabelColor(contract?.status);
   const currentStateLabel =

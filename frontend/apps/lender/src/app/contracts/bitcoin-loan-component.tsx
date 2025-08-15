@@ -23,6 +23,7 @@ import {
   LiquidationStatus,
   useAuth,
   useLenderHttpClient,
+  useNotificationHandlers,
 } from "@frontend/http-client-lender";
 import { useAsyncRetry } from "react-use";
 import { ContractDetailsFooter } from "./contract-details-footer";
@@ -105,12 +106,13 @@ const EnhancedBitcoinLoan = () => {
   const { id } = useParams();
   const { newChatNotification } = useLenderHttpClient();
   const { user } = useAuth();
+  const { onContractUpdate } = useNotificationHandlers();
 
   const {
     value: contract,
     loading,
     error,
-    retry,
+    retry: refreshContract,
   } = useAsyncRetry(async () => {
     if (id) {
       return getContract(id);
@@ -122,6 +124,12 @@ const EnhancedBitcoinLoan = () => {
   if (error) {
     console.error(`Failed to load contract: ${error.message}`);
   }
+
+  onContractUpdate((contractUpdate) => {
+    if (contract?.status !== contractUpdate.status) {
+      refreshContract();
+    }
+  });
 
   const currentStateColor = contractStatusLabelColor(contract?.status);
 
@@ -304,14 +312,14 @@ const EnhancedBitcoinLoan = () => {
                   <TabsContent value="extension" className="m-0">
                     <ExtensionSettings
                       contract={contract}
-                      refreshContract={retry}
+                      refreshContract={refreshContract}
                     />
                   </TabsContent>
 
                   <TabsContent value="disputes" className="m-0">
                     <DisputesComponent
                       contractId={contract?.id}
-                      refreshContract={retry}
+                      refreshContract={refreshContract}
                     />
                   </TabsContent>
                 </div>
@@ -321,7 +329,7 @@ const EnhancedBitcoinLoan = () => {
                 <ContractDetailsFooter
                   contract={contract}
                   loading={loading}
-                  refreshContract={retry}
+                  refreshContract={refreshContract}
                 />
               </CardFooter>
             </Card>
