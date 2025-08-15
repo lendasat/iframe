@@ -1,6 +1,6 @@
 use crate::config::Config;
 use crate::db;
-use crate::db::moon::get_invoice_by_contract_id;
+use crate::db::moon::get_invoice_by_lendasat_id;
 use crate::etherscan;
 use crate::model::Contract;
 use crate::model::LoanType;
@@ -36,7 +36,7 @@ pub async fn mark_as_principal_given(
             .context("Failed inserting principal given TXID")?;
 
         if contract.loan_type == LoanType::MoonCardInstant {
-            let invoice = get_invoice_by_contract_id(pool, contract_id)
+            let invoice = get_invoice_by_lendasat_id(pool, contract_id)
                 .await
                 .context("Failed to get invoice for contract")?
                 .context("No invoice found for MoonCardInstant contract")?;

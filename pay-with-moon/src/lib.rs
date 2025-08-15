@@ -991,7 +991,6 @@ mod tests {
         let balance = client.get_moon_reserve_balance().await.unwrap();
 
         assert!(!balance.balance.is_zero());
-        dbg!(balance);
     }
 
     #[test]
@@ -1153,7 +1152,7 @@ mod tests {
             }
 
             // Read file contents
-            let file_contents = fs::read_to_string(dbg!(&path))
+            let file_contents = fs::read_to_string(&path)
                 .unwrap_or_else(|_| panic!("Unable to read file: {path:?}"));
 
             // Attempt to deserialize

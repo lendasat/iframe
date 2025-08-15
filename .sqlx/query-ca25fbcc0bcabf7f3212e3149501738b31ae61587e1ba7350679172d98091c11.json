@@ -1,6 +1,6 @@
 {
   "db_name": "PostgreSQL",
-  "query": "\n        SELECT\n            id,\n            address,\n            usd_amount_owed,\n            crypto_amount_owed,\n            contract_id,\n            card_id,\n            lender_id,\n            borrower_id,\n            is_paid,\n            expires_at,\n            created_at,\n            updated_at\n        FROM moon_invoices\n        WHERE contract_id = $1\n        ",
+  "query": "\n        SELECT\n            id,\n            address,\n            usd_amount_owed,\n            crypto_amount_owed,\n            lendasat_fee,\n            asset as \"asset: moon::Currency\",\n            lendasat_id,\n            card_id,\n            borrower_id,\n            is_paid,\n            expires_at,\n            created_at,\n            updated_at\n        FROM moon_invoices\n        WHERE id = $1\n        ",
   "describe": {
     "columns": [
       {
@@ -25,51 +25,69 @@
       },
       {
         "ordinal": 4,
-        "name": "contract_id",
-        "type_info": "Bpchar"
+        "name": "lendasat_fee",
+        "type_info": "Numeric"
       },
       {
         "ordinal": 5,
-        "name": "card_id",
-        "type_info": "Bpchar"
+        "name": "asset: moon::Currency",
+        "type_info": {
+          "Custom": {
+            "name": "moon_invoice_asset",
+            "kind": {
+              "Enum": [
+                "UsdcPolygon",
+                "UsdtTron",
+                "BtcBitcoin"
+              ]
+            }
+          }
+        }
       },
       {
         "ordinal": 6,
-        "name": "lender_id",
+        "name": "lendasat_id",
         "type_info": "Bpchar"
       },
       {
         "ordinal": 7,
-        "name": "borrower_id",
+        "name": "card_id",
         "type_info": "Bpchar"
       },
       {
         "ordinal": 8,
+        "name": "borrower_id",
+        "type_info": "Bpchar"
+      },
+      {
+        "ordinal": 9,
         "name": "is_paid",
         "type_info": "Bool"
       },
       {
-        "ordinal": 9,
+        "ordinal": 10,
         "name": "expires_at",
         "type_info": "Timestamptz"
       },
       {
-        "ordinal": 10,
+        "ordinal": 11,
         "name": "created_at",
         "type_info": "Timestamptz"
       },
       {
-        "ordinal": 11,
+        "ordinal": 12,
         "name": "updated_at",
         "type_info": "Timestamptz"
       }
     ],
     "parameters": {
       "Left": [
-        "Bpchar"
+        "Uuid"
       ]
     },
     "nullable": [
+      false,
+      false,
       false,
       false,
       false,
@@ -80,9 +98,8 @@
       false,
       false,
       false,
-      false,
       false
     ]
   },
-  "hash": "0f586ea0264113f2fc37fd2ececaf6b9f0c6be206f357fa23110ec8f24f61b97"
+  "hash": "ca25fbcc0bcabf7f3212e3149501738b31ae61587e1ba7350679172d98091c11"
 }
