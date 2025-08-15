@@ -17,6 +17,7 @@ use uuid::Uuid;
 use xtra::Address;
 
 mod email;
+
 pub mod websocket;
 
 pub struct Notifications {
@@ -42,7 +43,7 @@ impl Notifications {
     }
 
     #[allow(clippy::too_many_arguments)]
-    pub async fn send_login_information_borrower(
+    pub(crate) async fn send_login_information_borrower(
         &self,
         borrower: Borrower,
         profile_url: Url,
@@ -87,7 +88,7 @@ impl Notifications {
     }
 
     #[allow(clippy::too_many_arguments)]
-    pub async fn send_login_information_lender(
+    pub(crate) async fn send_login_information_lender(
         &self,
         lender: &Lender,
         profile_url: Url,
@@ -129,7 +130,13 @@ impl Notifications {
         }
     }
 
-    pub async fn send_verification_code(&self, name: &str, email: &str, url: Url, code: &str) {
+    pub(crate) async fn send_verification_code(
+        &self,
+        name: &str,
+        email: &str,
+        url: Url,
+        code: &str,
+    ) {
         if let Err(e) = self
             .email
             .send_verification_code(name, email, url, code)
@@ -139,7 +146,7 @@ impl Notifications {
         }
     }
 
-    pub async fn send_password_reset_token(
+    pub(crate) async fn send_password_reset_token(
         &self,
         name: &str,
         email: &str,
@@ -157,7 +164,7 @@ impl Notifications {
         }
     }
 
-    pub async fn send_start_dispute(&self, name: &str, email: &str, contract_id: &str) {
+    pub(crate) async fn send_start_dispute(&self, name: &str, email: &str, contract_id: &str) {
         if let Err(e) = self
             .email
             .send_start_dispute(name, email, contract_id)
@@ -169,7 +176,7 @@ impl Notifications {
         }
     }
 
-    pub async fn send_notify_admin_about_dispute_borrower(
+    pub(crate) async fn send_notify_admin_about_dispute_borrower(
         &self,
         user: Borrower,
         dispute_id: &str,
@@ -192,7 +199,7 @@ impl Notifications {
         }
     }
 
-    pub async fn send_notify_admin_about_dispute_lender(
+    pub(crate) async fn send_notify_admin_about_dispute_lender(
         &self,
         user: Lender,
         dispute_id: &str,
@@ -215,7 +222,7 @@ impl Notifications {
         }
     }
 
-    pub async fn send_borrower_margin_call(
+    pub(crate) async fn send_borrower_margin_call(
         &self,
         borrower: Borrower,
         contract: Contract,
@@ -249,7 +256,7 @@ impl Notifications {
         }
     }
 
-    pub async fn send_liquidation_notice_borrower(
+    pub(crate) async fn send_liquidation_notice_borrower(
         &self,
         borrower: Borrower,
         contract: Contract,
@@ -286,7 +293,7 @@ impl Notifications {
         }
     }
 
-    pub async fn send_liquidation_notice_lender(
+    pub(crate) async fn send_liquidation_notice_lender(
         &self,
         lender: Lender,
         contract: Contract,
@@ -315,7 +322,7 @@ impl Notifications {
         }
     }
 
-    pub async fn send_new_loan_request(&self, lender: Lender, url: Url, contract_id: &str) {
+    pub(crate) async fn send_new_loan_request(&self, lender: Lender, url: Url, contract_id: &str) {
         let settings = load_lender_notification_settings(&self.db, lender.id.as_str()).await;
 
         self.notify_lender_frontend_contract_status(
@@ -350,7 +357,7 @@ impl Notifications {
         }
     }
 
-    pub async fn send_loan_request_approved(
+    pub(crate) async fn send_loan_request_approved(
         &self,
         contract_id: &str,
         borrower: Borrower,
@@ -391,7 +398,7 @@ impl Notifications {
         }
     }
 
-    pub async fn send_notification_about_auto_accepted_loan(
+    pub(crate) async fn send_notification_about_auto_accepted_loan(
         &self,
         lender: Lender,
         url: Url,
@@ -432,7 +439,7 @@ impl Notifications {
         }
     }
 
-    pub async fn send_loan_request_rejected(
+    pub(crate) async fn send_loan_request_rejected(
         &self,
         contract_id: &str,
         borrower: Borrower,
@@ -473,7 +480,36 @@ impl Notifications {
         }
     }
 
-    pub async fn send_loan_collateralized_borrower(&self, borrower: Borrower, contract_id: &str) {
+    pub(crate) async fn send_collateral_seen(&self, contract_id: &str) {
+        let (borrower_id, lender_id) =
+            match db::contracts::get_borrower_and_lender(&self.db, contract_id).await {
+                Ok(res) => res,
+                Err(e) => {
+                    tracing::error!("Failed to notify frontends about CollateralSeen: {e:#}");
+                    return;
+                }
+            };
+
+        self.notify_borrower_frontend_contract_status(
+            contract_id,
+            &borrower_id,
+            model::db::ContractStatus::CollateralSeen,
+        )
+        .await;
+
+        self.notify_lender_frontend_contract_status(
+            contract_id,
+            &lender_id,
+            model::db::ContractStatus::CollateralSeen,
+        )
+        .await;
+    }
+
+    pub(crate) async fn send_loan_collateralized_borrower(
+        &self,
+        borrower: Borrower,
+        contract_id: &str,
+    ) {
         self.notify_borrower_frontend_contract_status(
             contract_id,
             borrower.id.as_str(),
@@ -482,7 +518,7 @@ impl Notifications {
         .await;
     }
 
-    pub async fn send_loan_collateralized_lender(
+    pub(crate) async fn send_loan_collateralized_lender(
         &self,
         lender: Lender,
         url: Url,
@@ -523,7 +559,7 @@ impl Notifications {
         }
     }
 
-    pub async fn send_loan_paid_out(
+    pub(crate) async fn send_loan_paid_out(
         &self,
         contract_id: &str,
         borrower: Borrower,
@@ -563,7 +599,7 @@ impl Notifications {
         }
     }
 
-    pub async fn send_installment_due_soon(
+    pub(crate) async fn send_installment_due_soon(
         &self,
         contract_id: &str,
         installment_id: Uuid,
@@ -601,7 +637,7 @@ impl Notifications {
         }
     }
 
-    pub async fn send_moon_card_ready(&self, borrower: Borrower, contract_url: Url) {
+    pub(crate) async fn send_moon_card_ready(&self, borrower: Borrower, contract_url: Url) {
         let settings = load_borrower_notification_settings(&self.db, borrower.id.as_str()).await;
 
         if settings.contract_status_changed_telegram {
@@ -624,7 +660,7 @@ impl Notifications {
         }
     }
 
-    pub async fn send_installment_paid(
+    pub(crate) async fn send_installment_paid(
         &self,
         lender: Lender,
         url: Url,
@@ -665,7 +701,7 @@ impl Notifications {
         }
     }
 
-    pub async fn send_installment_confirmed(
+    pub(crate) async fn send_installment_confirmed(
         &self,
         borrower: Borrower,
         url: Url,
@@ -702,7 +738,7 @@ impl Notifications {
         }
     }
 
-    pub async fn send_loan_liquidated_after_default(
+    pub(crate) async fn send_loan_liquidated_after_default(
         &self,
         contract_id: &str,
         borrower: Borrower,
@@ -743,7 +779,12 @@ impl Notifications {
         }
     }
 
-    pub async fn send_loan_defaulted_lender(&self, lender: Lender, url: Url, contract_id: &str) {
+    pub(crate) async fn send_loan_defaulted_lender(
+        &self,
+        lender: Lender,
+        url: Url,
+        contract_id: &str,
+    ) {
         let settings = load_lender_notification_settings(&self.db, lender.id.as_str()).await;
 
         self.notify_lender_frontend_contract_status(
@@ -779,7 +820,7 @@ impl Notifications {
         }
     }
 
-    pub async fn send_loan_defaulted_borrower(
+    pub(crate) async fn send_loan_defaulted_borrower(
         &self,
         contract_id: &str,
         borrower: Borrower,
@@ -820,7 +861,7 @@ impl Notifications {
         }
     }
 
-    pub async fn send_expired_loan_request_borrower(
+    pub(crate) async fn send_expired_loan_request_borrower(
         &self,
         contract_id: &str,
         borrower: Borrower,
@@ -862,7 +903,7 @@ impl Notifications {
         }
     }
 
-    pub async fn send_expired_loan_application_borrower(
+    pub(crate) async fn send_expired_loan_application_borrower(
         &self,
         borrower: Borrower,
         days: i64,
@@ -895,7 +936,7 @@ impl Notifications {
             }
         }
     }
-    pub async fn send_loan_application_taken_borrower(
+    pub(crate) async fn send_loan_application_taken_borrower(
         &self,
         contract_id: &str,
         borrower: Borrower,
@@ -923,7 +964,7 @@ impl Notifications {
         }
     }
 
-    pub async fn send_expired_loan_request_lender(
+    pub(crate) async fn send_expired_loan_request_lender(
         &self,
         lender: Lender,
         url: Url,
@@ -965,7 +1006,7 @@ impl Notifications {
         }
     }
 
-    pub async fn send_chat_notification_lender(
+    pub(crate) async fn send_chat_notification_lender(
         &self,
         lender: Lender,
         contract_url: Url,
@@ -998,7 +1039,7 @@ impl Notifications {
         }
     }
 
-    pub async fn send_chat_notification_borrower(
+    pub(crate) async fn send_chat_notification_borrower(
         &self,
         contract_id: &str,
         borrower: Borrower,
@@ -1031,7 +1072,7 @@ impl Notifications {
         }
     }
 
-    pub async fn send_restructured_contract_borrower(
+    pub(crate) async fn send_restructured_contract_borrower(
         &self,
         contract_id: &str,
         borrower: Borrower,
@@ -1070,7 +1111,7 @@ impl Notifications {
         Ok(())
     }
 
-    pub async fn send_restructured_contract_lender(
+    pub(crate) async fn send_restructured_contract_lender(
         &self,
         lender: Lender,
         loan_url: Url,
@@ -1109,7 +1150,7 @@ impl Notifications {
         Ok(())
     }
 
-    pub async fn send_contract_extension_enabled(
+    pub(crate) async fn send_contract_extension_enabled(
         &self,
         borrower: Borrower,
         contract_url: Url,
@@ -1147,7 +1188,7 @@ impl Notifications {
     }
 
     #[allow(clippy::too_many_arguments)]
-    pub async fn send_new_loan_offer_available(
+    pub(crate) async fn send_new_loan_offer_available(
         &self,
         offer_url: Url,
         min_loan_amount: Decimal,
@@ -1189,7 +1230,7 @@ impl Notifications {
         }
     }
 
-    pub async fn send_new_loan_application_available(
+    pub(crate) async fn send_new_loan_application_available(
         &self,
         offer_url: Url,
         loan_amount: Decimal,
@@ -1226,7 +1267,7 @@ impl Notifications {
         }
     }
 
-    pub async fn send_daily_offer_digest(&self, borrower_frontend_origin: &Url) {
+    pub(crate) async fn send_daily_offer_digest(&self, borrower_frontend_origin: &Url) {
         let today = OffsetDateTime::now_utc().date();
         let twenty_four_hours_ago = OffsetDateTime::now_utc() - time::Duration::days(1);
 
@@ -1343,7 +1384,7 @@ impl Notifications {
         );
     }
 
-    pub async fn send_daily_application_digest(&self, lender_frontend_origin: &Url) {
+    pub(crate) async fn send_daily_application_digest(&self, lender_frontend_origin: &Url) {
         let today = OffsetDateTime::now_utc().date();
         let twenty_four_hours_ago = OffsetDateTime::now_utc() - time::Duration::days(1);
 

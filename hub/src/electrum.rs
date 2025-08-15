@@ -1,3 +1,5 @@
+use crate::db;
+use crate::Notifications;
 use anyhow::anyhow;
 use anyhow::Result;
 use bitcoin::Address;
@@ -5,7 +7,10 @@ use bitcoin::Network;
 use bitcoin::Txid;
 use electrum_client::Client;
 use electrum_client::ElectrumApi;
+use sqlx::Pool;
+use sqlx::Postgres;
 use std::collections::HashMap;
+use std::sync::Arc;
 use std::time::Duration;
 use tokio::time::interval;
 use xtra::Context;
@@ -15,19 +20,37 @@ use xtra::Mailbox;
 pub struct Actor {
     /// Electrum client for communicating with the server.
     client: Client,
+    db: Pool<Postgres>,
+    notifications: Arc<Notifications>,
     /// Map of contract IDs to their corresponding contract addresses.
-    tracked_contracts: HashMap<String, Address>,
+    tracked_contracts: HashMap<String, TrackedContract>,
     /// Map of contract IDs to a set of collateral TXIDs.
     txids_by_contract: HashMap<String, HashMap<Txid, bool>>,
     /// How often we look for transactions.
     check_interval: Duration,
 }
 
+pub struct TrackedContract {
+    address: Address,
+    is_waiting_for_collateral_seen: bool,
+}
+
+impl TrackedContract {
+    pub fn new(address: Address, is_waiting_for_collateral_seen: bool) -> Self {
+        Self {
+            address,
+            is_waiting_for_collateral_seen,
+        }
+    }
+}
+
 impl Actor {
     /// Create a new Electrum actor.
     pub fn new(
         electrum_url: String,
-        tracked_contracts: HashMap<String, Address>,
+        db: Pool<Postgres>,
+        notifications: Arc<Notifications>,
+        tracked_contracts: HashMap<String, TrackedContract>,
         network: Network,
     ) -> Result<Self> {
         let client = Client::new(&electrum_url)?;
@@ -39,6 +62,8 @@ impl Actor {
 
         Ok(Self {
             client,
+            db,
+            notifications,
             tracked_contracts,
             txids_by_contract: HashMap::new(),
             check_interval: Duration::from_secs(check_interval_secs),
@@ -108,8 +133,13 @@ impl xtra::Handler<RegisterAddress> for Actor {
             "Registering address for monitoring"
         );
 
-        self.tracked_contracts
-            .insert(msg.contract_id.clone(), msg.address);
+        self.tracked_contracts.insert(
+            msg.contract_id.clone(),
+            TrackedContract {
+                address: msg.address,
+                is_waiting_for_collateral_seen: true,
+            },
+        );
         self.txids_by_contract
             .insert(msg.contract_id, HashMap::new());
         Ok(())
@@ -168,7 +198,7 @@ struct Check;
 impl xtra::Handler<Check> for Actor {
     type Return = ();
 
-    async fn handle(&mut self, _msg: Check, _: &mut Context<Self>) -> Self::Return {
+    async fn handle(&mut self, _msg: Check, context: &mut Context<Self>) -> Self::Return {
         if self.tracked_contracts.is_empty() {
             return;
         }
@@ -182,7 +212,7 @@ impl xtra::Handler<Check> for Actor {
         let scripts: Vec<_> = self
             .tracked_contracts
             .values()
-            .map(|address| (address.script_pubkey()))
+            .map(|TrackedContract { address, .. }| (address.script_pubkey()))
             .collect();
 
         if scripts.is_empty() {
@@ -211,6 +241,48 @@ impl xtra::Handler<Check> for Actor {
                     "Failed to batch check for {} contracts: {e:#}",
                     self.tracked_contracts.len()
                 );
+            }
+        }
+
+        // After updating the internal state, queue up a message to see if we need to report a
+        // status change for any contracts.
+        tokio::spawn(context.mailbox().address().send(ReportCollateralSeen));
+    }
+}
+
+/// Internal message to see if we need to report a status change for any tracked contracts.
+#[derive(Debug)]
+struct ReportCollateralSeen;
+
+impl xtra::Handler<ReportCollateralSeen> for Actor {
+    type Return = ();
+
+    async fn handle(&mut self, _msg: ReportCollateralSeen, _: &mut Context<Self>) -> Self::Return {
+        for (contract_id, contract) in self
+            .tracked_contracts
+            .iter_mut()
+            .filter(|(_, c)| c.is_waiting_for_collateral_seen)
+        {
+            match self.txids_by_contract.get(contract_id) {
+                // We don't distinguish between confirmed or unconfirmed, to keep it simple.
+                Some(txs) if !txs.is_empty() => {
+                    match db::contracts::report_collateral_seen(&self.db, contract_id).await {
+                        Ok(status_changed) => {
+                            contract.is_waiting_for_collateral_seen = false;
+
+                            if status_changed {
+                                self.notifications.send_collateral_seen(contract_id).await;
+                            }
+                        }
+                        Err(e) => {
+                            tracing::error!(
+                                contract_id,
+                                "Failed to report CollateralSeen to DB: {e:#}"
+                            );
+                        }
+                    }
+                }
+                _ => {}
             }
         }
     }

@@ -193,13 +193,13 @@ impl Contract {
 ///
 /// **Approved** - The lender has accepted the contract request.
 ///
-/// If the borrower funds the Bitcoin collateral contract, transitions to CollateralConfirmed.
-/// If the borrower takes too long to fund the collateral contract, transitions to ApprovalExpired.
+/// If the borrower funds the Bitcoin collateral contract, transitions to
+/// CollateralSeen/CollateralConfirmed. If the borrower takes too long to fund the collateral
+/// contract, transitions to ApprovalExpired.
 ///
 /// **CollateralSeen** - The collateral contract has been seen on the blockchain.
 ///
 /// If the collateral contract is confirmed on the blockchain, transitions to CollateralConfirmed.
-/// Currently, this status is unused as we do not monitor the mempool.
 ///
 /// **CollateralConfirmed** - The collateral contract has received enough confirmations on the
 /// blockchain.
@@ -315,7 +315,7 @@ pub enum ContractStatus {
     /// The lender has accepted the contract request.
     ///
     /// - If the borrower funds the Bitcoin collateral contract, we transition to
-    ///   [`ContractStatus::CollateralConfirmed`].
+    ///   [`ContractStatus::CollateralSeen`] or [`ContractStatus::CollateralConfirmed`].
     ///
     /// - If the borrower takes too long to fund the collateral contract, we transition to
     ///   [`ContractStatus::ApprovalExpired`].
@@ -324,8 +324,6 @@ pub enum ContractStatus {
     ///
     /// If the collateral contract is _confirmed_ on the blockchain, we transition to
     /// [`ContractStatus::CollateralConfirmed`].
-    ///
-    /// Currently, this status is unused as we do not monitor the mempool.
     CollateralSeen,
     /// The collateral contract has received enough confirmations on the blockchain.
     ///

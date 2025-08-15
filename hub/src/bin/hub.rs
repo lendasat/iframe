@@ -11,21 +11,23 @@ use hub::daily_digest::add_daily_digest_job;
 use hub::db::connect_to_db;
 use hub::db::run_migration;
 use hub::electrum;
+use hub::electrum::TrackedContract;
 use hub::installment_close_to_due_date::add_installment_close_to_due_date_job;
 use hub::late_installments::add_late_installment_job;
 use hub::liquidation_engine::monitor_positions;
 use hub::loan_application_expiry::add_loan_application_expiry_job;
 use hub::logger::init_tracing;
 use hub::mempool;
+use hub::model::ContractStatus;
 use hub::moon;
-use hub::notifications::websocket::NotificationCenter;
-use hub::notifications::Notifications;
 use hub::process_defaulted_contracts::add_process_defaulted_contracts_job;
 use hub::routes::borrower::spawn_borrower_server;
 use hub::routes::lender::spawn_lender_server;
 use hub::routes::AppState;
 use hub::telegram_bot::TelegramBot;
 use hub::wallet::Wallet;
+use hub::NotificationCenter;
+use hub::Notifications;
 use std::backtrace::Backtrace;
 use std::collections::HashMap;
 use std::sync::Arc;
@@ -152,17 +154,6 @@ async fn main() -> Result<()> {
         panic!("Dying because we can't continue without mempool actor");
     });
 
-    let open_contracts = hub::db::contracts::load_open_contracts(&db).await?;
-
-    let tracked_contracts = open_contracts
-        .iter()
-        .filter_map(|c| {
-            c.contract_address
-                .as_ref()
-                .map(|address| (c.id.clone(), address.clone().assume_checked()))
-        })
-        .collect();
-
     let electrum_addr = match config.electrum_url {
         Some(ref electrum_url) => {
             tracing::info!(
@@ -170,9 +161,30 @@ async fn main() -> Result<()> {
                 "Starting hub with Electrum actor"
             );
 
+            let open_contracts = hub::db::contracts::load_open_contracts(&db).await?;
+            let tracked_contracts = open_contracts
+                .iter()
+                .filter_map(|c| {
+                    c.contract_address.as_ref().map(|address| {
+                        (
+                            c.id.clone(),
+                            TrackedContract::new(
+                                address.clone().assume_checked(),
+                                matches!(c.status, ContractStatus::Approved),
+                            ),
+                        )
+                    })
+                })
+                .collect();
+
             let (electrum_addr, electrum_mailbox) = xtra::Mailbox::unbounded();
-            let electrum =
-                electrum::Actor::new(electrum_url.to_string(), tracked_contracts, network)?;
+            let electrum = electrum::Actor::new(
+                electrum_url.to_string(),
+                db.clone(),
+                notifications.clone(),
+                tracked_contracts,
+                network,
+            )?;
 
             tokio::spawn(async {
                 let e = xtra::run(electrum_mailbox, electrum).await;
