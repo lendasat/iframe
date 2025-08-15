@@ -1,34 +1,29 @@
 import { useHttpClientBorrower } from "@frontend/http-client-borrower";
 import { CurrencyFormatter } from "@frontend/ui-shared";
-import {
-  Box,
-  Button,
-  Flex,
-  Grid,
-  Heading,
-  Skeleton,
-  Spinner,
-  Text,
-} from "@radix-ui/themes";
 import { useState } from "react";
-import { IoWallet } from "react-icons/io5";
-import { Link } from "react-router-dom";
 import { useAsync } from "react-use";
-import { Navigation } from "swiper/modules";
-import { EffectCards } from "swiper/modules";
-import { Swiper } from "swiper/react";
-import { SwiperSlide } from "swiper/react";
+import { Link } from "react-router-dom";
+import { Card, CardContent } from "@frontend/shadcn";
+import { Button } from "@frontend/shadcn";
+import { Badge } from "@frontend/shadcn";
+import {
+  Plus,
+  Eye,
+  EyeOff,
+  ChevronLeft,
+  ChevronRight,
+  Wallet,
+  Copy,
+  Check,
+} from "lucide-react";
+import { cn } from "@frontend/shadcn";
 import NoCreditCard from "./../../assets/creditcard-illustration.png";
 import CardHistory from "./CardHistory";
-import CreditCard from "./CreditCard";
-import "swiper/scss";
-import "swiper/scss/navigation";
-import "swiper/scss/pagination";
 
 export default function Cards() {
-  const { innerHeight } = window;
   const [visible, setVisible] = useState<boolean>(false);
   const [activeCardIndex, setActiveCardIndex] = useState<number>(0);
+  const [copiedField, setCopiedField] = useState<string | null>(null);
 
   const { getUserCards } = useHttpClientBorrower();
 
@@ -45,284 +40,308 @@ export default function Cards() {
   }
 
   if (loading) {
-    // TODO: return something nicer
     return (
-      <Box
-        className="flex items-center justify-center"
-        style={{
-          height: innerHeight - 100,
-        }}
-      >
-        <Spinner size={"3"} />
-      </Box>
+      <div className="bg-background flex min-h-screen items-center justify-center">
+        <div className="border-primary h-8 w-8 animate-spin rounded-full border-b-2"></div>
+      </div>
     );
   }
 
   const userCardDetails = maybeUserCardDetails || [];
-
   const activeCard = userCardDetails[activeCardIndex];
 
+  const nextCard = () => {
+    if (userCardDetails.length > 1) {
+      setActiveCardIndex((prev) => (prev + 1) % userCardDetails.length);
+    }
+  };
+
+  const prevCard = () => {
+    if (userCardDetails.length > 1) {
+      setActiveCardIndex((prev) =>
+        prev === 0 ? userCardDetails.length - 1 : prev - 1,
+      );
+    }
+  };
+
+  const formatCreditCardNumber = (pan: string) => {
+    const numStr = pan.replace(/\D/g, "");
+    return numStr.replace(/(\d{4})(?=\d)/g, "$1 ");
+  };
+
+  const isCardExpired = (expirationDate: string) => {
+    // Parse MM/YY format
+    const [month, year] = expirationDate.split("/");
+    if (!month || !year) return false;
+
+    // Convert YY to full year (assuming 20YY)
+    const fullYear = 2000 + parseInt(year, 10);
+    const expMonth = parseInt(month, 10);
+
+    // Create expiration date at end of the month
+    const expDate = new Date(fullYear, expMonth, 0); // Day 0 gets last day of previous month
+    const today = new Date();
+
+    return today > expDate;
+  };
+
+  const copyToClipboard = async (text: string, fieldName: string) => {
+    try {
+      await navigator.clipboard.writeText(text);
+      setCopiedField(fieldName);
+      setTimeout(() => setCopiedField(null), 2000);
+    } catch (err) {
+      console.error("Failed to copy text: ", err);
+    }
+  };
+
   return (
-    <Grid
-      className="overflow-y-scroll md:grid-cols-[minmax(390px,390px)_2fr]"
-      style={{
-        height: innerHeight - 100,
-      }}
-    >
-      <Box
-        className={`p-4 ${
-          activeCard ? " " : "hidden md:block"
-        } border-font/10 bg-light dark:bg-dark-700 h-full space-y-4 border-r md:px-8`}
-      >
-        <Skeleton loading={!activeCard}>
-          <Swiper
-            effect={"cards"}
-            grabCursor={true}
-            modules={[EffectCards, Navigation]}
-            onSlideChange={(s) => {
-              setActiveCardIndex(s.activeIndex);
-            }}
-            className="h-52 w-full"
-            navigation={true}
-            cardsEffect={{
-              perSlideOffset: 7,
-              slideShadows: false,
-            }}
-          >
-            {userCardDetails.map((card) => (
-              <SwiperSlide key={card.id}>
-                <CreditCard
-                  card={card}
-                  visible={visible}
-                  setVisible={(vis) => setVisible(vis)}
-                />
-              </SwiperSlide>
-            ))}
-          </Swiper>
-        </Skeleton>
+    <div className="bg-background min-h-screen">
+      <div className="mx-auto max-w-7xl space-y-8 p-6">
+        {/* Header */}
+        <div className="flex items-center justify-between">
+          <div>
+            <h1 className="text-3xl font-bold">My Cards</h1>
+            <p className="text-muted-foreground">
+              Manage your crypto-backed credit cards
+            </p>
+          </div>
+          <Button asChild>
+            <Link to="/requests">
+              <Plus className="mr-2 h-4 w-4" />
+              Request New Card
+            </Link>
+          </Button>
+        </div>
 
-        <Box className="space-y-4 pt-5">
-          <Grid className="grid-cols-2 gap-2">
-            <Skeleton
-              loading={!activeCard}
-              className="flex items-center justify-between"
-            >
-              <Box className="border-font/10 text-font dark:border-dark dark:bg-dark-600 flex min-h-[150px] w-full flex-col items-center justify-center gap-1.5 rounded-2xl border">
-                <Box
-                  className={`flex h-12 w-12 place-items-center justify-center rounded-xl bg-purple-50 dark:bg-purple-800/20`}
-                >
-                  <IoWallet size={"24"} />
-                </Box>
-                <Text
-                  className={"text-font dark:text-font-dark"}
-                  size={"1"}
-                  weight={"medium"}
-                >
-                  Available Balance
-                </Text>
-                <Heading className={"text-font dark:text-font-dark"} size={"2"}>
-                  <Skeleton loading={!activeCard}>
-                    {activeCard && (
-                      <CurrencyFormatter value={activeCard.available_balance} />
-                    )}
-                  </Skeleton>
-                </Heading>
-              </Box>
-            </Skeleton>
-
-            <Skeleton
-              loading={!activeCard}
-              className="flex items-center justify-between"
-            >
-              <Box className="border-font/10 text-font dark:border-dark dark:bg-dark-600 flex min-h-[150px] w-full flex-col items-center justify-center gap-1.5 rounded-2xl border">
-                <Box
-                  className={`flex h-12 w-12 place-items-center justify-center rounded-xl bg-purple-50 dark:bg-purple-800/20`}
-                >
-                  <IoWallet size={"24"} />
-                </Box>
-                <Text
-                  className={"text-font dark:text-font-dark"}
-                  size={"1"}
-                  weight={"medium"}
-                >
-                  Balance
-                </Text>
-                <Heading className={"text-font dark:text-font-dark"} size={"2"}>
-                  <Skeleton loading={!activeCard}>
-                    {activeCard && (
-                      <CurrencyFormatter value={activeCard.balance} />
-                    )}
-                  </Skeleton>
-                </Heading>
-              </Box>
-            </Skeleton>
-          </Grid>
-
-          <Box className="space-y-1">
-            <Skeleton loading={!activeCard}>
-              <Flex align={"center"} justify={"between"}>
-                <Heading
-                  className={"text-font dark:text-font-dark"}
-                  as="h4"
-                  size={"3"}
-                  weight={"medium"}
-                >
-                  Card Details
-                </Heading>
-                <Button
-                  onClick={() => setVisible(!visible)}
-                  disabled={!activeCard}
-                  variant="ghost"
-                  className="text-xs font-medium text-purple-800 hover:bg-transparent dark:text-purple-300"
-                >
-                  {!visible ? " Show" : "Hide"}
-                  {"   "}
-                </Button>
-              </Flex>
-            </Skeleton>
-
-            <Skeleton loading={!activeCard}>
-              <Text
-                size={"1"}
-                weight={"medium"}
-                className="text-font/60 dark:text-font-dark/60"
-              >
-                Card Number
-              </Text>
-              <Text
-                className={"text-font dark:text-font-dark"}
-                as="p"
-                weight={"medium"}
-              >
-                <Skeleton loading={!activeCard}>
-                  {visible ? formatCreditCardNumber(activeCard.pan) : "******"}
-                </Skeleton>
-              </Text>
-            </Skeleton>
-            <Skeleton loading={!activeCard}>
-              <Flex justify={"between"}>
-                <Box>
-                  <Text
-                    size={"1"}
-                    weight={"medium"}
-                    className="text-font/60 dark:text-font-dark/60"
-                  >
-                    Expiry
-                  </Text>
-                  <Text
-                    className={"text-font dark:text-font-dark"}
-                    as="p"
-                    weight={"medium"}
-                  >
-                    <Skeleton loading={!activeCard}>
-                      {visible ? activeCard.expiration : "****"}
-                    </Skeleton>
-                  </Text>
-                </Box>
-                <Box>
-                  <Text
-                    size={"1"}
-                    weight={"medium"}
-                    className="text-font/60 dark:text-font-dark/60"
-                  >
-                    CVV
-                  </Text>
-                  <Text
-                    className={"text-font dark:text-font-dark"}
-                    as="p"
-                    weight={"medium"}
-                  >
-                    <Skeleton loading={!activeCard}>
-                      {visible ? activeCard.cvv : "****"}
-                    </Skeleton>
-                  </Text>
-                </Box>
-              </Flex>
-            </Skeleton>
-          </Box>
-        </Box>
-        {/*TODO: adding additional funds is currently not supported */}
-        {/*<Skeleton loading={!activeCard}>*/}
-        {/*  <Flex align={"center"} gap={"2"}>*/}
-        {/*    <Button asChild variant="outline" size={"4"}*/}
-        {/*            disabled={true}*/}
-        {/*            color="purple" className="text-sm flex-grow rounded-lg">*/}
-        {/*      <Link to={"/requests"}>*/}
-        {/*        Add Funds*/}
-        {/*      </Link>*/}
-        {/*    </Button>*/}
-        {/*  </Flex>*/}
-        {/*</Skeleton>*/}
-      </Box>
-      <Box
-        className={`flex flex-col ${
-          !activeCard ? "items-center justify-center" : ""
-        } gap-4 py-4`}
-      >
-        {activeCard && (
-          <Box className="px-6 md:px-8">
-            <Heading className={"text-font dark:text-font-dark"}>
-              Transactions
-            </Heading>
-          </Box>
-        )}
-
-        {/*TODO: show some information if no card is available yet*/}
         {!activeCard ? (
-          <Box className="text-center">
-            <Text
-              as="p"
-              className={"text-font dark:text-font-dark"}
-              weight={"medium"}
-            >
-              Why no credit card yet?!
-            </Text>
+          // No cards state
+          <div className="flex min-h-[400px] flex-col items-center justify-center text-center">
             <img
               src={NoCreditCard}
               alt="Credit Card"
-              className="mb-3 h-40 w-auto"
+              className="mb-6 h-40 w-auto opacity-80"
             />
-            <Link
-              to={"/requests"}
-              className="text-font/70 hover:text-purple-800"
-            >
-              <Button
-                variant="soft"
-                size={"3"}
-                color="purple"
-                className="w-full"
-              >
-                Get a Card
-              </Button>
-            </Link>
-          </Box>
+            <h3 className="mb-2 text-xl font-semibold">No cards yet</h3>
+            <p className="text-muted-foreground mb-6 max-w-md">
+              Get started by requesting your first crypto-backed credit card
+            </p>
+            <Button asChild size="lg">
+              <Link to="/requests">
+                <Plus className="mr-2 h-4 w-4" />
+                Get Your First Card
+              </Link>
+            </Button>
+          </div>
         ) : (
-          <CardHistory
-            cardId={activeCard.id}
-            lastFourCardDigits={activeCard.pan.substring(
-              activeCard.pan.length - 4,
-            )}
-          />
+          <div className="space-y-8">
+            {/* Card Display Section - Centered */}
+            <div className="flex justify-center">
+              <div className="w-full max-w-md space-y-6">
+                {/* Card Visual */}
+                <Card className="overflow-hidden">
+                  <CardContent className="px-6">
+                    {/* Card Header */}
+                    <div className="mb-2 flex items-center justify-between">
+                      <div className="flex items-center space-x-3">
+                        <Badge
+                          className={
+                            isCardExpired(activeCard.expiration)
+                              ? "border-red-200 bg-red-100 text-red-800"
+                              : "border-green-200 bg-green-100 text-green-800"
+                          }
+                        >
+                          {isCardExpired(activeCard.expiration)
+                            ? "EXPIRED"
+                            : "ACTIVE"}
+                        </Badge>
+                        {userCardDetails.length > 1 && (
+                          <span className="text-muted-foreground text-sm">
+                            {activeCardIndex + 1} of {userCardDetails.length}
+                          </span>
+                        )}
+                      </div>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => setVisible(!visible)}
+                      >
+                        {visible ? (
+                          <EyeOff className="h-4 w-4" />
+                        ) : (
+                          <Eye className="h-4 w-4" />
+                        )}
+                      </Button>
+                    </div>
+
+                    {/* Credit Card Visual */}
+                    <div className="group relative mb-6 h-52 w-full overflow-hidden rounded-xl bg-gradient-to-br from-blue-900 to-black text-white">
+                      {/* Background Pattern */}
+                      <div className="absolute inset-0 opacity-10">
+                        <div className="absolute right-4 top-4 h-20 w-20 rounded-full bg-white/20 transition-transform duration-700 group-hover:scale-110"></div>
+                        <div className="absolute bottom-4 left-4 h-12 w-12 rounded-full bg-white/10 transition-transform duration-500 group-hover:scale-125"></div>
+                      </div>
+
+                      <div className="relative z-10 flex h-full flex-col justify-between p-6">
+                        <div className="flex items-start justify-between">
+                          <div>
+                            <h3 className="text-xl font-semibold">
+                              Lendasat Card
+                            </h3>
+                          </div>
+                          <div className="text-2xl font-bold">VISA</div>
+                        </div>
+
+                        <div>
+                          <div className="mb-3 flex items-center justify-between">
+                            <div className="font-mono text-2xl tracking-wider">
+                              {visible
+                                ? formatCreditCardNumber(activeCard.pan)
+                                : "•••• •••• •••• ••••"}
+                            </div>
+                            {visible && (
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={() =>
+                                  copyToClipboard(activeCard.pan, "cardNumber")
+                                }
+                                className="h-8 w-8 p-0 text-white hover:bg-white/20"
+                              >
+                                {copiedField === "cardNumber" ? (
+                                  <Check className="h-4 w-4" />
+                                ) : (
+                                  <Copy className="h-4 w-4" />
+                                )}
+                              </Button>
+                            )}
+                          </div>
+                          <div className="text-md flex justify-between opacity-90">
+                            <div className="flex items-center space-x-2">
+                              <span>{visible ? activeCard.cvv : "•••"}</span>
+                              {visible && (
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  onClick={() =>
+                                    copyToClipboard(activeCard.cvv, "cvv")
+                                  }
+                                  className="h-6 w-6 p-0 text-white hover:bg-white/20"
+                                >
+                                  {copiedField === "cvv" ? (
+                                    <Check className="h-3 w-3" />
+                                  ) : (
+                                    <Copy className="h-3 w-3" />
+                                  )}
+                                </Button>
+                              )}
+                            </div>
+                            <span>
+                              {visible ? activeCard.expiration : "••/••"}
+                            </span>
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Navigation Controls */}
+                      {userCardDetails.length > 1 && (
+                        <div className="pointer-events-none absolute left-4 right-4 top-1/2 flex -translate-y-1/2 transform justify-between">
+                          <Button
+                            variant="secondary"
+                            size="sm"
+                            onClick={prevCard}
+                            className="pointer-events-auto shadow-lg transition-transform hover:scale-110"
+                          >
+                            <ChevronLeft className="h-4 w-4" />
+                          </Button>
+                          <Button
+                            variant="secondary"
+                            size="sm"
+                            onClick={nextCard}
+                            className="pointer-events-auto shadow-lg transition-transform hover:scale-110"
+                          >
+                            <ChevronRight className="h-4 w-4" />
+                          </Button>
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Card Indicators */}
+                    {userCardDetails.length > 1 && (
+                      <div className="mb-6 flex justify-center space-x-2">
+                        {userCardDetails.map((_, index) => (
+                          <div
+                            key={index}
+                            className={cn(
+                              "h-2 w-2 rounded-full transition-all duration-300",
+                              index === activeCardIndex
+                                ? "bg-primary w-6"
+                                : "bg-muted-foreground/30",
+                            )}
+                          />
+                        ))}
+                      </div>
+                    )}
+
+                    {/* Balance Display */}
+                    <div className="mb-6 grid grid-cols-2 gap-4">
+                      <div className="bg-muted/30 rounded-lg p-4 text-center">
+                        <div className="mb-2 flex items-center justify-center">
+                          <Wallet className="text-muted-foreground h-4 w-4" />
+                        </div>
+                        <p className="text-muted-foreground mb-1 text-sm">
+                          Available Balance
+                        </p>
+                        <p className="text-xl font-bold">
+                          <CurrencyFormatter
+                            value={activeCard.available_balance}
+                          />
+                        </p>
+                      </div>
+                      <div className="bg-muted/30 rounded-lg p-4 text-center">
+                        <div className="mb-2 flex items-center justify-center">
+                          <Wallet className="text-muted-foreground h-4 w-4" />
+                        </div>
+                        <p className="text-muted-foreground mb-1 text-sm">
+                          Total Balance
+                        </p>
+                        <p className="text-xl font-bold">
+                          <CurrencyFormatter value={activeCard.balance} />
+                        </p>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+
+                {/* Add Funds Button - Currently disabled */}
+                <Button disabled className="w-full" variant="outline">
+                  <Plus className="mr-2 h-4 w-4" />
+                  Add Funds (Coming Soon)
+                </Button>
+              </div>
+            </div>
+
+            {/* Transaction History Section - Below the card */}
+            <div className="space-y-6">
+              <div className="text-center">
+                <h2 className="mb-1 text-2xl font-semibold">
+                  Transaction History
+                </h2>
+                <p className="text-muted-foreground">
+                  Recent activity on your card
+                </p>
+              </div>
+
+              <CardHistory
+                cardId={activeCard.id}
+                lastFourCardDigits={activeCard.pan.substring(
+                  activeCard.pan.length - 4,
+                )}
+              />
+            </div>
+          </div>
         )}
-      </Box>
-    </Grid>
+      </div>
+    </div>
   );
 }
-
-// Format Card Number
-export const formatCreditCardNumber = (pan: string) => {
-  const numStr = pan.replace(/\D/g, "");
-  return numStr.replace(/(\d{4})(?=\d)/g, "$1 ");
-};
-
-export const formatExpiryTimestamp = (timestamp: number): string => {
-  const date = new Date(timestamp);
-  return formatExpiryDate(date);
-};
-
-export const formatExpiryDate = (date: Date): string => {
-  return date.toLocaleDateString("en-US", {
-    year: "numeric",
-    month: "2-digit",
-  });
-};
