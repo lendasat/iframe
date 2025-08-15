@@ -10,20 +10,21 @@ import {
   Plus,
   Eye,
   EyeOff,
-  ChevronLeft,
-  ChevronRight,
   Wallet,
   Copy,
   Check,
+  MoreVertical,
+  DollarSign,
 } from "lucide-react";
-import { cn } from "@frontend/shadcn";
 import NoCreditCard from "./../../assets/creditcard-illustration.png";
 import CardHistory from "./CardHistory";
+import { CardPickerModal } from "./CardPickerModal";
 
 export default function Cards() {
   const [visible, setVisible] = useState<boolean>(false);
   const [activeCardIndex, setActiveCardIndex] = useState<number>(0);
   const [copiedField, setCopiedField] = useState<string | null>(null);
+  const [cardPickerOpen, setCardPickerOpen] = useState<boolean>(false);
 
   const { getUserCards } = useHttpClientBorrower();
 
@@ -49,20 +50,6 @@ export default function Cards() {
 
   const userCardDetails = maybeUserCardDetails || [];
   const activeCard = userCardDetails[activeCardIndex];
-
-  const nextCard = () => {
-    if (userCardDetails.length > 1) {
-      setActiveCardIndex((prev) => (prev + 1) % userCardDetails.length);
-    }
-  };
-
-  const prevCard = () => {
-    if (userCardDetails.length > 1) {
-      setActiveCardIndex((prev) =>
-        prev === 0 ? userCardDetails.length - 1 : prev - 1,
-      );
-    }
-  };
 
   const formatCreditCardNumber = (pan: string) => {
     const numStr = pan.replace(/\D/g, "");
@@ -98,22 +85,6 @@ export default function Cards() {
   return (
     <div className="bg-background min-h-screen">
       <div className="mx-auto max-w-7xl space-y-8 p-6">
-        {/* Header */}
-        <div className="flex items-center justify-between">
-          <div>
-            <h1 className="text-3xl font-bold">My Cards</h1>
-            <p className="text-muted-foreground">
-              Manage your crypto-backed credit cards
-            </p>
-          </div>
-          <Button asChild>
-            <Link to="/requests">
-              <Plus className="mr-2 h-4 w-4" />
-              Request New Card
-            </Link>
-          </Button>
-        </div>
-
         {!activeCard ? (
           // No cards state
           <div className="flex min-h-[400px] flex-col items-center justify-center text-center">
@@ -156,9 +127,15 @@ export default function Cards() {
                             : "ACTIVE"}
                         </Badge>
                         {userCardDetails.length > 1 && (
-                          <span className="text-muted-foreground text-sm">
-                            {activeCardIndex + 1} of {userCardDetails.length}
-                          </span>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => setCardPickerOpen(true)}
+                            className="text-xs"
+                          >
+                            <MoreVertical className="mr-1 h-3 w-3" />
+                            {userCardDetails.length} Cards
+                          </Button>
                         )}
                       </div>
                       <Button
@@ -242,46 +219,7 @@ export default function Cards() {
                           </div>
                         </div>
                       </div>
-
-                      {/* Navigation Controls */}
-                      {userCardDetails.length > 1 && (
-                        <div className="pointer-events-none absolute left-4 right-4 top-1/2 flex -translate-y-1/2 transform justify-between">
-                          <Button
-                            variant="secondary"
-                            size="sm"
-                            onClick={prevCard}
-                            className="pointer-events-auto shadow-lg transition-transform hover:scale-110"
-                          >
-                            <ChevronLeft className="h-4 w-4" />
-                          </Button>
-                          <Button
-                            variant="secondary"
-                            size="sm"
-                            onClick={nextCard}
-                            className="pointer-events-auto shadow-lg transition-transform hover:scale-110"
-                          >
-                            <ChevronRight className="h-4 w-4" />
-                          </Button>
-                        </div>
-                      )}
                     </div>
-
-                    {/* Card Indicators */}
-                    {userCardDetails.length > 1 && (
-                      <div className="mb-6 flex justify-center space-x-2">
-                        {userCardDetails.map((_, index) => (
-                          <div
-                            key={index}
-                            className={cn(
-                              "h-2 w-2 rounded-full transition-all duration-300",
-                              index === activeCardIndex
-                                ? "bg-primary w-6"
-                                : "bg-muted-foreground/30",
-                            )}
-                          />
-                        ))}
-                      </div>
-                    )}
 
                     {/* Balance Display */}
                     <div className="mb-6 grid grid-cols-2 gap-4">
@@ -313,11 +251,19 @@ export default function Cards() {
                   </CardContent>
                 </Card>
 
-                {/* Add Funds Button - Currently disabled */}
-                <Button disabled className="w-full" variant="outline">
-                  <Plus className="mr-2 h-4 w-4" />
-                  Add Funds (Coming Soon)
-                </Button>
+                {/* Action Buttons */}
+                <div className="flex flex-col gap-3 sm:flex-row">
+                  <Button disabled className="flex-1" variant="outline">
+                    <DollarSign className="mr-2 h-4 w-4" />
+                    Add Funds
+                  </Button>
+                  <Button asChild className="flex-1">
+                    <Link to="/requests">
+                      <Plus className="mr-2 h-4 w-4" />
+                      Request New Card
+                    </Link>
+                  </Button>
+                </div>
               </div>
             </div>
 
@@ -341,6 +287,16 @@ export default function Cards() {
             </div>
           </div>
         )}
+
+        {/* Card Picker Modal */}
+        <CardPickerModal
+          open={cardPickerOpen}
+          onOpenChange={setCardPickerOpen}
+          cards={userCardDetails}
+          activeCardIndex={activeCardIndex}
+          onSelectCard={setActiveCardIndex}
+          isCardExpired={isCardExpired}
+        />
       </div>
     </div>
   );
