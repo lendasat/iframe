@@ -9,7 +9,9 @@ use electrum_client::Client;
 use electrum_client::ElectrumApi;
 use sqlx::Pool;
 use sqlx::Postgres;
+use std::collections::hash_set::Difference;
 use std::collections::HashMap;
+use std::collections::HashSet;
 use std::sync::Arc;
 use std::time::Duration;
 use tokio::time::interval;
@@ -208,7 +210,7 @@ impl xtra::Handler<Check> for Actor {
             "Looking for collateral transactions for tracked contracts"
         );
 
-        // Collect all scripts for batch request
+        // Collect all scripts for batch request.
         let scripts: Vec<_> = self
             .tracked_contracts
             .values()
@@ -219,21 +221,46 @@ impl xtra::Handler<Check> for Actor {
             return;
         }
 
-        // Convert to slice of references as required by the API
         let script_refs: Vec<&bitcoin::Script> = scripts.iter().map(|s| s.as_script()).collect();
 
-        // Make batch request to Electrum
+        // Make batch request to Electrum.
         match self.client.batch_script_get_history(script_refs) {
             Ok(histories) => {
-                // Process each contract's history
-                let contracts: Vec<_> = self.tracked_contracts.iter().collect();
-
-                for ((contract_id, _), history) in contracts.into_iter().zip(histories.into_iter())
+                // Process each contract's history.
+                for ((contract_id, _), history) in
+                    self.tracked_contracts.iter().zip(histories.into_iter())
                 {
-                    let contract_txids = extract_txids(&history);
+                    let all_txids = extract_txids(&history);
 
+                    let previous_txids = self.txids_by_contract.get(contract_id);
+
+                    let all_txids_hash_set: HashSet<&Txid> = HashSet::from_iter(all_txids.keys());
+
+                    let previous_txids_hash_set: HashSet<&Txid, _> = previous_txids
+                        .map(|m| HashSet::from_iter(m.keys()))
+                        .unwrap_or_default();
+
+                    let new_txids: Difference<&Txid, _> =
+                        all_txids_hash_set.difference(&previous_txids_hash_set);
+
+                    // Persist new collateral-funding transactions. We will end up attempting to
+                    // repeat some insertions after a restart, but that's okay.
+                    for new_txid in new_txids {
+                        if let Err(e) =
+                            db::transactions::insert_funding_txid(&self.db, contract_id, new_txid)
+                                .await
+                        {
+                            tracing::error!(
+                                contract_id,
+                                txid = %new_txid,
+                                "Failed to persist funding TXID: {e:#}"
+                            );
+                        }
+                    }
+
+                    // Update internal state with latest transactions.
                     self.txids_by_contract
-                        .insert(contract_id.to_string(), contract_txids);
+                        .insert(contract_id.to_string(), all_txids);
                 }
             }
             Err(e) => {

@@ -1900,7 +1900,7 @@ pub struct Installment {
     payment_id: Option<String>,
 }
 
-#[derive(Debug, Serialize, Deserialize, ToSchema)]
+#[derive(Debug, Clone, Serialize, Deserialize, ToSchema)]
 struct TimelineEvent {
     #[serde(with = "time::serde::rfc3339")]
     date: OffsetDateTime,
@@ -1909,7 +1909,7 @@ struct TimelineEvent {
     txid: Option<String>,
 }
 
-#[derive(Debug, Serialize, Deserialize, ToSchema)]
+#[derive(Debug, Clone, Serialize, Deserialize, ToSchema)]
 #[serde(tag = "type", rename_all = "snake_case")]
 enum TimelineEventKind {
     #[schema(title = "contract_status_change")]
@@ -2267,6 +2267,29 @@ async fn map_timeline(
     timeline.push(requested_event);
 
     timeline.sort_by(|a, b| a.date.cmp(&b.date));
+
+    let confirmed_events = timeline
+        .iter()
+        .filter(|e| {
+            matches!(
+                e.event,
+                TimelineEventKind::ContractStatusChange {
+                    status: ContractStatus::CollateralConfirmed,
+                }
+            )
+        })
+        .cloned()
+        .collect::<Vec<_>>();
+    let timeline = timeline
+        .into_iter()
+        // Filter out `CollateralSeen` events for which we already have a `CollateralConfirmed`
+        // entry, because they are redundant.
+        .filter(|e| {
+            !matches!(e.event, TimelineEventKind::ContractStatusChange {
+                status: ContractStatus::CollateralSeen,
+            } if confirmed_events.iter().any(|ce| ce.txid == e.txid))
+        })
+        .collect();
 
     Ok(timeline)
 }
