@@ -2059,22 +2059,6 @@ async fn map_timeline(
 
     let mut timeline = vec![];
 
-    // Then we go through funding transactions. There might be multiple, that's why we need to
-    // handle them separately.
-    transactions.iter().for_each(|tx| {
-        if TransactionType::Funding == tx.transaction_type {
-            let event = TimelineEvent {
-                date: tx.timestamp,
-                // We assume each transaction has already been confirmed.
-                event: TimelineEventKind::ContractStatusChange {
-                    status: ContractStatus::CollateralConfirmed,
-                },
-                txid: Some(tx.txid.clone()),
-            };
-            timeline.push(event);
-        }
-    });
-
     // Next we generate events based on paid and confirmed installments.
     installments.iter().for_each(|i| {
         if let Some(paid_date) = i.paid_date {
@@ -2090,15 +2074,29 @@ async fn map_timeline(
         }
     });
 
-    // Finally, we go through the contract events and enhance them with transaction IDs, if
+    let mut first_funding_transaction = None;
+
+    // We then go through each contract status change, enhancing them with transaction IDs if
     // applicable.
     let rest_of_timeline = event_logs
         .into_iter()
-        .filter_map(|log| {
+        .map(|log| {
             let txid = match log.new_status {
-                ContractStatus::CollateralSeen => transactions.iter().find_map(|tx| {
-                    (tx.transaction_type == TransactionType::Funding).then(|| tx.txid.clone())
-                }),
+                // A contract should only ever transition to `CollateralSeen` and
+                // `CollateralConfirmed` once.
+                ContractStatus::CollateralSeen | ContractStatus::CollateralConfirmed => {
+                    // In both cases, we take the _first_ funding transaction.
+                    //
+                    // It could be the case that the contract is originally funded with more than
+                    // one transaction, but we accept that we do not handle that edge case
+                    // perfectly.
+                    transactions.iter().find_map(|tx| {
+                        (tx.transaction_type == TransactionType::Funding).then(|| {
+                            first_funding_transaction = Some(tx.txid.clone());
+                            tx.txid.clone()
+                        })
+                    })
+                }
                 ContractStatus::PrincipalGiven => transactions.iter().find_map(|tx| {
                     (tx.transaction_type == TransactionType::PrincipalGiven)
                         .then(|| tx.txid.clone())
@@ -2119,7 +2117,6 @@ async fn map_timeline(
                     (tx.transaction_type == TransactionType::ClaimCollateral)
                         .then(|| tx.txid.clone())
                 }),
-
                 ContractStatus::Requested
                 | ContractStatus::Approved
                 | ContractStatus::RepaymentProvided
@@ -2136,22 +2133,38 @@ async fn map_timeline(
                     // There are no transactions associated with these events.
                     None
                 }
-                ContractStatus::CollateralConfirmed => {
-                    // We handled this event already. Note: returning `None` means we filter out
-                    // this event.
-                    return None;
-                }
             };
 
-            Some(TimelineEvent {
+            TimelineEvent {
                 date: log.changed_at,
                 event: TimelineEventKind::ContractStatusChange {
                     status: log.new_status,
                 },
                 txid,
-            })
+            }
         })
         .collect::<Vec<_>>();
+
+    // Finally, we process all funding transactions, ensuring that we skip the very first one
+    // (already linked to `CollateralSeen` or `CollateralConfirmed` above).
+    transactions.iter().for_each(|tx| {
+        if TransactionType::Funding == tx.transaction_type
+            && first_funding_transaction.as_ref() != Some(&tx.txid)
+        {
+            timeline.push(TimelineEvent {
+                date: tx.timestamp,
+                // TODO: For now we treat all of these transactions as a new instance of
+                // `CollateralConfirmed`. Instead we should model this differently so that:
+                //
+                // - Adding more collateral can be represented differently in the frontend.
+                // - Transactions that add more collateral can be either unconfirmed or confirmed.
+                event: TimelineEventKind::ContractStatusChange {
+                    status: ContractStatus::CollateralConfirmed,
+                },
+                txid: Some(tx.txid.clone()),
+            });
+        }
+    });
 
     timeline.extend(rest_of_timeline);
 
