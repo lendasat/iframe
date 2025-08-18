@@ -9,7 +9,6 @@ use electrum_client::Client;
 use electrum_client::ElectrumApi;
 use sqlx::Pool;
 use sqlx::Postgres;
-use std::collections::hash_set::Difference;
 use std::collections::HashMap;
 use std::collections::HashSet;
 use std::sync::Arc;
@@ -27,7 +26,7 @@ pub struct Actor {
     /// Map of contract IDs to their corresponding contract addresses.
     tracked_contracts: HashMap<String, TrackedContract>,
     /// Map of contract IDs to a set of collateral TXIDs.
-    txids_by_contract: HashMap<String, HashMap<Txid, bool>>,
+    txids_by_contract: HashMap<String, HashSet<Txid>>,
     /// How often we look for transactions.
     check_interval: Duration,
 }
@@ -106,23 +105,18 @@ impl xtra::Actor for Actor {
 
 /// Message to register a new address for monitoring.
 #[derive(Debug)]
-pub struct RegisterAddress {
-    pub contract_id: String,
-    pub address: Address,
+pub(crate) struct RegisterAddress {
+    contract_id: String,
+    address: Address,
 }
 
-/// Message to stop monitoring a contract.
-///
-/// TODO: This is currently unused.
-#[derive(Debug)]
-pub struct UnregisterContract {
-    pub contract_id: String,
-}
-
-/// Message to get collateral transactions for a contract.
-#[derive(Debug)]
-pub struct GetCollateralTransactions {
-    pub contract_id: String,
+impl RegisterAddress {
+    pub(crate) fn new(contract_id: String, address: Address) -> Self {
+        Self {
+            contract_id,
+            address,
+        }
+    }
 }
 
 impl xtra::Handler<RegisterAddress> for Actor {
@@ -143,53 +137,8 @@ impl xtra::Handler<RegisterAddress> for Actor {
             },
         );
         self.txids_by_contract
-            .insert(msg.contract_id, HashMap::new());
+            .insert(msg.contract_id, HashSet::new());
         Ok(())
-    }
-}
-
-impl xtra::Handler<UnregisterContract> for Actor {
-    type Return = Result<()>;
-
-    async fn handle(&mut self, msg: UnregisterContract, _: &mut Context<Self>) -> Self::Return {
-        tracing::debug!(
-            contract_id = %msg.contract_id,
-            "Unregistering contract from monitoring"
-        );
-
-        self.tracked_contracts.remove(&msg.contract_id);
-        self.txids_by_contract.remove(&msg.contract_id);
-
-        Ok(())
-    }
-}
-
-impl xtra::Handler<GetCollateralTransactions> for Actor {
-    type Return = HashMap<Txid, bool>;
-
-    async fn handle(
-        &mut self,
-        msg: GetCollateralTransactions,
-        _: &mut Context<Self>,
-    ) -> Self::Return {
-        tracing::trace!(
-            contract_id = %msg.contract_id,
-            "Getting collateral transactions for contract"
-        );
-
-        let txids = self
-            .txids_by_contract
-            .get(&msg.contract_id)
-            .cloned()
-            .unwrap_or_default();
-
-        tracing::trace!(
-            contract_id = %msg.contract_id,
-            txid_count = txids.len(),
-            "Returning collateral transactions for contract"
-        );
-
-        txids
     }
 }
 
@@ -230,22 +179,19 @@ impl xtra::Handler<Check> for Actor {
                 for ((contract_id, _), history) in
                     self.tracked_contracts.iter().zip(histories.into_iter())
                 {
-                    let all_txids = extract_txids(&history);
+                    let latest_unconfirmed_txids = extract_txids(&history);
+                    let new_unconfirmed_txids: HashSet<_> =
+                        match self.txids_by_contract.get(contract_id) {
+                            Some(previous_unconfirmed_txids) => latest_unconfirmed_txids
+                                .difference(previous_unconfirmed_txids)
+                                .copied()
+                                .collect(),
+                            None => latest_unconfirmed_txids,
+                        };
 
-                    let previous_txids = self.txids_by_contract.get(contract_id);
-
-                    let all_txids_hash_set: HashSet<&Txid> = HashSet::from_iter(all_txids.keys());
-
-                    let previous_txids_hash_set: HashSet<&Txid, _> = previous_txids
-                        .map(|m| HashSet::from_iter(m.keys()))
-                        .unwrap_or_default();
-
-                    let new_txids: Difference<&Txid, _> =
-                        all_txids_hash_set.difference(&previous_txids_hash_set);
-
-                    // Persist new collateral-funding transactions. We will end up attempting to
-                    // repeat some insertions after a restart, but that's okay.
-                    for new_txid in new_txids {
+                    // Persist new unconfirmed collateral-funding transactions. We may end up
+                    // attempting to repeat some insertions after a restart, but that's okay.
+                    for new_txid in new_unconfirmed_txids.iter() {
                         if let Err(e) =
                             db::transactions::insert_funding_txid(&self.db, contract_id, new_txid)
                                 .await
@@ -260,7 +206,7 @@ impl xtra::Handler<Check> for Actor {
 
                     // Update internal state with latest transactions.
                     self.txids_by_contract
-                        .insert(contract_id.to_string(), all_txids);
+                        .insert(contract_id.to_string(), new_unconfirmed_txids);
                 }
             }
             Err(e) => {
@@ -315,14 +261,14 @@ impl xtra::Handler<ReportCollateralSeen> for Actor {
     }
 }
 
-fn extract_txids(history: &[electrum_client::GetHistoryRes]) -> HashMap<Txid, bool> {
-    let mut set = HashMap::new();
+fn extract_txids(history: &[electrum_client::GetHistoryRes]) -> HashSet<Txid> {
+    let mut set = HashSet::new();
 
     for tx in history {
-        // Unconfirmed transactions have height 0 or negative values
-        let is_confirmed = tx.height > 0;
-
-        set.insert(tx.tx_hash, is_confirmed);
+        // Unconfirmed transactions have height 0 or negative values.
+        if tx.height <= 0 {
+            set.insert(tx.tx_hash);
+        }
     }
 
     set

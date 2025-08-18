@@ -18,7 +18,6 @@ import type {
   LoanOffer,
   LoanRequest,
   MeResponse,
-  GetCollateralTransactionsResponse,
   NotifyUser,
   PostLoanApplication,
   PutUpdateProfile,
@@ -187,9 +186,6 @@ export interface HttpClient {
     total_pages: number;
   }>;
   getContract: (id: string) => Promise<Contract>;
-  getCollateralTransactions: (
-    contractId: string,
-  ) => Promise<GetCollateralTransactionsResponse>;
   markInstallmentAsPaid: (
     contractId: string,
     installmentId: string,
@@ -802,21 +798,6 @@ export const createHttpClient = (
     }
   };
 
-  const getCollateralTransactions = async (
-    contractId: string,
-  ): Promise<GetCollateralTransactionsResponse> => {
-    try {
-      const response: AxiosResponse<GetCollateralTransactionsResponse> =
-        await axiosClient.get(
-          `/api/contracts/${contractId}/collateral-transactions`,
-        );
-      return response.data;
-    } catch (error) {
-      handleError(error, "fetching collateral transactions");
-      throw error; // Satisfies the linter, though it won't actually be reached.
-    }
-  };
-
   const markInstallmentAsPaid = async (
     contractId: string,
     installmentId: string,
@@ -1319,7 +1300,6 @@ export const createHttpClient = (
     cancelContractRequest,
     getContracts,
     getContract,
-    getCollateralTransactions,
     markInstallmentAsPaid,
     getClaimCollateralPsbt,
     getRecoverCollateralPsbt,

@@ -134,10 +134,7 @@ pub async fn approve_contract(
 
     if let Some(electrum_actor) = electrum_actor {
         electrum_actor
-            .send(RegisterAddress {
-                contract_id: contract_id.clone(),
-                address: contract_address,
-            })
+            .send(RegisterAddress::new(contract_id.clone(), contract_address))
             .await
             .expect("actor to be alive")
             .map_err(Error::TrackContract)?;

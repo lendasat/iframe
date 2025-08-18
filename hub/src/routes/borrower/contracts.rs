@@ -8,7 +8,6 @@ use crate::contract_requests;
 use crate::db;
 use crate::db::contracts::update_borrower_btc_address;
 use crate::discounted_origination_fee;
-use crate::electrum;
 use crate::mempool;
 use crate::model;
 use crate::model::compute_outstanding_balance;
@@ -24,7 +23,6 @@ use crate::model::Currency;
 use crate::model::ExtensionPolicy;
 use crate::model::FiatLoanDetails;
 use crate::model::FiatLoanDetailsWrapper;
-use crate::model::GetCollateralTransactionsResponse;
 use crate::model::InstallmentPaidRequest;
 use crate::model::InstallmentStatus;
 use crate::model::LatePenalty;
@@ -88,7 +86,6 @@ pub(crate) fn router(app_state: Arc<AppState>) -> OpenApiRouter {
     OpenApiRouter::new()
         .routes(routes!(get_contracts))
         .routes(routes!(get_contract))
-        .routes(routes!(get_collateral_transactions))
         .routes(routes!(put_borrower_btc_address))
         .routes(routes!(get_claim_collateral_psbt))
         .routes(routes!(get_recover_collateral_psbt))
@@ -831,94 +828,6 @@ async fn get_contract(
     let contract = map_to_api_contract(&data, contract).await?;
 
     Ok(AppJson(contract))
-}
-
-/// Get collateral transactions for contract, including mempool transactions.
-#[utoipa::path(
-get,
-path = "/{id}/collateral-transactions",
-params(
-    (
-    "id" = String, Path, description = "Contract ID"
-    )
-),
-tag = CONTRACTS_TAG,
-responses(
-    (
-    status = 200,
-    description = "Current collateral transactions for the contract",
-    body = GetCollateralTransactionsResponse
-    )
-),
-security(
-    (
-    "api_key" = [])
-    )
-)
-]
-#[instrument(skip_all, fields(borrower_id = user.id, contract_id), err(Debug))]
-async fn get_collateral_transactions(
-    State(data): State<Arc<AppState>>,
-    Extension(user): Extension<Borrower>,
-    Path(contract_id): Path<String>,
-) -> Result<AppJson<GetCollateralTransactionsResponse>, Error> {
-    let electrum = match &data.electrum {
-        Some(electrum) => electrum,
-        None => return Err(Error::NotImplemented),
-    };
-
-    // Verify the contract belongs to this borrower
-    let contract = db::contracts::load_contract_by_contract_id_and_borrower_id(
-        &data.db,
-        &contract_id,
-        &user.id,
-    )
-    .await
-    .map_err(Error::database)?;
-
-    let contract_address = match contract.contract_address {
-        Some(contract_address) => contract_address,
-        None => {
-            return Ok(AppJson(GetCollateralTransactionsResponse {
-                contract_id,
-                contract_status: contract.status,
-                address: None,
-                unconfirmed_transactions: Vec::new(),
-                confirmed_transactions: Vec::new(),
-                last_updated: OffsetDateTime::now_utc(),
-            }))
-        }
-    };
-
-    let txids = electrum
-        .send(electrum::GetCollateralTransactions {
-            contract_id: contract_id.clone(),
-        })
-        .await
-        .map_err(|e| {
-            Error::database(anyhow!("Failed to communicate with electrum actor: {}", e))
-        })?;
-
-    let confirmed_transactions: Vec<String> = txids
-        .iter()
-        .filter_map(|(txid, is_confirmed)| is_confirmed.then_some(txid.to_string()))
-        .collect();
-
-    let unconfirmed_transactions: Vec<String> = txids
-        .iter()
-        .filter_map(|(txid, is_confirmed)| (!is_confirmed).then_some(txid.to_string()))
-        .collect();
-
-    let response = GetCollateralTransactionsResponse {
-        contract_id,
-        contract_status: contract.status,
-        address: Some(contract_address.assume_checked().to_string()),
-        unconfirmed_transactions,
-        confirmed_transactions,
-        last_updated: OffsetDateTime::now_utc(),
-    };
-
-    Ok(AppJson(response))
 }
 
 /// Mark an installment as paid.
@@ -2472,7 +2381,6 @@ enum Error {
     ExpiredBitcoinInvoice,
     /// The Bitcoin repayment invoice cannot accept payment in its current state.
     InvalidBitcoinInvoiceState,
-    NotImplemented,
 }
 
 impl Error {
@@ -2818,11 +2726,6 @@ impl IntoResponse for Error {
             Error::InvalidBitcoinInvoiceState => (
                 StatusCode::BAD_REQUEST,
                 "This Bitcoin repayment invoice cannot accept payment in its current state"
-                    .to_string(),
-            ),
-            Error::NotImplemented => (
-                StatusCode::NOT_IMPLEMENTED,
-                "The server does not support the functionality required to fulfill the request"
                     .to_string(),
             ),
         };
