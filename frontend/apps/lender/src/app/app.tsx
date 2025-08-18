@@ -19,7 +19,7 @@ import ResetPassword from "./auth/reset-password";
 import UpgradeToPake from "./auth/upgrade-to-pake";
 import BitcoinCollateralizedLoan from "./contracts/bitcoin-loan-component";
 import MyContracts from "./contracts_old/my-contracts";
-import CreateLoanOffer from "./create-loan-offer";
+import CreateLoanOfferPage from "./loan-offers/CreateLoanOfferPage";
 import Settings from "./settings/settings";
 import "../assets/styles.css";
 import { FeeProvider } from "@frontend/mempool";
@@ -74,7 +74,10 @@ function MainLayoutComponents() {
             }
           >
             <Route index element={<Dashboard />} />
-            <Route path="/create-loan-offer" element={<CreateLoanOffer />} />
+            <Route
+              path="/create-loan-offer"
+              element={<CreateLoanOfferPage />}
+            />
             <Route path="/my-contracts">
               <Route index element={<MyContracts />} />
               <Route path={":id"} element={<BitcoinCollateralizedLoan />} />

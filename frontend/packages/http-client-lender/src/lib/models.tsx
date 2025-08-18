@@ -225,6 +225,23 @@ export interface CreateLoanOfferRequest {
   repayment_plan: RepaymentPlan;
 }
 
+export interface UpdateLoanOfferRequest {
+  name?: string;
+  min_ltv?: number;
+  interest_rate?: number;
+  loan_amount_min?: number;
+  loan_amount_max?: number;
+  loan_amount_reserve?: number;
+  duration_days_min?: number;
+  duration_days_max?: number;
+  auto_accept?: boolean;
+  loan_repayment_address?: string;
+  btc_loan_repayment_address?: string;
+  extension_duration_days?: number;
+  extension_interest_rate?: number;
+  kyc_link?: string;
+}
+
 export enum RepaymentPlan {
   Bullet = "bullet",
   InterestOnlyWeekly = "interest_only_weekly",
@@ -264,6 +281,8 @@ export interface LoanOffer {
   origination_fee: OriginationFee[];
   status: LoanOfferStatus;
   auto_accept: boolean;
+  loan_repayment_address: string;
+  btc_loan_repayment_address?: string;
   kyc_link?: string;
   extension_max_duration_days: number;
   extension_interest_rate?: number;

@@ -168,7 +168,7 @@ export * from "./lib/components/abbreviation-explanation-info";
 export * from "./lib/components/InterestRateInfoLabel";
 export * from "./lib/components/KycBadge";
 export * from "./lib/components/LiquidationPriceInfoLabel";
-export * from "./lib/components/loan-address-input-field";
+export * from "./lib/components/loan-address-input-field-shadcn";
 export * from "./lib/components/Logout";
 export * from "./lib/components/LtvInfoLabel";
 export * from "./lib/components/mnemonic";

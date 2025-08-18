@@ -8,6 +8,7 @@ import {
   ContractDispute,
   ContractDisputeMessage,
   CreateLoanOfferRequest,
+  UpdateLoanOfferRequest,
   Dispute,
   DisputeWithMessages,
   ExtensionPolicy,
@@ -132,6 +133,10 @@ export interface HttpClientLender {
   getAllLoanOffers: () => Promise<LoanOffer[]>;
   getMyLoanOffers: () => Promise<LoanOffer[]>;
   getMyLoanOffer: (id: string) => Promise<LoanOffer>;
+  updateLoanOffer: (
+    id: string,
+    offer: UpdateLoanOfferRequest,
+  ) => Promise<LoanOffer>;
   deleteLoanOffer: (id: string) => Promise<void>;
   getLoanAndContractStats: () => Promise<LoanAndContractStats>;
 
@@ -560,6 +565,33 @@ export const createHttpClientLender = (
       };
     } catch (error) {
       handleError(error, "fetching my loan offer");
+      throw error;
+    }
+  };
+
+  const updateLoanOffer = async (
+    id: string,
+    offer: UpdateLoanOfferRequest,
+  ): Promise<LoanOffer> => {
+    try {
+      const response: AxiosResponse<RawLoanOffer> = await axiosClient.put(
+        `/api/offers/${id}`,
+        offer,
+      );
+      const createdAt = parseRFC3339Date(response.data.created_at);
+      const updatedAt = parseRFC3339Date(response.data.updated_at);
+
+      if (createdAt === undefined || updatedAt === undefined) {
+        throw new Error("Invalid date");
+      }
+
+      return {
+        ...response.data,
+        created_at: createdAt,
+        updated_at: updatedAt,
+      };
+    } catch (error) {
+      handleError(error, "updating loan offer");
       throw error;
     }
   };
@@ -1189,6 +1221,7 @@ export const createHttpClientLender = (
     getAllLoanOffers,
     getMyLoanOffers,
     getMyLoanOffer,
+    updateLoanOffer,
     deleteLoanOffer,
     getLoanAndContractStats,
     getLoanApplications,
