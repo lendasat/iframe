@@ -125,19 +125,25 @@ pub async fn insert_moon_invoice(pool: &Pool<Postgres>, invoice: &moon::Invoice)
             id,
             address,
             usd_amount_owed,
-            contract_id,
+            crypto_amount_owed,
+            lendasat_fee,
+            asset,
+            lendasat_id,
             card_id,
-            lender_id,
-            borrower_id
-        ) VALUES ($1, $2, $3, $4, $5, $6, $7)
+            borrower_id,
+            expires_at
+        ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
         "#,
         id,
         invoice.address,
         invoice.usd_amount_owed,
-        invoice.contract_id,
+        invoice.crypto_amount_owed,
+        invoice.lendasat_fee,
+        invoice.asset as moon::Currency,
+        invoice.lendasat_id,
         invoice.card_id.map(|c| c.to_string()),
-        invoice.lender_id,
         invoice.borrower_id,
+        invoice.expires_at,
     )
     .execute(pool)
     .await?;
@@ -150,11 +156,18 @@ pub struct MoonInvoice {
     pub id: Uuid,
     pub address: String,
     pub usd_amount_owed: Decimal,
-    pub contract_id: String,
+    pub crypto_amount_owed: Decimal,
+    pub lendasat_fee: Decimal,
+    pub asset: moon::Currency,
+    /// Lendasat ID is our internal custom id to know where this invoice belongs to.
+    ///
+    /// It might be a contract_id (if the invoice belongs to a contract), or a custom id (if the
+    /// invoice belongs to a custom topup)
+    pub lendasat_id: String,
     pub card_id: Option<String>,
-    pub lender_id: String,
     pub borrower_id: String,
     pub is_paid: bool,
+    pub expires_at: OffsetDateTime,
     pub created_at: OffsetDateTime,
     pub updated_at: OffsetDateTime,
 }
@@ -170,11 +183,14 @@ pub async fn get_invoice_by_id(
             id,
             address,
             usd_amount_owed,
-            contract_id,
+            crypto_amount_owed,
+            lendasat_fee,
+            asset as "asset: moon::Currency",
+            lendasat_id,
             card_id,
-            lender_id,
             borrower_id,
             is_paid,
+            expires_at,
             created_at,
             updated_at
         FROM moon_invoices
@@ -188,9 +204,9 @@ pub async fn get_invoice_by_id(
     Ok(invoice)
 }
 
-pub async fn get_invoice_by_contract_id(
+pub async fn get_invoice_by_lendasat_id(
     pool: &Pool<Postgres>,
-    contract_id: &str,
+    lendasat_id: &str,
 ) -> Result<Option<MoonInvoice>> {
     let invoice = sqlx::query_as!(
         MoonInvoice,
@@ -199,17 +215,20 @@ pub async fn get_invoice_by_contract_id(
             id,
             address,
             usd_amount_owed,
-            contract_id,
+            crypto_amount_owed,
+            lendasat_fee,
+            asset as "asset: moon::Currency",
+            lendasat_id,
             card_id,
-            lender_id,
             borrower_id,
             is_paid,
+            expires_at,
             created_at,
             updated_at
         FROM moon_invoices
-        WHERE contract_id = $1
+        WHERE lendasat_id = $1
         "#,
-        contract_id
+        lendasat_id
     )
     .fetch_optional(pool)
     .await?;

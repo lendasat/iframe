@@ -3,8 +3,11 @@ use crate::model::Borrower;
 use crate::moon;
 use crate::routes::borrower::auth::jwt_or_api_auth;
 use crate::routes::borrower::CARDS_TAG;
+use crate::routes::user_connection_details_middleware;
 use crate::routes::AppState;
+use anyhow::Context;
 use anyhow::Result;
+use axum::extract::rejection::JsonRejection;
 use axum::extract::FromRequest;
 use axum::extract::Path;
 use axum::extract::State;
@@ -15,23 +18,36 @@ use axum::response::Response;
 use axum::Extension;
 use axum::Json;
 use rust_decimal::Decimal;
+use rust_decimal_macros::dec;
+use serde::Deserialize;
 use serde::Serialize;
 use std::str::FromStr;
 use std::sync::Arc;
+use time::OffsetDateTime;
 use tracing::instrument;
 use utoipa::ToSchema;
 use utoipa_axum::router::OpenApiRouter;
 use utoipa_axum::routes;
 use uuid::Uuid;
 
+// TODO: move this into the configs
+const CARD_TOPUP_FEE_PERCENT: Decimal = dec!(0.01); // 1%
+
 pub(crate) fn router(app_state: Arc<AppState>) -> OpenApiRouter {
     OpenApiRouter::new()
         .routes(routes!(get_cards))
         .routes(routes!(get_card_transactions))
+        .routes(routes!(topup_card))
         .route_layer(middleware::from_fn_with_state(
             app_state.clone(),
             jwt_or_api_auth::auth,
         ))
+        .layer(
+            tower::ServiceBuilder::new().layer(middleware::from_fn_with_state(
+                app_state.clone(),
+                user_connection_details_middleware::ip_user_agent,
+            )),
+        )
         .with_state(app_state)
 }
 
@@ -137,6 +153,117 @@ async fn get_card_transactions(
         .collect::<Vec<_>>();
 
     Ok(AppJson(txs))
+}
+
+/// Request body for topping up a card.
+#[derive(Debug, Clone, Deserialize, Serialize, ToSchema)]
+pub struct TopupCardRequest {
+    /// The currency to use for the topup
+    currency: moon::Currency,
+    /// The amount in USD to add to the card
+    #[serde(with = "rust_decimal::serde::float")]
+    amount_usd: Decimal,
+    /// The ID of the card to topup
+    card_id: Uuid,
+}
+
+/// Response from topping up a card containing the invoice details.
+#[derive(Debug, Serialize, ToSchema)]
+struct TopupCardResponse {
+    /// The invoice ID
+    invoice_id: Uuid,
+    /// The blockchain address to send payment to
+    address: String,
+    /// The amount in USD
+    #[serde(with = "rust_decimal::serde::float")]
+    usd_amount: Decimal,
+    /// The amount in cryptocurrency
+    #[serde(with = "rust_decimal::serde::float")]
+    crypto_amount: Decimal,
+    /// The currency to pay in
+    currency: moon::Currency,
+    /// When the invoice expires
+    #[serde(with = "time::serde::rfc3339")]
+    expires_at: OffsetDateTime,
+}
+
+/// Topup a card by generating an invoice.
+#[utoipa::path(
+    post,
+    path = "/topup",
+    tag = CARDS_TAG,
+    request_body = TopupCardRequest,
+    responses(
+        (
+            status = 200,
+            description = "Invoice generated successfully",
+            body = TopupCardResponse
+        ),
+        (
+            status = 400,
+            description = "Invalid request or card not found"
+        ),
+        (
+            status = 500,
+            description = "Failed to generate invoice"
+        )
+    ),
+    security(
+        (
+            "api_key" = []
+        )
+    )
+)]
+#[instrument(skip_all, fields(borrower_id = user.id), err(Debug))]
+async fn topup_card(
+    State(data): State<Arc<AppState>>,
+    Extension(user): Extension<Borrower>,
+    AppJson(request): AppJson<TopupCardRequest>,
+) -> Result<AppJson<TopupCardResponse>, Error> {
+    tracing::Span::current().record("card_id", tracing::field::display(&request.card_id));
+    // Verify the card belongs to this user
+    let cards = data
+        .moon
+        .get_cards_from_db(user.id.clone())
+        .await
+        .map_err(Error::database)?;
+    //
+    if !cards.iter().any(|card| card.id == request.card_id) {
+        return Err(Error::CardNotFound);
+    }
+
+    // Generate a unique contract ID for this topup
+    let lendasat_id = Uuid::new_v4().to_string();
+
+    // Generate the invoice
+    let invoice = data
+        .moon
+        .generate_invoice(
+            request.amount_usd,
+            lendasat_id,
+            request.card_id,
+            &user.id,
+            request.currency,
+            CARD_TOPUP_FEE_PERCENT,
+        )
+        .await
+        .map_err(|e| Error::InvoiceGeneration(format!("{e:#}")))?;
+
+    // Persist the invoice
+    data.moon
+        .persist_invoice(&invoice)
+        .await
+        .context("Failed to persist invoice")
+        .map_err(Error::database)?;
+
+    Ok(AppJson(TopupCardResponse {
+        invoice_id: invoice.id,
+        address: invoice.address,
+        usd_amount: invoice.usd_amount_owed,
+        crypto_amount: invoice.crypto_amount_owed,
+        currency: request.currency,
+        expires_at: invoice.expires_at,
+    }))
 }
 
 #[derive(Debug, Serialize, PartialEq, Clone, ToSchema)]
@@ -347,11 +474,21 @@ enum Error {
     InvalidCardId,
     /// Card not found.
     CardNotFound,
+    /// Failed to generate invoice.
+    InvoiceGeneration(#[allow(dead_code)] String),
+    /// JSON parsing error from Axum.
+    JsonRejection(JsonRejection),
 }
 
 impl Error {
     fn database(e: anyhow::Error) -> Self {
         Self::Database(format!("{e:#}"))
+    }
+}
+
+impl From<JsonRejection> for Error {
+    fn from(rejection: JsonRejection) -> Self {
+        Self::JsonRejection(rejection)
     }
 }
 
@@ -374,6 +511,14 @@ impl IntoResponse for Error {
                 "Invalid card ID provided".to_owned(),
             ),
             Error::CardNotFound => (StatusCode::BAD_REQUEST, "Card not found".to_owned()),
+            Error::InvoiceGeneration(_) => (
+                StatusCode::INTERNAL_SERVER_ERROR,
+                "Failed to generate invoice".to_owned(),
+            ),
+            Error::JsonRejection(rejection) => (
+                StatusCode::BAD_REQUEST,
+                format!("Invalid JSON: {rejection}"),
+            ),
         };
 
         (status, AppJson(ErrorResponse { message })).into_response()

@@ -817,3 +817,24 @@ export interface BorrowerNotificationSettings {
   new_chat_message_email: boolean;
   new_chat_message_telegram: boolean;
 }
+
+export enum Currency {
+  UsdcPolygon = "UsdcPolygon",
+  BtcBitcoin = "BtcBitcoin",
+  UsdtTron = "UsdtTron",
+}
+
+export interface TopupCardRequest {
+  currency: Currency;
+  amount_usd: number;
+  card_id: string;
+}
+
+export interface TopupCardResponse {
+  invoice_id: string;
+  address: string;
+  usd_amount: number;
+  crypto_amount: number;
+  currency: Currency;
+  expires_at: string;
+}

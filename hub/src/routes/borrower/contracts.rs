@@ -282,8 +282,9 @@ async fn post_contract_request(
                         loan_amount,
                         contract_id.to_string(),
                         card_id,
-                        lender_id.clone(),
                         &user.id,
+                        crate::moon::Currency::UsdcPolygon,
+                        Decimal::ZERO,
                     )
                     .await
                     .map_err(Error::moon_invoice_generation)?;

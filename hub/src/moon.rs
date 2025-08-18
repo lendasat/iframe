@@ -9,10 +9,14 @@ use pay_with_moon::MoonCardClient;
 use pay_with_moon::Transaction;
 use rust_decimal::Decimal;
 use rust_decimal_macros::dec;
+use serde::Deserialize;
+use serde::Serialize;
 use sqlx::Pool;
 use sqlx::Postgres;
 use std::str::FromStr;
 use std::sync::Arc;
+use time::OffsetDateTime;
+use utoipa::ToSchema;
 use uuid::Uuid;
 
 pub const MOON_CARD_MAX_BALANCE: Decimal = dec!(5_000);
@@ -36,17 +40,38 @@ pub struct Card {
     pub borrower_id: String,
 }
 
-/// A USDC Polygon invoice for lenders to add funds to the hub's Moon reserve.
+/// An invoice for lenders or borrowers to add funds to the hub's Moon reserve.
+///
+/// Note: `usd_amount` and `crypto_amount_owed` includes `lendasat_fee` so that the user sends an
+/// amount including the fee to Moon This means, we will accumulate our revenue with moon over time.
+/// When adding funds to a moon card, we need to subtract this amount from the invoiced amount, i.e.
+/// add to card = `usd_amount_owed` - `lendasat_fee`
+#[derive(Debug)]
 pub struct Invoice {
     pub id: Uuid,
     /// Where the lender needs to send the funds.
     pub address: String,
+    /// USD value of amount owed to moon (inclusive `lendasat_fee`)
     pub usd_amount_owed: Decimal,
-    pub contract_id: String,
+    /// Cruyptp amount owed (as value of `asset`, inclusive `lendasat_fee`)
+    pub crypto_amount_owed: Decimal,
+    /// The fee for lendasat.
+    ///
+    /// this fee is in the `crypto` amount unit,
+    ///
+    /// i.e. if the invoice was in USDC, it's USDC, if in BTC, it's in Bitcoin, if in USDT, it's in
+    /// USDT
+    pub lendasat_fee: Decimal,
+    /// Lendasat ID is our internal custom id to know where this invoice belongs to.
+    ///
+    /// It might be a contract_id (if the invoice belongs to a contract), or a custom id (if the
+    /// invoice belongs to a custom topup)
+    pub lendasat_id: String,
     /// Optional to retain backwards-compatibility.
     pub card_id: Option<Uuid>,
-    pub lender_id: String,
     pub borrower_id: String,
+    pub asset: Currency,
+    pub expires_at: OffsetDateTime,
 }
 
 #[derive(Clone)]
@@ -56,6 +81,14 @@ pub struct Manager {
     db: Pool<Postgres>,
     config: Config,
     notifications: Arc<Notifications>,
+}
+
+#[derive(Debug, Clone, Copy, sqlx::Type, Serialize, Deserialize, ToSchema)]
+#[sqlx(type_name = "moon_invoice_asset")]
+pub enum Currency {
+    UsdcPolygon,
+    BtcBitcoin,
+    UsdtTron,
 }
 
 impl Manager {
@@ -155,34 +188,52 @@ impl Manager {
         Ok(transactions)
     }
 
+    #[allow(clippy::too_many_arguments)]
     pub async fn generate_invoice(
         &self,
         usd_amount: Decimal,
         contract_id: String,
         card_id: Uuid,
-        lender_id: String,
         borrower_id: &str,
+        currency: Currency,
+        lendasat_fee_percent: Decimal,
     ) -> Result<Invoice> {
-        let res = self
-            .client
-            .generate_invoice(
-                usd_amount,
+        let (chain, moon_currency) = match currency {
+            Currency::UsdcPolygon => (
                 pay_with_moon::Blockchain::Polygon,
                 pay_with_moon::Currency::Usdc,
-            )
+            ),
+            Currency::BtcBitcoin => (
+                pay_with_moon::Blockchain::Bitcoin,
+                pay_with_moon::Currency::Btc,
+            ),
+            Currency::UsdtTron => (
+                pay_with_moon::Blockchain::Tron,
+                pay_with_moon::Currency::Usdt,
+            ),
+        };
+
+        let lendasat_fee = usd_amount * lendasat_fee_percent;
+        let res = self
+            .client
+            .generate_invoice(usd_amount + lendasat_fee, chain, moon_currency)
             .await
             .context("Moon error")?;
 
-        tracing::debug!(invoice = ?res, %card_id, lender_id, borrower_id, "Generated a Moon invoice");
+        tracing::debug!(invoice = ?res, %card_id, borrower_id,
+            lendasat_fee = lendasat_fee_percent.to_string(), "Generated a Moon invoice");
 
         let invoice = Invoice {
             id: res.id,
             address: res.address,
-            usd_amount_owed: res.crypto_amount_owed,
-            contract_id,
+            usd_amount_owed: res.usd_amount_owed,
+            crypto_amount_owed: res.crypto_amount_owed,
+            lendasat_fee,
+            lendasat_id: contract_id,
             card_id: Some(card_id),
-            lender_id,
             borrower_id: borrower_id.to_string(),
+            asset: currency,
+            expires_at: res.exchange_rate_lock_expiration,
         };
 
         Ok(invoice)
@@ -274,16 +325,20 @@ impl Manager {
                 anyhow!("DB error when marking invoice as paid")
             })?;
 
+        let card_amount = payment.amount - invoice.lendasat_fee;
+
         tracing::info!(
             %invoice_id,
             amount = %payment.amount,
+            lendasat_fee = %invoice.lendasat_fee,
+            card_amount = %card_amount,
             "Invoice successfully paid"
         );
 
         let card_id = invoice.card_id.context("No card found for invoice")?;
         let card_id = Uuid::from_str(&card_id).context("Invalid card ID")?;
 
-        let response = self.client.add_balance(card_id, payment.amount).await?;
+        let response = self.client.add_balance(card_id, card_amount).await?;
 
         tracing::info!(
             card_id = response.id.to_string(),

@@ -1,0 +1,34 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "\n        INSERT INTO moon_invoices (\n            id,\n            address,\n            usd_amount_owed,\n            crypto_amount_owed,\n            lendasat_fee,\n            asset,\n            lendasat_id,\n            card_id,\n            borrower_id,\n            expires_at\n        ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)\n        ",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Uuid",
+        "Text",
+        "Numeric",
+        "Numeric",
+        "Numeric",
+        {
+          "Custom": {
+            "name": "moon_invoice_asset",
+            "kind": {
+              "Enum": [
+                "UsdcPolygon",
+                "UsdtTron",
+                "BtcBitcoin"
+              ]
+            }
+          }
+        },
+        "Bpchar",
+        "Bpchar",
+        "Bpchar",
+        "Timestamptz"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "e7242549b92ef48dd012eb495b851165e1846de1a5603c8072094c87427cbe6c"
+}
