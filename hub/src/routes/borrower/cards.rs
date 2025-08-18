@@ -236,14 +236,14 @@ async fn topup_card(
     }
 
     // Generate a unique contract ID for this topup
-    let contract_id = Uuid::new_v4().to_string();
+    let lendasat_id = Uuid::new_v4().to_string();
 
     // Generate the invoice
     let invoice = data
         .moon
         .generate_invoice(
             request.amount_usd,
-            contract_id,
+            lendasat_id,
             request.card_id,
             &user.id,
             request.currency,

@@ -239,8 +239,9 @@ export function TopUpModal({
                 <strong>Important:</strong> Send exactly{" "}
                 {invoiceData.crypto_amount} {selectedPaymentMethod.name} to the
                 address above. The payment will be processed automatically once
-                confirmed on the blockchain. This page might not be updated
-                automatically!
+                confirmed on the blockchain. This page will not be updated
+                automatically. We will send an email once the funds have been
+                added to the card.
               </p>
             </div>
 
