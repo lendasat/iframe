@@ -1,5 +1,7 @@
 use crate::config::Config;
 use crate::db;
+use crate::electrum;
+use crate::electrum::RegisterAddress;
 use crate::mempool;
 use crate::mempool::TrackContractFunding;
 use crate::model::Contract;
@@ -49,6 +51,7 @@ pub async fn approve_contract(
     wallet: &Wallet,
     mempool_actor: &xtra::Address<mempool::Actor>,
     config: &Config,
+    electrum_actor: Option<&xtra::Address<electrum::Actor>>,
     contract_id: String,
     lender_id: &str,
     notifications: Arc<Notifications>,
@@ -63,9 +66,7 @@ pub async fn approve_contract(
     .map_err(Error::Database)?
     .ok_or(Error::MissingContract(contract_id.clone()))?;
 
-    if contract.status != ContractStatus::Requested
-        && contract.status != ContractStatus::RenewalRequested
-    {
+    if contract.status != ContractStatus::Requested {
         return Err(Error::InvalidApproveRequest {
             status: contract.status,
         });
@@ -125,11 +126,19 @@ pub async fn approve_contract(
     mempool_actor
         .send(TrackContractFunding::new(
             contract_id.clone(),
-            contract_address,
+            contract_address.clone(),
         ))
         .await
         .expect("actor to be alive")
         .map_err(Error::TrackContract)?;
+
+    if let Some(electrum_actor) = electrum_actor {
+        electrum_actor
+            .send(RegisterAddress::new(contract_id.clone(), contract_address))
+            .await
+            .expect("actor to be alive")
+            .map_err(Error::TrackContract)?;
+    }
 
     let loan_url = config
         .borrower_frontend_origin

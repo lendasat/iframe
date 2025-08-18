@@ -1,13 +1,11 @@
-use anyhow::Context;
 use anyhow::Result;
 use time::macros::format_description;
 use tracing::metadata::LevelFilter;
+use tracing::subscriber;
+use tracing_log::LogTracer;
 use tracing_subscriber::filter::Directive;
 use tracing_subscriber::fmt::time::UtcTime;
-use tracing_subscriber::layer::SubscriberExt;
-use tracing_subscriber::util::SubscriberInitExt;
 use tracing_subscriber::EnvFilter;
-use tracing_subscriber::Layer;
 
 const RUST_LOG_ENV: &str = "RUST_LOG";
 
@@ -15,6 +13,8 @@ pub fn init_tracing(level: LevelFilter, json_format: bool) -> Result<()> {
     if level == LevelFilter::OFF {
         return Ok(());
     }
+
+    LogTracer::init_with_filter(tracing_log::log::LevelFilter::Info)?;
 
     let mut filter = EnvFilter::new("")
         .add_directive("sqlx::query=warn".parse()?)
@@ -42,25 +42,21 @@ pub fn init_tracing(level: LevelFilter, json_format: bool) -> Result<()> {
 
     let is_terminal = atty::is(atty::Stream::Stderr);
 
-    let fmt_layer = tracing_subscriber::fmt::layer()
+    let sub = tracing_subscriber::fmt()
+        .with_env_filter(filter)
         .with_writer(std::io::stderr)
         .with_ansi(is_terminal);
 
-    let fmt_layer = if json_format {
-        fmt_layer.json().with_timer(UtcTime::rfc_3339()).boxed()
+    if json_format {
+        subscriber::set_global_default(sub.json().with_timer(UtcTime::rfc_3339()).finish())?;
     } else {
-        fmt_layer
-            .with_timer(UtcTime::new(format_description!(
+        subscriber::set_global_default(
+            sub.with_timer(UtcTime::new(format_description!(
                 "[year]-[month]-[day] [hour]:[minute]:[second]"
             )))
-            .boxed()
+            .finish(),
+        )?;
     };
-
-    tracing_subscriber::registry()
-        .with(filter)
-        .with(fmt_layer)
-        .try_init()
-        .context("Failed to init tracing")?;
 
     tracing::debug!("Initialized logger");
 

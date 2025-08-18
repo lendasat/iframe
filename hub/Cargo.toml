@@ -17,6 +17,8 @@ bitcoin = { version = "0.32.2", features = ["bitcoinconsensus", "serde"] }
 bitcoin-units = "0.1.2"
 bitmex-stream = { git = "https://github.com/get10101/bitmex-stream", rev = "c68668b" }
 descriptor-wallet = { path = "../descriptor-wallet" }
+electrum-client = "0.24.0"
+enum-iterator = "2.1.0"
 futures = "0.3"
 handlebars = "4.3.7"
 hex = "0.4.3"
@@ -52,7 +54,8 @@ tokio-cron-scheduler = "0.13.0"
 tokio-tungstenite = { version = "0.23.1", features = ["native-tls"] }
 tower = { version = "0.5.2" }
 tower-http = { version = "0.5.2", features = ["cors", "fs"] }
-tracing = "0.1.37"
+tracing = { version = "0.1.37", features = ["log"] }
+tracing-log = "0.2.0"
 tracing-subscriber = { version = "0.3", default-features = false, features = ["fmt", "ansi", "env-filter", "time", "tracing-log", "json"] }
 tzdb = "0.7.2"
 url = { version = "2", features = ["serde"] }

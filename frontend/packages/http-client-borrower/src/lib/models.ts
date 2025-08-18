@@ -13,7 +13,6 @@ export type PersonalReferralCode = {
 
 export enum ContractStatus {
   Requested = "Requested",
-  RenewalRequested = "RenewalRequested",
   Approved = "Approved",
   CollateralSeen = "CollateralSeen",
   CollateralConfirmed = "CollateralConfirmed",
@@ -30,8 +29,6 @@ export enum ContractStatus {
   Rejected = "Rejected",
   DisputeBorrowerStarted = "DisputeBorrowerStarted",
   DisputeLenderStarted = "DisputeLenderStarted",
-  DisputeBorrowerResolved = "DisputeBorrowerResolved",
-  DisputeLenderResolved = "DisputeLenderResolved",
   Cancelled = "Cancelled",
   RequestExpired = "RequestExpired",
   ApprovalExpired = "ApprovalExpired",
@@ -57,15 +54,12 @@ export const isActionRequired = (status: ContractStatus) => {
     case ContractStatus.CollateralConfirmed:
     case ContractStatus.PrincipalGiven:
     case ContractStatus.RepaymentProvided:
-    case ContractStatus.RenewalRequested:
     case ContractStatus.ClosedByRecovery:
       return false;
     case ContractStatus.Approved:
     case ContractStatus.RepaymentConfirmed:
     case ContractStatus.DisputeBorrowerStarted:
     case ContractStatus.DisputeLenderStarted:
-    case ContractStatus.DisputeBorrowerResolved:
-    case ContractStatus.DisputeLenderResolved:
     case ContractStatus.CollateralRecoverable:
       return true;
   }
@@ -93,11 +87,8 @@ export const isContractOpen = (status: ContractStatus) => {
     case ContractStatus.PrincipalGiven:
     case ContractStatus.RepaymentProvided:
     case ContractStatus.RepaymentConfirmed:
-    case ContractStatus.RenewalRequested:
     case ContractStatus.DisputeBorrowerStarted:
     case ContractStatus.DisputeLenderStarted:
-    case ContractStatus.DisputeBorrowerResolved:
-    case ContractStatus.DisputeLenderResolved:
     case ContractStatus.CollateralRecoverable:
       return true;
   }
@@ -111,8 +102,6 @@ export function contractStatusToLabelString(status: ContractStatus): string {
   switch (status) {
     case ContractStatus.Requested:
       return "Requested";
-    case ContractStatus.RenewalRequested:
-      return "Renewal Requested";
     case ContractStatus.Approved:
       return "Approved";
     case ContractStatus.CollateralSeen:
@@ -144,9 +133,6 @@ export function contractStatusToLabelString(status: ContractStatus): string {
     case ContractStatus.DisputeBorrowerStarted:
     case ContractStatus.DisputeLenderStarted:
       return "Dispute Open";
-    case ContractStatus.DisputeBorrowerResolved:
-    case ContractStatus.DisputeLenderResolved:
-      return "Dispute Resolved";
     case ContractStatus.Cancelled:
       return "Cancelled";
     case ContractStatus.RequestExpired:
@@ -169,7 +155,6 @@ export const actionFromStatus = (status: ContractStatus) => {
     case ContractStatus.CollateralRecoverable:
       return "Recover collateral";
     case ContractStatus.Requested:
-    case ContractStatus.RenewalRequested:
     case ContractStatus.Rejected:
     case ContractStatus.RequestExpired:
     case ContractStatus.ApprovalExpired:
@@ -179,8 +164,6 @@ export const actionFromStatus = (status: ContractStatus) => {
     case ContractStatus.RepaymentProvided:
     case ContractStatus.DisputeBorrowerStarted:
     case ContractStatus.DisputeLenderStarted:
-    case ContractStatus.DisputeBorrowerResolved:
-    case ContractStatus.DisputeLenderResolved:
     case ContractStatus.Undercollateralized:
     case ContractStatus.Defaulted:
     case ContractStatus.Closed:
@@ -837,4 +820,13 @@ export interface TopupCardResponse {
   crypto_amount: number;
   currency: Currency;
   expires_at: string;
+}
+
+export interface GetCollateralTransactionsResponse {
+  contract_id: string;
+  contract_status: ContractStatus;
+  address: string;
+  unconfirmed_transactions: string[];
+  confirmed_transactions: string[];
+  last_updated: string;
 }

@@ -231,6 +231,7 @@ async fn update_collateral(
             config.clone(),
             &contract.id,
             &contract.lender_id,
+            &contract.borrower_id,
             notifications.clone(),
         )
         .await
@@ -1109,11 +1110,20 @@ async fn send_loan_collateralized_email_to_lender(
     config: Config,
     contract_id: &str,
     lender_id: &str,
+    borrower_id: &str,
     notifications: Arc<Notifications>,
 ) -> Result<()> {
     let contract_emails = db::contract_emails::load_contract_emails(db, contract_id)
         .await
         .context("Failed to check if collateral-funded email was sent")?;
+
+    let borrower = db::borrowers::get_user_by_id(db, borrower_id)
+        .await?
+        .context("Cannot send collateral-funded notification to unknown borrower")?;
+
+    notifications
+        .send_loan_collateralized_borrower(borrower, contract_id)
+        .await;
 
     if !contract_emails.collateral_funded_sent {
         let lender = db::lenders::get_user_by_id(db, lender_id)
@@ -1125,7 +1135,7 @@ async fn send_loan_collateralized_email_to_lender(
             .join(format!("/my-contracts/{contract_id}").as_str())?;
 
         notifications
-            .send_loan_collateralized(lender, loan_url, contract_id)
+            .send_loan_collateralized_lender(lender, loan_url, contract_id)
             .await;
     }
 

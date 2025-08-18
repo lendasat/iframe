@@ -1221,6 +1221,55 @@ pub async fn mark_contract_as_undercollateralized(
     mark_contract_state_as(pool, contract_id, db::ContractStatus::Undercollateralized).await
 }
 
+/// Go from [`ContractStatus::Approved`] to [`ContractStatus::CollateralSeen`].
+///
+/// # Returns
+///
+/// A boolean indicating whether the status was changed or not.
+pub async fn report_collateral_seen<'a, E>(pool: E, contract_id: &str) -> Result<bool>
+where
+    E: sqlx::Executor<'a, Database = Postgres>,
+{
+    let rows_affected = sqlx::query!(
+        r#"
+       UPDATE contracts
+       SET
+           status = 'CollateralSeen',
+           updated_at = $1
+       WHERE id = $2 AND status = 'Approved'
+       "#,
+        OffsetDateTime::now_utc(),
+        contract_id,
+    )
+    .execute(pool)
+    .await?
+    .rows_affected();
+
+    Ok(rows_affected == 1)
+}
+
+/// Get the borrower ID and lender ID for a given contract.
+///
+/// # Returns
+///
+/// A tuple with borrower ID and lender ID, in that order.
+pub async fn get_borrower_and_lender<'a, E>(pool: E, contract_id: &str) -> Result<(String, String)>
+where
+    E: sqlx::Executor<'a, Database = Postgres>,
+{
+    let row = sqlx::query!(
+        r#"
+       SELECT borrower_id, lender_id FROM contracts
+       WHERE id = $1
+       "#,
+        contract_id,
+    )
+    .fetch_one(pool)
+    .await?;
+
+    Ok((row.borrower_id, row.lender_id))
+}
+
 pub async fn reject_contract_request(
     pool: &Pool<Postgres>,
     lender_id: &str,
@@ -1366,11 +1415,15 @@ where
     Ok(())
 }
 
-pub(crate) async fn load_open_not_liquidated_contracts_by_currency(
+pub(crate) async fn load_contracts_that_can_be_checked_for_undercollateralization_by_currency(
     pool: &Pool<Postgres>,
     currency: Currency,
 ) -> Result<Vec<Contract>> {
+    let statuses = ContractStatus::can_be_checked_for_undercollateralization_variants()
+        .map(db::ContractStatus::from)
+        .collect::<Vec<_>>();
     let currency = currency.to_string();
+
     let contracts = sqlx::query_as!(
         db::Contract,
         r#"
@@ -1409,7 +1462,7 @@ pub(crate) async fn load_open_not_liquidated_contracts_by_currency(
             created_at as "created_at!",
             updated_at as "updated_at!",
             client_contract_id
-        FROM contracts_to_be_watched
+        FROM contracts
         WHERE (
             CASE
                 WHEN $1 = 'Usd' THEN asset != 'Eur'
@@ -1417,10 +1470,11 @@ pub(crate) async fn load_open_not_liquidated_contracts_by_currency(
                 ELSE FALSE
             END
         )
-          AND status NOT IN ('Defaulted', 'Undercollateralized')
+          AND status = ANY($2::contract_status[])
           AND liquidation_status != 'Liquidated'
         "#,
-        currency
+        currency,
+        statuses as Vec<db::ContractStatus>,
     )
     .fetch_all(pool)
     .await?;
@@ -1496,7 +1550,6 @@ pub async fn update_collateral(
                     }
                     ContractStatus::CollateralConfirmed
                     | ContractStatus::PrincipalGiven
-                    | ContractStatus::RenewalRequested
                     | ContractStatus::RepaymentProvided
                     | ContractStatus::RepaymentConfirmed
                     | ContractStatus::Undercollateralized
@@ -1509,8 +1562,6 @@ pub async fn update_collateral(
                     | ContractStatus::Rejected
                     | ContractStatus::DisputeBorrowerStarted
                     | ContractStatus::DisputeLenderStarted
-                    | ContractStatus::DisputeBorrowerResolved
-                    | ContractStatus::DisputeLenderResolved
                     | ContractStatus::Cancelled
                     | ContractStatus::RequestExpired
                     | ContractStatus::ApprovalExpired
@@ -1794,7 +1845,9 @@ pub async fn has_contracts_before_pake_lender(
     Ok(row.entry_exists.unwrap_or(false))
 }
 
-/// Expires contracts in state Approved and returns their IDs
+/// Expires contracts in state `Approved` and returns their IDs.
+///
+/// We give a contract in state `CollateralSeen` a chance to get confirmation.
 pub(crate) async fn expire_approved_contracts(
     pool: &Pool<Postgres>,
     expiry_in_hours: i64,

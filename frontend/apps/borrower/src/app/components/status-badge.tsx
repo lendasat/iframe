@@ -40,10 +40,6 @@ export function StatusBadge({ status }: StatusBadgeProps) {
       color = "yellow";
       label = "Requested";
       break;
-    case ContractStatus.RenewalRequested:
-      color = "yellow";
-      label = "Renewal Requested";
-      break;
     case ContractStatus.Approved:
       color = "green";
       label = "Approved";
@@ -115,14 +111,6 @@ export function StatusBadge({ status }: StatusBadgeProps) {
     case ContractStatus.DisputeLenderStarted:
       color = "red";
       label = "Dispute Started";
-      break;
-    case ContractStatus.DisputeBorrowerResolved:
-      color = "orange";
-      label = "Dispute Resolved";
-      break;
-    case ContractStatus.DisputeLenderResolved:
-      color = "orange";
-      label = "Dispute Resolved";
       break;
     case ContractStatus.Cancelled:
       color = "gray";

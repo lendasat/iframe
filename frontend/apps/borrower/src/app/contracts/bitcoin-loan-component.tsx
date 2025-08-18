@@ -23,6 +23,7 @@ import {
   LiquidationStatus,
   useAuth,
   useHttpClientBorrower,
+  useNotificationHandlers,
 } from "@frontend/http-client-borrower";
 import { useAsyncRetry } from "react-use";
 import { ContractDetailsFooter } from "./contract-details-footer";
@@ -38,7 +39,6 @@ export function contractStatusLabelColor(status?: ContractStatus): string {
 
   switch (status) {
     case ContractStatus.Requested:
-    case ContractStatus.RenewalRequested:
       return "bg-blue-100 text-blue-800";
     case ContractStatus.Approved:
       return "bg-indigo-100 text-indigo-800";
@@ -70,9 +70,6 @@ export function contractStatusLabelColor(status?: ContractStatus): string {
     case ContractStatus.DisputeBorrowerStarted:
     case ContractStatus.DisputeLenderStarted:
       return "bg-orange-100 text-orange-800";
-    case ContractStatus.DisputeBorrowerResolved:
-    case ContractStatus.DisputeLenderResolved:
-      return "bg-lime-100 text-lime-800";
     case ContractStatus.Cancelled:
       return "bg-zinc-100 text-zinc-800";
     case ContractStatus.RequestExpired:
@@ -91,6 +88,7 @@ const EnhancedBitcoinLoan = () => {
   const { id } = useParams();
   const { newChatNotification } = useHttpClientBorrower();
   const { user } = useAuth();
+  const { onContractUpdate } = useNotificationHandlers();
 
   const {
     value: contract,
@@ -108,6 +106,12 @@ const EnhancedBitcoinLoan = () => {
   if (error) {
     console.error(`Failed to load contract: ${error.message}`);
   }
+
+  onContractUpdate((contractUpdate) => {
+    if (contract?.status !== contractUpdate.status) {
+      refreshContract();
+    }
+  });
 
   const currentStateColor = contractStatusLabelColor(contract?.status);
   const currentStateLabel =

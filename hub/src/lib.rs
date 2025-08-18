@@ -4,6 +4,7 @@ use rust_decimal_macros::dec;
 mod contract_liquidation;
 mod discounted_origination_fee;
 mod etherscan;
+mod notifications;
 mod user_stats;
 
 pub mod api_keys;
@@ -19,6 +20,7 @@ pub mod contract_request_expiry;
 pub mod contract_requests;
 pub mod daily_digest;
 pub mod db;
+pub mod electrum;
 pub mod expiry;
 pub mod geo_location;
 pub mod installment_close_to_due_date;
@@ -30,7 +32,6 @@ pub mod mark_as_principal_given;
 pub mod mempool;
 pub mod model;
 pub mod moon;
-pub mod notifications;
 pub mod process_defaulted_contracts;
 pub mod routes;
 pub mod sideshift;
@@ -38,6 +39,9 @@ pub mod take_loan_application;
 pub mod telegram_bot;
 pub mod utils;
 pub mod wallet;
+
+pub use notifications::websocket::NotificationCenter;
+pub use notifications::Notifications;
 
 pub const LTV_THRESHOLD_MARGIN_CALL_1: Decimal = dec!(0.8);
 pub const LTV_THRESHOLD_MARGIN_CALL_2: Decimal = dec!(0.85);

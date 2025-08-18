@@ -464,6 +464,7 @@ async fn post_contract_request(
             &data.wallet,
             &data.mempool,
             &data.config,
+            data.electrum.as_ref(),
             contract.id.clone(),
             lender_id,
             data.notifications.clone(),
@@ -1808,7 +1809,7 @@ pub struct Installment {
     payment_id: Option<String>,
 }
 
-#[derive(Debug, Serialize, Deserialize, ToSchema)]
+#[derive(Debug, Clone, Serialize, Deserialize, ToSchema)]
 struct TimelineEvent {
     #[serde(with = "time::serde::rfc3339")]
     date: OffsetDateTime,
@@ -1817,7 +1818,7 @@ struct TimelineEvent {
     txid: Option<String>,
 }
 
-#[derive(Debug, Serialize, Deserialize, ToSchema)]
+#[derive(Debug, Clone, Serialize, Deserialize, ToSchema)]
 #[serde(tag = "type", rename_all = "snake_case")]
 enum TimelineEventKind {
     #[schema(title = "contract_status_change")]
@@ -2058,22 +2059,6 @@ async fn map_timeline(
 
     let mut timeline = vec![];
 
-    // Then we go through funding transactions. There might be multiple, that's why we need to
-    // handle them separately.
-    transactions.iter().for_each(|tx| {
-        if TransactionType::Funding == tx.transaction_type {
-            let event = TimelineEvent {
-                date: tx.timestamp,
-                // We assume each transaction has already been confirmed.
-                event: TimelineEventKind::ContractStatusChange {
-                    status: ContractStatus::CollateralConfirmed,
-                },
-                txid: Some(tx.txid.clone()),
-            };
-            timeline.push(event);
-        }
-    });
-
     // Next we generate events based on paid and confirmed installments.
     installments.iter().for_each(|i| {
         if let Some(paid_date) = i.paid_date {
@@ -2089,15 +2074,29 @@ async fn map_timeline(
         }
     });
 
-    // Finally, we go through the contract events and enhance them with transaction IDs, if
+    let mut first_funding_transaction = None;
+
+    // We then go through each contract status change, enhancing them with transaction IDs if
     // applicable.
     let rest_of_timeline = event_logs
         .into_iter()
-        .filter_map(|log| {
+        .map(|log| {
             let txid = match log.new_status {
-                ContractStatus::CollateralSeen => transactions.iter().find_map(|tx| {
-                    (tx.transaction_type == TransactionType::Funding).then(|| tx.txid.clone())
-                }),
+                // A contract should only ever transition to `CollateralSeen` and
+                // `CollateralConfirmed` once.
+                ContractStatus::CollateralSeen | ContractStatus::CollateralConfirmed => {
+                    // In both cases, we take the _first_ funding transaction.
+                    //
+                    // It could be the case that the contract is originally funded with more than
+                    // one transaction, but we accept that we do not handle that edge case
+                    // perfectly.
+                    transactions.iter().find_map(|tx| {
+                        (tx.transaction_type == TransactionType::Funding).then(|| {
+                            first_funding_transaction = Some(tx.txid.clone());
+                            tx.txid.clone()
+                        })
+                    })
+                }
                 ContractStatus::PrincipalGiven => transactions.iter().find_map(|tx| {
                     (tx.transaction_type == TransactionType::PrincipalGiven)
                         .then(|| tx.txid.clone())
@@ -2118,9 +2117,7 @@ async fn map_timeline(
                     (tx.transaction_type == TransactionType::ClaimCollateral)
                         .then(|| tx.txid.clone())
                 }),
-
                 ContractStatus::Requested
-                | ContractStatus::RenewalRequested
                 | ContractStatus::Approved
                 | ContractStatus::RepaymentProvided
                 | ContractStatus::RepaymentConfirmed
@@ -2129,8 +2126,6 @@ async fn map_timeline(
                 | ContractStatus::Rejected
                 | ContractStatus::DisputeBorrowerStarted
                 | ContractStatus::DisputeLenderStarted
-                | ContractStatus::DisputeBorrowerResolved
-                | ContractStatus::DisputeLenderResolved
                 | ContractStatus::Cancelled
                 | ContractStatus::RequestExpired
                 | ContractStatus::ApprovalExpired
@@ -2138,22 +2133,38 @@ async fn map_timeline(
                     // There are no transactions associated with these events.
                     None
                 }
-                ContractStatus::CollateralConfirmed => {
-                    // We handled this event already. Note: returning `None` means we filter out
-                    // this event.
-                    return None;
-                }
             };
 
-            Some(TimelineEvent {
+            TimelineEvent {
                 date: log.changed_at,
                 event: TimelineEventKind::ContractStatusChange {
                     status: log.new_status,
                 },
                 txid,
-            })
+            }
         })
         .collect::<Vec<_>>();
+
+    // Finally, we process all funding transactions, ensuring that we skip the very first one
+    // (already linked to `CollateralSeen` or `CollateralConfirmed` above).
+    transactions.iter().for_each(|tx| {
+        if TransactionType::Funding == tx.transaction_type
+            && first_funding_transaction.as_ref() != Some(&tx.txid)
+        {
+            timeline.push(TimelineEvent {
+                date: tx.timestamp,
+                // TODO: For now we treat all of these transactions as a new instance of
+                // `CollateralConfirmed`. Instead we should model this differently so that:
+                //
+                // - Adding more collateral can be represented differently in the frontend.
+                // - Transactions that add more collateral can be either unconfirmed or confirmed.
+                event: TimelineEventKind::ContractStatusChange {
+                    status: ContractStatus::CollateralConfirmed,
+                },
+                txid: Some(tx.txid.clone()),
+            });
+        }
+    });
 
     timeline.extend(rest_of_timeline);
 
@@ -2178,6 +2189,29 @@ async fn map_timeline(
     timeline.push(requested_event);
 
     timeline.sort_by(|a, b| a.date.cmp(&b.date));
+
+    let confirmed_events = timeline
+        .iter()
+        .filter(|e| {
+            matches!(
+                e.event,
+                TimelineEventKind::ContractStatusChange {
+                    status: ContractStatus::CollateralConfirmed,
+                }
+            )
+        })
+        .cloned()
+        .collect::<Vec<_>>();
+    let timeline = timeline
+        .into_iter()
+        // Filter out `CollateralSeen` events for which we already have a `CollateralConfirmed`
+        // entry, because they are redundant.
+        .filter(|e| {
+            !matches!(e.event, TimelineEventKind::ContractStatusChange {
+                status: ContractStatus::CollateralSeen,
+            } if confirmed_events.iter().any(|ce| ce.txid == e.txid))
+        })
+        .collect();
 
     Ok(timeline)
 }
@@ -2232,7 +2266,7 @@ enum Error {
     /// Failed to calculate origination fee in sats.
     OriginationFeeCalculation(#[allow(dead_code)] String),
     /// Can't approve a contract request with a [`ContractStatus`] different to
-    /// [`ContractStatus::Requested`] or [`ContractStatus::RenewalRequested`].
+    /// [`ContractStatus::Requested`].
     InvalidApproveRequest {
         status: ContractStatus,
     },

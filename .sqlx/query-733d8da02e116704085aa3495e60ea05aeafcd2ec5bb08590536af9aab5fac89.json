@@ -1,0 +1,15 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "\n       UPDATE contracts\n       SET\n           status = 'CollateralSeen',\n           updated_at = $1\n       WHERE id = $2 AND status = 'Approved'\n       ",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Timestamptz",
+        "Bpchar"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "733d8da02e116704085aa3495e60ea05aeafcd2ec5bb08590536af9aab5fac89"
+}

@@ -31,7 +31,11 @@ impl NotificationCenter {
     /// # Returns
     ///
     /// Connection ID, for later removal.
-    pub async fn add_connection(&self, user_id: String, sender: UnboundedSender<Message>) -> Uuid {
+    pub(crate) async fn add_connection(
+        &self,
+        user_id: String,
+        sender: UnboundedSender<Message>,
+    ) -> Uuid {
         let fd_count_before = Self::get_fd_count();
 
         let mut guard = self.connections.lock().await;
@@ -73,7 +77,7 @@ impl NotificationCenter {
     }
 
     /// Remove a specific connection.
-    pub async fn remove_connection(&self, user_id: &str, connection_id: Uuid) {
+    pub(crate) async fn remove_connection(&self, user_id: &str, connection_id: Uuid) {
         let fd_count_before = Self::get_fd_count();
         let mut guard = self.connections.lock().await;
 
@@ -103,7 +107,7 @@ impl NotificationCenter {
     /// Send a notification to a specific user
     ///
     /// Returns to how many connections a message has been sent
-    pub async fn send_to(
+    pub(crate) async fn send_to(
         &self,
         user_id: &str,
         message: NotificationMessage,
@@ -176,7 +180,7 @@ impl NotificationCenter {
 
 impl NotificationMessage {
     /// Convert to WS message.
-    pub fn to_ws_message(&self) -> Result<Message, serde_json::Error> {
+    fn to_ws_message(&self) -> Result<Message, serde_json::Error> {
         let json = serde_json::to_string(self)?;
         Ok(Message::Text(json))
     }

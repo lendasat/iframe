@@ -221,10 +221,7 @@ export const ContractDetailsTable = ({
 
           let badgeVariant: "default" | "destructive" | "success" = "default";
 
-          if (
-            contract.status === ContractStatus.Requested ||
-            contract.status === ContractStatus.RenewalRequested
-          ) {
+          if (contract.status === ContractStatus.Requested) {
             badgeVariant = "default";
           } else if (contract.status === ContractStatus.Approved) {
             badgeVariant = "success";
