@@ -8,7 +8,7 @@ on:
 
 jobs:
   deploy-frontend:
-    runs-on: ubuntu-22.04
+    runs-on: ubuntu-latest
     env:
       NODE_OPTIONS: "--max_old_space_size=4096"
 
@@ -98,7 +98,7 @@ jobs:
           command: pages deploy apps/popup/dist/ --project-name=lendasat-popup-signet
 
   deploy-test:
-    runs-on: ubuntu-22.04
+    runs-on: ubuntu-latest
     env:
       NODE_OPTIONS: "--max_old_space_size=4096"
     steps:
