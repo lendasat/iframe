@@ -320,6 +320,7 @@ export const actionFromStatus = (contract: Contract) => {
     case ContractStatus.Extended:
     case ContractStatus.Closing:
     case ContractStatus.Cancelled:
+    case ContractStatus.CollateralRecoverable:
       statusText = "Details";
       break;
   }
