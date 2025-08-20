@@ -2,7 +2,7 @@ import type { AxiosError, AxiosInstance, AxiosResponse } from "axios";
 import axios from "axios";
 import { createContext, useContext, useMemo } from "react";
 import type { ReactNode, FC } from "react";
-import type {
+import {
   BorrowerStats,
   CardTransaction,
   ClaimCollateralPsbtResponse,
@@ -13,7 +13,6 @@ import type {
   Dispute,
   DisputeWithMessages,
   ExtendPostLoanRequest,
-  LenderStats,
   LoanApplication,
   LoanOffer,
   LoanRequest,
@@ -37,6 +36,7 @@ import type {
   BorrowerNotificationSettings,
   TopupCardRequest,
   TopupCardResponse,
+  LenderStats,
 } from "./models";
 import { isAllowedPageWithoutLogin, parseRFC3339Date } from "./utils";
 import { IsRegisteredResponse } from "@frontend/base-http-client";
@@ -1044,9 +1044,10 @@ export const createHttpClient = (
   const getLenderProfile = async (id: string): Promise<LenderStats> => {
     try {
       const response: AxiosResponse<LenderStatsRaw> = await axiosClient.get(
-        `/api/lenders/${id}`,
+        `/api/profiles/lenders/${id}`,
       );
 
+      console.log(`response.data ${response.data}`);
       const joinedAt = parseRFC3339Date(response.data.joined_at);
       if (joinedAt == null) {
         throw new Error("Invalid date");
@@ -1062,7 +1063,7 @@ export const createHttpClient = (
   const getBorrowerProfile = async (id: string): Promise<BorrowerStats> => {
     try {
       const response: AxiosResponse<BorrowerStatsRaw> = await axiosClient.get(
-        `/api/borrowers/${id}`,
+        `/api/profiles/borrowers/${id}`,
       );
 
       const joinedAt = parseRFC3339Date(response.data.joined_at);

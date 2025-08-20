@@ -544,10 +544,9 @@ export interface LenderStats {
   id: string;
   name: string;
   successful_contracts: number;
-  failed_contracts: number;
-  rating: number;
   joined_at: Date;
   timezone: string;
+  vetted: boolean;
 }
 
 export interface BorrowerStats {

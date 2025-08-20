@@ -70,6 +70,7 @@ const getStatusFilterArray = (
         ContractStatus.Cancelled,
         ContractStatus.RequestExpired,
         ContractStatus.ApprovalExpired,
+        ContractStatus.CollateralRecoverable,
       ];
     case ContractStatusFilterType.All:
       return undefined; // No filtering

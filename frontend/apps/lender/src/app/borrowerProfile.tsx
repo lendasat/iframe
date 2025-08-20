@@ -2,7 +2,7 @@ import {
   BorrowerStats,
   useLenderHttpClient,
 } from "@frontend/http-client-lender";
-import { UserStats } from "@frontend/ui-shared";
+import { UserStatsPage } from "@frontend/ui-shared";
 import { Suspense } from "react";
 import { Await, useParams } from "react-router-dom";
 
@@ -20,14 +20,13 @@ export function BorrowerProfile() {
           </div>
         }
         children={(profile: Awaited<BorrowerStats>) => (
-          <UserStats
+          <UserStatsPage
             id={profile.id}
             name={profile.name}
             successful_contracts={profile.successful_contracts}
-            failed_contracts={profile.failed_contracts}
-            rating={profile.rating}
             joined_at={profile.joined_at}
             timezone={profile.timezone}
+            userType={"borrower"}
           />
         )}
       />

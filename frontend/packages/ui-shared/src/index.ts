@@ -183,5 +183,6 @@ export * from "./lib/ltv-progress-bar/ltv-progress-bar";
 export * from "./lib/models";
 export * from "./lib/price-context";
 export * from "./lib/currency";
-export * from "./lib/UserStats";
+export * from "./lib/UserStatsLabel";
+export * from "./lib/UserStatsPage";
 export { default as i18n } from "./lib/i18n";

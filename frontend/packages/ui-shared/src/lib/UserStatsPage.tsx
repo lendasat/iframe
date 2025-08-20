@@ -1,4 +1,6 @@
 import { Avatar, Box, Flex, Heading, Text } from "@radix-ui/themes";
+import { Badge } from "@frontend/shadcn";
+import { Star } from "lucide-react";
 
 const formatDateTime = (timezone: string) => {
   return new Intl.DateTimeFormat(navigator.languages, {
@@ -11,50 +13,20 @@ interface UserStatsProps {
   id: string;
   name: string;
   successful_contracts: number;
-  failed_contracts: number;
-  rating: number;
   joined_at: Date;
   timezone?: string;
+  vetted?: boolean; // Only available for lenders
+  userType: "lender" | "borrower";
 }
 
-export function UserStats({
+export function UserStatsPage({
   name,
   successful_contracts,
-  failed_contracts,
-  rating,
   joined_at,
   timezone,
+  vetted = false,
+  userType,
 }: UserStatsProps) {
-  let ratingText = (
-    <Text
-      className={"text-font dark:text-font-dark self-end"}
-      size={"2"}
-      weight={"bold"}
-    >
-      No rating yet
-    </Text>
-  );
-  if (successful_contracts + failed_contracts > 0) {
-    ratingText = (
-      <Flex gap={"1"}>
-        <Text
-          className={"text-font dark:text-font-dark self-end"}
-          size={"2"}
-          weight={"bold"}
-        >
-          {(rating * 100).toFixed(1)}% success,
-        </Text>
-        <Text
-          className={"text-font dark:text-font-dark self-end"}
-          size={"2"}
-          weight={"light"}
-        >
-          {successful_contracts + failed_contracts} contracts
-        </Text>
-      </Flex>
-    );
-  }
-
   // Format date options
   const options: Intl.DateTimeFormatOptions = {
     weekday: "short",
@@ -79,14 +51,26 @@ export function UserStats({
               fallback={name.substring(0, 1)}
             />
             <Flex align={"start"} direction={"column"} gap={"1"}>
-              <Heading
-                as="h4"
-                weight={"medium"}
-                className="text-font dark:text-font-dark capitalize"
-                size={"4"}
-              >
-                {name}
-              </Heading>
+              <Flex align={"center"} gap={"2"}>
+                <Heading
+                  as="h4"
+                  weight={"medium"}
+                  className="text-font dark:text-font-dark capitalize"
+                  size={"4"}
+                >
+                  {name}
+                </Heading>
+                {userType === "lender" && vetted && (
+                  <Badge className="flex items-center gap-1 border-green-200 bg-green-100 text-green-800">
+                    <Star
+                      className="h-8 w-8"
+                      color={"orange"}
+                      fill={"yellow"}
+                    />
+                    Vetted
+                  </Badge>
+                )}
+              </Flex>
               {timezone && (
                 <Flex gap={"1"}>
                   <Text size={"2"} className="text-font dark:text-font-dark">
@@ -132,26 +116,6 @@ export function UserStats({
                   size={"2"}
                   className="text-font/50 dark:text-font-dark/50"
                 >
-                  Rating
-                </Text>
-                <Text
-                  size={"3"}
-                  weight={"medium"}
-                  className="text-font dark:text-font-dark capitalize"
-                >
-                  {ratingText}
-                </Text>
-              </Flex>
-            </Box>
-
-            <Box>
-              <Flex direction={"column"} gap={"1"}>
-                <Text
-                  as="label"
-                  weight={"medium"}
-                  size={"2"}
-                  className="text-font/50 dark:text-font-dark/50"
-                >
                   Completed Contracts
                 </Text>
                 <Text
@@ -159,7 +123,7 @@ export function UserStats({
                   weight={"medium"}
                   className="text-font dark:text-font-dark capitalize"
                 >
-                  {successful_contracts + failed_contracts}
+                  {successful_contracts}
                 </Text>
               </Flex>
             </Box>
@@ -170,4 +134,4 @@ export function UserStats({
   );
 }
 
-export default UserStats;
+export default UserStatsPage;

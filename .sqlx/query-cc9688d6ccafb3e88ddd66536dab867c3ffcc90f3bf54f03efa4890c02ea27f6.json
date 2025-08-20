@@ -77,6 +77,11 @@
         "ordinal": 14,
         "name": "locale",
         "type_info": "Text"
+      },
+      {
+        "ordinal": 15,
+        "name": "vetted",
+        "type_info": "Bool"
       }
     ],
     "parameters": {
@@ -99,7 +104,8 @@
       false,
       false,
       true,
-      true
+      true,
+      false
     ]
   },
   "hash": "cc9688d6ccafb3e88ddd66536dab867c3ffcc90f3bf54f03efa4890c02ea27f6"

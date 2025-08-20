@@ -7,6 +7,7 @@ import {
   LoanType,
 } from "@frontend/http-client-lender";
 import {
+  BorrowerStatsLabel,
   formatCurrency,
   getFormatedStringFromDays,
   LoanAsset,
@@ -162,7 +163,16 @@ export function LoanApplicationTable({
       },
       cell: ({ cell }) => {
         const value = cell.getValue();
-        return <>{value.name}</>;
+        return (
+          <BorrowerStatsLabel
+            name={value.name}
+            id={value.id}
+            showStats={true}
+            showAvatar={true}
+            ratingTextAlign={"left"}
+            successful_contracts={value.successful_contracts}
+          />
+        );
       },
       filterFn: (
         row: Row<LoanApplication>,
@@ -328,6 +338,9 @@ export function LoanApplicationTable({
           borrower: {
             id: "id",
             name: "dummy",
+            successful_contracts: 0,
+            joined_at: new Date(),
+            timezone: "dummy",
           },
           borrower_loan_address: "dummy",
           borrower_btc_address: "dummy",

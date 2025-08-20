@@ -7,14 +7,7 @@ import {
   LuDownload,
 } from "react-icons/lu";
 import React, { useState } from "react";
-import {
-  Avatar,
-  AvatarFallback,
-  Button,
-  CardContent,
-  Separator,
-  Skeleton,
-} from "@frontend/shadcn";
+import { Button, CardContent, Separator, Skeleton } from "@frontend/shadcn";
 import { Contract, useAuth } from "@frontend/http-client-lender";
 import {
   formatCurrency,
@@ -22,6 +15,7 @@ import {
   getFormatedStringFromDays,
   LoanAsset,
   LoanAssetHelper,
+  BorrowerStatsLabel,
 } from "@frontend/ui-shared";
 import { format, formatDistanceToNow } from "date-fns";
 import LoanStatusInformation from "./contract-status-text";
@@ -131,12 +125,14 @@ export const Details = ({ contract }: DetailsProps) => {
         <div className="text-right">
           <p className="text-sm text-gray-500">Borrower</p>
           {borrower && borrowerNameInitials ? (
-            <div className="flex items-center justify-end">
-              <p className="mr-2">{borrowerName}</p>
-              <Avatar className="h-6 w-6">
-                <AvatarFallback>{borrowerNameInitials}</AvatarFallback>
-              </Avatar>
-            </div>
+            <BorrowerStatsLabel
+              successful_contracts={borrower.successful_contracts}
+              showAvatar={false}
+              showStats={false}
+              id={borrower.id}
+              name={borrower.name}
+              ratingTextAlign={"right"}
+            />
           ) : (
             <div className="flex items-center justify-end">
               <Skeleton className="mr-2 h-4 w-[150px]" />

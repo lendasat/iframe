@@ -14,6 +14,9 @@ use crate::routes::lender::LOAN_APPLICATIONS_TAG;
 use crate::routes::AppState;
 use crate::take_loan_application;
 use crate::take_loan_application::take_application;
+use crate::user_stats;
+use crate::user_stats::get_borrower_stats;
+use crate::user_stats::BorrowerStats;
 use crate::utils::calculate_liquidation_price;
 use axum::extract::FromRequest;
 use axum::extract::Path;
@@ -167,7 +170,7 @@ async fn post_take_loan_application(
 #[derive(Debug, Serialize, Deserialize, Clone, ToSchema)]
 struct LoanApplication {
     id: String,
-    borrower: BorrowerProfile,
+    borrower: BorrowerStats,
     #[serde(with = "rust_decimal::serde::float")]
     ltv: Decimal,
     #[serde(with = "rust_decimal::serde::float")]
@@ -187,12 +190,6 @@ struct LoanApplication {
     updated_at: OffsetDateTime,
 }
 
-#[derive(Debug, Serialize, Deserialize, Clone, ToSchema)]
-struct BorrowerProfile {
-    id: String,
-    name: String,
-}
-
 #[derive(Debug, Deserialize, Serialize, ToSchema)]
 pub struct TakeLoanApplicationSchema {
     #[schema(value_type = String)]
@@ -209,10 +206,7 @@ async fn map_to_api_loan_application(
     config: &Config,
     request: model::LoanApplication,
 ) -> Result<LoanApplication, Error> {
-    let borrower = db::borrowers::get_user_by_id(db, &request.borrower_id)
-        .await
-        .map_err(Error::database)?
-        .ok_or(Error::MissingBorrower)?;
+    let borrower = get_borrower_stats(db, request.borrower_id.as_str()).await?;
 
     let price = get_bitmex_index_price(config, OffsetDateTime::now_utc(), request.loan_asset)
         .await
@@ -241,10 +235,7 @@ async fn map_to_api_loan_application(
 
     Ok(LoanApplication {
         id: request.loan_deal_id,
-        borrower: BorrowerProfile {
-            id: borrower.id,
-            name: borrower.name,
-        },
+        borrower,
         ltv: request.ltv,
         interest_rate: request.interest_rate,
         loan_amount: request.loan_amount,
@@ -394,6 +385,13 @@ impl From<take_loan_application::Error> for Error {
             take_loan_application::Error::MissingFiatLoanDetails => Error::MissingFiatLoanDetails,
             take_loan_application::Error::ZeroLoanDuration => Error::ZeroLoanDuration,
             take_loan_application::Error::MissingBorrower => Error::MissingBorrower,
+        }
+    }
+}
+impl From<user_stats::Error> for Error {
+    fn from(value: user_stats::Error) -> Self {
+        match value {
+            user_stats::Error::Database(e) => Error::database(e),
         }
     }
 }

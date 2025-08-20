@@ -1394,6 +1394,7 @@ mod tests {
                     salt: "".to_string(),
                     verifier: "".to_string(),
                     verified: true,
+                    vetted: true,
                     verification_code: None,
                     invite_code: None,
                     password_reset_token: None,
