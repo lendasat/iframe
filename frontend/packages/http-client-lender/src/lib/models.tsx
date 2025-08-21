@@ -258,7 +258,7 @@ export enum LoanOfferStatus {
 
 export interface LoanOffer {
   id: string;
-  lender: BorrowerStats;
+  lender: LenderStats;
   min_ltv: number;
   interest_rate: number;
   loan_amount_min: number;
@@ -317,9 +317,11 @@ export const actionFromStatus = (contract: Contract) => {
     case ContractStatus.Closed:
     case ContractStatus.ClosedByLiquidation:
     case ContractStatus.ClosedByDefaulting:
+    case ContractStatus.ClosedByRecovery:
     case ContractStatus.Extended:
     case ContractStatus.Closing:
     case ContractStatus.Cancelled:
+    case ContractStatus.CollateralRecoverable:
       statusText = "Details";
       break;
   }
@@ -509,14 +511,13 @@ export interface LenderStats {
   rating: number;
   joined_at: Date;
   timezone: string;
+  vetted: boolean;
 }
 
 export interface BorrowerStats {
   id: string;
   name: string;
   successful_contracts: number;
-  failed_contracts: number;
-  rating: number;
   joined_at: Date;
   timezone: string;
 }
@@ -525,14 +526,9 @@ export interface PutUpdateProfile {
   timezone: string;
 }
 
-export interface BorrowerProfile {
-  id: string;
-  name: string;
-}
-
 export interface LoanApplication {
   id: string;
-  borrower: BorrowerProfile;
+  borrower: BorrowerStats;
   ltv: number;
   interest_rate: number;
   loan_amount: number;

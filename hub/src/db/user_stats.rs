@@ -9,7 +9,16 @@ pub struct LenderStats {
     pub name: String,
     pub timezone: Option<String>,
     pub successful_contracts: i64,
-    pub failed_contracts: i64,
+    pub created_at: OffsetDateTime,
+    pub vetted: bool,
+}
+
+#[derive(Debug)]
+pub struct BorrowerStats {
+    pub id: String,
+    pub name: String,
+    pub timezone: Option<String>,
+    pub successful_contracts: i64,
     pub created_at: OffsetDateTime,
 }
 
@@ -25,21 +34,16 @@ pub async fn get_lender_stats(
             l.name,
             l.timezone,
             l.created_at,
+            l.vetted,
             COUNT(
                 CASE WHEN 
-                    c.status = 'Closed' 
+                    c.status = 'Closed' or c.status = 'PrincipalGiven'
                     THEN 1 END
-                ) as "successful_contracts!",
-            COUNT(
-                CASE WHEN 
-                    c.status = 'Rejected' or 
-                    c.status = 'RequestExpired'
-                    THEN 1 END
-                ) as "failed_contracts!"
+                ) as "successful_contracts!"
         FROM lenders l
         LEFT JOIN contracts c ON c.lender_id = l.id
         WHERE l.id = $1
-        GROUP BY l.name, l.id
+        GROUP BY l.name, l.id, l.vetted
         "#,
         lender_id
     )
@@ -47,16 +51,6 @@ pub async fn get_lender_stats(
     .await?;
 
     Ok(stats)
-}
-
-#[derive(Debug)]
-pub struct BorrowerStats {
-    pub id: String,
-    pub name: String,
-    pub timezone: Option<String>,
-    pub successful_contracts: i64,
-    pub failed_contracts: i64,
-    pub created_at: OffsetDateTime,
 }
 
 pub async fn get_borrower_stats(
@@ -73,15 +67,9 @@ pub async fn get_borrower_stats(
             b.created_at,
             COUNT(
                 CASE WHEN 
-                    c.status = 'Closed'
+                    c.status = 'Closed' or c.status = 'PrincipalGiven'
                     THEN 1 END
-                ) as "successful_contracts!",
-            COUNT(
-                CASE WHEN 
-                    c.status = 'Cancelled' OR
-                    c.status = 'ApprovalExpired'
-                    THEN 1 END
-                ) as "failed_contracts!"
+                ) as "successful_contracts!"
         FROM borrowers b
         LEFT JOIN contracts c ON c.borrower_id = b.id
         WHERE b.id = $1

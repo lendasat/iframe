@@ -14,6 +14,7 @@ import {
   AddFiatDetailsDialog,
   formatCurrency,
   getFormatedStringFromDays,
+  LenderStatsLabel,
   LoanAddressInputField,
   LoanAsset,
   LoanAssetHelper,
@@ -47,7 +48,6 @@ import {
 import { Link, useNavigate } from "react-router-dom";
 import { useAsync } from "react-use";
 import { KycDialog } from "./kyc-dialog";
-import { Lender } from "./lender";
 import { MoonCardDropdown } from "./MoonCardDropdown";
 import { ToS } from "./tos";
 import { toast } from "sonner";
@@ -385,9 +385,14 @@ export const Confirmation = ({
           <SummaryRow
             label="Lender"
             value={
-              <Lender
-                {...selectedOffer?.lender}
+              <LenderStatsLabel
                 showAvatar={false}
+                successful_contracts={
+                  selectedOffer?.lender.successful_contracts || 0
+                }
+                showStats={true}
+                id={selectedOffer?.lender.id}
+                name={selectedOffer?.lender.name}
                 ratingTextAlign={"right"}
               />
             }

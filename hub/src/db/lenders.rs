@@ -185,6 +185,7 @@ pub async fn get_user_by_rest_token(
             verifier,
             password,
             verified,
+            vetted,
             verification_code,
             invite_code,
             password_reset_token,

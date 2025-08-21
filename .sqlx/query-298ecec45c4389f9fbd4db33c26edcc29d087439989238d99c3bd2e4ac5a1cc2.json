@@ -33,9 +33,9 @@
       "Left": []
     },
     "nullable": [
-      true,
-      true,
-      true,
+      false,
+      false,
+      false,
       null,
       null
     ]

@@ -131,6 +131,7 @@ pub struct Lender {
     pub salt: String,
     pub verifier: String,
     pub verified: bool,
+    pub vetted: bool,
     pub verification_code: Option<String>,
     pub invite_code: Option<i32>,
     pub password_reset_token: Option<String>,

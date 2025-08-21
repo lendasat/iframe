@@ -1,10 +1,14 @@
 import { LoanOffer } from "@frontend/http-client-lender";
-import { formatCurrency, KycBadge, LoanAssetHelper } from "@frontend/ui-shared";
+import {
+  formatCurrency,
+  KycBadge,
+  LenderStatsLabel,
+  LoanAssetHelper,
+} from "@frontend/ui-shared";
 import { InfoCircledIcon } from "@radix-ui/react-icons";
 import { Box, Button, Callout, Flex, Table, Text } from "@radix-ui/themes";
 import { useState } from "react";
 import { IoCaretDownOutline, IoCaretUp } from "react-icons/io5";
-import { Lender } from "./lender";
 
 export type ColumnFilterKey =
   | "lender"
@@ -246,7 +250,14 @@ export const LoanOffersTable = ({ offers }: ContractDetailsTableProps) => {
             return (
               <Table.Row key={offer.id}>
                 <Table.RowHeaderCell>
-                  <Lender {...offer.lender} showAvatar={true} />
+                  <LenderStatsLabel
+                    successful_contracts={offer.lender.successful_contracts}
+                    showStats={true}
+                    showAvatar={true}
+                    name={offer.lender.name}
+                    id={offer.lender.id}
+                    ratingTextAlign={"left"}
+                  />
                 </Table.RowHeaderCell>
                 <Table.RowHeaderCell>
                   <Text

@@ -1,6 +1,8 @@
-import type { LenderStats } from "@frontend/http-client-borrower";
-import { useLenderHttpClient } from "@frontend/http-client-lender";
-import { UserStats } from "@frontend/ui-shared";
+import {
+  useLenderHttpClient,
+  BorrowerStats,
+} from "@frontend/http-client-lender";
+import { UserStatsPage } from "@frontend/ui-shared";
 import { Suspense } from "react";
 import { Await, useParams } from "react-router-dom";
 
@@ -17,15 +19,14 @@ export function LenderProfile() {
             Could not load profile
           </div>
         }
-        children={(profile: Awaited<LenderStats>) => (
-          <UserStats
+        children={(profile: Awaited<BorrowerStats>) => (
+          <UserStatsPage
             id={profile.id}
             name={profile.name}
             successful_contracts={profile.successful_contracts}
-            failed_contracts={profile.failed_contracts}
-            rating={profile.rating}
             joined_at={profile.joined_at}
             timezone={profile.timezone}
+            userType={"borrower"}
           />
         )}
       />

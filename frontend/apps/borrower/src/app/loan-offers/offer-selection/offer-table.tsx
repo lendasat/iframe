@@ -2,6 +2,7 @@ import { LoanOffer, RepaymentPlan } from "@frontend/http-client-borrower";
 import {
   formatCurrency,
   getFormatedStringFromDays,
+  LenderStatsLabel,
   LoanAsset,
   LoanAssetHelper,
   LoanPayout,
@@ -37,7 +38,6 @@ import {
 } from "@tanstack/react-table";
 import { useMemo, useState } from "react";
 import { ArrowDown, ArrowUp, ArrowUpDown, Info } from "lucide-react";
-import { Lender } from "../lender";
 
 interface DurationRange {
   min: number;
@@ -93,7 +93,7 @@ const MobileOfferCard = ({
             {loading ? (
               <div className="bg-muted h-4 w-20 animate-pulse rounded"></div>
             ) : (
-              <Lender
+              <LenderStatsLabel
                 {...offer.lender}
                 showAvatar={false}
                 ratingTextAlign={"right"}
@@ -240,7 +240,9 @@ export function LoanOfferTable({
         return "Lender";
       },
       cell: ({ row }) => {
-        return <Lender {...row.getValue("lender")} showAvatar={true} />;
+        return (
+          <LenderStatsLabel {...row.getValue("lender")} showAvatar={true} />
+        );
       },
       enableSorting: true,
     }),
@@ -449,9 +451,8 @@ export function LoanOfferTable({
             joined_at: new Date(),
             name: "dummy",
             successful_contracts: 1,
-            failed_contracts: 0,
-            rating: 1,
             timezone: "",
+            vetted: true,
           },
           min_ltv: 0,
           interest_rate: 0,
