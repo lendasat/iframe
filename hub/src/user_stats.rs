@@ -12,19 +12,6 @@ pub enum Error {
     Database(sqlx::Error),
 }
 
-/// Generic user stats that can be used for both lenders and borrowers
-/// when the vetted status is not needed
-#[derive(Debug, Serialize, Deserialize, Clone, ToSchema)]
-struct UserStats {
-    id: String,
-    name: String,
-    /// Number of total closed or currently open contracts
-    successful_contracts: i64,
-    timezone: Option<String>,
-    #[serde(with = "time::serde::rfc3339")]
-    joined_at: OffsetDateTime,
-}
-
 #[derive(Debug, Serialize, Deserialize, Clone, ToSchema)]
 pub struct LenderStats {
     pub id: String,
@@ -47,30 +34,6 @@ pub struct BorrowerStats {
     timezone: Option<String>,
     #[serde(with = "time::serde::rfc3339")]
     joined_at: OffsetDateTime,
-}
-
-impl From<LenderStats> for UserStats {
-    fn from(value: LenderStats) -> Self {
-        UserStats {
-            id: value.id,
-            name: value.name,
-            timezone: value.timezone,
-            successful_contracts: value.successful_contracts,
-            joined_at: value.joined_at,
-        }
-    }
-}
-
-impl From<BorrowerStats> for UserStats {
-    fn from(value: BorrowerStats) -> Self {
-        UserStats {
-            id: value.id,
-            name: value.name,
-            timezone: value.timezone,
-            successful_contracts: value.successful_contracts,
-            joined_at: value.joined_at,
-        }
-    }
 }
 
 impl From<db::user_stats::LenderStats> for LenderStats {
