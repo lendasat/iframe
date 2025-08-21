@@ -317,6 +317,7 @@ export const actionFromStatus = (contract: Contract) => {
     case ContractStatus.Closed:
     case ContractStatus.ClosedByLiquidation:
     case ContractStatus.ClosedByDefaulting:
+    case ContractStatus.ClosedByRecovery:
     case ContractStatus.Extended:
     case ContractStatus.Closing:
     case ContractStatus.Cancelled:
