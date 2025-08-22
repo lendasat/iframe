@@ -68,6 +68,7 @@ pub struct Borrower {
     pub first_time_discount_rate_referee: Option<Decimal>,
     pub timezone: Option<String>,
     pub locale: Option<String>,
+    pub totp_enabled: bool,
     pub created_at: OffsetDateTime,
     pub updated_at: OffsetDateTime,
 }
@@ -1205,6 +1206,7 @@ pub struct FilteredUser {
     pub personal_telegram_token: String,
     #[serde(with = "rust_decimal::serde::float")]
     pub first_time_discount_rate: Decimal,
+    pub totp_enabled: bool,
     #[serde(with = "time::serde::rfc3339")]
     pub created_at: OffsetDateTime,
     #[serde(with = "time::serde::rfc3339")]
@@ -1270,6 +1272,7 @@ impl FilteredUser {
             first_time_discount_rate: user.first_time_discount_rate_referee.unwrap_or_default(),
             timezone: user.timezone.clone(),
             locale: user.locale.clone(),
+            totp_enabled: user.totp_enabled,
             personal_telegram_token: personal_telegram_token.token,
             created_at: created_at_utc,
             updated_at: updated_at_utc,

@@ -674,6 +674,11 @@ export interface MustUpgradeToPake {
   must_upgrade_to_pake: undefined;
 }
 
+export interface TotpRequired {
+  totp_required: true;
+  session_token: string;
+}
+
 export interface LoginResponse {
   token: string;
   enabled_features: LoanFeature[];
@@ -681,7 +686,10 @@ export interface LoginResponse {
   wallet_backup_data: WalletBackupData;
 }
 
-export type LoginResponseOrUpgrade = LoginResponse | MustUpgradeToPake;
+export type LoginResponseOrUpgrade =
+  | LoginResponse
+  | MustUpgradeToPake
+  | TotpRequired;
 
 export type PakeLoginResponseOrUpgrade = PakeLoginResponse | MustUpgradeToPake;
 
@@ -719,6 +727,7 @@ export interface User {
   timezone?: string;
   locale?: string;
   first_time_discount_rate: number;
+  totp_enabled: boolean;
   created_at: Date;
   personal_telegram_token?: string;
 }
@@ -828,4 +837,28 @@ export interface GetCollateralTransactionsResponse {
   unconfirmed_transactions: string[];
   confirmed_transactions: string[];
   last_updated: string;
+}
+
+export interface TotpSetupResponse {
+  qr_code_uri: string;
+  secret: string;
+}
+
+export interface VerifyTotpRequest {
+  totp_code: string;
+}
+
+export interface PakeVerifyTotpResponse {
+  server_proof: string;
+  totp_required: boolean;
+  session_token?: string;
+  token?: string;
+  enabled_features?: LoanFeature[];
+  user?: User;
+  wallet_backup_data?: WalletBackupData;
+}
+
+export interface TotpLoginVerifyRequest {
+  session_token: string;
+  totp_code: string;
 }
