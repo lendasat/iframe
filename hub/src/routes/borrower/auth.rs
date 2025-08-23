@@ -33,7 +33,7 @@ use crate::routes::borrower::AUTH_TAG;
 use crate::routes::user_connection_details_middleware;
 use crate::routes::user_connection_details_middleware::UserConnectionDetails;
 use crate::routes::AppState;
-use crate::totp_helpers::create_totp;
+use crate::totp_helpers::create_totp_borrower;
 use crate::utils::is_valid_email;
 use anyhow::Context;
 use axum::extract::rejection::JsonRejection;
@@ -824,7 +824,7 @@ async fn post_totp_verify_login(
         .ok_or(Error::EmailOrPasswordInvalid)?;
 
     let secret = Secret::Encoded(totp_secret);
-    let totp = create_totp(
+    let totp = create_totp_borrower(
         secret,
         user.email.clone().unwrap_or_else(|| user.name.clone()),
     )

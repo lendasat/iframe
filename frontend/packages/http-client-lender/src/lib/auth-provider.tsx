@@ -15,10 +15,15 @@ interface AuthContextType {
   user: User | null;
   loading: boolean;
   login: (email: string, password: string) => Promise<LoginResponseOrUpgrade>;
+  totpLogin: (
+    email: string,
+    totpCode: string,
+  ) => Promise<LoginResponseOrUpgrade>;
   logout: () => Promise<void>;
   refreshUser: () => Promise<void>;
   backendVersion: Version;
   enabledFeatures: LenderFeatureFlags[];
+  pendingTotpLogin?: { email: string; session_token: string } | null;
 }
 
 export const AuthContext = createContext<AuthContextType | undefined>(
@@ -178,6 +183,17 @@ export const AuthProvider: FC<AuthProviderProps> = ({
         throw new Error("failed to verify server proof");
       }
 
+      // Check if TOTP is required
+      if (
+        pakeVerifyResponse.totp_required &&
+        pakeVerifyResponse.session_token
+      ) {
+        return {
+          totp_required: true,
+          session_token: pakeVerifyResponse.session_token!,
+        };
+      }
+
       const currentUser = pakeVerifyResponse.user;
 
       let enabled_features: LenderFeatureFlags[] = [];
@@ -200,11 +216,57 @@ export const AuthProvider: FC<AuthProviderProps> = ({
           setBackendVersion(version);
         }
       }
+      return pakeVerifyResponse;
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const totpLogin = async (
+    sessionToken: string,
+    totpCode: string,
+  ): Promise<LoginResponseOrUpgrade> => {
+    setLoading(true);
+    try {
+      const totpVerifyResponse = await httpClient.totpLoginVerify({
+        totp_code: totpCode,
+        session_token: sessionToken,
+      });
+
+      if (!totpVerifyResponse) {
+        throw new Error("TOTP verification failed");
+      }
+
+      const currentUser = totpVerifyResponse.user;
+
+      let enabled_features: LenderFeatureFlags[] = [];
+      if (totpVerifyResponse.enabled_features) {
+        enabled_features = FeatureMapper.mapEnabledFeatures(
+          totpVerifyResponse.enabled_features,
+        );
+        setEnabledFeatures(enabled_features);
+      } else {
+        setEnabledFeatures([]);
+      }
+
+      if (currentUser) {
+        setUser(currentUser);
+      } else {
+        setUser(null);
+      }
+
+      if (!backendVersion) {
+        const version = await httpClient.getVersion();
+        if (version) {
+          setBackendVersion(version);
+        }
+      }
+
       return {
         enabled_features,
-        wallet_backup_data: pakeVerifyResponse.wallet_backup_data,
-        user: pakeVerifyResponse.user,
-        token: pakeVerifyResponse.token,
+        wallet_backup_data: totpVerifyResponse.wallet_backup_data,
+        user: totpVerifyResponse.user,
+        token: totpVerifyResponse.token,
       };
     } finally {
       setLoading(false);
@@ -249,6 +311,7 @@ export const AuthProvider: FC<AuthProviderProps> = ({
         user,
         loading,
         login,
+        totpLogin,
         logout,
         refreshUser,
         backendVersion,

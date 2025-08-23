@@ -39,6 +39,9 @@ import {
   AlertTriangle,
   Eye,
   EyeOff,
+  Shield,
+  Loader,
+  CircleAlert,
 } from "lucide-react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -49,6 +52,7 @@ import {
   useLenderHttpClient,
   ApiKey,
   CreateApiKeyResponse,
+  useAuth,
 } from "@frontend/http-client-lender";
 
 const createApiKeySchema = z.object({
@@ -60,8 +64,12 @@ const createApiKeySchema = z.object({
 
 type CreateApiKeyForm = z.infer<typeof createApiKeySchema>;
 
-export default function ApiKeysSettings() {
+export default function SecuritySettings() {
   const httpClient = useLenderHttpClient();
+  const { user, refreshUser } = useAuth();
+  const { setupTotp, verifyTotp } = httpClient;
+
+  // API Keys state
   const [apiKeys, setApiKeys] = useState<ApiKey[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isCreating, setIsCreating] = useState(false);
@@ -72,6 +80,16 @@ export default function ApiKeysSettings() {
   const [deletingKey, setDeletingKey] = useState<ApiKey | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
 
+  // TOTP state
+  const [totpSetupData, setTotpSetupData] = useState<{
+    qr_code_uri: string;
+    secret: string;
+  } | null>(null);
+  const [totpCode, setTotpCode] = useState("");
+  const [isTotpLoading, setIsTotpLoading] = useState(false);
+  const [showTotpDialog, setShowTotpDialog] = useState(false);
+  const [totpError, setTotpError] = useState("");
+
   const form = useForm<CreateApiKeyForm>({
     resolver: zodResolver(createApiKeySchema),
     defaultValues: {
@@ -79,6 +97,47 @@ export default function ApiKeysSettings() {
     },
   });
 
+  // TOTP handlers
+  const handleSetupTotp = async () => {
+    setIsTotpLoading(true);
+    setTotpError("");
+    try {
+      const response = await setupTotp();
+      setTotpSetupData(response);
+      setShowTotpDialog(true);
+    } catch (err) {
+      console.error("Failed setting up TOTP:", err);
+      toast.error(`Failed to setup TOTP: ${err}`);
+    }
+    setIsTotpLoading(false);
+  };
+
+  const handleVerifyTotp = async () => {
+    if (!totpCode || totpCode.length !== 6) {
+      setTotpError("Please enter a valid 6-digit code");
+      return;
+    }
+
+    setIsTotpLoading(true);
+    setTotpError("");
+    try {
+      await verifyTotp({ totp_code: totpCode });
+      toast.success(
+        "TOTP successfully enabled! Your account is now more secure.",
+      );
+      setShowTotpDialog(false);
+      setTotpSetupData(null);
+      setTotpCode("");
+      setTotpError("");
+      await refreshUser();
+    } catch (err) {
+      console.error("Failed verifying TOTP:", err);
+      setTotpError(`Failed to verify TOTP code: ${err}`);
+    }
+    setIsTotpLoading(false);
+  };
+
+  // API Key handlers
   const loadApiKeys = useCallback(async () => {
     try {
       setIsLoading(true);
@@ -98,11 +157,8 @@ export default function ApiKeysSettings() {
       const response: CreateApiKeyResponse =
         await httpClient.createApiKey(data);
 
-      // Set the new API key to display
       setNewApiKey(response.api_key);
       setShowNewApiKey(true);
-
-      // Close create dialog and reload keys
       setCreateDialogOpen(false);
       form.reset();
       await loadApiKeys();
@@ -157,14 +213,190 @@ export default function ApiKeysSettings() {
 
   const canCreateMore = apiKeys.length < 5;
 
+  if (!user) {
+    return null;
+  }
+
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 pb-16">
       <div>
-        <h1 className="text-2xl font-bold tracking-tight">API Keys</h1>
+        <h1 className="text-2xl font-bold tracking-tight">Security</h1>
         <p className="text-muted-foreground">
-          Manage your API keys for programmatic access to your account.
+          Manage your security settings and API access.
         </p>
       </div>
+
+      {/* TOTP Section */}
+      <Card>
+        <CardHeader>
+          <CardTitle>Two-Factor Authentication</CardTitle>
+          <CardDescription>
+            Add an extra layer of security to your account using TOTP
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="flex items-center justify-between rounded-lg border p-4">
+            <div className="flex items-center gap-3">
+              <Shield
+                className={`h-5 w-5 ${user.totp_enabled ? "text-green-600" : "text-blue-600"}`}
+              />
+              <div>
+                <h5 className="text-sm font-medium">
+                  Time-based One-Time Password (TOTP)
+                </h5>
+                <p className="mt-1 text-xs text-gray-500">
+                  {user.totp_enabled
+                    ? "Your account is protected with TOTP authentication"
+                    : "Secure your account with authenticator app codes"}
+                </p>
+              </div>
+            </div>
+            {user.totp_enabled ? (
+              <Badge
+                variant="outline"
+                className="border-green-300 text-green-700"
+              >
+                <Shield className="mr-1 h-3 w-3" />
+                Enabled
+              </Badge>
+            ) : (
+              <Button
+                onClick={handleSetupTotp}
+                disabled={isTotpLoading}
+                size="sm"
+                variant="outline"
+              >
+                {isTotpLoading ? (
+                  <Loader className="mr-2 h-4 w-4 animate-spin" />
+                ) : (
+                  <Key className="mr-2 h-4 w-4" />
+                )}
+                Setup TOTP
+              </Button>
+            )}
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* TOTP Setup Dialog */}
+      <Dialog
+        open={showTotpDialog}
+        onOpenChange={(open) => {
+          setShowTotpDialog(open);
+          if (!open) {
+            setTotpError("");
+            setTotpCode("");
+            setTotpSetupData(null);
+          }
+        }}
+      >
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Setup Two-Factor Authentication</DialogTitle>
+            <DialogDescription>
+              Scan this QR code with your authenticator app (like Google
+              Authenticator, Authy, or 1Password).
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4">
+            {totpError && (
+              <Alert variant="destructive" className="text-sm">
+                <CircleAlert className="h-4 w-4" />
+                <AlertDescription className="text-xs">
+                  {totpError}
+                </AlertDescription>
+              </Alert>
+            )}
+            {totpSetupData && (
+              <div className="space-y-4">
+                {/* QR Code */}
+                <div className="flex justify-center rounded-lg border bg-white p-4">
+                  <img
+                    src={`https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(totpSetupData.qr_code_uri)}`}
+                    alt="TOTP QR Code"
+                    className="h-48 w-48"
+                  />
+                </div>
+
+                {/* Manual Entry */}
+                <div className="space-y-2">
+                  <p className="text-sm font-medium">Can't scan the QR code?</p>
+                  <p className="text-xs text-gray-500">
+                    Manually enter this secret in your authenticator app:
+                  </p>
+                  <div className="flex items-center gap-2">
+                    <code className="flex-1 break-all rounded bg-gray-100 px-2 py-1 font-mono text-xs">
+                      {totpSetupData.secret}
+                    </code>
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      onClick={() => {
+                        navigator.clipboard.writeText(totpSetupData.secret);
+                        toast.success("Secret copied to clipboard!");
+                      }}
+                    >
+                      <Copy className="h-3 w-3" />
+                    </Button>
+                  </div>
+                </div>
+
+                {/* Verification */}
+                <div className="space-y-2">
+                  <label htmlFor="totp-code" className="text-sm font-medium">
+                    Enter the 6-digit code from your authenticator app:
+                  </label>
+                  <Input
+                    id="totp-code"
+                    type="text"
+                    placeholder="123456"
+                    value={totpCode}
+                    onChange={(e) =>
+                      setTotpCode(e.target.value.replace(/\D/g, "").slice(0, 6))
+                    }
+                    className="text-center text-lg tracking-widest"
+                    maxLength={6}
+                  />
+                </div>
+
+                {/* Actions */}
+                <div className="flex gap-2">
+                  <Button
+                    onClick={handleVerifyTotp}
+                    disabled={isTotpLoading || totpCode.length !== 6}
+                    className="flex-1"
+                  >
+                    {isTotpLoading ? (
+                      <Loader className="mr-2 h-4 w-4 animate-spin" />
+                    ) : null}
+                    Verify & Enable
+                  </Button>
+                  <Button
+                    variant="outline"
+                    onClick={() => {
+                      setShowTotpDialog(false);
+                      setTotpSetupData(null);
+                      setTotpCode("");
+                      setTotpError("");
+                    }}
+                    disabled={isTotpLoading}
+                  >
+                    Cancel
+                  </Button>
+                </div>
+              </div>
+            )}
+            {!totpSetupData && !totpError && (
+              <div className="flex items-center justify-center py-8">
+                <Loader className="h-6 w-6 animate-spin text-gray-400" />
+                <span className="ml-2 text-sm text-gray-500">
+                  Setting up TOTP...
+                </span>
+              </div>
+            )}
+          </div>
+        </DialogContent>
+      </Dialog>
 
       {/* New API Key Display */}
       {newApiKey && (
@@ -177,8 +409,8 @@ export default function ApiKeysSettings() {
               shown again.
             </p>
             <div className="flex items-center space-x-2">
-              <div className="flex-1 min-w-0">
-                <div className="font-mono text-sm bg-white dark:bg-gray-900 p-2 rounded border relative">
+              <div className="min-w-0 flex-1">
+                <div className="relative rounded border bg-white p-2 font-mono text-sm dark:bg-gray-900">
                   {showNewApiKey ? newApiKey : "•".repeat(50)}
                   <Button
                     size="sm"
@@ -206,14 +438,15 @@ export default function ApiKeysSettings() {
         </Alert>
       )}
 
+      {/* API Keys Section */}
       <Card>
         <CardHeader>
           <div className="flex items-center justify-between">
             <div>
-              <CardTitle>Your API Keys</CardTitle>
+              <CardTitle>API Keys</CardTitle>
               <CardDescription>
-                You can have up to 5 API keys. Each key has full access to your
-                account.
+                Manage your API keys for programmatic access. You can have up to
+                5 keys.
               </CardDescription>
             </div>
             <Dialog open={createDialogOpen} onOpenChange={setCreateDialogOpen}>
@@ -272,12 +505,12 @@ export default function ApiKeysSettings() {
         </CardHeader>
         <CardContent>
           {isLoading ? (
-            <div className="text-center py-8 text-muted-foreground">
+            <div className="text-muted-foreground py-8 text-center">
               Loading API keys...
             </div>
           ) : apiKeys.length === 0 ? (
-            <div className="text-center py-8 text-muted-foreground">
-              <Key className="mx-auto h-12 w-12 mb-4 opacity-50" />
+            <div className="text-muted-foreground py-8 text-center">
+              <Key className="mx-auto mb-4 h-12 w-12 opacity-50" />
               <p>No API keys created yet</p>
               <p className="text-sm">
                 Create your first API key to get started

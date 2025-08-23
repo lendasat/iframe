@@ -1,5 +1,8 @@
 import { md5CaseInsensitive } from "@frontend/browser-wallet";
-import { useAuth } from "@frontend/http-client-borrower";
+import {
+  LoginResponseOrUpgrade,
+  useAuth,
+} from "@frontend/http-client-borrower";
 import { LoginForm } from "@frontend/shadcn";
 import {
   does_wallet_exist,
@@ -24,7 +27,7 @@ function Login() {
     totpCode?: string,
     sessionToken?: string,
   ) => {
-    let loginResponse;
+    let loginResponse: LoginResponseOrUpgrade;
 
     if (totpCode && sessionToken) {
       // This is the TOTP verification step

@@ -10,17 +10,22 @@ import {
 } from "#/components/ui/card";
 import { Input } from "#/components/ui/input";
 import { Label } from "#/components/ui/label";
-import { type FormEvent, ReactNode, useState } from "react";
+import { ComponentProps, type FormEvent, ReactNode, useState } from "react";
 import { AlertCircle, Loader2 } from "lucide-react";
 import { Eye, EyeOff } from "lucide-react";
 
-interface LoginFormProps extends React.ComponentProps<"div"> {
+export interface TotpRequired {
+  totp_required: true;
+  session_token: string;
+}
+
+interface LoginFormProps extends ComponentProps<"div"> {
   handleLogin: (
     email: string,
     password: string,
     totpCode?: string,
     sessionToken?: string,
-  ) => Promise<any>;
+  ) => Promise<TotpRequired | undefined>;
   registrationLink: string;
   forgotPasswordLink: string;
   initialUserEmail: string;
@@ -57,7 +62,7 @@ export function LoginForm({
     setError("");
 
     try {
-      let result;
+      let result: TotpRequired | undefined;
 
       if (showTotpStep) {
         // TOTP verification step

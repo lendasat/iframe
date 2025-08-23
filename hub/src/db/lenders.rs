@@ -191,6 +191,8 @@ pub async fn get_user_by_rest_token(
             password_reset_token,
             timezone,
             locale,
+            totp_secret,
+            totp_enabled,
             password_reset_at,
             created_at,
             updated_at
@@ -256,4 +258,75 @@ pub async fn update_lender_locale(
     .await?;
 
     Ok(())
+}
+
+pub async fn store_totp_secret(pool: &PgPool, lender_id: &str, totp_secret: &str) -> Result<()> {
+    sqlx::query!(
+        r#"
+        UPDATE lenders
+        SET
+            totp_secret = $1,
+            updated_at = CURRENT_TIMESTAMP
+        WHERE id = $2
+        "#,
+        totp_secret,
+        lender_id,
+    )
+    .execute(pool)
+    .await?;
+
+    Ok(())
+}
+
+pub async fn enable_totp(pool: &PgPool, lender_id: &str) -> Result<()> {
+    sqlx::query!(
+        r#"
+        UPDATE lenders
+        SET
+            totp_enabled = TRUE,
+            updated_at = CURRENT_TIMESTAMP
+        WHERE id = $1
+        "#,
+        lender_id,
+    )
+    .execute(pool)
+    .await?;
+
+    Ok(())
+}
+
+pub async fn get_totp_secret(pool: &PgPool, lender_id: &str) -> Result<Option<String>> {
+    let row = sqlx::query!(
+        r#"
+        SELECT totp_secret, totp_enabled
+        FROM lenders
+        WHERE id = $1
+        "#,
+        lender_id,
+    )
+    .fetch_optional(pool)
+    .await?;
+
+    match row {
+        Some(row) if row.totp_enabled => Ok(row.totp_secret),
+        _ => Ok(None),
+    }
+}
+
+pub async fn get_totp_secret_for_setup(pool: &PgPool, lender_id: &str) -> Result<Option<String>> {
+    let row = sqlx::query!(
+        r#"
+        SELECT totp_secret, totp_enabled
+        FROM lenders
+        WHERE id = $1
+        "#,
+        lender_id,
+    )
+    .fetch_optional(pool)
+    .await?;
+
+    match row {
+        Some(row) => Ok(row.totp_secret),
+        _ => Ok(None),
+    }
 }

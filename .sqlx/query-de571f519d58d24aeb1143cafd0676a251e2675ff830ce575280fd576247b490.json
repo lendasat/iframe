@@ -82,6 +82,16 @@
         "ordinal": 15,
         "name": "vetted",
         "type_info": "Bool"
+      },
+      {
+        "ordinal": 16,
+        "name": "totp_secret",
+        "type_info": "Varchar"
+      },
+      {
+        "ordinal": 17,
+        "name": "totp_enabled",
+        "type_info": "Bool"
       }
     ],
     "parameters": {
@@ -110,6 +120,8 @@
       false,
       false,
       true,
+      true,
+      false,
       true,
       false
     ]

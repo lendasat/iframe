@@ -4,7 +4,7 @@ use crate::routes::borrower::auth::jwt_or_api_auth;
 use crate::routes::borrower::PROFILE_TAG;
 use crate::routes::user_connection_details_middleware;
 use crate::routes::AppState;
-use crate::totp_helpers::create_totp;
+use crate::totp_helpers::create_totp_borrower;
 use axum::extract::FromRequest;
 use axum::extract::State;
 use axum::http::StatusCode;
@@ -246,7 +246,7 @@ async fn setup_totp(
         .await
         .map_err(Error::Database)?;
 
-    let totp = create_totp(secret, user.email.unwrap_or_else(|| user.name.clone()))
+    let totp = create_totp_borrower(secret, user.email.unwrap_or_else(|| user.name.clone()))
         .map_err(|_| Error::TotpGenerationFailed)?;
 
     let qr_code_uri = totp.get_url();
@@ -304,7 +304,7 @@ async fn verify_totp(
 
     let secret = Secret::Encoded(secret_str.clone());
 
-    let totp = create_totp(secret, user.email.unwrap_or_else(|| user.name.clone()))
+    let totp = create_totp_borrower(secret, user.email.unwrap_or_else(|| user.name.clone()))
         .map_err(|_| Error::TotpGenerationFailed)?;
 
     // Verify the provided TOTP code

@@ -1,0 +1,14 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "\n        UPDATE lenders\n        SET\n            totp_enabled = TRUE,\n            updated_at = CURRENT_TIMESTAMP\n        WHERE id = $1\n        ",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Bpchar"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "63e253261babd0d495c2dc1e5b9eeed86abfe6f152b36704008ff7db1e3f35dc"
+}

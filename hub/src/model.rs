@@ -138,6 +138,8 @@ pub struct Lender {
     pub password_reset_token: Option<String>,
     pub timezone: Option<String>,
     pub locale: Option<String>,
+    pub totp_secret: Option<String>,
+    pub totp_enabled: bool,
     #[serde(with = "time::serde::rfc3339::option")]
     pub password_reset_at: Option<OffsetDateTime>,
     #[serde(with = "time::serde::rfc3339")]

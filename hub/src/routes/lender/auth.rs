@@ -31,6 +31,7 @@ use crate::routes::lender::AUTH_TAG;
 use crate::routes::user_connection_details_middleware;
 use crate::routes::user_connection_details_middleware::UserConnectionDetails;
 use crate::routes::AppState;
+use crate::totp_helpers::create_totp_lender;
 use crate::utils::is_valid_email;
 use anyhow::Context;
 use axum::extract::FromRequest;
@@ -62,6 +63,7 @@ use srp::groups::G_2048;
 use srp::server::SrpServer;
 use std::sync::Arc;
 use time::OffsetDateTime;
+use totp_rs::Secret;
 use tracing::instrument;
 use tracing::Level;
 use utoipa_axum::router::OpenApiRouter;
@@ -87,6 +89,7 @@ pub(crate) fn router(app_state: Arc<AppState>) -> Router {
         )
         .route("/api/auth/pake-login", post(post_pake_login))
         .route("/api/auth/pake-verify", post(post_pake_verify))
+        .route("/api/auth/totp-verify-login", post(post_totp_verify_login))
         .route(
             "/api/auth/refresh-token",
             post(refresh_token_handler)
@@ -338,6 +341,49 @@ async fn post_pake_verify(
     let server_proof = server_verifier.proof();
     let server_proof = hex::encode(server_proof);
 
+    // Check if user has TOTP enabled
+    let totp_secret = db::lenders::get_totp_secret(&data.db, lender_id)
+        .await
+        .map_err(Error::database)?;
+
+    if totp_secret.is_some() {
+        // User has TOTP enabled, create temporary session token
+        let now = OffsetDateTime::now_utc();
+        let iat = now.unix_timestamp();
+        let exp = (now + time::Duration::minutes(5)).unix_timestamp(); // 5 minute expiry for TOTP verification
+
+        // We add a special prefix for pending TOTP logins. This way we know that this token is not
+        // yet valid.
+        let claims: TokenClaims = TokenClaims {
+            user_id: format!("totp_pending_{lender_id}",),
+            exp,
+            iat,
+        };
+
+        let session_token = encode(
+            &Header::default(),
+            &claims,
+            &EncodingKey::from_secret(data.config.jwt_secret.as_ref()),
+        )
+        .map_err(Error::AuthSessionDecode)?;
+
+        let response = Response::builder()
+            .status(StatusCode::OK)
+            .header(header::CONTENT_TYPE.as_str(), "application/json")
+            .body(
+                json!(PakeVerifyTotpResponse {
+                    server_proof,
+                    totp_required: true,
+                    session_token: Some(session_token),
+                })
+                .to_string(),
+            )
+            .context("PakeVerifyTotpResponse")
+            .map_err(Error::build_response)?;
+
+        return Ok(response);
+    }
+
     let now = OffsetDateTime::now_utc();
     let iat = now.unix_timestamp();
     let exp = (now + time::Duration::hours(COOKIE_EXPIRY_HOURS)).unix_timestamp();
@@ -452,6 +498,184 @@ async fn post_pake_verify(
         .body(
             json!(PakeVerifyResponse {
                 server_proof,
+                token,
+                enabled_features,
+                user: filtered_user,
+                wallet_backup_data
+            })
+            .to_string(),
+        )
+        .context("PakeVerifyResponse")
+        .map_err(Error::build_response)?;
+
+    Ok(response)
+}
+
+#[instrument(skip_all, fields(lender_id), err(Debug))]
+async fn post_totp_verify_login(
+    State(data): State<Arc<AppState>>,
+    Extension(connection_details): Extension<UserConnectionDetails>,
+    AppJson(body): AppJson<TotpVerifyLoginRequest>,
+) -> Result<impl IntoResponse, Error> {
+    // Decode and validate the session token
+    let claims = jsonwebtoken::decode::<TokenClaims>(
+        &body.session_token,
+        &jsonwebtoken::DecodingKey::from_secret(data.config.jwt_secret.as_ref()),
+        &jsonwebtoken::Validation::default(),
+    )
+    .map_err(Error::AuthSessionDecode)?;
+
+    // Check if this is a pending TOTP token
+    let user_id = claims.claims.user_id;
+    if !user_id.starts_with("totp_pending_") {
+        return Err(Error::InvalidTotpSession);
+    }
+
+    // expect is fine because we just checked above
+    let lender_id = user_id
+        .strip_prefix("totp_pending_")
+        .expect("user id to start with prefix");
+    tracing::Span::current().record("lender_id", lender_id);
+
+    // Get the user
+    let user = db::lenders::get_user_by_id(&data.db, lender_id)
+        .await
+        .map_err(Error::database)?
+        .ok_or(Error::EmailOrPasswordInvalid)?;
+
+    // Get TOTP secret
+    let secret_str = db::lenders::get_totp_secret(&data.db, lender_id)
+        .await
+        .map_err(Error::database)?
+        .ok_or(Error::TotpNotEnabled)?;
+
+    let secret = Secret::Encoded(secret_str);
+    let totp =
+        create_totp_lender(secret, user.email.clone()).map_err(|_| Error::TotpGenerationFailed)?;
+
+    // Verify the TOTP code
+    if !totp
+        .check_current(&body.totp_code)
+        .map_err(|_| Error::InvalidTotpCode)?
+    {
+        return Err(Error::InvalidTotpCode);
+    }
+
+    // Create full session token
+    let now = OffsetDateTime::now_utc();
+    let iat = now.unix_timestamp();
+    let exp = (now + time::Duration::hours(COOKIE_EXPIRY_HOURS)).unix_timestamp();
+    let claims: TokenClaims = TokenClaims {
+        user_id: lender_id.to_string(),
+        exp,
+        iat,
+    };
+
+    let token = encode(
+        &Header::default(),
+        &claims,
+        &EncodingKey::from_secret(data.config.jwt_secret.as_ref()),
+    )
+    .map_err(Error::AuthSessionDecode)?;
+
+    let cookie = Cookie::build(("token", token.to_owned()))
+        .path("/")
+        .max_age(time::Duration::hours(COOKIE_EXPIRY_HOURS))
+        .same_site(SameSite::Lax)
+        .http_only(true);
+
+    let wallet_backup = db::wallet_backups::find_by_lender_id(&data.db, lender_id)
+        .await
+        .map_err(Error::database)?;
+
+    let wallet_backup_data = WalletBackupData {
+        mnemonic_ciphertext: wallet_backup.mnemonic_ciphertext,
+        network: wallet_backup.network,
+    };
+
+    let features = db::lender_features::load_lender_features(&data.db, lender_id.to_string())
+        .await
+        .map_err(Error::database)?;
+
+    let enabled_features = features
+        .iter()
+        .filter_map(|f| {
+            if f.is_enabled {
+                Some(LenderLoanFeature {
+                    id: f.id.clone(),
+                    name: f.name.clone(),
+                })
+            } else {
+                None
+            }
+        })
+        .collect::<Vec<_>>();
+
+    let personal_telegram_token =
+        db::telegram_bot::lender::get_or_create_token_by_lender_id(&data.db, user.id.as_str())
+            .await
+            .map_err(Error::database)?;
+
+    let user_agent = connection_details
+        .user_agent
+        .unwrap_or("unknown".to_string());
+    let ip_address = connection_details.ip.unwrap_or("unknown".to_string());
+    tracing::debug!(
+        lender_id = user.id.to_string(),
+        ip_address,
+        ?user_agent,
+        "Lender logged in with TOTP"
+    );
+
+    let profile_url = data
+        .config
+        .borrower_frontend_origin
+        .join("/settings/profile")
+        .expect("to be a correct URL");
+
+    let location = geo_location::get_geo_info(ip_address.as_str()).await.ok();
+
+    if let Err(err) = db::user_logins::insert_lender_login_activity(
+        &data.db,
+        user.id.as_str(),
+        Some(ip_address.clone()),
+        location
+            .as_ref()
+            .map(|l| l.country.clone())
+            .unwrap_or_default(),
+        location
+            .as_ref()
+            .map(|l| l.city.clone())
+            .unwrap_or_default(),
+        user_agent.as_str(),
+    )
+    .await
+    {
+        tracing::warn!(
+            lender_id = user.id.to_string(),
+            "Failed to track login activity {err:#}"
+        )
+    }
+
+    data.notifications
+        .send_login_information_lender(
+            &user,
+            profile_url,
+            ip_address.as_str(),
+            OffsetDateTime::now_utc(),
+            location.map(|a| a.to_string()),
+            user_agent.as_str(),
+        )
+        .await;
+
+    let filtered_user = FilteredUser::new_user(&user, personal_telegram_token);
+
+    let response = Response::builder()
+        .status(StatusCode::OK)
+        .header(header::SET_COOKIE.as_str(), cookie.to_string().as_str())
+        .body(
+            json!(PakeVerifyResponse {
+                server_proof: "".to_string(), // Not used in TOTP verification
                 token,
                 enabled_features,
                 user: filtered_user,
@@ -877,6 +1101,19 @@ struct PakeVerifyResponse {
 }
 
 #[derive(Debug, Serialize)]
+struct PakeVerifyTotpResponse {
+    server_proof: String,
+    totp_required: bool,
+    session_token: Option<String>,
+}
+
+#[derive(Debug, Deserialize)]
+struct TotpVerifyLoginRequest {
+    totp_code: String,
+    session_token: String,
+}
+
+#[derive(Debug, Serialize)]
 struct MeResponse {
     enabled_features: Vec<LenderLoanFeature>,
     user: FilteredUser,
@@ -893,6 +1130,7 @@ struct FilteredUser {
     name: String,
     email: String,
     verified: bool,
+    totp_enabled: bool,
     #[serde(with = "time::serde::rfc3339")]
     created_at: OffsetDateTime,
     #[serde(with = "time::serde::rfc3339")]
@@ -911,6 +1149,7 @@ impl FilteredUser {
             email: user.email.to_owned(),
             name: user.name.to_owned(),
             verified: user.verified,
+            totp_enabled: user.totp_enabled,
             created_at: created_at_utc,
             updated_at: updated_at_utc,
             personal_telegram_token: personal_telegram_token.token,
@@ -992,6 +1231,14 @@ enum Error {
     UnexpectedPakeVerify,
     /// PAKE verification failed
     PakeVerifyFailed,
+    /// Invalid TOTP session token
+    InvalidTotpSession,
+    /// TOTP is not enabled for this user
+    TotpNotEnabled,
+    /// Invalid TOTP code provided
+    InvalidTotpCode,
+    /// Failed to generate TOTP secret
+    TotpGenerationFailed,
 }
 
 impl Error {
@@ -1093,6 +1340,15 @@ impl IntoResponse for Error {
             Error::PakeVerifyFailed => {
                 (StatusCode::BAD_REQUEST, "Failed to verify login".to_owned())
             }
+            Error::InvalidTotpSession => {
+                (StatusCode::UNAUTHORIZED, "Invalid TOTP session".to_owned())
+            }
+            Error::TotpNotEnabled => (StatusCode::BAD_REQUEST, "TOTP is not enabled".to_owned()),
+            Error::InvalidTotpCode => (StatusCode::BAD_REQUEST, "Invalid TOTP code".to_owned()),
+            Error::TotpGenerationFailed => (
+                StatusCode::INTERNAL_SERVER_ERROR,
+                "Failed to generate TOTP secret".to_owned(),
+            ),
         };
         (status, AppJson(ErrorResponse { message })).into_response()
     }

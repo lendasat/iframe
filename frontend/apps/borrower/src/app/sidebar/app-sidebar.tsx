@@ -12,7 +12,6 @@ import {
   Bell,
   MessageCircle,
   Code,
-  Key,
   Shield,
   MoreHorizontal,
 } from "lucide-react";

@@ -34,6 +34,10 @@ import {
   ApiKey,
   CreateApiKeyRequest,
   CreateApiKeyResponse,
+  TotpSetupResponse,
+  VerifyTotpRequest,
+  PakeVerifyTotpResponse,
+  TotpLoginVerifyRequest,
 } from "./models";
 import { isAllowedPageWithoutLogin, parseRFC3339Date } from "./utils";
 
@@ -112,7 +116,7 @@ export interface HttpClientLender {
     email: string,
     aPub: string,
     clientProof: string,
-  ) => Promise<PakeVerifyResponse>;
+  ) => Promise<PakeVerifyTotpResponse>;
   forgotPassword: (email: string) => Promise<string>;
   verifyEmail: (token: string) => Promise<string>;
   resetPassword: (
@@ -229,6 +233,13 @@ export interface HttpClientLender {
   getApiKeys: () => Promise<ApiKey[]>;
   createApiKey: (request: CreateApiKeyRequest) => Promise<CreateApiKeyResponse>;
   deleteApiKey: (id: number) => Promise<void>;
+
+  // TOTP methods
+  setupTotp: () => Promise<TotpSetupResponse>;
+  verifyTotp: (request: VerifyTotpRequest) => Promise<void>;
+  totpLoginVerify: (
+    request: TotpLoginVerifyRequest,
+  ) => Promise<PakeVerifyResponse>;
 }
 
 // Create a factory function to create our client
@@ -366,7 +377,7 @@ export const createHttpClientLender = (
     email: string,
     aPub: string,
     clientProof: string,
-  ): Promise<PakeVerifyResponse> => {
+  ): Promise<PakeVerifyTotpResponse> => {
     try {
       const response = await axiosClient.post("/api/auth/pake-verify", {
         email,
@@ -1201,6 +1212,41 @@ export const createHttpClientLender = (
     }
   };
 
+  // TOTP methods
+  const setupTotp = async (): Promise<TotpSetupResponse> => {
+    try {
+      const response: AxiosResponse<TotpSetupResponse> = await axiosClient.post(
+        "/api/users/totp/setup",
+      );
+      return response.data;
+    } catch (error) {
+      handleError(error, "setting up TOTP");
+      throw error;
+    }
+  };
+
+  const verifyTotp = async (request: VerifyTotpRequest): Promise<void> => {
+    try {
+      await axiosClient.post("/api/users/totp/verify", request);
+    } catch (error) {
+      handleError(error, "verifying TOTP");
+      throw error;
+    }
+  };
+
+  const totpLoginVerify = async (
+    request: TotpLoginVerifyRequest,
+  ): Promise<PakeVerifyResponse> => {
+    try {
+      const response: AxiosResponse<PakeVerifyResponse> =
+        await axiosClient.post("/api/auth/totp-verify-login", request);
+      return response.data;
+    } catch (error) {
+      handleError(error, "verifying TOTP login");
+      throw error;
+    }
+  };
+
   // Return all functions bundled as our client
   return {
     register,
@@ -1259,6 +1305,9 @@ export const createHttpClientLender = (
     getApiKeys,
     createApiKey,
     deleteApiKey,
+    setupTotp,
+    verifyTotp,
+    totpLoginVerify,
   };
 };
 
