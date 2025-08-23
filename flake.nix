@@ -3,9 +3,10 @@
 
   inputs = {
     nixpkgs.url = "github:NixOS/nixpkgs/nixos-unstable";
-    nixpkgs-stable.url = "github:NixOS/nixpkgs/nixos-24.05";
+    nixpkgs-stable.url = "github:NixOS/nixpkgs/nixos-25.05";
     rust-overlay.url = "github:oxalica/rust-overlay";
     flake-utils.url = "github:numtide/flake-utils";
+    naersk.url = "github:nix-community/naersk";
   };
 
   outputs = {
@@ -14,6 +15,7 @@
     nixpkgs-stable,
     rust-overlay,
     flake-utils,
+    naersk,
     ...
   }: let
     # System-independent outputs (NixOS modules)
@@ -74,9 +76,9 @@
         packages = {
           # Main hub package
           hub = with pkgs; let
-            rustPlatform' = makeRustPlatform {
-              cargo = rust-bin.beta.latest.default;
-              rustc = rust-bin.beta.latest.default;
+            naersk' = pkgs.callPackage naersk {
+              cargo = rustToolchain;
+              rustc = rustToolchain;
             };
 
             # Download swagger-ui for offline builds
@@ -85,29 +87,43 @@
               sha256 = "sha256-zrb8feuuDzt/g6y7Tucfh+Y2BWZov0soyNPR5LBqKx4=";
             };
           in
-            rustPlatform'.buildRustPackage {
+            naersk'.buildPackage {
               pname = "hub";
               version = "0.6.0";
 
               src = ./.;
 
-              cargoLock = {
-                lockFile = ./Cargo.lock;
-                outputHashes = {
-                  "bitmex-stream-0.1.0" = "sha256-6UUMhogOfJAI1PMiXuOGvQKitwaDOZdL6kQ9DP2bUNA=";
-                  "xtra-0.6.0" = "sha256-YIOjRc+Hzi0AKeFo21ztJR0ZDtEpfjHONKt9lptRL2A=";
-                };
-              };
-
               # Build only the hub binary from the workspace
               buildAndTestSubdir = "hub";
 
+              # Build dependencies
               nativeBuildInputs = [
                 pkg-config
+                unzip
               ];
-
-              # Set environment variables for swagger-ui build
-              SWAGGER_UI_DOWNLOAD_URL = "file://${swagger-ui-zip}";
+              
+              # Prepare swagger-ui files for the build
+              preBuild = ''
+                export HOME=$(mktemp -d)
+                mkdir -p frontend/dist/apps/borrower
+                mkdir -p frontend/dist/apps/lender
+                
+                # Create a writable temp directory for swagger-ui
+                export TMPDIR=$(mktemp -d)
+                
+                # Copy and make the swagger-ui zip accessible
+                cp ${swagger-ui-zip} $TMPDIR/swagger-ui.zip
+                chmod 644 $TMPDIR/swagger-ui.zip
+                
+                # Set the environment variable to the writable location
+                export SWAGGER_UI_DOWNLOAD_URL="file://$TMPDIR/swagger-ui.zip"
+                
+                # Pre-extract swagger-ui to avoid permission issues
+                mkdir -p $TMPDIR/swagger-ui
+                cd $TMPDIR
+                ${unzip}/bin/unzip -q swagger-ui.zip || true
+                cd -
+              '';
 
               buildInputs =
                 [
@@ -117,12 +133,6 @@
                   pkgs.darwin.apple_sdk.frameworks.Security
                   pkgs.darwin.apple_sdk.frameworks.CoreFoundation
                 ];
-
-              # Create empty frontend directories for build.rs
-              preBuild = ''
-                mkdir -p frontend/dist/apps/borrower
-                mkdir -p frontend/dist/apps/lender
-              '';
 
               # Include database migrations
               postInstall = ''
