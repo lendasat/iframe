@@ -215,7 +215,7 @@ hub:
 
 # Start the hub built by Nix
 hub-nix:
-    nix run .#hub
+    nix run .#hub-debug
 
 # Start hub in the background
 hub-d:

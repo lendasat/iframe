@@ -73,84 +73,103 @@
         rustfmt = rustBinNightly.passthru.availableComponents.rustfmt;
         rustAnalyzer = rustBinNightly.passthru.availableComponents.rust-analyzer;
       in {
-        packages = {
-          # Main hub package
-          hub = with pkgs; let
-            naersk' = pkgs.callPackage naersk {
-              cargo = rustToolchain;
-              rustc = rustToolchain;
-            };
+        packages = let
+          # Common build function for hub
+          buildHub = {
+            release ? true,
+            pname ? "hub",
+          }:
+            with pkgs; let
+              naersk' = pkgs.callPackage naersk {
+                cargo = rustToolchain;
+                rustc = rustToolchain;
+              };
 
-            # Download swagger-ui for offline builds
-            swagger-ui-zip = fetchurl {
-              url = "https://github.com/swagger-api/swagger-ui/archive/refs/tags/v5.17.3.zip";
-              sha256 = "sha256-zrb8feuuDzt/g6y7Tucfh+Y2BWZov0soyNPR5LBqKx4=";
-            };
-          in
-            naersk'.buildPackage {
-              pname = "hub";
-              version = "0.6.0";
+              # Download swagger-ui for offline builds
+              swagger-ui-zip = fetchurl {
+                url = "https://github.com/swagger-api/swagger-ui/archive/refs/tags/v5.17.3.zip";
+                sha256 = "sha256-zrb8feuuDzt/g6y7Tucfh+Y2BWZov0soyNPR5LBqKx4=";
+              };
+            in
+              naersk'.buildPackage {
+                inherit pname release;
+                version = "0.6.0";
 
-              src = ./.;
+                src = ./.;
 
-              # Build only the hub binary from the workspace
-              buildAndTestSubdir = "hub";
+                cargoBuildOptions = opts: opts ++ ["--package" "hub"];
 
-              # Build dependencies
-              nativeBuildInputs = [
-                pkg-config
-                unzip
-              ];
-              
-              # Prepare swagger-ui files for the build
-              preBuild = ''
-                export HOME=$(mktemp -d)
-                mkdir -p frontend/dist/apps/borrower
-                mkdir -p frontend/dist/apps/lender
-                
-                # Create a writable temp directory for swagger-ui
-                export TMPDIR=$(mktemp -d)
-                
-                # Copy and make the swagger-ui zip accessible
-                cp ${swagger-ui-zip} $TMPDIR/swagger-ui.zip
-                chmod 644 $TMPDIR/swagger-ui.zip
-                
-                # Set the environment variable to the writable location
-                export SWAGGER_UI_DOWNLOAD_URL="file://$TMPDIR/swagger-ui.zip"
-                
-                # Pre-extract swagger-ui to avoid permission issues
-                mkdir -p $TMPDIR/swagger-ui
-                cd $TMPDIR
-                ${unzip}/bin/unzip -q swagger-ui.zip || true
-                cd -
-              '';
+                # Build only the hub binary from the workspace
+                buildAndTestSubdir = "hub";
 
-              buildInputs =
-                [
-                  openssl
-                ]
-                ++ lib.optionals pkgs.stdenv.isDarwin [
-                  pkgs.darwin.apple_sdk.frameworks.Security
-                  pkgs.darwin.apple_sdk.frameworks.CoreFoundation
+                # Build dependencies
+                nativeBuildInputs = [
+                  pkg-config
+                  unzip
                 ];
 
-              # Include database migrations
-              postInstall = ''
-                mkdir -p $out/share/hub
-                cp -r hub/migrations $out/share/hub/
-              '';
+                # Prepare swagger-ui files for the build
+                preBuild = ''
+                  export HOME=$(mktemp -d)
+                  mkdir -p frontend/dist/apps/borrower
+                  mkdir -p frontend/dist/apps/lender
 
-              # Skip tests for deployment build
-              doCheck = false;
+                  # Create a writable temp directory for swagger-ui
+                  export TMPDIR=$(mktemp -d)
 
-              meta = with lib; {
-                description = "Lendasat Hub - Bitcoin lending platform backend";
-                license = licenses.unfree;
-                platforms = platforms.linux ++ platforms.darwin;
+                  # Copy and make the swagger-ui zip accessible
+                  cp ${swagger-ui-zip} $TMPDIR/swagger-ui.zip
+                  chmod 644 $TMPDIR/swagger-ui.zip
+
+                  # Set the environment variable to the writable location
+                  export SWAGGER_UI_DOWNLOAD_URL="file://$TMPDIR/swagger-ui.zip"
+
+                  # Pre-extract swagger-ui to avoid permission issues
+                  mkdir -p $TMPDIR/swagger-ui
+                  cd $TMPDIR
+                  ${unzip}/bin/unzip -q swagger-ui.zip || true
+                  cd -
+                '';
+
+                buildInputs =
+                  [
+                    openssl
+                  ]
+                  ++ lib.optionals pkgs.stdenv.isDarwin [
+                    pkgs.darwin.apple_sdk.frameworks.Security
+                    pkgs.darwin.apple_sdk.frameworks.CoreFoundation
+                  ];
+
+                # Include database migrations
+                postInstall = ''
+                  mkdir -p $out/share/hub
+                  cp -r hub/migrations $out/share/hub/
+                '';
+
+                # Skip tests for deployment build
+                doCheck = false;
+
+                meta = with lib; {
+                  description = "Lendasat Hub - Bitcoin lending platform backend${lib.optionalString (!release) " (debug build)"}";
+                  license = licenses.unfree;
+                  platforms = platforms.linux ++ platforms.darwin;
+                  mainProgram = "hub";
+                };
               };
-            };
+        in {
+          # Release build (optimized)
+          hub = buildHub {
+            release = true;
+            pname = "hub";
+          };
 
-          # Make default package point to hub
+          # Debug build (with debug symbols, no optimizations)
+          hub-debug = buildHub {
+            release = false;
+            pname = "hub-debug";
+          };
+
+          # Default package points to release build
           default = self.packages.${system}.hub;
         };
 
