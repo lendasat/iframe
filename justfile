@@ -209,8 +209,13 @@ build-frontend target='':
 ## Build hub functions
 ## ------------------------
 
+# Start the hub
 hub:
     cargo run --bin hub
+
+# Start the hub built by Nix
+hub-nix:
+    nix run .#hub
 
 # Start hub in the background
 hub-d:
