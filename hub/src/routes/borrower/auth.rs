@@ -30,6 +30,7 @@ use crate::routes::user_connection_details_middleware;
 use crate::routes::user_connection_details_middleware::UserConnectionDetails;
 use crate::routes::AppState;
 use crate::totp::create_totp_borrower;
+use crate::totp::TOTP_TMP_ID_PREFIX;
 use crate::utils::is_valid_email;
 use anyhow::Context;
 use axum::extract::rejection::JsonRejection;
@@ -510,7 +511,7 @@ async fn post_pake_verify_totp_check(
         // We add a special prefix for pending TOTP logins. This way we know that this token is not
         // yet valid.
         let claims: TokenClaims = TokenClaims {
-            user_id: format!("totp_pending_{borrower_id}",),
+            user_id: format!("{TOTP_TMP_ID_PREFIX}{borrower_id}",),
             exp,
             iat,
         };
@@ -782,15 +783,10 @@ async fn post_totp_verify_login(
     .claims;
 
     // Check if this is a TOTP pending token
-    if !claims.user_id.starts_with("totp_pending_") {
-        return Err(Error::EmailOrPasswordInvalid);
-    }
-
-    // we checked above
-    let borrower_id = claims
-        .user_id
-        .strip_prefix("totp_pending_")
-        .expect("user id to start with prefix");
+    let borrower_id = match crate::totp::stripped_user_id(claims.user_id.as_str()) {
+        Some(id) => id,
+        None => return Err(Error::InvalidTotpSession),
+    };
 
     // Get user and verify TOTP
     let user = get_user_by_id(&data.db, borrower_id)
@@ -1548,6 +1544,8 @@ enum Error {
     CookieParsing(#[allow(dead_code)] String),
     /// Failed to create new token
     TokenCreation(#[allow(dead_code)] String),
+    /// Invalid TOTP session token
+    InvalidTotpSession,
 }
 
 impl Error {
@@ -1650,6 +1648,9 @@ impl IntoResponse for Error {
                 StatusCode::FORBIDDEN,
                 "Cannot change password before upgrading to PAKE".to_owned(),
             ),
+            Error::InvalidTotpSession => {
+                (StatusCode::BAD_REQUEST, "Invalid credentials.".to_owned())
+            }
         };
 
         (status, AppJson(ErrorResponse { message })).into_response()
