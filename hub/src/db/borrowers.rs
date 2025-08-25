@@ -658,6 +658,12 @@ pub async fn disable_totp(pool: &PgPool, borrower_id: &str) -> Result<()> {
     Ok(())
 }
 
+/// Returns the totp secret
+///
+/// This function differs slightly to `get_totp_secret_for_setup` as it **DOES** consider if totp is
+/// enabled or not. It will only return a secret if  `totp_enabled` is true.
+/// The reason for this is that the user might have cancelled a totp-setup once and has a
+/// `totp_secret` in the database but `totp_enabled` is not enabled.
 pub async fn get_totp_secret(pool: &PgPool, borrower_id: &str) -> Result<Option<String>> {
     let row = sqlx::query!(
         r#"
@@ -676,10 +682,17 @@ pub async fn get_totp_secret(pool: &PgPool, borrower_id: &str) -> Result<Option<
     }
 }
 
+/// Returns the totp secret during the totp setup
+///
+/// This function differs slightly to `get_totp_secret` as it does not consider if totp is enabled
+/// or not. The reason for this is that we only set `totp_enabled` to true, if the user verified the
+/// first code (for which we need to load the secret). The reason for this is that the user might
+/// have cancelled a totp-setup once and has a `totp_secret` in the database but `totp_enabled` is
+/// not enabled.
 pub async fn get_totp_secret_for_setup(pool: &PgPool, borrower_id: &str) -> Result<Option<String>> {
     let row = sqlx::query!(
         r#"
-        SELECT totp_secret, totp_enabled
+        SELECT totp_secret
         FROM borrowers_password_auth
         WHERE borrower_id = $1
         "#,
