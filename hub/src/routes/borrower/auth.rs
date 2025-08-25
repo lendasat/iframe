@@ -29,7 +29,7 @@ use crate::routes::borrower::AUTH_TAG;
 use crate::routes::user_connection_details_middleware;
 use crate::routes::user_connection_details_middleware::UserConnectionDetails;
 use crate::routes::AppState;
-use crate::totp_helpers::create_totp_borrower;
+use crate::totp::create_totp_borrower;
 use crate::utils::is_valid_email;
 use anyhow::Context;
 use axum::extract::rejection::JsonRejection;
@@ -450,6 +450,7 @@ async fn post_pake_verify_mobile(
     .await
 }
 
+#[instrument(skip_all, fields(borrower_id), err(Debug))]
 async fn post_pake_verify_totp_check(
     data: Arc<AppState>,
     connection_details: UserConnectionDetails,
@@ -464,7 +465,6 @@ async fn post_pake_verify_totp_check(
         .ok_or(Error::EmailOrPasswordInvalid)?;
 
     let borrower_id = &user.id;
-    tracing::Span::current().record("borrower_id", borrower_id);
 
     if !password_auth_info.verified {
         return Err(Error::EmailNotVerified);
@@ -660,7 +660,12 @@ async fn post_pake_verify_aux(
             .await
             .map_err(Error::database)?;
 
-    let filtered_user = FilteredUser::new_user(&user, &password_auth_info, personal_telegram_token);
+    let filtered_user = FilteredUser::new_user(
+        &user,
+        personal_telegram_token,
+        password_auth_info.verified,
+        password_auth_info.email,
+    );
 
     let wallet_backup = db::wallet_backups::find_by_borrower_id(&data.db, borrower_id)
         .await
@@ -793,19 +798,6 @@ async fn post_totp_verify_login(
         .map_err(Error::database)?
         .ok_or(Error::EmailOrPasswordInvalid)?;
 
-    // Create a dummy password auth for the response (we already validated TOTP)
-    let password_auth_info = PasswordAuth {
-        borrower_id: borrower_id.to_string(),
-        email: user.email.clone().unwrap_or_default(),
-        salt: "".to_string(),
-        verifier: "".to_string(),
-        password: None,
-        verified: true,
-        verification_code: None,
-        password_reset_token: None,
-        password_reset_at: None,
-    };
-
     tracing::Span::current().record("borrower_id", borrower_id);
 
     // Get TOTP secret and verify code
@@ -882,7 +874,12 @@ async fn post_totp_verify_login(
             .await
             .map_err(Error::database)?;
 
-    let filtered_user = FilteredUser::new_user(&user, &password_auth_info, personal_telegram_token);
+    let filtered_user = FilteredUser::new_user(
+        &user,
+        personal_telegram_token,
+        true,
+        user.email.clone().unwrap_or_default(),
+    );
 
     let wallet_backup = db::wallet_backups::find_by_borrower_id(&data.db, borrower_id)
         .await

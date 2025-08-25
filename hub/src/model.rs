@@ -1226,16 +1226,17 @@ impl From<PersonalReferralCode> for PersonalReferralCodeResponse {
 impl FilteredUser {
     pub fn new_user(
         user: &Borrower,
-        password_auth_info: &PasswordAuth,
         personal_telegram_token: crate::db::telegram_bot::TelegramBotToken,
+        verified: bool,
+        email: Email,
     ) -> Self {
         let created_at_utc = user.created_at;
         let updated_at_utc = user.updated_at;
         Self {
             id: user.id.to_string(),
-            email: password_auth_info.email.clone(),
+            email: email.clone(),
             name: user.name.to_owned(),
-            verified: password_auth_info.verified,
+            verified,
             used_referral_code: user.used_referral_code.clone(),
             personal_referral_codes: user
                 .personal_referral_codes

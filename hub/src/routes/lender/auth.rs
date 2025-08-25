@@ -27,7 +27,7 @@ use crate::routes::lender::AUTH_TAG;
 use crate::routes::user_connection_details_middleware;
 use crate::routes::user_connection_details_middleware::UserConnectionDetails;
 use crate::routes::AppState;
-use crate::totp_helpers::create_totp_lender;
+use crate::totp::create_totp_lender;
 use crate::utils::is_valid_email;
 use anyhow::Context;
 use axum::extract::FromRequest;
@@ -1209,7 +1209,7 @@ impl IntoResponse for Error {
             Error::InvalidTotpCode => (StatusCode::BAD_REQUEST, "Invalid TOTP code".to_owned()),
             Error::TotpGenerationFailed => (
                 StatusCode::INTERNAL_SERVER_ERROR,
-                "Failed to generate TOTP secret".to_owned(),
+                "Something went wrong".to_owned(),
             ),
         };
         (status, AppJson(ErrorResponse { message })).into_response()

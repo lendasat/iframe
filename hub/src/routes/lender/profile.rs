@@ -3,7 +3,7 @@ use crate::model::Lender;
 use crate::routes::lender::auth::jwt_or_api_auth;
 use crate::routes::user_connection_details_middleware;
 use crate::routes::AppState;
-use crate::totp_helpers::create_totp_lender;
+use crate::totp::create_totp_lender;
 use axum::extract::FromRequest;
 use axum::extract::State;
 use axum::http::StatusCode;
@@ -190,7 +190,7 @@ impl IntoResponse for Error {
             ),
             Error::TotpGenerationFailed => (
                 StatusCode::INTERNAL_SERVER_ERROR,
-                "Failed to generate TOTP secret".to_owned(),
+                "Something went wrong".to_owned(),
             ),
             Error::TotpNotEnabled => (
                 StatusCode::BAD_REQUEST,
