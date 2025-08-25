@@ -10,6 +10,7 @@ use axum::http::StatusCode;
 use axum::middleware;
 use axum::response::IntoResponse;
 use axum::response::Response;
+use axum::routing::delete;
 use axum::routing::post;
 use axum::routing::put;
 use axum::Extension;
@@ -47,6 +48,13 @@ pub(crate) fn router(app_state: Arc<AppState>) -> Router {
         .route(
             "/api/users/totp/verify",
             post(verify_totp).route_layer(middleware::from_fn_with_state(
+                app_state.clone(),
+                jwt_or_api_auth::auth,
+            )),
+        )
+        .route(
+            "/api/users/totp",
+            delete(disable_totp).route_layer(middleware::from_fn_with_state(
                 app_state.clone(),
                 jwt_or_api_auth::auth,
             )),
@@ -148,6 +156,8 @@ enum Error {
     InvalidTotpCode,
     /// Failed to generate TOTP secret
     TotpGenerationFailed,
+    /// TOTP is not enabled for this user
+    TotpNotEnabled,
 }
 
 impl Error {
@@ -181,6 +191,10 @@ impl IntoResponse for Error {
             Error::TotpGenerationFailed => (
                 StatusCode::INTERNAL_SERVER_ERROR,
                 "Failed to generate TOTP secret".to_owned(),
+            ),
+            Error::TotpNotEnabled => (
+                StatusCode::BAD_REQUEST,
+                "TOTP is not enabled for this user".to_owned(),
             ),
         };
         (status, AppJson(ErrorResponse { message })).into_response()
@@ -257,6 +271,40 @@ async fn verify_totp(
 
     // Enable TOTP (secret is already stored)
     db::lenders::enable_totp(&data.db, &user.id)
+        .await
+        .map_err(Error::database)?;
+
+    Ok(())
+}
+
+#[instrument(skip_all, fields(lender_id = user.id), err(Debug))]
+async fn disable_totp(
+    State(data): State<Arc<AppState>>,
+    Extension(user): Extension<Lender>,
+    Json(body): Json<VerifyTotpRequest>,
+) -> Result<(), Error> {
+    // Check if user has TOTP enabled
+    let existing_secret = db::lenders::get_totp_secret(&data.db, &user.id)
+        .await
+        .map_err(Error::database)?;
+
+    let secret_str = existing_secret.ok_or(Error::TotpNotEnabled)?;
+
+    // Verify the TOTP code before disabling
+    let secret = Secret::Encoded(secret_str);
+    let totp =
+        create_totp_lender(secret, user.email.clone()).map_err(|_| Error::TotpGenerationFailed)?;
+
+    // Verify the provided TOTP code
+    if !totp
+        .check_current(&body.totp_code)
+        .map_err(|_| Error::InvalidTotpCode)?
+    {
+        return Err(Error::InvalidTotpCode);
+    }
+
+    // Disable TOTP for the user
+    db::lenders::disable_totp(&data.db, &user.id)
         .await
         .map_err(Error::database)?;
 

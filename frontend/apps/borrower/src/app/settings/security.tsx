@@ -67,7 +67,7 @@ type CreateApiKeyForm = z.infer<typeof createApiKeySchema>;
 export default function SecuritySettings() {
   const httpClient = useHttpClientBorrower();
   const { user, refreshUser } = useAuth();
-  const { setupTotp, verifyTotp } = httpClient;
+  const { setupTotp, verifyTotp, disableTotp } = httpClient;
 
   // API Keys state
   const [apiKeys, setApiKeys] = useState<ApiKey[]>([]);
@@ -88,6 +88,8 @@ export default function SecuritySettings() {
   const [totpCode, setTotpCode] = useState("");
   const [isTotpLoading, setIsTotpLoading] = useState(false);
   const [showTotpDialog, setShowTotpDialog] = useState(false);
+  const [showDisableDialog, setShowDisableDialog] = useState(false);
+  const [disableTotpCode, setDisableTotpCode] = useState("");
   const [totpError, setTotpError] = useState("");
 
   const form = useForm<CreateApiKeyForm>({
@@ -133,6 +135,27 @@ export default function SecuritySettings() {
     } catch (err) {
       console.error("Failed verifying TOTP:", err);
       setTotpError(`Failed to verify TOTP code: ${err}`);
+    }
+    setIsTotpLoading(false);
+  };
+
+  const handleDisableTotp = async () => {
+    if (!disableTotpCode || disableTotpCode.length !== 6) {
+      setTotpError("Please enter a valid 6-digit code");
+      return;
+    }
+
+    setIsTotpLoading(true);
+    setTotpError("");
+    try {
+      await disableTotp({ totp_code: disableTotpCode });
+      toast.success("TOTP has been disabled successfully");
+      setShowDisableDialog(false);
+      setDisableTotpCode("");
+      await refreshUser();
+    } catch (err) {
+      console.error("Failed disabling TOTP:", err);
+      setTotpError("Invalid TOTP code. Please try again.");
     }
     setIsTotpLoading(false);
   };
@@ -235,7 +258,7 @@ export default function SecuritySettings() {
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <div className="flex items-center justify-between p-4 border rounded-lg">
+          <div className="flex items-center justify-between rounded-lg border p-4">
             <div className="flex items-center gap-3">
               <Shield
                 className={`h-5 w-5 ${user.totp_enabled ? "text-green-600" : "text-blue-600"}`}
@@ -244,7 +267,7 @@ export default function SecuritySettings() {
                 <h5 className="text-sm font-medium">
                   Time-based One-Time Password (TOTP)
                 </h5>
-                <p className="text-xs text-gray-500 mt-1">
+                <p className="mt-1 text-xs text-gray-500">
                   {user.totp_enabled
                     ? "Your account is protected with TOTP authentication"
                     : "Secure your account with authenticator app codes"}
@@ -252,13 +275,23 @@ export default function SecuritySettings() {
               </div>
             </div>
             {user.totp_enabled ? (
-              <Badge
-                variant="outline"
-                className="text-green-700 border-green-300"
-              >
-                <Shield className="mr-1 h-3 w-3" />
-                Enabled
-              </Badge>
+              <div className="flex items-center gap-2">
+                <Badge
+                  variant="outline"
+                  className="border-green-300 text-green-700"
+                >
+                  <Shield className="mr-1 h-3 w-3" />
+                  Enabled
+                </Badge>
+                <Button
+                  onClick={() => setShowDisableDialog(true)}
+                  size="sm"
+                  variant="destructive"
+                >
+                  <Trash2 className="mr-2 h-4 w-4" />
+                  Disable
+                </Button>
+              </div>
             ) : (
               <Button
                 onClick={handleSetupTotp}
@@ -310,11 +343,11 @@ export default function SecuritySettings() {
             {totpSetupData && (
               <div className="space-y-4">
                 {/* QR Code */}
-                <div className="flex justify-center p-4 bg-white border rounded-lg">
+                <div className="flex justify-center rounded-lg border bg-white p-4">
                   <img
                     src={`https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(totpSetupData.qr_code_uri)}`}
                     alt="TOTP QR Code"
-                    className="w-48 h-48"
+                    className="h-48 w-48"
                   />
                 </div>
 
@@ -325,7 +358,7 @@ export default function SecuritySettings() {
                     Manually enter this secret in your authenticator app:
                   </p>
                   <div className="flex items-center gap-2">
-                    <code className="text-xs bg-gray-100 px-2 py-1 rounded font-mono break-all flex-1">
+                    <code className="flex-1 break-all rounded bg-gray-100 px-2 py-1 font-mono text-xs">
                       {totpSetupData.secret}
                     </code>
                     <Button
@@ -398,6 +431,96 @@ export default function SecuritySettings() {
         </DialogContent>
       </Dialog>
 
+      {/* TOTP Disable Dialog */}
+      <Dialog
+        open={showDisableDialog}
+        onOpenChange={(open) => {
+          setShowDisableDialog(open);
+          if (!open) {
+            setTotpError("");
+            setDisableTotpCode("");
+          }
+        }}
+      >
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Disable Two-Factor Authentication</DialogTitle>
+            <DialogDescription>
+              Enter your current TOTP code to confirm disabling two-factor
+              authentication.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4">
+            {totpError && (
+              <Alert variant="destructive" className="text-sm">
+                <CircleAlert className="h-4 w-4" />
+                <AlertDescription className="text-xs">
+                  {totpError}
+                </AlertDescription>
+              </Alert>
+            )}
+
+            <Alert
+              variant="default"
+              className="border-yellow-200 bg-yellow-50 text-yellow-900"
+            >
+              <AlertTriangle className="h-4 w-4" />
+              <AlertDescription>
+                Disabling TOTP will reduce your account security. Make sure you
+                understand the risks.
+              </AlertDescription>
+            </Alert>
+
+            <div className="space-y-2">
+              <label
+                htmlFor="disable-totp-code"
+                className="text-sm font-medium"
+              >
+                Enter 6-digit code from your authenticator app:
+              </label>
+              <Input
+                id="disable-totp-code"
+                type="text"
+                placeholder="123456"
+                value={disableTotpCode}
+                onChange={(e) =>
+                  setDisableTotpCode(
+                    e.target.value.replace(/\D/g, "").slice(0, 6),
+                  )
+                }
+                className="text-center text-lg tracking-widest"
+                maxLength={6}
+              />
+            </div>
+
+            <div className="flex gap-2">
+              <Button
+                onClick={handleDisableTotp}
+                disabled={isTotpLoading || disableTotpCode.length !== 6}
+                className="flex-1"
+                variant="destructive"
+              >
+                {isTotpLoading ? (
+                  <Loader className="mr-2 h-4 w-4 animate-spin" />
+                ) : null}
+                Disable TOTP
+              </Button>
+              <Button
+                variant="outline"
+                onClick={() => {
+                  setShowDisableDialog(false);
+                  setDisableTotpCode("");
+                  setTotpError("");
+                }}
+                disabled={isTotpLoading}
+              >
+                Cancel
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+
       {/* New API Key Display */}
       {newApiKey && (
         <Alert className="border-green-200 bg-green-50 dark:border-green-800 dark:bg-green-950">
@@ -409,8 +532,8 @@ export default function SecuritySettings() {
               shown again.
             </p>
             <div className="flex items-center space-x-2">
-              <div className="flex-1 min-w-0">
-                <div className="font-mono text-sm bg-white dark:bg-gray-900 p-2 rounded border relative">
+              <div className="min-w-0 flex-1">
+                <div className="relative rounded border bg-white p-2 font-mono text-sm dark:bg-gray-900">
                   {showNewApiKey ? newApiKey : "•".repeat(50)}
                   <Button
                     size="sm"
@@ -505,12 +628,12 @@ export default function SecuritySettings() {
         </CardHeader>
         <CardContent>
           {isLoading ? (
-            <div className="text-center py-8 text-muted-foreground">
+            <div className="text-muted-foreground py-8 text-center">
               Loading API keys...
             </div>
           ) : apiKeys.length === 0 ? (
-            <div className="text-center py-8 text-muted-foreground">
-              <Key className="mx-auto h-12 w-12 mb-4 opacity-50" />
+            <div className="text-muted-foreground py-8 text-center">
+              <Key className="mx-auto mb-4 h-12 w-12 opacity-50" />
               <p>No API keys created yet</p>
               <p className="text-sm">
                 Create your first API key to get started

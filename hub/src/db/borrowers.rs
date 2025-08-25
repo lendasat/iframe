@@ -640,6 +640,24 @@ pub async fn enable_totp(pool: &PgPool, borrower_id: &str) -> Result<()> {
     Ok(())
 }
 
+pub async fn disable_totp(pool: &PgPool, borrower_id: &str) -> Result<()> {
+    sqlx::query!(
+        r#"
+        UPDATE borrowers_password_auth
+        SET
+            totp_secret = NULL,
+            totp_enabled = FALSE,
+            updated_at = CURRENT_TIMESTAMP
+        WHERE borrower_id = $1
+        "#,
+        borrower_id,
+    )
+    .execute(pool)
+    .await?;
+
+    Ok(())
+}
+
 pub async fn get_totp_secret(pool: &PgPool, borrower_id: &str) -> Result<Option<String>> {
     let row = sqlx::query!(
         r#"

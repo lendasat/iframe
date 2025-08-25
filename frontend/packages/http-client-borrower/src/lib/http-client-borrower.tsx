@@ -262,6 +262,7 @@ export interface HttpClient {
   // TOTP methods
   setupTotp: () => Promise<TotpSetupResponse>;
   verifyTotp: (request: VerifyTotpRequest) => Promise<void>;
+  disableTotp: (request: VerifyTotpRequest) => Promise<void>;
   totpLoginVerify: (
     request: TotpLoginVerifyRequest,
   ) => Promise<PakeVerifyResponse>;
@@ -1241,6 +1242,15 @@ export const createHttpClient = (
     }
   };
 
+  const disableTotp = async (request: VerifyTotpRequest): Promise<void> => {
+    try {
+      await axiosClient.delete("/api/users/totp", { data: request });
+    } catch (error) {
+      handleError(error, "disabling TOTP");
+      throw error;
+    }
+  };
+
   const totpLoginVerify = async (
     request: TotpLoginVerifyRequest,
   ): Promise<PakeVerifyResponse> => {
@@ -1315,6 +1325,7 @@ export const createHttpClient = (
     deleteApiKey,
     setupTotp,
     verifyTotp,
+    disableTotp,
     totpLoginVerify,
   };
 };
