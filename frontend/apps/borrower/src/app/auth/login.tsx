@@ -1,6 +1,7 @@
 import { md5CaseInsensitive } from "@frontend/browser-wallet";
 import {
-  LoginResponseOrUpgrade,
+  PakeVerifiedResponse,
+  TotpRequired,
   useAuth,
 } from "@frontend/http-client-borrower";
 import { LoginForm } from "@frontend/shadcn";
@@ -27,7 +28,7 @@ function Login() {
     totpCode?: string,
     sessionToken?: string,
   ) => {
-    let loginResponse: LoginResponseOrUpgrade;
+    let loginResponse: TotpRequired | PakeVerifiedResponse;
 
     if (totpCode && sessionToken) {
       // This is the TOTP verification step
@@ -35,11 +36,6 @@ function Login() {
     } else {
       // This is the initial login step
       loginResponse = await login(email, password);
-    }
-
-    if ("must_upgrade_to_pake" in loginResponse) {
-      navigate("/upgrade-to-pake");
-      return;
     }
 
     if ("totp_required" in loginResponse) {

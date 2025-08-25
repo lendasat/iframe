@@ -17,7 +17,6 @@ export const isAllowedPageWithoutLogin = (path: string) => {
     path.includes("verifyemail") ||
     path.includes("logout") ||
     path.includes("error") ||
-    path.includes("upgrade-to-pake") ||
     path.includes("waitlist")
   );
 };

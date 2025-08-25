@@ -157,8 +157,6 @@ export const changeProtocolToWSS = (url: string): string => {
 export * from "./lib/auth/forgot-password-form";
 export * from "./lib/auth/registration-form";
 export * from "./lib/auth/reset-password-form";
-export * from "./lib/auth/upgrade-to-pake-form";
-export * from "./lib/auth/upgrade-to-pake";
 export * from "./lib/auth/waitlist-form";
 export * from "./lib/auth/waitlist-success";
 export * from "./lib/bank-details/add-fiat-details-dialog";

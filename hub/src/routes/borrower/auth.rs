@@ -13,9 +13,7 @@ use crate::db::wallet_backups::NewBorrowerWalletBackup;
 use crate::geo_location;
 use crate::model::Borrower;
 use crate::model::BorrowerLoanFeature;
-use crate::model::ContractStatus;
 use crate::model::FilteredUser;
-use crate::model::FinishUpgradeToPakeRequest;
 use crate::model::ForgotPasswordSchema;
 use crate::model::PakeLoginRequest;
 use crate::model::PakeLoginResponse;
@@ -26,8 +24,6 @@ use crate::model::RegisterUserSchema;
 use crate::model::ResetLegacyPasswordSchema;
 use crate::model::ResetPasswordSchema;
 use crate::model::TokenClaims;
-use crate::model::UpgradeToPakeRequest;
-use crate::model::UpgradeToPakeResponse;
 use crate::model::WalletBackupData;
 use crate::routes::borrower::AUTH_TAG;
 use crate::routes::user_connection_details_middleware;
@@ -46,7 +42,6 @@ use axum::http::StatusCode;
 use axum::middleware;
 use axum::response::IntoResponse;
 use axum::response::Response;
-use axum::routing::post;
 use axum::Extension;
 use axum::Json;
 use axum_extra::extract::cookie::Cookie;
@@ -109,11 +104,6 @@ pub(crate) fn router(app_state: Arc<AppState>) -> OpenApiRouter {
         .routes(routes!(reset_legacy_password_handler))
         .routes(routes!(post_add_to_waitlist));
 
-    // undocumented routes
-    let undocumented_routes = OpenApiRouter::new()
-        .route("/upgrade-to-pake", post(post_start_upgrade_to_pake))
-        .route("/finish-upgrade-to-pake", post(post_finish_upgrade_to_pake));
-
     // Routes requiring JWT authentication
     let jwt_routes = OpenApiRouter::new()
         .routes(routes!(refresh_token_handler))
@@ -133,7 +123,6 @@ pub(crate) fn router(app_state: Arc<AppState>) -> OpenApiRouter {
         ));
 
     public_routes
-        .merge(undocumented_routes)
         .merge(jwt_routes)
         .merge(jwt_or_api_routes)
         .layer(
@@ -338,7 +327,7 @@ async fn post_register(
         ),
         (
             status = 400,
-            description = "Invalid email, email not verified, or PAKE upgrade required"
+            description = "Invalid email, email not verified"
         )
     )
 )]
@@ -361,8 +350,10 @@ async fn post_pake_login(
     }
 
     // The presence of a password hash indicates that the user has not upgraded to PAKE yet.
+    // We removed the upgrade path as all contracts have been upgraded
     if password_auth_info.password.is_some() {
-        return Err(Error::PakeUpgradeRequired);
+        tracing::error!(email = email.as_str(), "User never upgraded to pake.");
+        return Err(Error::PrePakeUser);
     }
 
     let verifier = hex::decode(password_auth_info.verifier).map_err(Error::InvalidVerifier)?;
@@ -969,143 +960,6 @@ async fn post_totp_verify_login(
     Ok(response)
 }
 
-/// Handle the borrower's attempt to upgrade to the PAKE protocol.
-///
-/// We must first verify their email and old password.
-///
-/// We return their wallet backup data, so that they can decrypt it locally and send us the backup
-/// encrypted using their new password.
-/// Start upgrade from legacy password to PAKE authentication.
-#[instrument(skip_all, fields(borrower_id), err(Debug))]
-async fn post_start_upgrade_to_pake(
-    State(data): State<Arc<AppState>>,
-    AppJson(body): AppJson<UpgradeToPakeRequest>,
-) -> Result<AppJson<UpgradeToPakeResponse>, Error> {
-    let (user, password_auth_info) = get_user_by_email(&data.db, body.email.as_str())
-        .await
-        .map_err(Error::database)?
-        .ok_or(Error::EmailOrPasswordInvalid)?;
-
-    let borrower_id = &user.id;
-    tracing::Span::current().record("borrower_id", borrower_id);
-
-    if !password_auth_info.verified {
-        return Err(Error::EmailNotVerified);
-    }
-
-    let is_valid = password_auth_info.check_password(body.old_password.as_str());
-
-    if !is_valid {
-        return Err(Error::InvalidLegacyPassword);
-    }
-
-    let wallet_backup = db::wallet_backups::find_by_borrower_id(&data.db, borrower_id)
-        .await
-        .context("Missing wallet backup")
-        .map_err(Error::database)?;
-
-    let old_wallet_backup_data = WalletBackupData {
-        mnemonic_ciphertext: wallet_backup.mnemonic_ciphertext,
-        network: wallet_backup.network,
-    };
-
-    let contracts = db::contracts::load_contracts_by_borrower_id(&data.db, borrower_id)
-        .await
-        .map_err(Error::database)?;
-
-    let contract_pks = contracts
-        .iter()
-        // Contracts that are not yet closed or were never approved.
-        .filter(|c| {
-            !matches!(
-                c.status,
-                ContractStatus::Closed
-                    | ContractStatus::ClosedByLiquidation
-                    | ContractStatus::ClosedByDefaulting
-                    | ContractStatus::Cancelled
-                    | ContractStatus::RequestExpired
-                    | ContractStatus::ApprovalExpired
-            )
-        })
-        // Contracts that may have been funded.
-        .filter(|c| c.contract_address.is_some())
-        .filter_map(|c| match c.borrower_derivation_path {
-            Some(_) => None,
-            None => Some(c.borrower_pk),
-        })
-        .collect::<Vec<_>>();
-
-    Ok(AppJson(UpgradeToPakeResponse {
-        old_wallet_backup_data,
-        contract_pks,
-    }))
-}
-
-#[derive(Debug, Deserialize, Serialize, ToSchema)]
-struct PakeUpgradedResponse {
-    upgraded: bool,
-}
-
-/// Handle the borrower's attempt to finish the upgrade to the PAKE protocol.
-///
-/// We must first verify their email and old password.
-///
-/// We then instert their new wallet backup as a separate entry.
-///
-/// After that, we insert in the DB values needed to authenticate the borrower via PAKE.
-/// Additionally, we erase the old pasword hash from the database, as the borrower won't be
-/// authenticating that way anymore.
-/// Complete upgrade from legacy password to PAKE authentication.
-#[instrument(skip_all, fields(borrower_id), err(Debug))]
-async fn post_finish_upgrade_to_pake(
-    State(data): State<Arc<AppState>>,
-    AppJson(body): AppJson<FinishUpgradeToPakeRequest>,
-) -> Result<AppJson<PakeUpgradedResponse>, Error> {
-    let (user, password_auth_info) = get_user_by_email(&data.db, body.email.as_str())
-        .await
-        .map_err(Error::database)?
-        .ok_or(Error::EmailOrPasswordInvalid)?;
-
-    let borrower_id = user.id.clone();
-    tracing::Span::current().record("borrower_id", &borrower_id);
-
-    if !password_auth_info.verified {
-        return Err(Error::EmailNotVerified);
-    }
-
-    let is_valid = password_auth_info.check_password(body.old_password.as_str());
-
-    if !is_valid {
-        return Err(Error::InvalidLegacyPassword);
-    }
-
-    let mut db_tx = data.db.begin().await.map_err(Error::database)?;
-
-    db::wallet_backups::insert_borrower_backup(
-        &mut *db_tx,
-        NewBorrowerWalletBackup {
-            borrower_id,
-            mnemonic_ciphertext: body.new_wallet_backup_data.mnemonic_ciphertext,
-            network: body.new_wallet_backup_data.network,
-        },
-    )
-    .await
-    .map_err(Error::database)?;
-
-    db::borrowers::upgrade_to_pake(
-        &mut *db_tx,
-        body.email.as_str(),
-        body.salt.as_str(),
-        body.verifier.as_str(),
-    )
-    .await
-    .map_err(Error::database)?;
-
-    db_tx.commit().await.map_err(Error::database)?;
-
-    Ok(AppJson(PakeUpgradedResponse { upgraded: true }))
-}
-
 /// Verify user email with verification code.
 #[utoipa::path(
     get,
@@ -1658,8 +1512,8 @@ enum Error {
     InvalidVerificationCode,
     /// User already verified.
     AlreadyVerified,
-    /// User legacy password and email did not match.
-    InvalidLegacyPassword,
+    /// User never upgraded to pake - we need them to reach out to us
+    PrePakeUser,
     /// Failed to build a response.
     BuildResponse(#[allow(dead_code)] anyhow::Error),
     /// Could not decode the user's authentication session token.
@@ -1669,8 +1523,6 @@ enum Error {
         #[allow(dead_code)]
         borrower_id: String,
     },
-    /// Cannot log in without first upgrading to PAKE.
-    PakeUpgradeRequired,
     /// Invalid PAKE verifier value coming from the client.
     InvalidVerifier(#[allow(dead_code)] hex::FromHexError),
     /// Invalid PAKE A value coming from the client.
@@ -1775,13 +1627,10 @@ impl IntoResponse for Error {
                 "Invalid verification code or user does not exist".to_owned(),
             ),
             Error::AlreadyVerified => (StatusCode::CONFLICT, "User already verified".to_owned()),
-            Error::InvalidLegacyPassword => (
+            Error::PrePakeUser => (
                 StatusCode::UNAUTHORIZED,
                 "Invalid email or password".to_owned(),
             ),
-            // IMPORTANT NOTE: We rely on the presence of the string `upgrade-to-pake` for the
-            // client to understand what to do next.
-            Error::PakeUpgradeRequired => (StatusCode::BAD_REQUEST, "upgrade-to-pake".to_owned()),
             Error::InvalidAPub(_) => (StatusCode::BAD_REQUEST, "Invalid credentials.".to_owned()),
             Error::InvalidClientProof(_) => {
                 (StatusCode::BAD_REQUEST, "Invalid credentials.".to_owned())

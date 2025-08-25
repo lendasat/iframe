@@ -16,7 +16,6 @@ import Registration from "./auth/registration";
 import Waitlist from "./waitlist/waitlist";
 import WaitlistSuccess from "./waitlist/success";
 import ResetPassword from "./auth/reset-password";
-import UpgradeToPake from "./auth/upgrade-to-pake";
 import BitcoinCollateralizedLoan from "./contracts/bitcoin-loan-component";
 import MyContracts from "./contracts_old/my-contracts";
 import CreateLoanOfferPage from "./loan-offers/CreateLoanOfferPage";
@@ -162,7 +161,6 @@ function App() {
               />
               <Route path="/logout" element={<Logout />} />
               <Route path="/login/:status?" element={<Login />} />
-              <Route path="/upgrade-to-pake" element={<UpgradeToPake />} />
               <Route path="/error" element={<ErrorBoundary />} />
             </Routes>
           </AuthIsNotSignedIn>

@@ -28,7 +28,9 @@ import {
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { AlertCircle, CheckCircle } from "lucide-react";
 import {
-  LoginResponseOrUpgrade,
+  LoginResponseOrTotpRequired,
+  PakeVerifiedResponse,
+  TotpRequired,
   useHttpClientBorrower,
 } from "@frontend/http-client-borrower";
 import {
@@ -45,7 +47,10 @@ import { WalletBackupData } from "@frontend/base-http-client";
 type FormState = "initial" | "login" | "register" | "verify" | "success";
 
 interface AuthFormProps {
-  login: (email: string, password: string) => Promise<LoginResponseOrUpgrade>;
+  login: (
+    email: string,
+    password: string,
+  ) => Promise<LoginResponseOrTotpRequired>;
   inviteCode: string;
   onComplete: () => void;
 }
@@ -437,7 +442,7 @@ const AuthForm = ({ login, inviteCode, onComplete }: AuthFormProps) => {
             </Form>
           ) : (
             <div className="flex flex-col items-center justify-center py-4">
-              <div className="flex h-20 w-20 items-center justify-center rounded-full bg-green-100 mb-4">
+              <div className="mb-4 flex h-20 w-20 items-center justify-center rounded-full bg-green-100">
                 <CheckCircle className="h-10 w-10 text-green-600" />
               </div>
               <Button onClick={onComplete} className="w-full">
@@ -455,16 +460,17 @@ const AuthForm = ({ login, inviteCode, onComplete }: AuthFormProps) => {
 async function logIn(
   email: string,
   password: string,
-  loginFn: (email: string, password: string) => Promise<LoginResponseOrUpgrade>,
+  loginFn: (
+    email: string,
+    password: string,
+  ) => Promise<TotpRequired | PakeVerifiedResponse>,
 ) {
   let walletBackupData: WalletBackupData;
   try {
     const loginResponse = await loginFn(email, password);
 
-    if ("must_upgrade_to_pake" in loginResponse) {
-      throw new Error(
-        "Please upgrade your account by logging in through Lendasat",
-      );
+    if ("totp_required" in loginResponse) {
+      throw new Error(`TOTP required which is not supported yet`);
     }
 
     walletBackupData = loginResponse.wallet_backup_data;

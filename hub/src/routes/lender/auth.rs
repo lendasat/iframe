@@ -12,8 +12,6 @@ use crate::db::waitlist::Error as WaitlistError;
 use crate::db::waitlist::WaitlistRole;
 use crate::db::wallet_backups::NewLenderWalletBackup;
 use crate::geo_location;
-use crate::model::ContractStatus;
-use crate::model::FinishUpgradeToPakeRequest;
 use crate::model::ForgotPasswordSchema;
 use crate::model::Lender;
 use crate::model::PakeLoginRequest;
@@ -23,8 +21,6 @@ use crate::model::PakeVerifyRequest;
 use crate::model::RegisterUserSchema;
 use crate::model::ResetPasswordSchema;
 use crate::model::TokenClaims;
-use crate::model::UpgradeToPakeRequest;
-use crate::model::UpgradeToPakeResponse;
 use crate::model::WalletBackupData;
 use crate::routes::lender::auth::jwt_or_api_auth::auth;
 use crate::routes::lender::AUTH_TAG;
@@ -79,14 +75,6 @@ const PASSWORD_RESET_TOKEN_LENGTH: usize = 20;
 
 pub(crate) fn router(app_state: Arc<AppState>) -> Router {
     Router::new()
-        .route(
-            "/api/auth/upgrade-to-pake",
-            post(post_start_upgrade_to_pake),
-        )
-        .route(
-            "/api/auth/finish-upgrade-to-pake",
-            post(post_finish_upgrade_to_pake),
-        )
         .route("/api/auth/pake-login", post(post_pake_login))
         .route("/api/auth/pake-verify", post(post_pake_verify))
         .route("/api/auth/totp-verify-login", post(post_totp_verify_login))
@@ -263,8 +251,10 @@ async fn post_pake_login(
     }
 
     // The presence of a password hash indicates that the user has not upgraded to PAKE yet.
+    // We removed the upgrade path as all contracts have been upgraded
     if user.password.is_some() {
-        return Err(Error::PakeUpgradeRequired);
+        tracing::error!(email = email.as_str(), "User never upgraded to pake.");
+        return Err(Error::PrePakeUser);
     }
 
     let verifier = hex::decode(user.verifier).map_err(|_| Error::InvalidVerifier)?;
@@ -731,132 +721,6 @@ async fn refresh_token_handler(
     Ok(response)
 }
 
-/// Handle the lender's attempt to upgrade to the PAKE protocol.
-///
-/// We must first verify their email and old password.
-///
-/// We return their wallet backup data, so that they can decrypt it locally and send us the backup
-/// encrypted using their new password.
-#[instrument(skip_all, fields(lender_id), err(Debug))]
-async fn post_start_upgrade_to_pake(
-    State(data): State<Arc<AppState>>,
-    AppJson(body): AppJson<UpgradeToPakeRequest>,
-) -> Result<AppJson<UpgradeToPakeResponse>, Error> {
-    let user = get_user_by_email(&data.db, body.email.as_str())
-        .await
-        .map_err(Error::database)?
-        .ok_or(Error::EmailOrPasswordInvalid)?;
-
-    let lender_id = &user.id;
-    tracing::Span::current().record("lender_id", lender_id);
-
-    if !user.verified {
-        return Err(Error::EmailNotVerified);
-    }
-
-    let is_valid = user.check_password(body.old_password.as_str());
-
-    if !is_valid {
-        return Err(Error::EmailOrPasswordInvalid);
-    }
-
-    let wallet_backup = db::wallet_backups::find_by_lender_id(&data.db, lender_id)
-        .await
-        .map_err(Error::database)?;
-
-    let old_wallet_backup_data = WalletBackupData {
-        mnemonic_ciphertext: wallet_backup.mnemonic_ciphertext,
-        network: wallet_backup.network,
-    };
-
-    let contracts = db::contracts::load_contracts_by_lender_id(&data.db, lender_id)
-        .await
-        .map_err(Error::database)?;
-
-    let contract_pks = contracts
-        .iter()
-        // Contracts that are not yet closed or were never approved.
-        .filter(|c| {
-            !matches!(
-                c.status,
-                ContractStatus::Closed
-                    | ContractStatus::ClosedByLiquidation
-                    | ContractStatus::ClosedByDefaulting
-                    | ContractStatus::Cancelled
-                    | ContractStatus::RequestExpired
-                    | ContractStatus::ApprovalExpired
-            )
-        })
-        // Contracts that may have been funded.
-        .filter(|c| c.contract_address.is_some())
-        .map(|c| c.lender_pk)
-        .collect::<Vec<_>>();
-
-    Ok(AppJson(UpgradeToPakeResponse {
-        old_wallet_backup_data,
-        contract_pks,
-    }))
-}
-
-/// Handle the lender's attempt to finish the upgrade to the PAKE protocol.
-///
-/// We must first verify their email and old password.
-///
-/// We then instert their new wallet backup as a separate entry.
-///
-/// After that, we insert in the DB values needed to authenticate the lender via PAKE. Additionally,
-/// we erase the old pasword hash from the database, as the lender won't be authenticating that way
-/// anymore.
-#[instrument(skip_all, fields(lender_id), err(Debug))]
-async fn post_finish_upgrade_to_pake(
-    State(data): State<Arc<AppState>>,
-    AppJson(body): AppJson<FinishUpgradeToPakeRequest>,
-) -> Result<AppJson<UpgradeCompletedResponse>, Error> {
-    let user = get_user_by_email(&data.db, body.email.as_str())
-        .await
-        .map_err(Error::database)?
-        .ok_or(Error::EmailOrPasswordInvalid)?;
-
-    let lender_id = &user.id;
-    tracing::Span::current().record("lender_id", lender_id);
-
-    if !user.verified {
-        return Err(Error::EmailNotVerified);
-    }
-
-    let is_valid = user.check_password(body.old_password.as_str());
-
-    if !is_valid {
-        return Err(Error::EmailOrPasswordInvalid);
-    }
-
-    let mut db_tx = data.db.begin().await.map_err(Error::database)?;
-
-    db::wallet_backups::insert_lender_backup(
-        &mut *db_tx,
-        NewLenderWalletBackup {
-            lender_id: lender_id.clone(),
-            mnemonic_ciphertext: body.new_wallet_backup_data.mnemonic_ciphertext,
-            network: body.new_wallet_backup_data.network,
-        },
-    )
-    .await
-    .map_err(Error::database)?;
-
-    db::lenders::upgrade_to_pake(
-        &mut *db_tx,
-        body.email.as_str(),
-        body.salt.as_str(),
-        body.verifier.as_str(),
-    )
-    .await
-    .map_err(Error::database)?;
-
-    db_tx.commit().await.map_err(Error::database)?;
-
-    Ok(AppJson(UpgradeCompletedResponse { upgraded: true }))
-}
-
 #[instrument(skip_all, fields(lender_id), err(Debug, level = Level::DEBUG))]
 async fn verify_email_handler(
     State(data): State<Arc<AppState>>,
@@ -1081,11 +945,6 @@ async fn post_add_to_waitlist(
 }
 
 #[derive(Debug, Serialize)]
-struct UpgradeCompletedResponse {
-    upgraded: bool,
-}
-
-#[derive(Debug, Serialize)]
 struct LenderLoanFeature {
     id: String,
     name: String,
@@ -1199,6 +1058,8 @@ enum Error {
     InvalidVerificationCode,
     /// User already verified.
     AlreadyVerified,
+    /// User never upgraded to pake - we need them to reach out to us
+    PrePakeUser,
     /// Could not decode the user's authentication session token.
     AuthSessionDecode(#[allow(dead_code)] jsonwebtoken::errors::Error),
     /// Password reset token not found or expired
@@ -1219,8 +1080,6 @@ enum Error {
     InvalidInviteCode,
     /// Invite code is expired
     ExpiredInviteCode,
-    /// User needs to upgrade to PAKE
-    PakeUpgradeRequired,
     /// Invalid verifier
     InvalidVerifier,
     /// Invalid A pub value from client
@@ -1313,6 +1172,10 @@ impl IntoResponse for Error {
                 "Invalid verification code or user does not exist".to_owned(),
             ),
             Error::AlreadyVerified => (StatusCode::CONFLICT, "User already verified".to_owned()),
+            Error::PrePakeUser => (
+                StatusCode::UNAUTHORIZED,
+                "Invalid email or password".to_owned(),
+            ),
             Error::InvalidResetToken => (
                 StatusCode::NOT_FOUND,
                 "Password reset token not found or expired".to_owned(),
@@ -1328,7 +1191,6 @@ impl IntoResponse for Error {
                 StatusCode::BAD_REQUEST,
                 "Provided invite code is expired".to_owned(),
             ),
-            Error::PakeUpgradeRequired => (StatusCode::BAD_REQUEST, "upgrade-to-pake".to_owned()),
             Error::InvalidAPub => (StatusCode::BAD_REQUEST, "Invalid credentials".to_owned()),
             Error::InvalidClientProof => {
                 (StatusCode::BAD_REQUEST, "Invalid credentials".to_owned())

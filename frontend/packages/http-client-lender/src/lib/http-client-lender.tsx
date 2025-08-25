@@ -22,11 +22,10 @@ import {
   LoanOffer,
   MeResponse,
   NotifyUser,
-  PakeLoginResponseOrUpgrade,
+  PakeLoginResponse,
   PakeVerifyResponse,
   PutUpdateProfile,
   TakeLoanApplicationSchema,
-  UpgradeToPakeResponse,
   Version,
   WalletBackupData,
   PaginatedNotificationResponse,
@@ -100,18 +99,7 @@ export interface HttpClientLender {
     walletBackupData: WalletBackupData,
     inviteCode?: string,
   ) => Promise<void>;
-  upgradeToPake: (
-    email: string,
-    oldPassword: string,
-  ) => Promise<UpgradeToPakeResponse>;
-  finishUpgradeToPake: (
-    email: string,
-    oldPassword: string,
-    verifier: string,
-    salt: string,
-    newWalletBackupData: WalletBackupData,
-  ) => Promise<undefined>;
-  pakeLoginRequest: (email: string) => Promise<PakeLoginResponseOrUpgrade>;
+  pakeLoginRequest: (email: string) => Promise<PakeLoginResponse>;
   pakeVerifyRequest: (
     email: string,
     aPub: string,
@@ -308,66 +296,15 @@ export const createHttpClientLender = (
     }
   };
 
-  const upgradeToPake = async (
-    email: string,
-    oldPassword: string,
-  ): Promise<UpgradeToPakeResponse> => {
-    try {
-      const [response] = await Promise.all([
-        axiosClient.post("/api/auth/upgrade-to-pake", {
-          email,
-          old_password: oldPassword,
-        }),
-      ]);
-      const data = response.data as UpgradeToPakeResponse;
-      console.log(`Got upgrade-to-PAKE response`);
-      return data;
-    } catch (error) {
-      handleError(error, "upgrade to pake");
-      throw error;
-    }
-  };
-
-  const finishUpgradeToPake = async (
-    email: string,
-    oldPassword: string,
-    verifier: string,
-    salt: string,
-    newWalletBackupData: WalletBackupData,
-  ): Promise<undefined> => {
-    try {
-      await Promise.all([
-        axiosClient.post("/api/auth/finish-upgrade-to-pake", {
-          email,
-          old_password: oldPassword,
-          verifier,
-          salt,
-          new_wallet_backup_data: newWalletBackupData,
-        }),
-      ]);
-      console.log(`Upgraded to PAKE`);
-      return;
-    } catch (error) {
-      handleError(error, "finishing upgrade to pake");
-      throw error;
-    }
-  };
-
   const pakeLoginRequest = async (
     email: string,
-  ): Promise<PakeLoginResponseOrUpgrade> => {
+  ): Promise<PakeLoginResponse> => {
     try {
       const response = await axiosClient.post("/api/auth/pake-login", {
         email,
       });
       return response.data;
     } catch (error) {
-      if (axios.isAxiosError(error) && error.response?.status === 400) {
-        const message = error.response.data.message;
-        if (message === "upgrade-to-pake") {
-          return { must_upgrade_to_pake: undefined };
-        }
-      }
       handleError(error, "PAKE login");
       throw error;
     }
@@ -1250,8 +1187,6 @@ export const createHttpClientLender = (
   // Return all functions bundled as our client
   return {
     register,
-    upgradeToPake,
-    finishUpgradeToPake,
     pakeLoginRequest,
     pakeVerifyRequest,
     forgotPassword,

@@ -1,5 +1,6 @@
 import {
-  LoginResponseOrUpgrade,
+  PakeVerifiedResponse,
+  TotpRequired,
   useAuth,
   WalletBackupData,
 } from "@frontend/http-client-lender";
@@ -77,7 +78,7 @@ function Login() {
     totpCode?: string,
     sessionToken?: string,
   ) => {
-    let loginResponse: LoginResponseOrUpgrade;
+    let loginResponse: TotpRequired | PakeVerifiedResponse;
 
     if (totpCode && sessionToken) {
       // This is the TOTP verification step
@@ -87,12 +88,8 @@ function Login() {
       loginResponse = await login(email, password);
     }
 
-    if ("must_upgrade_to_pake" in loginResponse) {
-      navigate("/upgrade-to-pake");
-      return;
-    }
-
     if ("totp_required" in loginResponse) {
+      // TOTP is required, the form will handle this
       return loginResponse;
     }
 

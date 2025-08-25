@@ -11,7 +11,7 @@ import {
   LoanType,
   useHttpClientBorrower,
 } from "@frontend/http-client-borrower";
-import { LoginResponseOrUpgrade } from "@frontend/base-http-client";
+import { LoginResponse } from "@frontend/base-http-client";
 import { useWallet } from "@frontend/browser-wallet";
 import { toast } from "sonner";
 
@@ -45,7 +45,7 @@ interface StepperProps {
   lenderId: string;
   orderId: string;
   inviteCode: string;
-  login: (email: string, password: string) => Promise<LoginResponseOrUpgrade>;
+  login: (email: string, password: string) => Promise<LoginResponse>;
   onPrincipalGiven: (contractId: string) => void;
   onDone: (contractId: string) => void;
 }

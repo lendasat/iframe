@@ -8,7 +8,9 @@ import {
   User,
   Version,
   LoanProductOption,
-  LoginResponseOrUpgrade,
+  LoginResponseOrTotpRequired,
+  TotpRequired,
+  PakeVerifiedResponse,
 } from "./models";
 import { process_login_response, verify_server } from "browser-wallet";
 import { isAllowedPageWithoutLogin } from "./utils";
@@ -17,11 +19,14 @@ import { i18n } from "@frontend/ui-shared";
 interface AuthContextType {
   user: User | null;
   loading: boolean;
-  login: (email: string, password: string) => Promise<LoginResponseOrUpgrade>;
+  login: (
+    email: string,
+    password: string,
+  ) => Promise<TotpRequired | PakeVerifiedResponse>;
   totpLogin: (
     sessionToken: string,
     totpCode: string,
-  ) => Promise<LoginResponseOrUpgrade>;
+  ) => Promise<LoginResponseOrTotpRequired>;
   logout: () => Promise<void>;
   refreshUser: () => Promise<void>;
   backendVersion: Version;
@@ -154,14 +159,10 @@ export const AuthProvider: FC<AuthProviderProps> = ({
   const login = async (
     email: string,
     password: string,
-  ): Promise<LoginResponseOrUpgrade> => {
+  ): Promise<TotpRequired | PakeVerifiedResponse> => {
     setLoading(true);
     try {
       const pakeLoginResponse = await httpClient.pakeLoginRequest(email);
-
-      if ("must_upgrade_to_pake" in pakeLoginResponse) {
-        return { must_upgrade_to_pake: undefined };
-      }
 
       const verificationData = process_login_response(
         email,
@@ -217,7 +218,9 @@ export const AuthProvider: FC<AuthProviderProps> = ({
           setBackendVersion(version);
         }
       }
-      return pakeVerifyResponse;
+      return {
+        wallet_backup_data: pakeVerifyResponse.wallet_backup_data,
+      };
     } finally {
       setLoading(false);
     }
@@ -227,7 +230,7 @@ export const AuthProvider: FC<AuthProviderProps> = ({
   const totpLogin = async (
     sessionToken: string,
     totpCode: string,
-  ): Promise<LoginResponseOrUpgrade> => {
+  ): Promise<LoginResponseOrTotpRequired> => {
     setLoading(true);
     try {
       const totpVerifyResponse = await httpClient.totpLoginVerify({

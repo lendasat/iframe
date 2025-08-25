@@ -49,32 +49,6 @@ where
     Ok(user)
 }
 
-/// Insert the `salt` and `verifier` needed to authenticate a lender via PAKE.
-///
-/// Also erases the `password` (hash) from the lender row, since it will never be used for
-/// authentication again.
-///
-/// The upgrade can only happen if the `salt` and `verifier` columns are set to their default values
-/// of '0'. The default value indicates that the account was created before the upgrade to PAKE.
-pub async fn upgrade_to_pake<'a, E>(pool: E, email: &str, salt: &str, verifier: &str) -> Result<()>
-where
-    E: sqlx::Executor<'a, Database = Postgres>,
-{
-    sqlx::query!(
-        "UPDATE lenders
-        SET salt = $1,
-            verifier = $2,
-            password = null
-        WHERE email = $3 AND salt = '0' and verifier = '0'",
-        salt,
-        verifier,
-        email
-    )
-    .execute(pool)
-    .await?;
-    Ok(())
-}
-
 /// Replace `salt` and `verifier` needed to authenticate a lender via PAKE. This is used when the
 /// lender wants to change their password.
 pub async fn update_verifier_and_salt<'a, E>(

@@ -227,34 +227,6 @@ pub struct PakeVerifyRequest {
 }
 
 #[derive(Debug, Deserialize, ToSchema)]
-pub struct UpgradeToPakeRequest {
-    pub email: Email,
-    /// The password the user used before PAKE. This one must be verified against the password hash
-    /// stored in the database, one last time.
-    pub old_password: String,
-}
-
-#[derive(Debug, Serialize, ToSchema)]
-pub struct UpgradeToPakeResponse {
-    pub old_wallet_backup_data: WalletBackupData,
-    /// We include a list of public keys which the user has used in open contracts, so that the
-    /// client can verify that they are able to spend the contract with the remote wallet backup.
-    #[schema(value_type = Vec<String>)]
-    pub contract_pks: Vec<PublicKey>,
-}
-
-#[derive(Debug, Deserialize, ToSchema)]
-pub struct FinishUpgradeToPakeRequest {
-    pub email: Email,
-    /// The password the user used before PAKE. This one must be verified against the password hash
-    /// stored in the database, one last time.
-    pub old_password: String,
-    pub verifier: String,
-    pub salt: String,
-    pub new_wallet_backup_data: WalletBackupData,
-}
-
-#[derive(Debug, Deserialize, ToSchema)]
 pub struct ForgotPasswordSchema {
     pub email: Email,
 }

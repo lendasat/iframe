@@ -677,13 +677,6 @@ export interface SwiftTransferDetails {
   account_number: string;
 }
 
-// We use this type to indicate that the caller attempting to log in
-// must first upgrade to PAKE.
-export interface MustUpgradeToPake {
-  // We don't need a value to use the interface for control flow.
-  must_upgrade_to_pake: undefined;
-}
-
 export interface LoginResponse {
   token: string;
   enabled_features: LenderFeatureFlags[];
@@ -711,17 +704,7 @@ export interface PakeLoginResponse {
   b_pub: string;
 }
 
-export interface UpgradeToPakeResponse {
-  old_wallet_backup_data: WalletBackupData;
-  contract_pks: string[];
-}
-
-export type LoginResponseOrUpgrade =
-  | LoginResponse
-  | MustUpgradeToPake
-  | TotpRequired;
-
-export type PakeLoginResponseOrUpgrade = PakeLoginResponse | MustUpgradeToPake;
+export type LoginResponseOrTotpRequired = LoginResponse | TotpRequired;
 
 export interface PakeVerifyResponse {
   server_proof: string;
@@ -818,12 +801,16 @@ export interface PakeVerifyTotpResponse {
   user?: User;
   enabled_features?: LoanFeature[];
   token?: string;
-  wallet_backup_data?: WalletBackupData;
+  wallet_backup_data: WalletBackupData;
 }
 
 export interface TotpRequired {
   totp_required: true;
   session_token: string;
+}
+
+export interface PakeVerifiedResponse {
+  wallet_backup_data: WalletBackupData;
 }
 
 export interface TotpLoginVerifyRequest {
