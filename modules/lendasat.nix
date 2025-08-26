@@ -52,6 +52,7 @@ with lib; let
       if cfg.settings.moon.syncTx
       then "true"
       else "false";
+    MOON_CARD_TOPUP_FEE = cfg.settings.moon.cardTopupFee;
     SIDESHIFT_SECRET = cfg.settings.sideshift.secret;
     SIDESHIFT_AFFILIATE_ID = cfg.settings.sideshift.affiliateId;
     SIDESHIFT_API_BASE_URL = cfg.settings.sideshift.apiBaseUrl;
@@ -101,7 +102,7 @@ in {
 
       network = mkOption {
         type = types.enum ["mainnet" "testnet" "signet" "regtest"];
-        default = "mainnet";
+        default = null;
         description = "Bitcoin network to use";
       };
 
@@ -193,6 +194,13 @@ in {
           type = types.bool;
           default = false;
           description = "Whether to sync Moon transactions";
+        };
+
+        cardTopupFee = mkOption {
+          type = types.str;
+          default = null;
+          description = "Percentage fee applied to topups of the Moon card";
+          example = "0.01";
         };
       };
 

@@ -18,7 +18,6 @@ use axum::response::Response;
 use axum::Extension;
 use axum::Json;
 use rust_decimal::Decimal;
-use rust_decimal_macros::dec;
 use serde::Deserialize;
 use serde::Serialize;
 use std::str::FromStr;
@@ -29,9 +28,6 @@ use utoipa::ToSchema;
 use utoipa_axum::router::OpenApiRouter;
 use utoipa_axum::routes;
 use uuid::Uuid;
-
-// TODO: move this into the configs
-const CARD_TOPUP_FEE_PERCENT: Decimal = dec!(0.01); // 1%
 
 pub(crate) fn router(app_state: Arc<AppState>) -> OpenApiRouter {
     OpenApiRouter::new()
@@ -244,7 +240,7 @@ async fn topup_card(
             request.card_id,
             &user.id,
             request.currency,
-            CARD_TOPUP_FEE_PERCENT,
+            data.config.card_topup_fee,
         )
         .await
         .map_err(|e| Error::InvoiceGeneration(format!("{e:#}")))?;
