@@ -101,7 +101,7 @@ in {
 
       network = mkOption {
         type = types.enum ["mainnet" "testnet" "signet" "regtest"];
-        default = "mainnet";
+        default = null;
         description = "Bitcoin network to use";
       };
 
