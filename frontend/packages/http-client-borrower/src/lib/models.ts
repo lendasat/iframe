@@ -667,11 +667,13 @@ export interface PakeLoginResponse {
   b_pub: string;
 }
 
-// We use this type to indicate that the caller attempting to log in
-// must first upgrade to PAKE.
-export interface MustUpgradeToPake {
-  // We don't need a value to use the interface for control flow.
-  must_upgrade_to_pake: undefined;
+export interface TotpRequired {
+  totp_required: true;
+  session_token: string;
+}
+
+export interface PakeVerifiedResponse {
+  wallet_backup_data: WalletBackupData;
 }
 
 export interface LoginResponse {
@@ -681,9 +683,7 @@ export interface LoginResponse {
   wallet_backup_data: WalletBackupData;
 }
 
-export type LoginResponseOrUpgrade = LoginResponse | MustUpgradeToPake;
-
-export type PakeLoginResponseOrUpgrade = PakeLoginResponse | MustUpgradeToPake;
+export type LoginResponseOrTotpRequired = LoginResponse | TotpRequired;
 
 export interface PakeVerifyResponse {
   server_proof: string;
@@ -691,11 +691,6 @@ export interface PakeVerifyResponse {
   enabled_features: LoanFeature[];
   user: User;
   wallet_backup_data: WalletBackupData;
-}
-
-export interface UpgradeToPakeResponse {
-  old_wallet_backup_data: WalletBackupData;
-  contract_pks: string[];
 }
 
 export interface Version {
@@ -719,6 +714,7 @@ export interface User {
   timezone?: string;
   locale?: string;
   first_time_discount_rate: number;
+  totp_enabled: boolean;
   created_at: Date;
   personal_telegram_token?: string;
 }
@@ -828,4 +824,28 @@ export interface GetCollateralTransactionsResponse {
   unconfirmed_transactions: string[];
   confirmed_transactions: string[];
   last_updated: string;
+}
+
+export interface TotpSetupResponse {
+  qr_code_uri: string;
+  secret: string;
+}
+
+export interface VerifyTotpRequest {
+  totp_code: string;
+}
+
+export interface PakeVerifyTotpResponse {
+  server_proof: string;
+  totp_required: boolean;
+  session_token?: string;
+  token?: string;
+  enabled_features?: LoanFeature[];
+  user?: User;
+  wallet_backup_data: WalletBackupData;
+}
+
+export interface TotpLoginVerifyRequest {
+  session_token: string;
+  totp_code: string;
 }

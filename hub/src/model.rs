@@ -68,6 +68,7 @@ pub struct Borrower {
     pub first_time_discount_rate_referee: Option<Decimal>,
     pub timezone: Option<String>,
     pub locale: Option<String>,
+    pub totp_enabled: bool,
     pub created_at: OffsetDateTime,
     pub updated_at: OffsetDateTime,
 }
@@ -137,6 +138,8 @@ pub struct Lender {
     pub password_reset_token: Option<String>,
     pub timezone: Option<String>,
     pub locale: Option<String>,
+    pub totp_secret: Option<String>,
+    pub totp_enabled: bool,
     #[serde(with = "time::serde::rfc3339::option")]
     pub password_reset_at: Option<OffsetDateTime>,
     #[serde(with = "time::serde::rfc3339")]
@@ -221,34 +224,6 @@ pub struct PakeVerifyRequest {
     pub email: Email,
     pub a_pub: String,
     pub client_proof: String,
-}
-
-#[derive(Debug, Deserialize, ToSchema)]
-pub struct UpgradeToPakeRequest {
-    pub email: Email,
-    /// The password the user used before PAKE. This one must be verified against the password hash
-    /// stored in the database, one last time.
-    pub old_password: String,
-}
-
-#[derive(Debug, Serialize, ToSchema)]
-pub struct UpgradeToPakeResponse {
-    pub old_wallet_backup_data: WalletBackupData,
-    /// We include a list of public keys which the user has used in open contracts, so that the
-    /// client can verify that they are able to spend the contract with the remote wallet backup.
-    #[schema(value_type = Vec<String>)]
-    pub contract_pks: Vec<PublicKey>,
-}
-
-#[derive(Debug, Deserialize, ToSchema)]
-pub struct FinishUpgradeToPakeRequest {
-    pub email: Email,
-    /// The password the user used before PAKE. This one must be verified against the password hash
-    /// stored in the database, one last time.
-    pub old_password: String,
-    pub verifier: String,
-    pub salt: String,
-    pub new_wallet_backup_data: WalletBackupData,
 }
 
 #[derive(Debug, Deserialize, ToSchema)]
@@ -1205,6 +1180,7 @@ pub struct FilteredUser {
     pub personal_telegram_token: String,
     #[serde(with = "rust_decimal::serde::float")]
     pub first_time_discount_rate: Decimal,
+    pub totp_enabled: bool,
     #[serde(with = "time::serde::rfc3339")]
     pub created_at: OffsetDateTime,
     #[serde(with = "time::serde::rfc3339")]
@@ -1250,16 +1226,17 @@ impl From<PersonalReferralCode> for PersonalReferralCodeResponse {
 impl FilteredUser {
     pub fn new_user(
         user: &Borrower,
-        password_auth_info: &PasswordAuth,
         personal_telegram_token: crate::db::telegram_bot::TelegramBotToken,
+        verified: bool,
+        email: Email,
     ) -> Self {
         let created_at_utc = user.created_at;
         let updated_at_utc = user.updated_at;
         Self {
             id: user.id.to_string(),
-            email: password_auth_info.email.clone(),
+            email: email.clone(),
             name: user.name.to_owned(),
-            verified: password_auth_info.verified,
+            verified,
             used_referral_code: user.used_referral_code.clone(),
             personal_referral_codes: user
                 .personal_referral_codes
@@ -1270,6 +1247,7 @@ impl FilteredUser {
             first_time_discount_rate: user.first_time_discount_rate_referee.unwrap_or_default(),
             timezone: user.timezone.clone(),
             locale: user.locale.clone(),
+            totp_enabled: user.totp_enabled,
             personal_telegram_token: personal_telegram_token.token,
             created_at: created_at_utc,
             updated_at: updated_at_utc,

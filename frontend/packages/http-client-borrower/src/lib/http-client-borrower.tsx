@@ -20,9 +20,8 @@ import {
   NotifyUser,
   PostLoanApplication,
   PutUpdateProfile,
-  PakeLoginResponseOrUpgrade,
+  PakeLoginResponse,
   PakeVerifyResponse,
-  UpgradeToPakeResponse,
   UserCardDetail,
   Version,
   WalletBackupData,
@@ -37,6 +36,10 @@ import {
   TopupCardRequest,
   TopupCardResponse,
   LenderStats,
+  TotpSetupResponse,
+  VerifyTotpRequest,
+  PakeVerifyTotpResponse,
+  TotpLoginVerifyRequest,
 } from "./models";
 import { isAllowedPageWithoutLogin, parseRFC3339Date } from "./utils";
 import { IsRegisteredResponse } from "@frontend/base-http-client";
@@ -122,23 +125,12 @@ export interface HttpClient {
     walletBackupData: WalletBackupData,
     inviteCode?: string,
   ) => Promise<void>;
-  upgradeToPake: (
-    email: string,
-    oldPassword: string,
-  ) => Promise<UpgradeToPakeResponse>;
-  finishUpgradeToPake: (
-    email: string,
-    oldPassword: string,
-    verifier: string,
-    salt: string,
-    newWalletBackupData: WalletBackupData,
-  ) => Promise<undefined>;
-  pakeLoginRequest: (email: string) => Promise<PakeLoginResponseOrUpgrade>;
+  pakeLoginRequest: (email: string) => Promise<PakeLoginResponse>;
   pakeVerifyRequest: (
     email: string,
     aPub: string,
     clientProof: string,
-  ) => Promise<PakeVerifyResponse>;
+  ) => Promise<PakeVerifyTotpResponse>;
   forgotPassword: (email: string) => Promise<string>;
   verifyEmail: (token: string) => Promise<string>;
   getIsRegistered: (email: string) => Promise<IsRegisteredResponse>;
@@ -266,6 +258,14 @@ export interface HttpClient {
   getApiKeys: () => Promise<ApiKey[]>;
   createApiKey: (request: CreateApiKeyRequest) => Promise<CreateApiKeyResponse>;
   deleteApiKey: (id: number) => Promise<void>;
+
+  // TOTP methods
+  setupTotp: () => Promise<TotpSetupResponse>;
+  verifyTotp: (request: VerifyTotpRequest) => Promise<void>;
+  disableTotp: (request: VerifyTotpRequest) => Promise<void>;
+  totpLoginVerify: (
+    request: TotpLoginVerifyRequest,
+  ) => Promise<PakeVerifyResponse>;
 }
 
 // Create a factory function to create our client
@@ -354,66 +354,15 @@ export const createHttpClient = (
     }
   };
 
-  const upgradeToPake = async (
-    email: string,
-    oldPassword: string,
-  ): Promise<UpgradeToPakeResponse> => {
-    try {
-      const [response] = await Promise.all([
-        axiosClient.post("/api/auth/upgrade-to-pake", {
-          email,
-          old_password: oldPassword,
-        }),
-      ]);
-      const data = response.data as UpgradeToPakeResponse;
-      console.log(`Got upgrade-to-PAKE response`);
-      return data;
-    } catch (error) {
-      handleError(error, "upgrade to pake");
-      throw error; // Satisfies the linter, though it won't actually be reached.
-    }
-  };
-
-  const finishUpgradeToPake = async (
-    email: string,
-    oldPassword: string,
-    verifier: string,
-    salt: string,
-    newWalletBackupData: WalletBackupData,
-  ): Promise<undefined> => {
-    try {
-      await Promise.all([
-        axiosClient.post("/api/auth/finish-upgrade-to-pake", {
-          email,
-          old_password: oldPassword,
-          verifier,
-          salt,
-          new_wallet_backup_data: newWalletBackupData,
-        }),
-      ]);
-      console.log(`Upgraded to PAKE`);
-      return;
-    } catch (error) {
-      handleError(error, "finishing upgrade to pake");
-      throw error; // Satisfies the linter, though it won't actually be reached.
-    }
-  };
-
   const pakeLoginRequest = async (
     email: string,
-  ): Promise<PakeLoginResponseOrUpgrade> => {
+  ): Promise<PakeLoginResponse> => {
     try {
       const response = await axiosClient.post("/api/auth/pake-login", {
         email,
       });
       return response.data;
     } catch (error) {
-      if (axios.isAxiosError(error) && error.response?.status === 400) {
-        const message = error.response.data.message;
-        if (message === "upgrade-to-pake") {
-          return { must_upgrade_to_pake: undefined };
-        }
-      }
       handleError(error, "PAKE login");
       throw error; // Satisfies the linter, though it won't actually be reached.
     }
@@ -423,7 +372,7 @@ export const createHttpClient = (
     email: string,
     aPub: string,
     clientProof: string,
-  ): Promise<PakeVerifyResponse> => {
+  ): Promise<PakeVerifyTotpResponse> => {
     try {
       const response = await axiosClient.post("/api/auth/pake-verify", {
         email,
@@ -1271,11 +1220,53 @@ export const createHttpClient = (
     }
   };
 
+  // TOTP methods
+  const setupTotp = async (): Promise<TotpSetupResponse> => {
+    try {
+      const response: AxiosResponse<TotpSetupResponse> = await axiosClient.post(
+        "/api/users/totp/setup",
+      );
+      return response.data;
+    } catch (error) {
+      handleError(error, "setting up TOTP");
+      throw error;
+    }
+  };
+
+  const verifyTotp = async (request: VerifyTotpRequest): Promise<void> => {
+    try {
+      await axiosClient.post("/api/users/totp/verify", request);
+    } catch (error) {
+      handleError(error, "verifying TOTP");
+      throw error;
+    }
+  };
+
+  const disableTotp = async (request: VerifyTotpRequest): Promise<void> => {
+    try {
+      await axiosClient.delete("/api/users/totp", { data: request });
+    } catch (error) {
+      handleError(error, "disabling TOTP");
+      throw error;
+    }
+  };
+
+  const totpLoginVerify = async (
+    request: TotpLoginVerifyRequest,
+  ): Promise<PakeVerifyResponse> => {
+    try {
+      const response: AxiosResponse<PakeVerifyResponse> =
+        await axiosClient.post("/api/auth/totp-verify-login", request);
+      return response.data;
+    } catch (error) {
+      handleError(error, "verifying TOTP for login");
+      throw error;
+    }
+  };
+
   // Return all functions bundled as our client
   return {
     register,
-    upgradeToPake,
-    finishUpgradeToPake,
     pakeLoginRequest,
     pakeVerifyRequest,
     forgotPassword,
@@ -1332,6 +1323,10 @@ export const createHttpClient = (
     getApiKeys,
     createApiKey,
     deleteApiKey,
+    setupTotp,
+    verifyTotp,
+    disableTotp,
+    totpLoginVerify,
   };
 };
 

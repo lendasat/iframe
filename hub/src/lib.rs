@@ -37,6 +37,7 @@ pub mod routes;
 pub mod sideshift;
 pub mod take_loan_application;
 pub mod telegram_bot;
+pub(crate) mod totp;
 pub mod utils;
 pub mod wallet;
 

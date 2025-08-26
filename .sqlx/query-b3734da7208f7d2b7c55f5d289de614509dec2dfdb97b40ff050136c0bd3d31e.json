@@ -1,6 +1,6 @@
 {
   "db_name": "PostgreSQL",
-  "query": "SELECT\n           b.id as \"id!\",\n           b.name as \"name!\",\n           b.email,\n           b.used_referral_code,\n           b.first_time_discount_rate_referee,\n           b.timezone,\n           b.locale,\n           b.created_at as \"created_at!\",\n           b.updated_at as \"updated_at!\"\n           FROM borrower_discount_info b\n           LEFT JOIN borrowers_password_auth b_auth ON b.id = b_auth.borrower_id\n           WHERE b.id = $1\n        ",
+  "query": "SELECT\n           b.id as \"id!\",\n           b.name as \"name!\",\n           b.email,\n           b.used_referral_code,\n           b.first_time_discount_rate_referee,\n           b.timezone,\n           b.locale,\n           COALESCE(b_auth.totp_enabled, FALSE) as \"totp_enabled!\",\n           b.created_at as \"created_at!\",\n           b.updated_at as \"updated_at!\"\n           FROM borrower_discount_info b\n           LEFT JOIN borrowers_password_auth b_auth ON b.id = b_auth.borrower_id\n           WHERE b.id = $1\n        ",
   "describe": {
     "columns": [
       {
@@ -40,11 +40,16 @@
       },
       {
         "ordinal": 7,
+        "name": "totp_enabled!",
+        "type_info": "Bool"
+      },
+      {
+        "ordinal": 8,
         "name": "created_at!",
         "type_info": "Timestamptz"
       },
       {
-        "ordinal": 8,
+        "ordinal": 9,
         "name": "updated_at!",
         "type_info": "Timestamptz"
       }
@@ -62,9 +67,10 @@
       true,
       true,
       true,
+      null,
       true,
       true
     ]
   },
-  "hash": "7b6711050daec999633a9c8e48b76571fc1abb44f0bcfeb382bf0dd6b5e99082"
+  "hash": "b3734da7208f7d2b7c55f5d289de614509dec2dfdb97b40ff050136c0bd3d31e"
 }

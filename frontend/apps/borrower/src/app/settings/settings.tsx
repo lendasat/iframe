@@ -15,7 +15,7 @@ import { NostrChatSettingsPage } from "./nostr-chat-settings";
 import { NotificationSettings } from "./notification-settings";
 import { VersionPage } from "./version-page";
 import { IntegrationSettings } from "./integration-settings";
-import ApiKeysSettings from "./api-keys";
+import SecuritySettings from "./security";
 import { FeatureFlagProtectedRoute } from "../app";
 import { LoanProductOption } from "@frontend/http-client-borrower";
 
@@ -45,8 +45,8 @@ function Settings() {
                 <TabsTrigger value="integrations" asChild>
                   <Link to="integrations">Integrations</Link>
                 </TabsTrigger>
-                <TabsTrigger value="api-keys" asChild>
-                  <Link to="api-keys">API Keys</Link>
+                <TabsTrigger value="security" asChild>
+                  <Link to="security">Security</Link>
                 </TabsTrigger>
                 <TabsTrigger value="version" asChild>
                   <Link to="version">Version</Link>
@@ -75,7 +75,7 @@ function Settings() {
                   </FeatureFlagProtectedRoute>
                 }
               />
-              <Route path="api-keys" element={<ApiKeysSettings />} />
+              <Route path="security" element={<SecuritySettings />} />
               <Route path="version" element={<VersionPage />} />
             </Routes>
           </CardContent>

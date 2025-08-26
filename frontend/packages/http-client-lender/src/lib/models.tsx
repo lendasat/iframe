@@ -10,6 +10,7 @@ export interface User {
   first_time_discount_rate: number;
   created_at: Date;
   personal_telegram_token?: string;
+  totp_enabled: boolean;
 }
 
 export interface WalletBackupData {
@@ -676,13 +677,6 @@ export interface SwiftTransferDetails {
   account_number: string;
 }
 
-// We use this type to indicate that the caller attempting to log in
-// must first upgrade to PAKE.
-export interface MustUpgradeToPake {
-  // We don't need a value to use the interface for control flow.
-  must_upgrade_to_pake: undefined;
-}
-
 export interface LoginResponse {
   token: string;
   enabled_features: LenderFeatureFlags[];
@@ -705,26 +699,12 @@ export interface MeResponse {
   enabled_features: LoanFeature[];
 }
 
-export interface LoginResponse {
-  token: string;
-  enabled_features: LenderFeatureFlags[];
-  user: User;
-  wallet_backup_data: WalletBackupData;
-}
-
 export interface PakeLoginResponse {
   salt: string;
   b_pub: string;
 }
 
-export interface UpgradeToPakeResponse {
-  old_wallet_backup_data: WalletBackupData;
-  contract_pks: string[];
-}
-
-export type LoginResponseOrUpgrade = LoginResponse | MustUpgradeToPake;
-
-export type PakeLoginResponseOrUpgrade = PakeLoginResponse | MustUpgradeToPake;
+export type LoginResponseOrTotpRequired = LoginResponse | TotpRequired;
 
 export interface PakeVerifyResponse {
   server_proof: string;
@@ -803,4 +783,37 @@ export interface CreateApiKeyRequest {
 
 export interface CreateApiKeyResponse {
   api_key: string;
+}
+
+export interface TotpSetupResponse {
+  qr_code_uri: string;
+  secret: string;
+}
+
+export interface VerifyTotpRequest {
+  totp_code: string;
+}
+
+export interface PakeVerifyTotpResponse {
+  server_proof: string;
+  totp_required: boolean;
+  session_token?: string;
+  user?: User;
+  enabled_features?: LoanFeature[];
+  token?: string;
+  wallet_backup_data: WalletBackupData;
+}
+
+export interface TotpRequired {
+  totp_required: true;
+  session_token: string;
+}
+
+export interface PakeVerifiedResponse {
+  wallet_backup_data: WalletBackupData;
+}
+
+export interface TotpLoginVerifyRequest {
+  totp_code: string;
+  session_token: string;
 }

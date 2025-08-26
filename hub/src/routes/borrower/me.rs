@@ -58,7 +58,12 @@ async fn get_me_handler(
             .await
             .map_err(Error::database)?;
 
-    let filtered_user = FilteredUser::new_user(&user, &password_auth_info, personal_telegram_token);
+    let filtered_user = FilteredUser::new_user(
+        &user,
+        personal_telegram_token,
+        password_auth_info.verified,
+        password_auth_info.email,
+    );
 
     let features = db::borrower_features::load_borrower_features(&data.db, user.id.clone())
         .await

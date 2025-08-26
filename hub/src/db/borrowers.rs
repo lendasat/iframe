@@ -23,6 +23,7 @@ pub struct Borrower {
     pub first_time_discount_rate_referee: Option<Decimal>,
     pub timezone: Option<String>,
     pub locale: Option<String>,
+    pub totp_enabled: bool,
     pub created_at: OffsetDateTime,
     pub updated_at: OffsetDateTime,
 }
@@ -40,6 +41,7 @@ fn new_model_borrower(
         first_time_discount_rate_referee: borrower.first_time_discount_rate_referee,
         timezone: borrower.timezone,
         locale: borrower.locale,
+        totp_enabled: borrower.totp_enabled,
         created_at: borrower.created_at,
         updated_at: borrower.updated_at,
     }
@@ -101,6 +103,7 @@ pub async fn register_password_auth_user(
         first_time_discount_rate_referee: row.first_time_discount_rate_referee,
         timezone: row.timezone,
         locale: row.locale,
+        totp_enabled: false, // it's a new user, so it will be disabled
         created_at: row.created_at,
         updated_at: row.updated_at,
     };
@@ -172,6 +175,7 @@ pub async fn register_api_account(
         first_time_discount_rate_referee: None,
         timezone: row.timezone,
         locale: row.locale,
+        totp_enabled: false,
         created_at: row.created_at,
         updated_at: row.updated_at,
     };
@@ -208,32 +212,6 @@ where
     // Create the final user struct
     let borrower = new_model_borrower(base_user, personal_code);
     Ok(borrower)
-}
-
-/// Insert the `salt` and `verifier` needed to authenticate a borrower via PAKE.
-///
-/// Also erases the `password` (hash) from the borrower row, since it will never be used for
-/// authentication again.
-///
-/// The upgrade can only happen if the `salt` and `verifier` columns are set to their default values
-/// of '0'. The default value indicates that the account was created before the upgrade to PAKE.
-pub async fn upgrade_to_pake<'a, E>(pool: E, email: &str, salt: &str, verifier: &str) -> Result<()>
-where
-    E: sqlx::Executor<'a, Database = Postgres>,
-{
-    sqlx::query!(
-        "UPDATE borrowers_password_auth
-        SET salt = $1,
-            verifier = $2,
-            password = null
-        WHERE email = $3 AND salt = '0' and verifier = '0'",
-        salt,
-        verifier,
-        email
-    )
-    .execute(pool)
-    .await?;
-    Ok(())
 }
 
 /// Replace `salt` and `verifier` needed to authenticate a borrower via PAKE. This is used when the
@@ -313,6 +291,7 @@ pub async fn get_user_by_email(
            b.first_time_discount_rate_referee,
            b.timezone,
            b.locale,
+           b_auth.totp_enabled,
            b_auth.salt,
            b_auth.email as auth_email,
            b_auth.verifier,
@@ -343,6 +322,7 @@ pub async fn get_user_by_email(
                 first_time_discount_rate_referee: row.first_time_discount_rate_referee,
                 timezone: row.timezone,
                 locale: row.locale,
+                totp_enabled: row.totp_enabled,
                 created_at: row.created_at,
                 updated_at: row.updated_at,
             };
@@ -377,6 +357,7 @@ pub async fn get_user_by_id(pool: &Pool<Postgres>, id: &str) -> Result<Option<mo
            b.first_time_discount_rate_referee,
            b.timezone,
            b.locale,
+           COALESCE(b_auth.totp_enabled, FALSE) as "totp_enabled!",
            b.created_at as "created_at!",
            b.updated_at as "updated_at!"
            FROM borrower_discount_info b
@@ -399,6 +380,7 @@ pub async fn get_user_by_id(pool: &Pool<Postgres>, id: &str) -> Result<Option<mo
                 first_time_discount_rate_referee: row.first_time_discount_rate_referee,
                 timezone: row.timezone,
                 locale: row.locale,
+                totp_enabled: row.totp_enabled,
                 created_at: row.created_at,
                 updated_at: row.updated_at,
             };
@@ -621,4 +603,106 @@ pub async fn update_borrower_locale(
     .await?;
 
     Ok(())
+}
+
+pub async fn store_totp_secret(pool: &PgPool, borrower_id: &str, totp_secret: &str) -> Result<()> {
+    sqlx::query!(
+        r#"
+        UPDATE borrowers_password_auth
+        SET
+            totp_secret = $1,
+            updated_at = CURRENT_TIMESTAMP
+        WHERE borrower_id = $2
+        "#,
+        totp_secret,
+        borrower_id,
+    )
+    .execute(pool)
+    .await?;
+
+    Ok(())
+}
+
+pub async fn enable_totp(pool: &PgPool, borrower_id: &str) -> Result<()> {
+    sqlx::query!(
+        r#"
+        UPDATE borrowers_password_auth
+        SET
+            totp_enabled = TRUE,
+            updated_at = CURRENT_TIMESTAMP
+        WHERE borrower_id = $1
+        "#,
+        borrower_id,
+    )
+    .execute(pool)
+    .await?;
+
+    Ok(())
+}
+
+pub async fn disable_totp(pool: &PgPool, borrower_id: &str) -> Result<()> {
+    sqlx::query!(
+        r#"
+        UPDATE borrowers_password_auth
+        SET
+            totp_secret = NULL,
+            totp_enabled = FALSE,
+            updated_at = CURRENT_TIMESTAMP
+        WHERE borrower_id = $1
+        "#,
+        borrower_id,
+    )
+    .execute(pool)
+    .await?;
+
+    Ok(())
+}
+
+/// Returns the totp secret
+///
+/// This function differs slightly to `get_totp_secret_for_setup` as it **DOES** consider if totp is
+/// enabled or not. It will only return a secret if  `totp_enabled` is true.
+/// The reason for this is that the user might have cancelled a totp-setup once and has a
+/// `totp_secret` in the database but `totp_enabled` is not enabled.
+pub async fn get_totp_secret(pool: &PgPool, borrower_id: &str) -> Result<Option<String>> {
+    let row = sqlx::query!(
+        r#"
+        SELECT totp_secret, totp_enabled
+        FROM borrowers_password_auth
+        WHERE borrower_id = $1
+        "#,
+        borrower_id,
+    )
+    .fetch_optional(pool)
+    .await?;
+
+    match row {
+        Some(row) if row.totp_enabled => Ok(row.totp_secret),
+        _ => Ok(None),
+    }
+}
+
+/// Returns the totp secret during the totp setup
+///
+/// This function differs slightly to `get_totp_secret` as it does not consider if totp is enabled
+/// or not. The reason for this is that we only set `totp_enabled` to true, if the user verified the
+/// first code (for which we need to load the secret). The reason for this is that the user might
+/// have cancelled a totp-setup once and has a `totp_secret` in the database but `totp_enabled` is
+/// not enabled.
+pub async fn get_totp_secret_for_setup(pool: &PgPool, borrower_id: &str) -> Result<Option<String>> {
+    let row = sqlx::query!(
+        r#"
+        SELECT totp_secret
+        FROM borrowers_password_auth
+        WHERE borrower_id = $1
+        "#,
+        borrower_id,
+    )
+    .fetch_optional(pool)
+    .await?;
+
+    match row {
+        Some(row) => Ok(row.totp_secret),
+        _ => Ok(None),
+    }
 }

@@ -25,7 +25,6 @@ import "../assets/styles.css";
 import type { User } from "@frontend/http-client-borrower";
 import { LoanProductOption } from "@frontend/http-client-borrower";
 import { FeeProvider } from "@frontend/mempool";
-import UpgradeToPake from "./auth/upgrade-to-pake";
 import VerifyEmailForm from "./auth/verifyEmailForm";
 import BorrowerProfile from "./borrowerProfile";
 import Cards from "./cards/Cards";
@@ -208,7 +207,6 @@ function App() {
               />
               <Route path="/logout" element={<Logout />} />
               <Route path="/login/:status?" element={<Login />} />
-              <Route path="/upgrade-to-pake" element={<UpgradeToPake />} />
               <Route path="/error" element={<ErrorBoundary />} />
             </Route>
           </Routes>

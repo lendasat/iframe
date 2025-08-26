@@ -1,5 +1,9 @@
 import { md5CaseInsensitive } from "@frontend/browser-wallet";
-import { useAuth } from "@frontend/http-client-borrower";
+import {
+  PakeVerifiedResponse,
+  TotpRequired,
+  useAuth,
+} from "@frontend/http-client-borrower";
 import { LoginForm } from "@frontend/shadcn";
 import {
   does_wallet_exist,
@@ -11,19 +15,32 @@ import { useLocation, useNavigate, useParams } from "react-router-dom";
 import { ReactComponent as Logo } from "./../../assets/lendasat_svg_logo_long.svg";
 
 function Login() {
-  const { login } = useAuth();
+  const { login, totpLogin } = useAuth();
   const navigate = useNavigate();
   const { status } = useParams();
 
   const location = useLocation();
   const returnUrl: string | undefined = location.state?.returnUrl;
 
-  const handleLogin = async (email: string, password: string) => {
-    const loginResponse = await login(email, password);
+  const handleLogin = async (
+    email: string,
+    password: string,
+    totpCode?: string,
+    sessionToken?: string,
+  ) => {
+    let loginResponse: TotpRequired | PakeVerifiedResponse;
 
-    if ("must_upgrade_to_pake" in loginResponse) {
-      navigate("/upgrade-to-pake");
-      return;
+    if (totpCode && sessionToken) {
+      // This is the TOTP verification step
+      loginResponse = await totpLogin(sessionToken, totpCode);
+    } else {
+      // This is the initial login step
+      loginResponse = await login(email, password);
+    }
+
+    if ("totp_required" in loginResponse) {
+      // TOTP is required, the form will handle this
+      return loginResponse;
     }
 
     const walletBackupData = loginResponse.wallet_backup_data;

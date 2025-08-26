@@ -49,32 +49,6 @@ where
     Ok(user)
 }
 
-/// Insert the `salt` and `verifier` needed to authenticate a lender via PAKE.
-///
-/// Also erases the `password` (hash) from the lender row, since it will never be used for
-/// authentication again.
-///
-/// The upgrade can only happen if the `salt` and `verifier` columns are set to their default values
-/// of '0'. The default value indicates that the account was created before the upgrade to PAKE.
-pub async fn upgrade_to_pake<'a, E>(pool: E, email: &str, salt: &str, verifier: &str) -> Result<()>
-where
-    E: sqlx::Executor<'a, Database = Postgres>,
-{
-    sqlx::query!(
-        "UPDATE lenders
-        SET salt = $1,
-            verifier = $2,
-            password = null
-        WHERE email = $3 AND salt = '0' and verifier = '0'",
-        salt,
-        verifier,
-        email
-    )
-    .execute(pool)
-    .await?;
-    Ok(())
-}
-
 /// Replace `salt` and `verifier` needed to authenticate a lender via PAKE. This is used when the
 /// lender wants to change their password.
 pub async fn update_verifier_and_salt<'a, E>(
@@ -191,6 +165,8 @@ pub async fn get_user_by_rest_token(
             password_reset_token,
             timezone,
             locale,
+            totp_secret,
+            totp_enabled,
             password_reset_at,
             created_at,
             updated_at
@@ -256,4 +232,106 @@ pub async fn update_lender_locale(
     .await?;
 
     Ok(())
+}
+
+pub async fn store_totp_secret(pool: &PgPool, lender_id: &str, totp_secret: &str) -> Result<()> {
+    sqlx::query!(
+        r#"
+        UPDATE lenders
+        SET
+            totp_secret = $1,
+            updated_at = CURRENT_TIMESTAMP
+        WHERE id = $2
+        "#,
+        totp_secret,
+        lender_id,
+    )
+    .execute(pool)
+    .await?;
+
+    Ok(())
+}
+
+pub async fn enable_totp(pool: &PgPool, lender_id: &str) -> Result<()> {
+    sqlx::query!(
+        r#"
+        UPDATE lenders
+        SET
+            totp_enabled = TRUE,
+            updated_at = CURRENT_TIMESTAMP
+        WHERE id = $1
+        "#,
+        lender_id,
+    )
+    .execute(pool)
+    .await?;
+
+    Ok(())
+}
+
+pub async fn disable_totp(pool: &PgPool, lender_id: &str) -> Result<()> {
+    sqlx::query!(
+        r#"
+        UPDATE lenders
+        SET
+            totp_secret = NULL,
+            totp_enabled = FALSE,
+            updated_at = CURRENT_TIMESTAMP
+        WHERE id = $1
+        "#,
+        lender_id,
+    )
+    .execute(pool)
+    .await?;
+
+    Ok(())
+}
+
+/// Returns the totp secret
+///
+/// This function differs slightly to `get_totp_secret_for_setup` as it **DOES** consider if totp is
+/// enabled or not. It will only return a secret if  `totp_enabled` is true.
+/// The reason for this is that the user might have cancelled a totp-setup once and has a
+/// `totp_secret` in the database but `totp_enabled` is not enabled.
+pub async fn get_totp_secret(pool: &PgPool, lender_id: &str) -> Result<Option<String>> {
+    let row = sqlx::query!(
+        r#"
+        SELECT totp_secret, totp_enabled
+        FROM lenders
+        WHERE id = $1
+        "#,
+        lender_id,
+    )
+    .fetch_optional(pool)
+    .await?;
+
+    match row {
+        Some(row) if row.totp_enabled => Ok(row.totp_secret),
+        _ => Ok(None),
+    }
+}
+
+/// Returns the totp secret during the totp setup
+///
+/// This function differs slightly to `get_totp_secret` as it does not consider if totp is enabled
+/// or not. The reason for this is that we only set `totp_enabled` to true, if the user verified the
+/// first code (for which we need to load the secret). The reason for this is that the user might
+/// have cancelled a totp-setup once and has a `totp_secret` in the database but `totp_enabled` is
+/// not enabled.
+pub async fn get_totp_secret_for_setup(pool: &PgPool, lender_id: &str) -> Result<Option<String>> {
+    let row = sqlx::query!(
+        r#"
+        SELECT totp_secret
+        FROM lenders
+        WHERE id = $1
+        "#,
+        lender_id,
+    )
+    .fetch_optional(pool)
+    .await?;
+
+    match row {
+        Some(row) => Ok(row.totp_secret),
+        _ => Ok(None),
+    }
 }

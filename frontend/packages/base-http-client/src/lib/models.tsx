@@ -38,28 +38,12 @@ export interface PakeLoginResponse {
   b_pub: string;
 }
 
-// We use this type to indicate that the caller attempting to log in
-// must first upgrade to PAKE.
-export interface MustUpgradeToPake {
-  // We don't need a value to use the interface for control flow.
-  must_upgrade_to_pake: undefined;
-}
-
-export type LoginResponseOrUpgrade = LoginResponse | MustUpgradeToPake;
-
-export type PakeLoginResponseOrUpgrade = PakeLoginResponse | MustUpgradeToPake;
-
 export interface PakeVerifyResponse {
   server_proof: string;
   token: string;
   enabled_features: LoanFeature[];
   user: User;
   wallet_backup_data: WalletBackupData;
-}
-
-export interface UpgradeToPakeResponse {
-  old_wallet_backup_data: WalletBackupData;
-  contract_pks: string[];
 }
 
 export interface LoanFeature {
@@ -111,6 +95,7 @@ export interface InnerFiatLoanDetails {
   country: string;
   comments?: string;
 }
+
 export interface FiatLoanDetails {
   details: InnerFiatLoanDetails;
   encrypted_encryption_key_borrower: string;

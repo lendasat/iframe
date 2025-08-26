@@ -1400,6 +1400,8 @@ mod tests {
                     password_reset_token: None,
                     timezone: None,
                     locale: None,
+                    totp_secret: None,
+                    totp_enabled: false,
                     password_reset_at: None,
                     created_at: OffsetDateTime::now_utc(),
                     updated_at: OffsetDateTime::now_utc(),

@@ -1,0 +1,15 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "\n        UPDATE borrowers_password_auth\n        SET\n            totp_secret = $1,\n            updated_at = CURRENT_TIMESTAMP\n        WHERE borrower_id = $2\n        ",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Varchar",
+        "Bpchar"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "26bca02546a7905a1e411878ebaf5729ede2bd045b54e97bad7357795aa73307"
+}
