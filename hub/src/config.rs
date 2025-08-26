@@ -209,7 +209,7 @@ impl Config {
             .ok();
 
         let card_topup_fee =
-            std::env::var("MOON_CARD_TOPUP_FEE").expect("CARD_TOPUP_FEE must be set");
+            std::env::var("MOON_CARD_TOPUP_FEE").expect("MOON_CARD_TOPUP_FEE must be set");
         let card_topup_fee = Decimal::from_str(card_topup_fee.as_str()).expect("to be a decimal");
 
         Config {
