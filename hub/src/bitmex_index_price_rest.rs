@@ -163,6 +163,7 @@ mod tests {
                 .parse()
                 .unwrap(),
             electrum_url: None,
+            card_topup_fee: dec!(0.01),
         }
     }
 

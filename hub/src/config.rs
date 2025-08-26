@@ -57,6 +57,7 @@ pub struct Config {
     ///
     /// If configured, we expect a value like `tcp://electrum.blockstream.info:50001`.
     pub electrum_url: Option<Url>,
+    pub card_topup_fee: Decimal,
 }
 
 impl Config {
@@ -207,6 +208,10 @@ impl Config {
             .map(|url| Url::parse(url.as_str()).expect("to be a valid URL"))
             .ok();
 
+        let card_topup_fee =
+            std::env::var("MOON_CARD_TOPUP_FEE").expect("CARD_TOPUP_FEE must be set");
+        let card_topup_fee = Decimal::from_str(card_topup_fee.as_str()).expect("to be a decimal");
+
         Config {
             database_url,
             mempool_rest_url,
@@ -254,6 +259,7 @@ impl Config {
             etherscan_api_key,
             fallback_npub,
             electrum_url,
+            card_topup_fee,
         }
     }
 }

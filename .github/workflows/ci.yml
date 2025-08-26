@@ -68,7 +68,7 @@ jobs:
 
   unit-tests:
     runs-on: ubuntu-latest
-    needs: [clippy]
+    needs: [ clippy ]
     steps:
       - uses: actions/checkout@v4
       - uses: extractions/setup-just@v2
@@ -80,7 +80,7 @@ jobs:
 
   e2e-tests:
     runs-on: ubuntu-latest
-    needs: [clippy]
+    needs: [ clippy ]
     steps:
       - uses: actions/checkout@v4
 
@@ -109,6 +109,7 @@ jobs:
           envkey_MOON_API_URL: "https://example.com"
           envkey_MOON_VISA_PRODUCT_ID: "4155e9b9-4a94-4894-acd8-90c728bd14e7"
           envkey_MOON_WEBHOOK_URL: "https://example.com"
+          envkey_MOON_CARD_TOPUP_FEE: 0.01
           envkey_HUB_ORIGINATION_FEE: "0,100,1"
           envkey_HUB_EXTENSION_ORIGINATION_FEE: "0,100,1"
           envkey_BORROWER_LISTEN_ADDRESS: "0.0.0.0:7337"
