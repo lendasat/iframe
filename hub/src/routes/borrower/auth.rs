@@ -99,6 +99,7 @@ pub(crate) fn router(app_state: Arc<AppState>) -> OpenApiRouter {
         .routes(routes!(post_pake_verify))
         .routes(routes!(post_pake_verify_mobile))
         .routes(routes!(post_totp_verify_login))
+        .routes(routes!(post_totp_verify_mobile))
         .routes(routes!(verify_email_handler))
         .routes(routes!(forgot_password_handler))
         .routes(routes!(reset_password_handler))
@@ -388,7 +389,7 @@ async fn post_pake_login(
     post,
     path = "/pake-verify",
     tag = AUTH_TAG,
-    request_body = PakeVerifyRequest,
+    request_body = PakeVerifyResult,
     responses(
         (
             status = 200,
@@ -420,9 +421,9 @@ async fn post_pake_verify(
 /// Complete PAKE authentication verification, for mobile clients.
 #[utoipa::path(
     post,
-    path = "/pake-verify-mobile",
+    path = "/totp-verify-login-mobile",
     tag = AUTH_TAG,
-    request_body = PakeVerifyRequest,
+    request_body = TotpLoginVerifyRequest,
     responses(
         (
             status = 200,
@@ -436,12 +437,216 @@ async fn post_pake_verify(
     )
 )]
 #[instrument(skip_all, fields(borrower_id), err(Debug))]
+async fn post_totp_verify_mobile(
+    State(data): State<Arc<AppState>>,
+    Extension(connection_details): Extension<UserConnectionDetails>,
+    AppJson(body): AppJson<TotpLoginVerifyRequest>,
+) -> Result<impl IntoResponse, Error> {
+    // Decode and validate the temporary session token
+    let claims = decode::<TokenClaims>(
+        &body.session_token,
+        &DecodingKey::from_secret(data.config.jwt_secret.as_ref()),
+        &Validation::default(),
+    )
+    .map_err(Error::AuthSessionDecode)?
+    .claims;
+
+    // Check if this is a TOTP pending token
+    let borrower_id = match crate::totp::stripped_user_id(claims.user_id.as_str()) {
+        Some(id) => id,
+        None => return Err(Error::InvalidTotpSession),
+    };
+
+    // Get user and verify TOTP
+    let user = get_user_by_id(&data.db, borrower_id)
+        .await
+        .map_err(Error::database)?
+        .ok_or(Error::EmailOrPasswordInvalid)?;
+
+    tracing::Span::current().record("borrower_id", borrower_id);
+
+    // Get TOTP secret and verify code
+    let totp_secret = db::borrowers::get_totp_secret_for_setup(&data.db, borrower_id)
+        .await
+        .map_err(Error::database)?
+        .ok_or(Error::EmailOrPasswordInvalid)?;
+
+    let secret = Secret::Encoded(totp_secret);
+    let totp = create_totp_borrower(
+        secret,
+        user.email.clone().unwrap_or_else(|| user.name.clone()),
+    )
+    .map_err(|_| Error::InvalidTotpCode)?;
+
+    if !totp
+        .check_current(&body.totp_code)
+        .map_err(|_| Error::EmailOrPasswordInvalid)?
+    {
+        return Err(Error::InvalidTotpCode);
+    }
+
+    // TOTP verified, create real session
+    let now = OffsetDateTime::now_utc();
+    let iat = now.unix_timestamp();
+    let exp = (now + BROWSER_JWT_EXPIRY_HOURS).unix_timestamp();
+    let claims: TokenClaims = TokenClaims {
+        user_id: borrower_id.to_string(),
+        exp,
+        iat,
+    };
+
+    let token = encode(
+        &Header::default(),
+        &claims,
+        &EncodingKey::from_secret(data.config.jwt_secret.as_ref()),
+    )
+    .map_err(Error::AuthSessionDecode)?;
+
+    let cookie = Cookie::build(("token", token.to_owned()))
+        .path("/")
+        .max_age(BROWSER_COOKIE_EXPIRY_HOURS)
+        .same_site(SameSite::Lax)
+        .http_only(true);
+
+    let features = db::borrower_features::load_borrower_features(&data.db, borrower_id.to_string())
+        .await
+        .map_err(Error::database)?;
+
+    let features = features
+        .iter()
+        .filter_map(|f| {
+            if f.is_enabled {
+                Some(BorrowerLoanFeature {
+                    id: f.id.clone(),
+                    name: f.name.clone(),
+                    description: f.description.clone(),
+                    is_enabled: f.is_enabled,
+                })
+            } else {
+                None
+            }
+        })
+        .collect::<Vec<_>>();
+
+    if features.is_empty() {
+        return Err(Error::NoFeaturesEnabled {
+            borrower_id: borrower_id.to_string(),
+        });
+    }
+
+    let personal_telegram_token =
+        db::telegram_bot::borrower::get_or_create_token_by_borrower_id(&data.db, borrower_id)
+            .await
+            .map_err(Error::database)?;
+
+    let filtered_user = FilteredUser::new_user(
+        &user,
+        personal_telegram_token,
+        true,
+        user.email.clone().unwrap_or_default(),
+    );
+
+    let wallet_backup = db::wallet_backups::find_by_borrower_id(&data.db, borrower_id)
+        .await
+        .map_err(Error::database)?;
+
+    let wallet_backup_data = WalletBackupData {
+        mnemonic_ciphertext: wallet_backup.mnemonic_ciphertext,
+        network: wallet_backup.network,
+    };
+
+    // Log login activity
+    let user_agent = connection_details
+        .user_agent
+        .unwrap_or("unknown".to_string());
+    let ip_address = connection_details.ip.unwrap_or("unknown".to_string());
+
+    let location = geo_location::get_geo_info(ip_address.as_str()).await.ok();
+
+    if let Err(err) = db::user_logins::insert_borrower_login_activity(
+        &data.db,
+        borrower_id,
+        Some(ip_address.clone()),
+        location
+            .as_ref()
+            .map(|l| l.country.clone())
+            .unwrap_or_default(),
+        location
+            .as_ref()
+            .map(|l| l.city.clone())
+            .unwrap_or_default(),
+        user_agent.as_str(),
+    )
+    .await
+    {
+        tracing::warn!(
+            borrower_id = borrower_id,
+            "Failed to track login activity {err:#}"
+        )
+    }
+
+    let profile_url = data
+        .config
+        .borrower_frontend_origin
+        .join("/settings/profile")
+        .expect("to be a correct URL");
+
+    data.notifications
+        .send_login_information_borrower(
+            user,
+            profile_url,
+            ip_address.as_str(),
+            OffsetDateTime::now_utc(),
+            location.map(|l| l.to_string()),
+            user_agent.as_str(),
+        )
+        .await;
+
+    let response = Response::builder()
+        .status(StatusCode::OK)
+        .header(header::SET_COOKIE.as_str(), cookie.to_string().as_str())
+        .header(header::CONTENT_TYPE.as_str(), "application/json")
+        .body(
+            json!(PakeVerifyResponse {
+                server_proof: "totp_verified".to_string(), // Not used in TOTP flow
+                token,
+                enabled_features: features,
+                user: filtered_user,
+                wallet_backup_data
+            })
+            .to_string(),
+        )
+        .context("TotpVerifyLoginResponse")
+        .map_err(Error::BuildResponse)?;
+
+    Ok(response)
+}
+
+/// Complete PAKE authentication verification, for mobile clients.
+#[utoipa::path(
+    post,
+    path = "/pake-verify-mobile",
+    tag = AUTH_TAG,
+    request_body = PakeVerifyRequest,
+    responses(
+        (
+            status = 200,
+            description = "PAKE verification successful, user authenticated",
+            body = PakeVerifyResult
+        ),
+        (
+            status = 400,
+            description = "Invalid credentials or authentication failed"
+        )
+    )
+)]
+#[instrument(skip_all, fields(borrower_id), err(Debug))]
 async fn post_pake_verify_mobile(
     State(data): State<Arc<AppState>>,
     Extension(connection_details): Extension<UserConnectionDetails>,
     AppJson(body): AppJson<PakeVerifyRequest>,
 ) -> Result<impl IntoResponse, Error> {
-    post_pake_verify_aux(
+    post_pake_verify_totp_check(
         data,
         connection_details,
         body,
@@ -458,7 +663,7 @@ async fn post_pake_verify_totp_check(
     body: PakeVerifyRequest,
     jwt_expiry_hours: time::Duration,
     cookie_expiry_hours: time::Duration,
-) -> Result<Response<String>, Error> {
+) -> Result<impl IntoResponse, Error> {
     let email = body.email;
     let (user, password_auth_info) = get_user_by_email(&data.db, email.as_str())
         .await
@@ -502,7 +707,7 @@ async fn post_pake_verify_totp_check(
         .await
         .map_err(Error::database)?;
 
-    if totp_secret.is_some() {
+    let result = if totp_secret.is_some() {
         // User has TOTP enabled, create temporary session token
         let now = OffsetDateTime::now_utc();
         let iat = now.unix_timestamp();
@@ -523,39 +728,52 @@ async fn post_pake_verify_totp_check(
         )
         .map_err(Error::AuthSessionDecode)?;
 
-        let response = Response::builder()
-            .status(StatusCode::OK)
-            .header(header::CONTENT_TYPE.as_str(), "application/json")
-            .body(
-                json!(PakeVerifyTotpResponse {
-                    server_proof,
-                    totp_required: true,
-                    session_token: Some(session_token),
-                })
-                .to_string(),
-            )
-            .context("PakeVerifyTotpResponse")
-            .map_err(Error::BuildResponse)?;
+        PakeVerifyResult::TotpRequired(PakeVerifyTotpResponse {
+            server_proof,
+            totp_required: true,
+            session_token: Some(session_token),
+        })
+    } else {
+        // User doesn't have TOTP, proceed with normal login
+        // Reconstruct the original PakeVerifyRequest
+        let original_body = PakeVerifyRequest {
+            email,
+            a_pub: body.a_pub,
+            client_proof: body.client_proof,
+        };
 
-        return Ok(response);
-    }
+        let auth_result = post_pake_verify_aux(
+            data,
+            connection_details,
+            original_body,
+            jwt_expiry_hours,
+            cookie_expiry_hours,
+        )
+        .await?;
 
-    // User doesn't have TOTP, proceed with normal login
-    // Reconstruct the original PakeVerifyRequest
-    let original_body = PakeVerifyRequest {
-        email,
-        a_pub: body.a_pub,
-        client_proof: body.client_proof,
+        PakeVerifyResult::Authenticated(Box::new(PakeVerifyWithCookie {
+            response: auth_result.response,
+            cookie: auth_result.cookie,
+        }))
     };
 
-    let response = post_pake_verify_aux(
-        data,
-        connection_details,
-        original_body,
-        jwt_expiry_hours,
-        cookie_expiry_hours,
-    )
-    .await?;
+    // Build the response based on the result type
+    let response = match result {
+        PakeVerifyResult::TotpRequired(totp_response) => Response::builder()
+            .status(StatusCode::OK)
+            .header(header::CONTENT_TYPE.as_str(), "application/json")
+            .body(json!(totp_response).to_string())
+            .context("PakeVerifyTotpResponse")
+            .map_err(Error::BuildResponse)?,
+        PakeVerifyResult::Authenticated(auth) => Response::builder()
+            .status(StatusCode::OK)
+            .header(header::SET_COOKIE.as_str(), auth.cookie.as_str())
+            .header(header::CONTENT_TYPE.as_str(), "application/json")
+            .body(json!(auth.response).to_string())
+            .context("PakeVerifyResponse")
+            .map_err(Error::BuildResponse)?,
+    };
+
     Ok(response)
 }
 
@@ -565,7 +783,7 @@ async fn post_pake_verify_aux(
     body: PakeVerifyRequest,
     jwt_expiry_hours: time::Duration,
     cookie_expiry_hours: time::Duration,
-) -> Result<Response<String>, Error> {
+) -> Result<AuthAux, Error> {
     let email = body.email;
     let (user, password_auth_info) = get_user_by_email(&data.db, email.as_str())
         .await
@@ -729,24 +947,21 @@ async fn post_pake_verify_aux(
         )
         .await;
 
-    let response = Response::builder()
-        .status(StatusCode::OK)
-        .header(header::SET_COOKIE.as_str(), cookie.to_string().as_str())
-        .header(header::CONTENT_TYPE.as_str(), "application/json")
-        .body(
-            json!(PakeVerifyResponse {
-                server_proof,
-                token,
-                enabled_features: features,
-                user: filtered_user,
-                wallet_backup_data
-            })
-            .to_string(),
-        )
-        .context("PakeVerifyResponse")
-        .map_err(Error::BuildResponse)?;
+    Ok(AuthAux {
+        response: PakeVerifyResponse {
+            server_proof,
+            token,
+            enabled_features: features,
+            user: filtered_user,
+            wallet_backup_data,
+        },
+        cookie: cookie.to_string(),
+    })
+}
 
-    Ok(response)
+struct AuthAux {
+    response: PakeVerifyResponse,
+    cookie: String,
 }
 
 /// Complete TOTP verification for login
@@ -1450,6 +1665,23 @@ struct PakeVerifyTotpResponse {
     server_proof: String,
     totp_required: bool,
     session_token: Option<String>, // Temporary token for TOTP verification
+}
+
+#[derive(Debug, Serialize, ToSchema)]
+#[serde(untagged)]
+enum PakeVerifyResult {
+    #[schema(title = "TotpRequired")]
+    TotpRequired(PakeVerifyTotpResponse),
+    #[schema(title = "Authenticated")]
+    Authenticated(Box<PakeVerifyWithCookie>),
+}
+
+#[derive(Debug, Serialize, ToSchema)]
+struct PakeVerifyWithCookie {
+    #[serde(flatten)]
+    response: PakeVerifyResponse,
+    #[serde(skip)]
+    cookie: String,
 }
 
 #[derive(Debug, Deserialize, ToSchema)]

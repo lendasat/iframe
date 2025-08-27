@@ -219,7 +219,7 @@ pub struct PakeServerData {
     pub b: Vec<u8>,
 }
 
-#[derive(Debug, Deserialize, Serialize, ToSchema)]
+#[derive(Debug, Deserialize, Serialize, ToSchema, Clone)]
 pub struct PakeVerifyRequest {
     pub email: Email,
     pub a_pub: String,
