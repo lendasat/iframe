@@ -33,7 +33,7 @@ interface ManageLoanDialogProps {
   contract?: Contract;
 }
 
-const ManageLoanDialog = ({
+const RepayOrExtendLoanDialog = ({
   children,
   refreshContract,
   contract,
@@ -77,7 +77,7 @@ const ManageLoanDialog = ({
           </TabsContent>
         </Tabs>
 
-        <DialogFooter className="flex sm:justify-between gap-2">
+        <DialogFooter className="flex gap-2 sm:justify-between">
           <Button variant="outline" onClick={() => setOpen(false)}>
             Back
           </Button>
@@ -87,4 +87,4 @@ const ManageLoanDialog = ({
   );
 };
 
-export default ManageLoanDialog;
+export default RepayOrExtendLoanDialog;

@@ -4,7 +4,7 @@ import CancelRequestDialog from "./cancel-request-dialog";
 import { LuBan, LuChevronRight, LuDownload } from "react-icons/lu";
 import WithdrawCollateralDialog from "./manage-loan-dialog/withdraw-collateral";
 import RecoverCollateralDialog from "./manage-loan-dialog/recover-collateral";
-import ManageLoanDialog from "./manage-loan-dialog/manage-loan-dialog";
+import RepayOrExtendLoanDialog from "./manage-loan-dialog/repay-or-extend-loan-dialog";
 import {
   Contract,
   ContractStatus,
@@ -57,7 +57,7 @@ export function ContractDetailsFooter({
         >
           <Button
             size="default"
-            className="w-full -px-4"
+            className="-px-4 w-full"
             disabled={buttonDisabled}
           >
             Provide bank details
@@ -108,25 +108,16 @@ export function ContractDetailsFooter({
         </Button>
       </RecoverCollateralDialog>
     );
-  } else if (
-    contract.status !== ContractStatus.Cancelled &&
-    contract.status !== ContractStatus.Closed &&
-    contract.status !== ContractStatus.ClosedByDefaulting &&
-    contract.status !== ContractStatus.ClosedByLiquidation &&
-    contract.status !== ContractStatus.ClosedByRecovery &&
-    contract.status !== ContractStatus.RepaymentProvided &&
-    contract.status !== ContractStatus.Extended &&
-    contract.status !== ContractStatus.CollateralConfirmed &&
-    contract.status !== ContractStatus.Undercollateralized &&
-    contract.status !== ContractStatus.Defaulted &&
-    contract.status !== ContractStatus.CollateralSeen
-  ) {
+  } else if (contract.status === ContractStatus.PrincipalGiven) {
     button = (
-      <ManageLoanDialog contract={contract} refreshContract={refreshContract}>
+      <RepayOrExtendLoanDialog
+        contract={contract}
+        refreshContract={refreshContract}
+      >
         <Button type={"button"} disabled={buttonDisabled}>
           Manage Loan <LuChevronRight className="ml-1 h-4 w-4" />
         </Button>
-      </ManageLoanDialog>
+      </RepayOrExtendLoanDialog>
     );
   }
 
