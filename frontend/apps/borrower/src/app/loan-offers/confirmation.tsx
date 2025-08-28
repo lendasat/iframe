@@ -146,9 +146,13 @@ export const Confirmation = ({
   const ltv = selectedOffer?.min_ltv || 0;
   const interestRate = selectedOffer?.interest_rate || 0;
   const actualInterest = interestRate / (ONE_YEAR / selectedLoanDuration);
-  const actualInterestUsdAmount = selectedLoanAmount * actualInterest;
+  const actualInterestAmountUsd = selectedLoanAmount * actualInterest;
+
+  // ltvWeightedInterestAmountBtc is the total actual interest to be paid over the loan duration times the LTV.
+  // This is to cover potential price drops
+  const ltvWeightedInterestAmountBtc =
+    actualInterestAmountUsd / latestPrice / ltv;
   const collateralAmountBtc = selectedLoanAmount / latestPrice / ltv;
-  const collateralUsdAmount = selectedLoanAmount / ltv;
 
   const discountedFee = user?.first_time_discount_rate || 0.0;
   const isDiscountedFeeApplied = discountedFee ? discountedFee > 0 : false;
@@ -156,8 +160,17 @@ export const Confirmation = ({
   const originationFee = selectedOffer?.origination_fee[0].fee || 0.0;
   const discountedOriginationFee =
     originationFee - originationFee * discountedFee;
-  const originationFeeBtc = collateralAmountBtc * discountedOriginationFee;
   const originationFeeUsd = selectedLoanAmount * discountedOriginationFee;
+  const originationFeeBtc = originationFeeUsd / latestPrice;
+
+  // Total needed collateral is the sum of
+  //  + collateral amount = loan amount * LTV
+  //  + actual interest * LTV
+  //  + origination fee
+  const totalNeededCollateralAmountBtc =
+    collateralAmountBtc + ltvWeightedInterestAmountBtc + originationFeeBtc;
+  const totalNeededCollateralAmountUsd =
+    totalNeededCollateralAmountBtc * latestPrice;
 
   const loanAsset = selectedOffer?.loan_asset;
 
@@ -421,7 +434,7 @@ export const Confirmation = ({
                 <div className="text-muted-foreground mt-1 text-xs">
                   ≈{" "}
                   {formatCurrency(
-                    actualInterestUsdAmount,
+                    actualInterestAmountUsd,
                     LoanAssetHelper.toCurrency(loanAsset),
                   )}{" "}
                   in total
@@ -496,12 +509,12 @@ export const Confirmation = ({
               <div className="text-right">
                 <div className="text-muted-foreground text-sm font-semibold">
                   {formatCurrency(
-                    collateralUsdAmount,
+                    totalNeededCollateralAmountUsd,
                     LoanAssetHelper.toCurrency(loanAsset),
                   )}
                 </div>
                 <div className="text-muted-foreground mt-1 text-xs">
-                  ≈ {collateralAmountBtc.toFixed(8)} BTC
+                  ≈ {totalNeededCollateralAmountBtc.toFixed(8)} BTC
                 </div>
               </div>
             }
