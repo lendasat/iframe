@@ -148,11 +148,10 @@ export const Confirmation = ({
   const actualInterest = interestRate / (ONE_YEAR / selectedLoanDuration);
   const actualInterestAmountUsd = selectedLoanAmount * actualInterest;
 
-  // ltvWeightedInterestAmountBtc is the total actual interest to be paid over the loan duration times the LTV.
+  // This is the total actual interest to be paid over the loan duration times the LTV.
   // This is to cover potential price drops
-  const ltvWeightedInterestAmountBtc =
-    actualInterestAmountUsd / latestPrice / ltv;
-  const collateralAmountBtc = selectedLoanAmount / latestPrice / ltv;
+  const collateralAmountBtc =
+    (selectedLoanAmount + actualInterestAmountUsd) / latestPrice / ltv;
 
   const discountedFee = user?.first_time_discount_rate || 0.0;
   const isDiscountedFeeApplied = discountedFee ? discountedFee > 0 : false;
@@ -164,13 +163,11 @@ export const Confirmation = ({
   const originationFeeBtc = originationFeeUsd / latestPrice;
 
   // Total needed collateral is the sum of
-  //  + collateral amount = loan amount * LTV
-  //  + actual interest * LTV
+  //  + collateral amount = loan amount / LTV
+  //  + actual interest / LTV
   //  + origination fee
-  const totalNeededCollateralAmountBtc =
-    collateralAmountBtc + ltvWeightedInterestAmountBtc + originationFeeBtc;
-  const totalNeededCollateralAmountUsd =
-    totalNeededCollateralAmountBtc * latestPrice;
+  const totalFundingAmountBtc = collateralAmountBtc + originationFeeBtc;
+  const totalFundingAmountUsd = totalFundingAmountBtc * latestPrice;
 
   const loanAsset = selectedOffer?.loan_asset;
 
@@ -509,12 +506,12 @@ export const Confirmation = ({
               <div className="text-right">
                 <div className="text-muted-foreground text-sm font-semibold">
                   {formatCurrency(
-                    totalNeededCollateralAmountUsd,
+                    totalFundingAmountUsd,
                     LoanAssetHelper.toCurrency(loanAsset),
                   )}
                 </div>
                 <div className="text-muted-foreground mt-1 text-xs">
-                  ≈ {totalNeededCollateralAmountBtc.toFixed(8)} BTC
+                  ≈ {totalFundingAmountBtc.toFixed(8)} BTC
                 </div>
               </div>
             }

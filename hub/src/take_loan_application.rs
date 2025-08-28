@@ -97,7 +97,7 @@ pub async fn take_application(
     )
     .map_err(Error::OriginationFeeCalculation)?;
 
-    let initial_collateral = contract_requests::calculate_initial_collateral(
+    let initial_collateral = contract_requests::calculate_initial_funding_amount(
         loan_application.loan_amount,
         loan_application.interest_rate,
         loan_application.duration_days as u32,

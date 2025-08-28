@@ -1,6 +1,6 @@
 use crate::bitmex_index_price_rest::get_bitmex_index_price;
 use crate::config::Config;
-use crate::contract_requests::calculate_initial_collateral;
+use crate::contract_requests::calculate_initial_funding_amount;
 use crate::contract_requests::calculate_origination_fee;
 use crate::db;
 use crate::discounted_origination_fee;
@@ -235,7 +235,7 @@ async fn map_to_api_loan_application(
         calculate_origination_fee(request.loan_amount, origination_fee_rate, price)
             .map_err(Error::origination_fee_calculation)?;
 
-    let initial_collateral = calculate_initial_collateral(
+    let initial_collateral = calculate_initial_funding_amount(
         request.loan_amount,
         request.interest_rate,
         request.duration_days as u32,

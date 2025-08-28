@@ -25,14 +25,12 @@ pub fn calculate_origination_fee(
     Amount::from_btc(fee_btc).context("couldn't parse to Amount")
 }
 
-/// Calculate initial needed collateral
+/// Calculates the initial funding amount required from the borrower.
 ///
-/// For the initial collateral the borrower has to deposit
-///
-/// + loan_amount * ltv
-/// + collateral for interest for the whole duration
-/// + origination fee
-pub fn calculate_initial_collateral(
+/// The initial funding amount consists of:
+/// - The loan amount plus total interest, divided by the loan-to-value (LTV) ratio.
+/// - The origination fee.
+pub fn calculate_initial_funding_amount(
     loan_amount_usd: Decimal,
     yearly_interest_rate: Decimal,
     duration_days: u32,

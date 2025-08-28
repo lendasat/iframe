@@ -9,7 +9,7 @@ use bitcoin::PublicKey;
 use client_sdk::wallet::Wallet;
 use hub::api_keys::ApiKeyHash;
 use hub::config::Config;
-use hub::contract_requests::calculate_initial_collateral;
+use hub::contract_requests::calculate_initial_funding_amount;
 use hub::db;
 use hub::db::wallet_backups::NewBorrowerWalletBackup;
 use hub::db::wallet_backups::NewLenderWalletBackup;
@@ -266,7 +266,7 @@ async fn create_contract_request(
     let duration_days = offer.duration_days_max;
     let interest_rate = offer.interest_rate;
 
-    let initial_collateral_sats = calculate_initial_collateral(
+    let initial_collateral_sats = calculate_initial_funding_amount(
         loan_amount,
         interest_rate,
         duration_days as u32,

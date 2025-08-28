@@ -167,8 +167,8 @@ export const Collateral = ({ contract }: CollateralProps) => {
   const ltvRatio =
     collateralBtcMinusOriginationFee &&
     latestPrice &&
-    contract?.value_outstanding
-      ? (contract.value_outstanding /
+    contract?.balance_outstanding
+      ? (contract.balance_outstanding /
           (collateralBtcMinusOriginationFee * latestPrice)) *
         100
       : undefined;
