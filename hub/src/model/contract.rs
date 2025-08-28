@@ -116,7 +116,9 @@ impl Contract {
     /// we use the `initial_collateral_sats`, which should never be zero.
     pub fn liquidation_price(&self, installments: &[Installment]) -> Decimal {
         let collateral_sats = if self.actual_collateral() == Amount::ZERO {
-            self.initial_collateral_sats
+            // the initial collateral includes the origination fee,hence, for the liquidation price,
+            // we need to subtract the origination fee because this amount goes to Lendasat
+            self.initial_collateral_sats - self.origination_fee_sats
         } else {
             self.actual_collateral().to_sat()
         };
