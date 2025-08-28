@@ -1683,6 +1683,12 @@ async fn put_report_btc_payment(
     .await
     .map_err(Error::database)?;
 
+    if contract.status != ContractStatus::PrincipalGiven {
+        return Err(Error::InvalidPaymentRequest {
+            status: contract.status,
+        });
+    }
+
     if contract.id != contract_id.to_string() {
         return Err(Error::bad_request("Invoice doesn't match contract ID"));
     }
