@@ -274,6 +274,15 @@ export function LoanOfferTable({
             </>
           );
         },
+        sortingFn: (rowA, rowB) => {
+          const a = rowA.getValue("amount") as AmountRange;
+          const b = rowB.getValue("amount") as AmountRange;
+          // Sort by minimum amount first, then by maximum if minimums are equal
+          if (a.min !== b.min) {
+            return a.min - b.min;
+          }
+          return a.max - b.max;
+        },
         filterFn: (
           row: Row<LoanOffer>,
           columnId: string,

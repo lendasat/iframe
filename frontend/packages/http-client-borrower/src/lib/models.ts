@@ -218,6 +218,7 @@ export interface ContractRequest {
 export interface Contract {
   id: string;
   loan_amount: number;
+  balance_outstanding: number;
   duration_days: number;
   created_at: Date;
   updated_at: Date;

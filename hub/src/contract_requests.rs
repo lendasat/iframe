@@ -25,12 +25,18 @@ pub fn calculate_origination_fee(
     Amount::from_btc(fee_btc).context("couldn't parse to Amount")
 }
 
-pub fn calculate_initial_collateral(
+/// Calculates the initial funding amount required from the borrower.
+///
+/// The initial funding amount consists of:
+/// - The loan amount plus total interest, divided by the loan-to-value (LTV) ratio.
+/// - The origination fee.
+pub fn calculate_initial_funding_amount(
     loan_amount_usd: Decimal,
     yearly_interest_rate: Decimal,
     duration_days: u32,
     ltv: Decimal,
     initial_price: Decimal,
+    origination_fee_amount: Amount,
 ) -> anyhow::Result<Amount> {
     let interest_usd = calculate_interest_usd(loan_amount_usd, yearly_interest_rate, duration_days);
     let outstanding_balance_usd = loan_amount_usd + interest_usd;
@@ -46,7 +52,8 @@ pub fn calculate_initial_collateral(
     let collateral_btc = collateral_btc.round_dp(8);
     let collateral_btc = collateral_btc.to_f64().expect("to fit");
 
-    Ok(Amount::from_btc(collateral_btc).expect("to fit"))
+    let collateral_amount = Amount::from_btc(collateral_btc).expect("to fit");
+    Ok(collateral_amount + origination_fee_amount)
 }
 
 #[cfg(test)]

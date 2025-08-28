@@ -934,6 +934,11 @@ struct Contract {
     id: String,
     #[serde(with = "rust_decimal::serde::float")]
     loan_amount: Decimal,
+    /// Total amount owed. This includes
+    /// - loan principal
+    /// - outstanding interest
+    #[serde(with = "rust_decimal::serde::float")]
+    balance_outstanding: Decimal,
     duration_days: i32,
     initial_collateral_sats: u64,
     origination_fee_sats: u64,
@@ -1231,10 +1236,12 @@ async fn map_to_api_contract(
     };
 
     let total_interest = compute_total_interest(&installments);
+    let balance_outstanding = compute_outstanding_balance(&installments).total();
 
     let contract = Contract {
         id: contract.id,
         loan_amount: contract.loan_amount,
+        balance_outstanding,
         duration_days: contract.duration_days,
         initial_collateral_sats: contract.initial_collateral_sats,
         origination_fee_sats: contract.origination_fee_sats,

@@ -159,9 +159,18 @@ export const Collateral = ({ contract }: CollateralProps) => {
   const collateralBtc = contract?.collateral_sats
     ? contract.collateral_sats / 100000000
     : undefined;
+
+  // to calculate the ltv we need to subtract the origination fee from the deposited collateral
+  const collateralBtcMinusOriginationFee = contract
+    ? (contract.collateral_sats - contract.origination_fee_sats) / 100000000
+    : undefined;
   const ltvRatio =
-    collateralBtc && latestPrice && contract?.loan_amount
-      ? (contract.loan_amount / (collateralBtc * latestPrice)) * 100
+    collateralBtcMinusOriginationFee &&
+    latestPrice &&
+    contract?.balance_outstanding
+      ? (contract.balance_outstanding /
+          (collateralBtcMinusOriginationFee * latestPrice)) *
+        100
       : undefined;
 
   const isFunded = collateralBtc !== undefined && collateralBtc > 0;
@@ -269,6 +278,22 @@ export const Collateral = ({ contract }: CollateralProps) => {
                   <LuExternalLink className="ml-2 h-4 w-4" />
                 </a>
               </Button>
+            </div>
+          </div>
+          <Separator className="my-3" />
+          <div className="flex items-center justify-between">
+            <span className="text-sm text-gray-500">Liquidation Price</span>
+            <div className="flex items-center">
+              {contractAddress ? (
+                <p className="font-medium">
+                  {formatCurrency(
+                    contract?.liquidation_price,
+                    LoanAssetHelper.toCurrency(contract?.loan_asset),
+                  )}
+                </p>
+              ) : (
+                <Skeleton className="h-4 w-[150px]" />
+              )}
             </div>
           </div>
         </div>

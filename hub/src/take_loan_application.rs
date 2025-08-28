@@ -76,15 +76,6 @@ pub async fn take_application(
         .map_err(Error::Database)?
         .ok_or(Error::LoanApplicationNotFound(loan_deal_id.to_string()))?;
 
-    let initial_collateral = contract_requests::calculate_initial_collateral(
-        loan_application.loan_amount,
-        loan_application.interest_rate,
-        loan_application.duration_days as u32,
-        loan_application.ltv,
-        current_price,
-    )
-    .map_err(Error::InitialCollateralCalculation)?;
-
     let origination_fee = config
         .origination_fee
         .first()
@@ -105,6 +96,16 @@ pub async fn take_application(
         current_price,
     )
     .map_err(Error::OriginationFeeCalculation)?;
+
+    let initial_collateral = contract_requests::calculate_initial_funding_amount(
+        loan_application.loan_amount,
+        loan_application.interest_rate,
+        loan_application.duration_days as u32,
+        loan_application.ltv,
+        current_price,
+        origination_fee,
+    )
+    .map_err(Error::InitialCollateralCalculation)?;
 
     let (contract_address, contract_index) = wallet
         .contract_address(
