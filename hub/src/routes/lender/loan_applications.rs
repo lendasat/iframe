@@ -1,7 +1,9 @@
 use crate::bitmex_index_price_rest::get_bitmex_index_price;
 use crate::config::Config;
 use crate::contract_requests::calculate_initial_collateral;
+use crate::contract_requests::calculate_origination_fee;
 use crate::db;
+use crate::discounted_origination_fee;
 use crate::model;
 use crate::model::calculate_interest_usd;
 use crate::model::FiatLoanDetailsWrapper;
