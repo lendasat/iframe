@@ -158,9 +158,18 @@ export const Collateral = ({ contract, refreshContract }: CollateralProps) => {
   const collateralBtc = contract?.collateral_sats
     ? contract.collateral_sats / 100000000
     : undefined;
+
+  // to calculate the ltv we need to subtract the origination fee from the deposited collateral
+  const collateralBtcMinusOriginationFee = contract
+    ? (contract.collateral_sats - contract.origination_fee_sats) / 100000000
+    : undefined;
   const ltvRatio =
-    collateralBtc && contract?.loan_amount && latestPrice
-      ? (contract.loan_amount / (collateralBtc * latestPrice)) * 100
+    collateralBtcMinusOriginationFee &&
+    contract?.value_outstanding &&
+    latestPrice
+      ? (contract.value_outstanding /
+          (collateralBtcMinusOriginationFee * latestPrice)) *
+        100
       : undefined;
 
   const isFunded = collateralBtc !== undefined && collateralBtc > 0;
