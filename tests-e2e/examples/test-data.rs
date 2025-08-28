@@ -9,6 +9,7 @@ use bitcoin::PublicKey;
 use client_sdk::wallet::Wallet;
 use hub::api_keys::ApiKeyHash;
 use hub::config::Config;
+use hub::contract_requests::calculate_initial_collateral;
 use hub::db;
 use hub::db::wallet_backups::NewBorrowerWalletBackup;
 use hub::db::wallet_backups::NewLenderWalletBackup;
@@ -259,10 +260,20 @@ async fn create_contract_request(
     let initial_ltv = dec!(0.5);
     let price = dec!(58_000);
     let one_btc_in_sats = dec!(100_000_000);
-    let initial_collateral_sats = ((loan_amount / initial_ltv) / price) * one_btc_in_sats;
     let origination_fee_sats = ((loan_amount / price) * ORIGINATION_FEE_RATE) * one_btc_in_sats;
+    let origination_fee_sats = origination_fee_sats.to_u64().expect("to fit");
+
     let duration_days = offer.duration_days_max;
     let interest_rate = offer.interest_rate;
+
+    let initial_collateral_sats = calculate_initial_collateral(
+        loan_amount,
+        interest_rate,
+        duration_days as u32,
+        initial_ltv,
+        price,
+        bitcoin::Amount::from_sat(origination_fee_sats),
+    )?;
 
     // Generated with this mnemonic:
     // pencil say next pact puzzle praise fringe amateur slim attend desk unknown
@@ -277,8 +288,8 @@ async fn create_contract_request(
         offer.lender_id.as_str(),
         offer.loan_deal_id.as_str(),
         initial_ltv,
-        initial_collateral_sats.to_u64().expect("to fit"),
-        origination_fee_sats.to_u64().expect("to fit"),
+        initial_collateral_sats.to_sat(),
+        origination_fee_sats,
         loan_amount,
         duration_days,
         borrower_pk,

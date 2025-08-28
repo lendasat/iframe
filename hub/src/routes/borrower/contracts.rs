@@ -339,14 +339,6 @@ async fn post_contract_request(
         .map_err(Error::bitmex_price)?;
 
     let min_ltv = offer.min_ltv;
-    let initial_collateral = contract_requests::calculate_initial_collateral(
-        loan_amount,
-        offer.interest_rate,
-        body.duration_days as u32,
-        min_ltv,
-        initial_price,
-    )
-    .map_err(Error::currency_conversion)?;
 
     // TODO: Choose origination fee based on loan parameters. For now we only have one origination
     // fee anyway.
@@ -372,6 +364,16 @@ async fn post_contract_request(
         initial_price,
     )
     .map_err(Error::origination_fee_calculation)?;
+
+    let initial_collateral = contract_requests::calculate_initial_collateral(
+        loan_amount,
+        offer.interest_rate,
+        body.duration_days as u32,
+        min_ltv,
+        initial_price,
+        origination_fee_amount,
+    )
+    .map_err(Error::currency_conversion)?;
 
     let borrower_npub = body.borrower_npub.unwrap_or(data.config.fallback_npub);
 

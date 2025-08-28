@@ -212,12 +212,34 @@ async fn map_to_api_loan_application(
         .await
         .map_err(Error::bitmex_price)?;
 
+    // TODO: Choose origination fee based on loan parameters. For now we only have one origination
+    // fee anyway.
+    let origination_fee = config
+        .origination_fee
+        .first()
+        .ok_or(Error::MissingOriginationFee)?;
+
+    // If the user has a discount code, we reduce the origination fee for them.
+    let origination_fee_rate =
+        discounted_origination_fee::calculate_discounted_origination_fee_rate(
+            db,
+            origination_fee.fee,
+            &request.borrower_id,
+        )
+        .await
+        .map_err(Error::from)?;
+
+    let origination_fee_amount =
+        calculate_origination_fee(request.loan_amount, origination_fee_rate, price)
+            .map_err(Error::origination_fee_calculation)?;
+
     let initial_collateral = calculate_initial_collateral(
         request.loan_amount,
         request.interest_rate,
         request.duration_days as u32,
         request.ltv,
         price,
+        origination_fee_amount,
     )
     .map_err(Error::initial_collateral_calculation)?;
 
@@ -392,6 +414,17 @@ impl From<user_stats::Error> for Error {
     fn from(value: user_stats::Error) -> Self {
         match value {
             user_stats::Error::Database(e) => Error::database(e),
+        }
+    }
+}
+
+impl From<discounted_origination_fee::Error> for Error {
+    fn from(value: discounted_origination_fee::Error) -> Self {
+        match value {
+            discounted_origination_fee::Error::InvalidDiscountRate { fee } => {
+                Error::invalid_discount_rate(format!("Invalid Discount Rate {fee:?}"))
+            }
+            discounted_origination_fee::Error::Database(e) => Error::database(e),
         }
     }
 }
