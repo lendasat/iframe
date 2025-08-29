@@ -104,6 +104,14 @@ async fn get_contracts(
     State(data): State<Arc<AppState>>,
     Extension(user): Extension<Lender>,
 ) -> Result<AppJson<Vec<Contract>>, Error> {
+    if db::jail::is_lender_jailed(&data.db, user.id.as_str())
+        .await
+        .map_err(Error::database)?
+    {
+        tracing::trace!(target : "jail", lender_id = user.id, "Jailed user tried to access." );
+        return Ok(AppJson(Vec::new()));
+    }
+
     let contracts = db::contracts::load_contracts_by_lender_id(&data.db, &user.id)
         .await
         .map_err(Error::database)?;
@@ -146,6 +154,14 @@ async fn get_contract(
     Extension(user): Extension<Lender>,
     Path(contract_id): Path<String>,
 ) -> Result<AppJson<Contract>, Error> {
+    if db::jail::is_lender_jailed(&data.db, user.id.as_str())
+        .await
+        .map_err(Error::database)?
+    {
+        tracing::trace!(target : "jail", lender_id = user.id, "Jailed user tried to access." );
+        return Err(Error::UserInJail);
+    }
+
     let contract =
         db::contracts::load_contract_by_contract_id_and_lender_id(&data.db, &contract_id, &user.id)
             .await
@@ -1527,6 +1543,8 @@ enum Error {
     SideShift(#[allow(dead_code)] String),
     /// We must decide on the actual status of a paid installment before liquidating.
     CannotLiquidateWithPaidInstallment,
+    /// User is in jail and can't do anything
+    UserInJail,
 }
 
 impl Error {
@@ -1651,6 +1669,7 @@ impl IntoResponse for Error {
                 StatusCode::INTERNAL_SERVER_ERROR,
                 "Cannot liquidate before paid installment is confirmed or not".to_string(),
             ),
+            Error::UserInJail => (StatusCode::BAD_REQUEST, "Invalid request".to_string()),
         };
 
         (status, AppJson(ErrorResponse { message })).into_response()
