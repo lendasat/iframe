@@ -880,6 +880,12 @@ async fn put_installment_paid(
     .await
     .map_err(Error::database)?;
 
+    if contract.status != ContractStatus::PrincipalGiven {
+        return Err(Error::InvalidPaymentRequest {
+            status: contract.status,
+        });
+    }
+
     db::installments::mark_as_paid(&data.db, body.installment_id, &body.payment_id)
         .await
         .map_err(Error::database)?;
@@ -1677,6 +1683,12 @@ async fn put_report_btc_payment(
     .await
     .map_err(Error::database)?;
 
+    if contract.status != ContractStatus::PrincipalGiven {
+        return Err(Error::InvalidPaymentRequest {
+            status: contract.status,
+        });
+    }
+
     if contract.id != contract_id.to_string() {
         return Err(Error::bad_request("Invoice doesn't match contract ID"));
     }
@@ -2285,6 +2297,11 @@ enum Error {
     InvalidCancelRequest {
         status: ContractStatus,
     },
+    /// Can't mark a contract installment as paid if the contract status is not in
+    /// [`ContractStatus::PrincipalGiven`]
+    InvalidPaymentRequest {
+        status: ContractStatus,
+    },
     /// Can't claim collateral if principal and interest have not been repaid.
     LoanNotRepaid,
     /// Can't claim collateral without contract index.
@@ -2582,6 +2599,10 @@ impl IntoResponse for Error {
             Error::InvalidCancelRequest { status } => (
                 StatusCode::BAD_REQUEST,
                 format!("Cannot cancel a contract request with status {status:?}"),
+            ),
+            Error::InvalidPaymentRequest { status } => (
+                StatusCode::BAD_REQUEST,
+                format!("Cannot mark an installment as paid for a contract with status {status:?}"),
             ),
             Error::LoanNotRepaid => (
                 StatusCode::BAD_REQUEST,
