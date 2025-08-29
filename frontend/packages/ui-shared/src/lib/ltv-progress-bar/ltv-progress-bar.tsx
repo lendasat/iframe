@@ -1,33 +1,35 @@
 import type { FC } from "react";
 import { usePriceForCurrency } from "../price-context";
+import { calculateLtv } from "../calculate-ltv";
 import { Progress, Skeleton } from "@frontend/shadcn";
 import { LoanAsset, LoanAssetHelper } from "../models";
 
 interface LtvProgressBarNewProps {
-  loanAmount: number;
-  collateralBtc: number | undefined;
-  loanAsset: LoanAsset;
+  balanceOutstanding?: number;
+  collateralSats?: number;
+  loanAsset?: LoanAsset;
 }
 
 export const LtvProgressBar: FC<LtvProgressBarNewProps> = ({
-  loanAmount,
-  collateralBtc,
+  balanceOutstanding,
+  collateralSats,
   loanAsset,
 }) => {
-  // TODO: the latest price should probably be passed down for a better performance
   const latestPrice = usePriceForCurrency(
     LoanAssetHelper.toCurrency(loanAsset),
   );
 
-  const ltvRatio =
-    collateralBtc && latestPrice
-      ? (loanAmount / (collateralBtc * latestPrice)) * 100
-      : 0;
+  const tmpLtvRation = calculateLtv(
+    balanceOutstanding,
+    latestPrice,
+    collateralSats,
+  );
+  const ltvRatio = tmpLtvRation ? tmpLtvRation * 100 : undefined;
 
-  // If the price is 0.
-  const isNan = Number.isNaN(ltvRatio);
+  // If the price is undefined
+  const isNan = ltvRatio === undefined || Number.isNaN(ltvRatio);
 
-  const formattedValue = ltvRatio.toFixed(0);
+  const formattedValue = ltvRatio?.toFixed(1);
 
   return (
     <div className="flex w-full min-w-[80px] items-center gap-0">

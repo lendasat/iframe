@@ -26,6 +26,9 @@ use crate::routes::lender::auth::jwt_or_api_auth;
 use crate::routes::lender::CONTRACTS_TAG;
 use crate::routes::user_connection_details_middleware::UserConnectionDetails;
 use crate::routes::AppState;
+use crate::LTV_THRESHOLD_LIQUIDATION;
+use crate::LTV_THRESHOLD_MARGIN_CALL_1;
+use crate::LTV_THRESHOLD_MARGIN_CALL_2;
 use anyhow::anyhow;
 use anyhow::Context;
 use axum::extract::rejection::JsonRejection;
@@ -958,7 +961,12 @@ struct Contract {
     duration_days: i32,
     initial_collateral_sats: u64,
     origination_fee_sats: u64,
+    /// The amount of sats accounted for the contract. Note: this value is `[origination_fee_sats]`
+    /// lower than `[deposited_sats]`
     collateral_sats: u64,
+    /// The amount of sats in the contract address. This includes the `[collateral_sats]`and
+    /// `[origination_fee_sats]`
+    deposited_sats: u64,
     #[serde(with = "rust_decimal::serde::float")]
     interest_rate: Decimal,
     #[serde(with = "rust_decimal::serde::float")]
@@ -1003,6 +1011,12 @@ struct Contract {
     #[serde(with = "rust_decimal::serde::float_option")]
     extension_interest_rate: Option<Decimal>,
     installments: Vec<Installment>,
+    /// Defines the LTV threshold for receiving the first margin call
+    ltv_threshold_margin_call_1: Decimal,
+    /// Defines the LTV threshold for receiving the second margin call
+    ltv_threshold_margin_call_2: Decimal,
+    /// Defines the LTV threshold for getting liquidated
+    ltv_threshold_liquidation: Decimal,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, utoipa::ToSchema)]
@@ -1254,6 +1268,14 @@ async fn map_to_api_contract(
     let total_interest = compute_total_interest(&installments);
     let balance_outstanding = compute_outstanding_balance(&installments).total();
 
+    let deposited_sats = if contract.collateral_sats > contract.origination_fee_sats {
+        contract.collateral_sats - contract.origination_fee_sats
+    } else {
+        // the contract is currently underfunded, so we just show what they have in their escrow
+        // address.
+        contract.collateral_sats
+    };
+
     let contract = Contract {
         id: contract.id,
         loan_amount: contract.loan_amount,
@@ -1262,6 +1284,7 @@ async fn map_to_api_contract(
         initial_collateral_sats: contract.initial_collateral_sats,
         origination_fee_sats: contract.origination_fee_sats,
         collateral_sats: contract.collateral_sats,
+        deposited_sats,
         interest_rate: contract.interest_rate,
         interest: total_interest,
         initial_ltv: contract.initial_ltv,
@@ -1305,6 +1328,9 @@ async fn map_to_api_contract(
             .into_iter()
             .map(Installment::from)
             .collect(),
+        ltv_threshold_margin_call_1: LTV_THRESHOLD_MARGIN_CALL_1,
+        ltv_threshold_margin_call_2: LTV_THRESHOLD_MARGIN_CALL_2,
+        ltv_threshold_liquidation: LTV_THRESHOLD_LIQUIDATION,
     };
 
     Ok(contract)

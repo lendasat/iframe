@@ -347,22 +347,10 @@ const LoanDetails: React.FC<LoanDetailsProps> = ({
           </div>
         </div>
 
-        <div className="mt-4 grid grid-cols-2 gap-4 md:grid-cols-2">
-          <div>
-            <p className="text-sm text-gray-500">Origination Fee</p>
-            {originationFee ? (
-              <div className="flex items-center gap-3">
-                <p className="font-mono">BTC {originationFee}</p>
-              </div>
-            ) : (
-              <Skeleton className="mb-2 h-4 w-[150px]" />
-            )}
-          </div>
-          <div className="col-span-2 text-right md:col-span-1">
-            <Button variant="ghost" onClick={downloadBackup}>
-              <LuDownload /> Download backup
-            </Button>
-          </div>
+        <div className="mt-4 flex flex-row justify-end">
+          <Button variant="ghost" onClick={downloadBackup}>
+            <LuDownload /> Download backup
+          </Button>
         </div>
       </div>
     </>

@@ -8,9 +8,19 @@ import {
   LuTriangleAlert,
 } from "react-icons/lu";
 import { useState } from "react";
-import { Button, CardContent, Separator, Skeleton } from "@frontend/shadcn";
+import {
+  Button,
+  CardContent,
+  Separator,
+  Skeleton,
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from "@frontend/shadcn";
 import { Contract, LiquidationStatus } from "@frontend/http-client-borrower";
 import {
+  calculateCollateralUsdValue,
+  calculateLtv,
   formatCurrency,
   formatSatsToBitcoin,
   LoanAssetHelper,
@@ -18,6 +28,7 @@ import {
 } from "@frontend/ui-shared";
 import AddCollateralDialog from "./add-collateral-dialog";
 import EditableAddressField from "./editable-address-field";
+import { Info } from "lucide-react";
 
 const shortenAddress = (address?: string) => {
   if (!address) {
@@ -41,6 +52,10 @@ interface LtvHealthInfoProps {
 }
 
 function LtvHealthInfo({ contract, funded }: LtvHealthInfoProps) {
+  const latestPrice = usePriceForCurrency(
+    LoanAssetHelper.toCurrency(contract?.loan_asset),
+  );
+
   if (contract === undefined) {
     return (
       <div className="flex items-start rounded-md border border-gray-200 bg-gray-50 p-4">
@@ -53,6 +68,13 @@ function LtvHealthInfo({ contract, funded }: LtvHealthInfoProps) {
     );
   }
 
+  const ltvRatio =
+    calculateLtv(
+      contract.balance_outstanding,
+      latestPrice,
+      contract.collateral_sats,
+    ) || 0;
+
   const liquidationStatus = contract.liquidation_status;
 
   if (!funded) {
@@ -63,6 +85,66 @@ function LtvHealthInfo({ contract, funded }: LtvHealthInfoProps) {
           <p className="text-sm font-medium text-gray-800">Unfunded Contract</p>
           <p className="text-sm text-gray-600">
             Your contract is not funded yet and hence does not have a LTV ratio.
+          </p>
+        </div>
+      </div>
+    );
+  }
+
+  if (
+    liquidationStatus === LiquidationStatus.Liquidated ||
+    ltvRatio > contract.ltv_threshold_liquidation
+  ) {
+    return (
+      <div className="flex items-start rounded-md border border-red-200 bg-red-50 p-4">
+        <LuCircleX className="mr-2 mt-0.5 h-5 w-5 text-red-500" />
+        <div>
+          <p className="text-sm font-medium text-red-800">
+            Collateral Liquidated
+          </p>
+          <p className="text-sm text-red-600">
+            Your collateral has been liquidated because the LTV ratio exceeded
+            the limit.
+          </p>
+        </div>
+      </div>
+    );
+  }
+
+  if (
+    liquidationStatus === LiquidationStatus.SecondMarginCall ||
+    ltvRatio > contract.ltv_threshold_margin_call_2
+  ) {
+    return (
+      <div className="flex items-start rounded-md border border-orange-200 bg-orange-50 p-4">
+        <LuCircleAlert className="mr-2 mt-0.5 h-5 w-5 text-orange-500" />
+        <div>
+          <p className="text-sm font-medium text-orange-800">
+            Urgent: Second Margin Call
+          </p>
+          <p className="text-sm text-orange-600">
+            Your LTV has exceeded the second margin call threshold. Add more
+            collateral immediately to avoid liquidation.
+          </p>
+        </div>
+      </div>
+    );
+  }
+
+  if (
+    liquidationStatus === LiquidationStatus.FirstMarginCall ||
+    ltvRatio > contract.ltv_threshold_margin_call_1
+  ) {
+    return (
+      <div className="flex items-start rounded-md border border-yellow-200 bg-yellow-50 p-4">
+        <LuTriangleAlert className="mr-2 mt-0.5 h-5 w-5 text-yellow-500" />
+        <div>
+          <p className="text-sm font-medium text-yellow-800">
+            Warning: Approaching Margin Call
+          </p>
+          <p className="text-sm text-yellow-600">
+            Your LTV has exceeded the first margin call threshold. Consider
+            adding more collateral.
           </p>
         </div>
       </div>
@@ -84,55 +166,6 @@ function LtvHealthInfo({ contract, funded }: LtvHealthInfoProps) {
       </div>
     );
   }
-
-  if (liquidationStatus === LiquidationStatus.FirstMarginCall) {
-    return (
-      <div className="flex items-start rounded-md border border-yellow-200 bg-yellow-50 p-4">
-        <LuTriangleAlert className="mr-2 mt-0.5 h-5 w-5 text-yellow-500" />
-        <div>
-          <p className="text-sm font-medium text-yellow-800">
-            Warning: Approaching Margin Call
-          </p>
-          <p className="text-sm text-yellow-600">
-            Your LTV has exceeded the first margin call threshold. Consider
-            adding more collateral.
-          </p>
-        </div>
-      </div>
-    );
-  }
-  if (liquidationStatus === LiquidationStatus.SecondMarginCall) {
-    return (
-      <div className="flex items-start rounded-md border border-orange-200 bg-orange-50 p-4">
-        <LuCircleAlert className="mr-2 mt-0.5 h-5 w-5 text-orange-500" />
-        <div>
-          <p className="text-sm font-medium text-orange-800">
-            Urgent: Second Margin Call
-          </p>
-          <p className="text-sm text-orange-600">
-            Your LTV has exceeded the second margin call threshold. Add more
-            collateral immediately to avoid liquidation.
-          </p>
-        </div>
-      </div>
-    );
-  }
-
-  if (liquidationStatus === LiquidationStatus.Liquidated) {
-    return (
-      <div className="flex items-start rounded-md border border-red-200 bg-red-50 p-4">
-        <LuCircleX className="mr-2 mt-0.5 h-5 w-5 text-red-500" />
-        <div>
-          <p className="text-sm font-medium text-red-800">
-            Collateral Liquidated
-          </p>
-          <p className="text-sm text-red-600">
-            Your collateral has been liquidated due to an unsafe LTV ratio.
-          </p>
-        </div>
-      </div>
-    );
-  }
 }
 
 export const Collateral = ({ contract, refreshContract }: CollateralProps) => {
@@ -144,33 +177,31 @@ export const Collateral = ({ contract, refreshContract }: CollateralProps) => {
 
   const contractAddress = contract?.contract_address;
   const refundAddress = contract?.borrower_btc_address;
-  const collateralAmount = formatSatsToBitcoin(contract?.collateral_sats);
+  const collateralAmount =
+    contract &&
+    formatSatsToBitcoin(
+      contract?.collateral_sats - contract?.origination_fee_sats,
+    );
+  calculateLtv();
+
+  const collateralUsdValue = calculateCollateralUsdValue(
+    contract?.collateral_sats,
+    latestPrice,
+  );
   const collateralAmountFiat =
-    contract?.collateral_sats != null && latestPrice
-      ? contract.collateral_sats === 0
-        ? formatCurrency(0, LoanAssetHelper.toCurrency(contract?.loan_asset))
-        : formatCurrency(
-            (contract.collateral_sats / 100000000) * latestPrice,
-            LoanAssetHelper.toCurrency(contract?.loan_asset),
-          )
-      : undefined;
+    collateralUsdValue && formatCurrency(collateralUsdValue);
 
   const collateralBtc = contract?.collateral_sats
     ? contract.collateral_sats / 100000000
     : undefined;
 
-  // to calculate the ltv we need to subtract the origination fee from the deposited collateral
-  const collateralBtcMinusOriginationFee = contract
-    ? (contract.collateral_sats - contract.origination_fee_sats) / 100000000
-    : undefined;
-  const ltvRatio =
-    collateralBtcMinusOriginationFee &&
-    contract?.balance_outstanding &&
-    latestPrice
-      ? (contract.balance_outstanding /
-          (collateralBtcMinusOriginationFee * latestPrice)) *
-        100
-      : undefined;
+  let tmpLtv = calculateLtv(
+    contract?.balance_outstanding,
+    latestPrice,
+    contract?.collateral_sats,
+  );
+
+  const ltvRatio = tmpLtv ? 100 * tmpLtv : undefined;
 
   const isFunded = collateralBtc !== undefined && collateralBtc > 0;
 
@@ -189,10 +220,12 @@ export const Collateral = ({ contract, refreshContract }: CollateralProps) => {
     }
   };
 
-  // TODO: we shouldn't hardcode these values but get them from the backend
-  const firstMarginCallThreshold = 70;
-  const secondMarginCallThreshold = 80;
-  const liquidationThreshold = 90;
+  const firstMarginCallThreshold =
+    (contract?.ltv_threshold_margin_call_1 || 0.8) * 100;
+  const secondMarginCallThreshold =
+    (contract?.ltv_threshold_margin_call_2 || 0.85) * 100;
+  const liquidationThreshold =
+    (contract?.ltv_threshold_liquidation || 0.9) * 100;
 
   let ltvRatioStop = {
     percent: 100,
@@ -248,7 +281,20 @@ export const Collateral = ({ contract, refreshContract }: CollateralProps) => {
 
         <div className="mb-4 rounded-md border p-4">
           <div className="flex items-center justify-between">
-            <span>Current Collateral</span>
+            <span className={"flex flex-row gap-1"}>
+              Current Collateral
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Info width={16} />
+                </TooltipTrigger>
+                <TooltipContent>
+                  <p>
+                    Note: the amount in your contract includes the origination
+                    fee.
+                  </p>
+                </TooltipContent>
+              </Tooltip>
+            </span>
             <span className="font-mono">{collateralAmount} BTC</span>
           </div>
           <Separator className="my-3" />
@@ -258,6 +304,13 @@ export const Collateral = ({ contract, refreshContract }: CollateralProps) => {
               {" value"}
             </span>
             <span className="font-medium">{collateralAmountFiat}</span>
+          </div>
+          <Separator className="my-3" />
+          <div className="flex items-center justify-between">
+            <span className="text-sm text-gray-500">Origination fee</span>
+            <span className="font-medium">
+              {formatSatsToBitcoin(contract?.origination_fee_sats)} BTC
+            </span>
           </div>
           <Separator className="my-3" />
           <div className="flex items-center justify-between">
@@ -310,7 +363,28 @@ export const Collateral = ({ contract, refreshContract }: CollateralProps) => {
           />
           <Separator className="my-3" />
           <div className="flex items-center justify-between">
-            <span className="text-sm text-gray-500">Liquidation Price</span>
+            <span className="flex flex-row items-center gap-1 text-sm text-gray-500">
+              Liquidation Price
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Info width={16} />
+                </TooltipTrigger>
+                <TooltipContent>
+                  <p>
+                    The liquidation price is calculated using the total balance
+                  </p>
+                  <p>
+                    outstanding divided by the value of the collateral *
+                    liquidation threshold, i.e.
+                  </p>
+                  <p>
+                    (loan amount + unpaid interest) / (value of collateral *
+                    LTV_THRESHOLD_LIQUIDATION)
+                  </p>
+                </TooltipContent>
+              </Tooltip>
+            </span>
+
             <div className="flex items-center">
               {contractAddress ? (
                 <p className="font-medium">
@@ -328,10 +402,26 @@ export const Collateral = ({ contract, refreshContract }: CollateralProps) => {
 
         <div className="mb-11 space-y-3">
           <div className="flex items-center justify-between">
-            <p className="text-sm text-gray-500">Loan-to-Value (LTV) Ratio</p>
+            <span className="flex flex-row items-center gap-1 text-sm text-gray-500">
+              Loan-to-Value (LTV) Ratio
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Info width={16} />
+                </TooltipTrigger>
+                <TooltipContent>
+                  <p>The LTV ratio is calculated using the total balance</p>
+                  <p>
+                    outstanding divided by the value of the collateral, i.e.
+                  </p>
+                  <p className={"font-mono text-xs"}>
+                    (loan amount + unpaid interest) / value of collateral
+                  </p>
+                </TooltipContent>
+              </Tooltip>
+            </span>
             {ltvRatio ? (
               <p className={`font-bold ${ltvRatioStop.textcolor} `}>
-                {ltvRatio.toFixed(2)}%
+                {ltvRatio.toFixed(1)}%
               </p>
             ) : (
               <Skeleton className="h-6 w-[150px]" />

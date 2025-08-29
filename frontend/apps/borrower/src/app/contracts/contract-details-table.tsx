@@ -97,7 +97,7 @@ export const ContractDetailsTable = ({
         <TableRow>
           {shownColumns.index && (
             <TableHead className="w-16">
-              <span className="text-sm font-medium text-muted-foreground">
+              <span className="text-muted-foreground text-sm font-medium">
                 #
               </span>
             </TableHead>
@@ -137,7 +137,7 @@ export const ContractDetailsTable = ({
           )}
           {shownColumns.ltv && (
             <TableHead className="min-w-[100px] text-center">
-              <span className="text-sm font-medium text-muted-foreground">
+              <span className="text-muted-foreground text-sm font-medium">
                 LTV
               </span>
             </TableHead>
@@ -177,7 +177,7 @@ export const ContractDetailsTable = ({
           )}
           {shownColumns.action && (
             <TableHead>
-              <span className="text-sm font-medium text-muted-foreground">
+              <span className="text-muted-foreground text-sm font-medium">
                 Action
               </span>
             </TableHead>
@@ -232,7 +232,7 @@ export const ContractDetailsTable = ({
           return (
             <TableRow key={contract.id}>
               {shownColumns.index && (
-                <TableCell className="w-16 text-sm text-muted-foreground">
+                <TableCell className="text-muted-foreground w-16 text-sm">
                   {startIndex + index}
                 </TableCell>
               )}
@@ -261,8 +261,8 @@ export const ContractDetailsTable = ({
               {shownColumns.ltv && (
                 <TableCell>
                   <LtvProgressBar
-                    collateralBtc={collateral_btc}
-                    loanAmount={contract.loan_amount}
+                    collateralSats={contract.collateral_sats}
+                    balanceOutstanding={contract.balance_outstanding}
                     loanAsset={contract.loan_asset}
                   />
                 </TableCell>
