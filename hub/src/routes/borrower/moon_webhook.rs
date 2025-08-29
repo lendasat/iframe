@@ -59,18 +59,39 @@ async fn post_webhook(
             };
             Ok(())
         }
+        Err(JsonRejection::MissingJsonContentType(e)) => {
+            let status = e.status();
+            let error = e.body_text();
 
-        // Handle request without JSON body or invalid JSON
-        Err(JsonRejection::MissingJsonContentType(_))
-        | Err(JsonRejection::JsonDataError(_))
-        | Err(JsonRejection::JsonSyntaxError(_)) => {
-            tracing::debug!(?payload, "Webhook registered but did not match");
+            tracing::debug!(%status, error, "Failed to handle webhook data: MissingJsonContentType");
 
             Ok(())
         }
+        Err(JsonRejection::JsonDataError(e)) => {
+            let status = e.status();
+            let error = e.body_text();
 
+            tracing::debug!(%status, error, "Failed to handle webhook data: JsonDataError");
+
+            Ok(())
+        }
+        Err(JsonRejection::JsonSyntaxError(e)) => {
+            let status = e.status();
+            let error = e.body_text();
+
+            tracing::debug!(%status, error, "Failed to handle webhook data: JsonSyntaxError");
+
+            Ok(())
+        }
         // Handle other JSON rejection cases
-        Err(e) => Err(Error::Moon(anyhow!("Failed to process webhook: {e:#}"))),
+        Err(e) => {
+            let status = e.status();
+            let error = e.body_text();
+
+            tracing::debug!(%status, error, "Failed to handle webhook data: JsonSyntaxError");
+
+            Err(Error::Moon(anyhow!("Failed to process webhook: {e:#}")))
+        }
     }
 }
 
