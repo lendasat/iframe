@@ -75,7 +75,15 @@ pub(crate) fn router(app_state: Arc<AppState>) -> OpenApiRouter {
 #[instrument(skip_all, err(Debug))]
 async fn get_all_available_loan_applications(
     State(data): State<Arc<AppState>>,
+    Extension(user): Extension<Lender>,
 ) -> Result<AppJson<Vec<LoanApplication>>, Error> {
+    if db::jail::is_lender_jailed(&data.db, user.id.as_str())
+        .await
+        .map_err(Error::database)?
+    {
+        tracing::trace!(target : "jail", lender_id = user.id, "Jailed user tried to access." );
+        return Ok(AppJson(Vec::new()));
+    }
     let requests = db::loan_applications::load_all_available_loan_applications(&data.db)
         .await
         .map_err(Error::database)?;
@@ -114,7 +122,16 @@ async fn get_all_available_loan_applications(
 async fn get_loan_application(
     State(data): State<Arc<AppState>>,
     Path(loan_deal_id): Path<String>,
+    Extension(user): Extension<Lender>,
 ) -> Result<AppJson<LoanApplication>, Error> {
+    if db::jail::is_lender_jailed(&data.db, user.id.as_str())
+        .await
+        .map_err(Error::database)?
+    {
+        tracing::trace!(target : "jail", lender_id = user.id, "Jailed user tried to access." );
+        return Err(Error::UserInJail);
+    }
+
     let request = db::loan_applications::get_loan_by_id(&data.db, loan_deal_id.as_str())
         .await
         .map_err(Error::database)?
@@ -153,6 +170,14 @@ async fn post_take_loan_application(
     Path(loan_deal_id): Path<String>,
     Json(body): Json<TakeLoanApplicationSchema>,
 ) -> Result<AppJson<String>, Error> {
+    if db::jail::is_lender_jailed(&data.db, user.id.as_str())
+        .await
+        .map_err(Error::database)?
+    {
+        tracing::trace!(target : "jail", lender_id = user.id, "Jailed user tried to access." );
+        return Err(Error::UserInJail);
+    }
+
     let wallet = data.wallet.clone();
     let contract_id = take_application(
         &data.db,
@@ -318,6 +343,8 @@ enum Error {
     MissingFiatLoanDetails,
     /// The loan application had a loan duration of zero days.
     ZeroLoanDuration,
+    /// User is in jail and can't do anything
+    UserInJail,
 }
 
 impl Error {
@@ -383,6 +410,8 @@ impl IntoResponse for Error {
                 StatusCode::BAD_REQUEST,
                 "Fiat loan details not found".to_owned(),
             ),
+
+            Error::UserInJail => (StatusCode::BAD_REQUEST, "Invalid request".to_string()),
         };
         (status, AppJson(ErrorResponse { message })).into_response()
     }

@@ -1,4 +1,5 @@
 use crate::db;
+use crate::model::Borrower;
 use crate::model::LoanAsset;
 use crate::model::LoanOfferStatus;
 use crate::model::LoanPayout;
@@ -19,6 +20,7 @@ use axum::http::StatusCode;
 use axum::middleware;
 use axum::response::IntoResponse;
 use axum::response::Response;
+use axum::Extension;
 use axum::Json;
 use bitcoin::PublicKey;
 use rust_decimal::Decimal;
@@ -76,7 +78,16 @@ security(
 async fn get_all_available_loan_offers(
     State(data): State<Arc<AppState>>,
     Query(query): Query<LoanOffersQuery>,
+    Extension(user): Extension<Borrower>,
 ) -> Result<AppJson<Vec<LoanOffer>>, Error> {
+    if db::jail::is_borrower_jailed(&data.db, user.id.as_str())
+        .await
+        .map_err(Error::database)?
+    {
+        tracing::trace!(target : "jail", borrower_id = user.id, "Jailed user tried to access." );
+        return Ok(AppJson(Vec::new()));
+    }
+
     let loans = db::loan_offers::load_all_available_loan_offers(&data.db)
         .await
         .map_err(Error::database)?;
@@ -180,7 +191,16 @@ async fn get_available_loan_offers_by_lender(
     State(data): State<Arc<AppState>>,
     Path(lender_id): Path<String>,
     Query(query): Query<LoanOffersQuery>,
+    Extension(user): Extension<Borrower>,
 ) -> Result<AppJson<Vec<LoanOffer>>, Error> {
+    if db::jail::is_borrower_jailed(&data.db, user.id.as_str())
+        .await
+        .map_err(Error::database)?
+    {
+        tracing::trace!(target : "jail", borrower_id = user.id, "Jailed user tried to access." );
+        return Ok(AppJson(Vec::new()));
+    }
+
     let lender = db::lenders::get_user_by_id(&data.db, lender_id.as_str())
         .await
         .map_err(Error::database)?
@@ -288,7 +308,16 @@ async fn get_loan_offer(
     State(data): State<Arc<AppState>>,
     Path(id): Path<String>,
     Query(query): Query<LoanOffersQuery>,
+    Extension(user): Extension<Borrower>,
 ) -> Result<AppJson<LoanOffer>, Error> {
+    if db::jail::is_borrower_jailed(&data.db, user.id.as_str())
+        .await
+        .map_err(Error::database)?
+    {
+        tracing::trace!(target : "jail", borrower_id = user.id, "Jailed user tried to access." );
+        return Err(Error::MissingLoanOffer);
+    }
+
     let loan = db::loan_offers::loan_by_id(&data.db, id.as_str())
         .await
         .map_err(Error::database)?;

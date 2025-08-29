@@ -75,6 +75,14 @@ async fn create_loan_application(
     Extension(user): Extension<Borrower>,
     Json(body): Json<CreateLoanApplicationSchema>,
 ) -> Result<AppJson<LoanApplication>, Error> {
+    if db::jail::is_borrower_jailed(&data.db, user.id.as_str())
+        .await
+        .map_err(Error::database)?
+    {
+        tracing::trace!(target : "jail", borrower_id = user.id, "Jailed user tried to access." );
+        return Err(Error::UserInJail);
+    }
+
     if body.ltv > dec!(1.0) || body.ltv < Decimal::zero() {
         return Err(Error::InvalidLtv { ltv: body.ltv });
     }
@@ -184,6 +192,14 @@ async fn get_loan_application_by_application_and_application_id(
     Extension(user): Extension<Borrower>,
     Path(loan_deal_id): Path<String>,
 ) -> Result<AppJson<LoanApplication>, Error> {
+    if db::jail::is_borrower_jailed(&data.db, user.id.as_str())
+        .await
+        .map_err(Error::database)?
+    {
+        tracing::trace!(target : "jail", borrower_id = user.id, "Jailed user tried to access." );
+        return Err(Error::UserInJail);
+    }
+
     let loan = db::loan_applications::get_loan_application_by_borrower_and_application_id(
         &data.db,
         user.id.as_str(),
@@ -295,6 +311,14 @@ async fn put_edit_loan_application(
     Path(loan_deal_id): Path<String>,
     Json(body): Json<EditLoanApplicationRequest>,
 ) -> Result<AppJson<LoanApplication>, Error> {
+    if db::jail::is_borrower_jailed(&data.db, user.id.as_str())
+        .await
+        .map_err(Error::database)?
+    {
+        tracing::trace!(target : "jail", borrower_id = user.id, "Jailed user tried to access." );
+        return Err(Error::UserInJail);
+    }
+
     let old_application =
         db::loan_applications::get_loan_application_by_borrower_and_application_id(
             &data.db,
@@ -363,6 +387,7 @@ where
 enum Error {
     /// Failed to interact with the database.
     Database(#[allow(dead_code)] String),
+    UserInJail,
     MissingLoanApplication,
     InvalidLtv {
         ltv: Decimal,
@@ -398,6 +423,7 @@ impl IntoResponse for Error {
                 StatusCode::BAD_REQUEST,
                 "Loan application does not exist".to_string(),
             ),
+            Error::UserInJail => (StatusCode::BAD_REQUEST, "Invalid request".to_string()),
             Error::InvalidLtv { ltv } => (
                 StatusCode::BAD_REQUEST,
                 format!("LTV must be between 0 and 1 but was {ltv}"),

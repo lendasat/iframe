@@ -139,6 +139,14 @@ async fn post_contract_request(
     Extension(connection_details): Extension<UserConnectionDetails>,
     AppJson(body): AppJson<ContractRequestSchema>,
 ) -> Result<AppJson<Contract>, Error> {
+    if db::jail::is_borrower_jailed(&data.db, user.id.as_str())
+        .await
+        .map_err(Error::database)?
+    {
+        tracing::trace!(target : "jail", borrower_id = user.id, "Jailed user tried to access." );
+        return Err(Error::UserInJail);
+    }
+
     let offer = db::loan_offers::loan_by_id(&data.db, &body.id)
         .await
         .map_err(Error::database)?
@@ -727,6 +735,20 @@ async fn get_contracts(
     Extension(user): Extension<Borrower>,
     Query(query): Query<ContractsQuery>,
 ) -> Result<AppJson<PaginatedContractsResponse>, Error> {
+    if db::jail::is_borrower_jailed(&data.db, user.id.as_str())
+        .await
+        .map_err(Error::database)?
+    {
+        tracing::trace!(target : "jail", borrower_id = user.id, "Jailed user tried to access." );
+        return Ok(AppJson(PaginatedContractsResponse {
+            data: vec![],
+            page: 0,
+            limit: 0,
+            total: 0,
+            total_pages: 0,
+        }));
+    }
+
     query
         .validate()
         .map_err(|e| Error::bad_request(anyhow!(e)))?;
@@ -819,6 +841,14 @@ async fn get_contract(
     Extension(user): Extension<Borrower>,
     Path(contract_id): Path<String>,
 ) -> Result<AppJson<Contract>, Error> {
+    if db::jail::is_borrower_jailed(&data.db, user.id.as_str())
+        .await
+        .map_err(Error::database)?
+    {
+        tracing::trace!(target : "jail", borrower_id = user.id, "Jailed user tried to access." );
+        return Err(Error::UserInJail);
+    }
+
     let contract = db::contracts::load_contract_by_contract_id_and_borrower_id(
         &data.db,
         &contract_id,
@@ -2421,6 +2451,8 @@ enum Error {
     ExpiredBitcoinInvoice,
     /// The Bitcoin repayment invoice cannot accept payment in its current state.
     InvalidBitcoinInvoiceState,
+    /// User in in jail and can't do anything
+    UserInJail,
 }
 
 impl Error {
@@ -2772,6 +2804,7 @@ impl IntoResponse for Error {
                 "This Bitcoin repayment invoice cannot accept payment in its current state"
                     .to_string(),
             ),
+            Error::UserInJail => (StatusCode::BAD_REQUEST, "Invalid request".to_string()),
         };
         (status, AppJson(ErrorResponse { message })).into_response()
     }
