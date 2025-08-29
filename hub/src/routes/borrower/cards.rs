@@ -91,7 +91,10 @@ async fn get_cards(
         }
     }
 
-    let cards = cards.into_iter().map(Card::from).collect::<Vec<_>>();
+    let cards = refreshed_cards
+        .into_iter()
+        .map(Card::from)
+        .collect::<Vec<_>>();
 
     Ok(AppJson(cards))
 }
