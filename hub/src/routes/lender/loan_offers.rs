@@ -76,6 +76,14 @@ async fn create_loan_offer(
     Extension(user): Extension<Lender>,
     body: AppJson<CreateLoanOfferSchema>,
 ) -> Result<AppJson<LoanOffer>, Error> {
+    if db::jail::is_lender_jailed(&data.db, user.id.as_str())
+        .await
+        .map_err(Error::database)?
+    {
+        tracing::trace!(target : "jail", lender_id = user.id, "Jailed user tried to access." );
+        return Err(Error::UserInJail);
+    }
+
     if body.0.min_ltv > dec!(1.0) || body.0.min_ltv < Decimal::zero() {
         return Err(Error::InvalidLtv {
             ltv: body.0.min_ltv,
@@ -204,6 +212,14 @@ async fn get_my_loan_offers(
     State(data): State<Arc<AppState>>,
     Extension(user): Extension<Lender>,
 ) -> Result<AppJson<Vec<LoanOffer>>, Error> {
+    if db::jail::is_lender_jailed(&data.db, user.id.as_str())
+        .await
+        .map_err(Error::database)?
+    {
+        tracing::trace!(target : "jail", lender_id = user.id, "Jailed user tried to access." );
+        return Ok(AppJson(Vec::new()));
+    }
+
     // TODO: don't return the db object here but map it to a different one so that we can enhance it
     // with more data.
     let loans = db::loan_offers::load_all_loan_offers_by_lender(&data.db, user.id.as_str())
@@ -293,6 +309,14 @@ async fn get_loan_offer_by_lender_and_offer_id(
     Extension(user): Extension<Lender>,
     Path(offer_id): Path<String>,
 ) -> Result<AppJson<LoanOffer>, Error> {
+    if db::jail::is_lender_jailed(&data.db, user.id.as_str())
+        .await
+        .map_err(Error::database)?
+    {
+        tracing::trace!(target : "jail", lender_id = user.id, "Jailed user tried to access." );
+        return Err(Error::UserInJail);
+    }
+
     let offer = db::loan_offers::get_loan_offer_by_lender_and_offer_id(
         &data.db,
         user.id.as_str(),
@@ -501,7 +525,16 @@ async fn put_update_loan_offer(
 #[instrument(skip_all, err(Debug))]
 async fn get_loan_offers(
     State(data): State<Arc<AppState>>,
+    Extension(user): Extension<Lender>,
 ) -> Result<AppJson<Vec<LoanOffer>>, Error> {
+    if db::jail::is_lender_jailed(&data.db, user.id.as_str())
+        .await
+        .map_err(Error::database)?
+    {
+        tracing::trace!(target : "jail", lender_id = user.id, "Jailed user tried to access." );
+        return Ok(AppJson(Vec::default()));
+    }
+
     let loans = db::loan_offers::load_all_available_loan_offers(&data.db)
         .await
         .map_err(Error::database)?;
@@ -803,6 +836,8 @@ enum Error {
     InvalidUrl(#[allow(dead_code)] String),
     /// Referenced loan offer does not exist.
     MissingLoanOffer { offer_id: String },
+    /// User is in jail and can't do anything
+    UserInJail,
 }
 
 impl Error {
@@ -867,6 +902,7 @@ impl IntoResponse for Error {
                 StatusCode::NOT_FOUND,
                 format!("Loan offer not found: {offer_id}"),
             ),
+            Error::UserInJail => (StatusCode::BAD_REQUEST, "Invalid request".to_string()),
         };
 
         (status, AppJson(ErrorResponse { message })).into_response()
