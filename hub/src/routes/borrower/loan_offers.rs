@@ -191,16 +191,7 @@ async fn get_available_loan_offers_by_lender(
     State(data): State<Arc<AppState>>,
     Path(lender_id): Path<String>,
     Query(query): Query<LoanOffersQuery>,
-    Extension(user): Extension<Borrower>,
 ) -> Result<AppJson<Vec<LoanOffer>>, Error> {
-    if db::jail::is_borrower_jailed(&data.db, user.id.as_str())
-        .await
-        .map_err(Error::database)?
-    {
-        tracing::trace!(target : "jail", borrower_id = user.id, "Jailed user tried to access." );
-        return Ok(AppJson(Vec::new()));
-    }
-
     let lender = db::lenders::get_user_by_id(&data.db, lender_id.as_str())
         .await
         .map_err(Error::database)?
