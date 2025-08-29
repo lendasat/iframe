@@ -64,12 +64,32 @@ pub async fn log_in(port: u32, email: String, password: String) -> Client {
         email: email.clone(),
     };
 
-    let res = client
-        .post(format!("http://localhost:{port}/api/auth/pake-login"))
-        .json(&login_request)
-        .send()
-        .await
-        .unwrap();
+    // We want to be resilient against connection errors.
+    let mut n_retries = 0;
+    let res = loop {
+        let res = client
+            .post(format!("http://localhost:{port}/api/auth/pake-login"))
+            .json(&login_request)
+            .send()
+            .await;
+
+        match res {
+            Ok(res) => break res,
+            Err(error) => {
+                if n_retries > 5 {
+                    panic!("Failed to log in after 5 retries");
+                }
+
+                tracing::warn!(?error, "Failed to log in, retrying");
+
+                tokio::time::sleep(Duration::from_secs(2)).await;
+
+                n_retries += 1;
+
+                continue;
+            }
+        }
+    };
 
     assert!(res.status().is_success());
 
