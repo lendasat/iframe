@@ -122,6 +122,7 @@ export interface Contract {
   initial_collateral_sats: number;
   origination_fee_sats: number;
   collateral_sats: number;
+  deposited_sats: number;
   initial_ltv: number;
   status: ContractStatus;
   liquidation_status: LiquidationStatus;
@@ -148,6 +149,9 @@ export interface Contract {
   extension_max_duration_days: number;
   extension_interest_rate?: number;
   installments: Installment[];
+  ltv_threshold_margin_call_1: number;
+  ltv_threshold_margin_call_2: number;
+  ltv_threshold_liquidation: number;
 }
 
 export interface Installment {

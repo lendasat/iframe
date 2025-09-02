@@ -320,8 +320,8 @@ export const ContractDetailsTable = ({
               {shownColumns.ltv && (
                 <Table.Cell>
                   <LtvProgressBar
-                    collateralBtc={collateral_btc}
-                    loanAmount={contract.loan_amount}
+                    collateralSats={contract.collateral_sats}
+                    balanceOutstanding={contract.balance_outstanding}
                     loanAsset={contract.loan_asset}
                   />
                 </Table.Cell>
