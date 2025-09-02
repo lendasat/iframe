@@ -541,6 +541,10 @@ async fn get_loan_offers(
 
     let mut ret = vec![];
     for offer in loans {
+        if offer.loan_payout != LoanPayout::Direct {
+            continue;
+        }
+
         let lender = db::lenders::get_user_by_id(&data.db, &offer.lender_id)
             .await
             .map_err(Error::database)?
