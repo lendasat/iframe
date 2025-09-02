@@ -206,8 +206,7 @@ pub async fn get_all_for_contract_id_with_bitcoin_invoices(
             .into(),
             invoice_id: row.invoice_id,
             invoice_amount_sats: row.invoice_amount_sats.map(|a| Amount::from_sat(a as u64)),
-            // invoice_status: row.invoice_status.map(|a| a.into()),
-            invoice_status: None,
+            invoice_status: row.invoice_status.map(|a| a.into()),
         })
         .collect();
 
