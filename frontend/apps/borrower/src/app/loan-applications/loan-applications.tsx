@@ -1,5 +1,6 @@
 import { useSearchParams } from "react-router-dom";
 import { LoanAsset, LoanAssetHelper } from "@frontend/ui-shared";
+import { LoanProductTypes } from "../loan-offers/loan-request-flow";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
@@ -12,7 +13,6 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@frontend/shadcn";
-import { Slider } from "@frontend/shadcn";
 import { ScrollArea } from "@frontend/shadcn";
 import {
   Form,
@@ -67,15 +67,37 @@ const loanFormSchema = z.object({
 // TypeScript type for our form
 type LoanFormValues = z.infer<typeof loanFormSchema>;
 
+// Helper function to convert LoanProductTypes to LoanAsset
+const getLoanAssetFromProductType = (productType: string): LoanAsset => {
+  switch (productType) {
+    case LoanProductTypes.Fiat:
+      return LoanAsset.USD;
+    case LoanProductTypes.StableCoins:
+      return LoanAsset.USDC_POL;
+    case LoanProductTypes.PayWithMoon:
+    case LoanProductTypes.Bringin:
+      return LoanAsset.USDC_POL;
+    case LoanProductTypes.Any:
+    default:
+      return LoanAsset.USDC_POL;
+  }
+};
+
 export default function LoanApplication() {
   const [searchParams, setSearchParams] = useSearchParams();
+
+  // Get loanAsset parameter and convert from LoanProductTypes if needed
+  const loanAssetParam = searchParams.get("loanAsset");
+  const defaultAsset = loanAssetParam
+    ? getLoanAssetFromProductType(loanAssetParam)
+    : (searchParams.get("asset") as LoanAsset) || LoanAsset.USDC_POL;
 
   // Initialize form with values from search params or defaults
   const form = useForm<LoanFormValues>({
     resolver: zodResolver(loanFormSchema),
     defaultValues: {
       loanAmount: searchParams.get("amount") || "1000",
-      assetType: searchParams.get("asset") || LoanAsset.USDC_POL,
+      assetType: defaultAsset,
       interestRate: searchParams.get("interest") || "13.5",
       loanDuration: searchParams.get("duration") || "7",
       ltv: searchParams.get("ltv") || "50",
@@ -83,7 +105,7 @@ export default function LoanApplication() {
   });
 
   // Get methods and values from form
-  const { watch, setValue } = form;
+  const { watch } = form;
   const formValues = watch();
 
   // Update search params whenever form values change
@@ -94,38 +116,25 @@ export default function LoanApplication() {
     });
   };
 
-  // Handler for interest rate slider
-  const onInterestRateChange = (interest: number[]) => {
-    const rateString = interest[0].toString();
-    setValue("interestRate", rateString);
-    updateSearchParams("interest", rateString);
-  };
-
-  // Handler for LTV slider
-  const onLtvChange = (ltv: number[]) => {
-    const ltvString = ltv[0].toString();
-    setValue("ltv", ltvString);
-    updateSearchParams("ltv", ltvString);
-  };
-
   const availableLoanAssets = LoanAssetHelper.all();
   const selectedAsset = formValues.assetType as LoanAsset;
   const selectedCurrency = LoanAssetHelper.toCurrency(selectedAsset);
 
   return (
     <ScrollArea className="h-screen">
-      <div className="space-y-8 px-4 py-10">
+      <div className="space-y-8 px-4 py-10 pb-20">
         <Form {...form}>
           <form className="space-y-8">
-            <div className="grid gap-6 sm:grid-cols-2">
+            {/* First Row: Amount, Duration, Asset Type */}
+            <div className="grid gap-6 sm:grid-cols-1 md:grid-cols-3">
               <FormField
                 control={form.control}
                 name="loanAmount"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>How much do you wish to borrow?</FormLabel>
+                    <FormLabel>Amount</FormLabel>
                     <FormControl>
-                      <div className="relative flex max-w-2xl items-center">
+                      <div className="relative flex items-center">
                         {selectedCurrency === Currency.EUR ? (
                           <Euro className="absolute left-2 top-1/2 h-4 w-4 -translate-y-1/2 transform" />
                         ) : (
@@ -148,13 +157,34 @@ export default function LoanApplication() {
                 )}
               />
 
-              {/* Asset Type */}
+              <FormField
+                control={form.control}
+                name="loanDuration"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Duration (days)</FormLabel>
+                    <FormControl>
+                      <Input
+                        {...field}
+                        type="number"
+                        min={1}
+                        onChange={(e) => {
+                          field.onChange(e);
+                          updateSearchParams("duration", e.target.value);
+                        }}
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
               <FormField
                 control={form.control}
                 name="assetType"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>What do you want to borrow?</FormLabel>
+                    <FormLabel>Asset</FormLabel>
                     <Select
                       onValueChange={(value) => {
                         field.onChange(value);
@@ -183,139 +213,71 @@ export default function LoanApplication() {
               />
             </div>
 
-            {/* Loan Duration */}
-            <FormField
-              control={form.control}
-              name="loanDuration"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>
-                    How many days do you want your loan to last for?
-                  </FormLabel>
-                  <FormControl>
-                    <Input
-                      {...field}
-                      type="number"
-                      min={1}
-                      onChange={(e) => {
-                        field.onChange(e);
-                        updateSearchParams("duration", e.target.value);
-                      }}
-                    />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-
-            {/* Interest Rate */}
-            <FormField
-              control={form.control}
-              name="interestRate"
-              render={({ field }) => (
-                <FormItem>
-                  <div className="flex items-center justify-between">
-                    <FormLabel>Preferred interest rate (p.a.)</FormLabel>
-                    <div className="w-20">
-                      <div className="relative flex max-w-2xl items-center">
+            {/* Second Row: Interest Rate and LTV */}
+            <div className="grid gap-6 sm:grid-cols-2">
+              <FormField
+                control={form.control}
+                name="interestRate"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Interest rate (% p.a.)</FormLabel>
+                    <FormControl>
+                      <div className="relative flex items-center">
                         <Input
                           {...field}
                           type="number"
                           min={1}
                           max={20}
                           step={0.5}
-                          className="text-center"
+                          className="pr-6"
                           onChange={(e) => {
-                            const value = e.target.value;
-                            field.onChange(value);
-                            updateSearchParams("interest", value);
-                            // Keep the slider in sync with the input
-                            const numValue = Number(value);
-                            if (
-                              !Number.isNaN(numValue) &&
-                              numValue >= 1 &&
-                              numValue <= 20
-                            ) {
-                              onInterestRateChange([numValue]);
-                            }
+                            field.onChange(e);
+                            updateSearchParams("interest", e.target.value);
                           }}
                         />
                         <Percent className="absolute right-2 top-1/2 h-4 w-4 -translate-y-1/2 transform" />
                       </div>
-                    </div>
-                  </div>
-                  <FormControl>
-                    <Slider
-                      value={[Number(field.value)]}
-                      onValueChange={(val) => {
-                        onInterestRateChange(val);
-                      }}
-                      min={1}
-                      max={20}
-                      step={0.5}
-                      className="mt-2"
-                    />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
+                    </FormControl>
+                    <FormDescription>
+                      Annual interest rate for your loan
+                    </FormDescription>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
 
-            {/* LTV Slider */}
-            <FormField
-              control={form.control}
-              name="ltv"
-              render={({ field }) => (
-                <FormItem>
-                  <div className="flex items-center justify-between">
-                    <FormLabel>Loan-to-value ratio</FormLabel>
-
-                    <div className="w-20">
-                      <div className="relative flex max-w-2xl items-center">
+              <FormField
+                control={form.control}
+                name="ltv"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>LTV (%)</FormLabel>
+                    <FormControl>
+                      <div className="relative flex items-center">
                         <Input
                           {...field}
                           type="number"
                           min={1}
                           max={70}
                           step={1}
-                          className="text-center"
+                          className="pr-6"
                           onChange={(e) => {
-                            const value = e.target.value;
-                            field.onChange(value);
-                            updateSearchParams("ltv", value);
-                            // Keep the slider in sync with the input
-                            const numValue = Number(value);
-                            if (
-                              !Number.isNaN(numValue) &&
-                              numValue >= 1 &&
-                              numValue <= 70
-                            ) {
-                              onLtvChange([numValue]);
-                            }
+                            field.onChange(e);
+                            updateSearchParams("ltv", e.target.value);
                           }}
                         />
                         <Percent className="absolute right-2 top-1/2 h-4 w-4 -translate-y-1/2 transform" />
                       </div>
-                    </div>
-                  </div>
-                  <FormControl>
-                    <Slider
-                      value={[Number(field.value)]}
-                      onValueChange={(val) => onLtvChange(val)}
-                      min={1}
-                      max={70}
-                      step={1}
-                      className="mt-2"
-                    />
-                  </FormControl>
-                  <FormDescription>
-                    The maximum percentage of your collateral's value you can
-                    borrow.
-                  </FormDescription>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
+                    </FormControl>
+                    <FormDescription>
+                      The maximum percentage of your collateral's value you can
+                      borrow.
+                    </FormDescription>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            </div>
           </form>
         </Form>
         {/* Confirmation */}

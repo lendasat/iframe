@@ -42,6 +42,7 @@ import {
   getFormatedStringFromDays,
   LoanAsset,
   LoanAssetHelper,
+  LoanAddressInputField,
   newFormatCurrency,
   ONE_YEAR,
   usePriceForCurrency,
@@ -102,6 +103,7 @@ export const Confirmation = ({
 
   const [createRequestError, setCreateRequestError] = useState("");
   const [isCreatingRequest, setIsCreatingRequest] = useState(false);
+  const [hideWalletConnectButton, setHideWalletConnectButton] = useState(false);
 
   // Parse numeric values
   const selectedLoanAmount = parseInt(selectedLoanAmountString || "0");
@@ -461,7 +463,15 @@ export const Confirmation = ({
                     <FormItem>
                       <FormLabel>Loan address</FormLabel>
                       <FormControl>
-                        <Input {...field} />
+                        <LoanAddressInputField
+                          loanAddress={field.value || ""}
+                          setLoanAddress={field.onChange}
+                          loanAsset={selectedAssetType}
+                          renderWarning={true}
+                          placeholder="Enter repayment wallet address"
+                          hideButton={hideWalletConnectButton}
+                          setHideButton={setHideWalletConnectButton}
+                        />
                       </FormControl>
                       <FormDescription>
                         The loan amount will be sent to this address.

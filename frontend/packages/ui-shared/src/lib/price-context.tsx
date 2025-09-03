@@ -7,6 +7,7 @@ interface PriceContextProps {
   latestPrices: {
     [Currency.USD]: number;
     [Currency.EUR]: number;
+    [Currency.CHF]: number;
   };
 }
 
@@ -44,9 +45,11 @@ export const PriceProvider: FC<{ url: string; children: ReactNode }> = ({
   const [latestPrices, setLatestPrices] = useState<{
     [Currency.USD]: number;
     [Currency.EUR]: number;
+    [Currency.CHF]: number;
   }>({
     [Currency.USD]: 0,
     [Currency.EUR]: 0,
+    [Currency.CHF]: 0,
   });
   const ws = useRef<WebSocket | null>(null);
   const websocketUrl = changeProtocolToWSS(url);

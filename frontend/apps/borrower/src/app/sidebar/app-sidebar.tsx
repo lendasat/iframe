@@ -14,6 +14,10 @@ import {
   Code,
   Shield,
   MoreHorizontal,
+  Search,
+  Library,
+  Send,
+  Mail,
 } from "lucide-react";
 import { ReactComponent as Lendasat } from "../../assets/lendasat_black.svg";
 import {
@@ -35,9 +39,32 @@ import {
   SidebarMenuAction,
   useSidebar,
 } from "@frontend/shadcn";
-import { NavMain } from "./nav-main";
 
 const lowMenuItems = [
+  {
+    title: "Find Offer",
+    url: "/requests",
+    icon: Search,
+    items: [],
+  },
+  {
+    title: "All Offers",
+    url: "/available-offers",
+    icon: Library,
+    items: [],
+  },
+  {
+    title: "Apply",
+    url: "/loan-application",
+    icon: Send,
+    items: [],
+  },
+  {
+    title: "My Requests",
+    url: "/loan-applications",
+    icon: Mail,
+    items: [],
+  },
   {
     title: "Contracts",
     url: "/my-contracts",
@@ -168,8 +195,6 @@ export function AppSidebar({ onLogout, username }: AppSidebarProps) {
             </SidebarMenu>
           </SidebarGroupContent>
         </SidebarGroup>
-
-        <NavMain />
 
         {lowMenuItems.map((item) => (
           <SidebarGroup key={item.title}>

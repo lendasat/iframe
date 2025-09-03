@@ -582,7 +582,7 @@ export function LoanOfferTable({
                 table.getRowModel().rows.map((row) => (
                   <TableRow
                     key={row.id}
-                    className={row.getIsSelected() ? "bg-muted" : ""}
+                    className={`cursor-pointer hover:bg-muted/50 ${row.getIsSelected() ? "bg-muted" : ""}`}
                     onClick={row.getToggleSelectedHandler()}
                     data-state={row.getIsSelected() ? "selected" : undefined}
                   >

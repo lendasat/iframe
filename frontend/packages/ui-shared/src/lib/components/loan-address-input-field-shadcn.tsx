@@ -78,6 +78,7 @@ export function LoanAddressInputField({
           value={loanAddress}
           onChange={onInputChange}
           disabled={disabled}
+          data-1p-ignore
         />
 
         {!isStarknet && !isSolana && !isLiquid && !hideButton && (
