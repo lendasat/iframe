@@ -1853,8 +1853,10 @@ pub struct Contract {
     /// Defines the LTV threshold for receiving the first margin call
     ltv_threshold_margin_call_1: Decimal,
     /// Defines the LTV threshold for receiving the second margin call
+    #[serde(with = "rust_decimal::serde::float")]
     ltv_threshold_margin_call_2: Decimal,
     /// Defines the LTV threshold for getting liquidated
+    #[serde(with = "rust_decimal::serde::float")]
     ltv_threshold_liquidation: Decimal,
 }
 
