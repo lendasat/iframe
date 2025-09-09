@@ -1844,6 +1844,13 @@ pub struct Contract {
     lender_npub: Npub,
     timeline: Vec<TimelineEvent>,
     client_contract_id: Option<Uuid>,
+    /// Indicates whether the contract can be extended or not.
+    ///
+    /// Contract extensions are possible if:
+    ///
+    /// - The lender permits it.
+    /// - The contract is at least halfway through its lifetime.
+    can_extend: bool,
     extension_max_duration_days: u64,
     #[serde(with = "rust_decimal::serde::float_option")]
     extension_interest_rate: Option<Decimal>,
@@ -2064,6 +2071,10 @@ async fn map_to_api_contract(
         contract.collateral_sats
     };
 
+    // The contract can be extended if we are able to handle a 1 day extension right now.
+    let now = OffsetDateTime::now_utc();
+    let can_extend = contract.handle_extension_request(now, 1).is_ok();
+
     let contract = Contract {
         id: contract.id,
         loan_amount: contract.loan_amount,
@@ -2099,6 +2110,7 @@ async fn map_to_api_contract(
         transactions,
         loan_type: contract.loan_type,
         liquidation_price,
+        can_extend,
         extends_contract: parent_contract_id,
         extended_by_contract: child_contract,
         kyc_info,
