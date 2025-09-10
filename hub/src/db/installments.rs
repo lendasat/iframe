@@ -39,7 +39,7 @@ pub enum InstallmentStatus {
 
 #[derive(Debug, Clone, Copy, sqlx::Type)]
 #[sqlx(type_name = "late_penalty")]
-pub enum LatePenalty {
+enum LatePenalty {
     FullLiquidation,
     InstallmentRestructure,
 }
@@ -54,6 +54,7 @@ where
     let mut interests: Vec<Decimal> = Vec::with_capacity(rows.len());
     let mut due_dates: Vec<OffsetDateTime> = Vec::with_capacity(rows.len());
     let mut statuses: Vec<InstallmentStatus> = Vec::with_capacity(rows.len());
+    let mut late_penalties: Vec<LatePenalty> = Vec::with_capacity(rows.len());
 
     rows.into_iter().for_each(|row| {
         ids.push(row.id);
@@ -62,6 +63,7 @@ where
         interests.push(row.interest);
         due_dates.push(row.due_date);
         statuses.push(row.status.into());
+        late_penalties.push(row.late_penalty.into())
     });
 
     // We can skip `paid_date` and `payment_id` because installments are created _before_ they are
@@ -69,8 +71,8 @@ where
 
     sqlx::query!(
         r#"
-            INSERT INTO installments (id, contract_id, principal, interest, due_date, status)
-            SELECT * FROM UNNEST($1::uuid[], $2::char(36)[], $3::decimal[], $4::decimal[], $5::timestamptz[], $6::installment_status[])
+            INSERT INTO installments (id, contract_id, principal, interest, due_date, status, late_penalty)
+            SELECT * FROM UNNEST($1::uuid[], $2::char(36)[], $3::decimal[], $4::decimal[], $5::timestamptz[], $6::installment_status[], $7::late_penalty[])
         "#,
         &ids,
         &contract_ids,
@@ -78,6 +80,7 @@ where
         &interests,
         &due_dates,
         statuses as Vec<InstallmentStatus>,
+        late_penalties as Vec<LatePenalty>
     )
     .execute(db)
     .await?;

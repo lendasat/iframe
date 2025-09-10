@@ -200,150 +200,130 @@ async fn post_contract_request(
             .map_err(Error::database)?;
     }
 
-    let (borrower_loan_address, moon_invoice, fiat_loan_details, late_penalty) =
-        match body.loan_type {
-            LoanType::StableCoin => match offer.loan_payout {
-                LoanPayout::Direct => match body.borrower_loan_address {
-                    Some(borrower_loan_address) => (
-                        Some(borrower_loan_address),
-                        None,
-                        None,
-                        LatePenalty::FullLiquidation,
-                    ),
-                    None => return Err(Error::MissingBorrowerLoanAddress),
-                },
-                LoanPayout::Indirect => (None, None, None, LatePenalty::FullLiquidation),
-                LoanPayout::MoonCardInstant => {
-                    return Err(Error::InvalidStableCoinLoanPayout {
-                        actual_payout: offer.loan_payout,
-                    });
-                }
+    let (borrower_loan_address, moon_invoice, fiat_loan_details) = match body.loan_type {
+        LoanType::StableCoin => match offer.loan_payout {
+            LoanPayout::Direct => match body.borrower_loan_address {
+                Some(borrower_loan_address) => (Some(borrower_loan_address), None, None),
+                None => return Err(Error::MissingBorrowerLoanAddress),
             },
-            LoanType::PayWithMoon | LoanType::MoonCardInstant => {
-                if offer.loan_asset != LoanAsset::UsdcPol {
-                    return Err(Error::InvalidMoonLoanRequest {
-                        asset: offer.loan_asset,
-                    });
-                }
+            LoanPayout::Indirect => (None, None, None),
+            LoanPayout::MoonCardInstant => {
+                return Err(Error::InvalidStableCoinLoanPayout {
+                    actual_payout: offer.loan_payout,
+                });
+            }
+        },
+        LoanType::PayWithMoon | LoanType::MoonCardInstant => {
+            if offer.loan_asset != LoanAsset::UsdcPol {
+                return Err(Error::InvalidMoonLoanRequest {
+                    asset: offer.loan_asset,
+                });
+            }
 
-                let late_penalty = if body.loan_type == LoanType::PayWithMoon {
-                    if offer.loan_payout != LoanPayout::Direct {
-                        return Err(Error::InvalidPayWithMoonPayout {
-                            actual_payout: offer.loan_payout,
+            if body.loan_type == LoanType::PayWithMoon && offer.loan_payout != LoanPayout::Direct {
+                return Err(Error::InvalidPayWithMoonPayout {
+                    actual_payout: offer.loan_payout,
+                });
+            }
+
+            if body.loan_type == LoanType::MoonCardInstant
+                && offer.loan_payout != LoanPayout::MoonCardInstant
+            {
+                return Err(Error::InvalidMoonCardInstantPayout {
+                    actual_payout: offer.loan_payout,
+                });
+            }
+
+            let card_id = match body.moon_card_id {
+                // This is a top-up.
+                Some(card_id) => {
+                    let card = db::moon::get_card_by_id(&data.db, &card_id.to_string())
+                        .await
+                        .map_err(Error::database)?
+                        .ok_or(Error::CannotTopUpNonexistentCard)?;
+
+                    let current_balance = card.balance;
+                    if current_balance + loan_amount > MOON_CARD_MAX_BALANCE {
+                        return Err(Error::CannotTopUpOverLimit {
+                            current_balance,
+                            loan_amount,
+                            limit: MOON_CARD_MAX_BALANCE,
                         });
                     }
 
-                    LatePenalty::FullLiquidation
-                } else {
-                    if offer.loan_payout != LoanPayout::MoonCardInstant {
-                        return Err(Error::InvalidMoonCardInstantPayout {
-                            actual_payout: offer.loan_payout,
-                        });
+                    let client_ip = connection_details
+                        .ip
+                        .ok_or(Error::CannotTopUpMoonCardWithoutIp)?;
+
+                    let is_us_ip = crate::geo_location::is_us_ip(&client_ip)
+                        .await
+                        .map_err(Error::geo_js)?;
+
+                    if is_us_ip {
+                        return Err(Error::CannotTopUpMoonCardFromUs);
+                    } else {
+                        card_id
                     }
-
-                    LatePenalty::InstallmentRestructure
-                };
-
-                let card_id = match body.moon_card_id {
-                    // This is a top-up.
-                    Some(card_id) => {
-                        let card = db::moon::get_card_by_id(&data.db, &card_id.to_string())
-                            .await
-                            .map_err(Error::database)?
-                            .ok_or(Error::CannotTopUpNonexistentCard)?;
-
-                        let current_balance = card.balance;
-                        if current_balance + loan_amount > MOON_CARD_MAX_BALANCE {
-                            return Err(Error::CannotTopUpOverLimit {
-                                current_balance,
-                                loan_amount,
-                                limit: MOON_CARD_MAX_BALANCE,
-                            });
-                        }
-
-                        let client_ip = connection_details
-                            .ip
-                            .ok_or(Error::CannotTopUpMoonCardWithoutIp)?;
-
-                        let is_us_ip = crate::geo_location::is_us_ip(&client_ip)
-                            .await
-                            .map_err(Error::geo_js)?;
-
-                        if is_us_ip {
-                            return Err(Error::CannotTopUpMoonCardFromUs);
-                        } else {
-                            card_id
-                        }
-                    }
-                    // This is a new card.
-                    None => {
-                        let card = data
-                            .moon
-                            .create_card(user.id.clone())
-                            .await
-                            .map_err(Error::moon_card_generation)?;
-
-                        card.id
-                    }
-                };
-
-                let invoice = data
-                    .moon
-                    .generate_invoice(
-                        loan_amount,
-                        contract_id.to_string(),
-                        card_id,
-                        &user.id,
-                        crate::moon::Currency::UsdcPolygon,
-                        Decimal::ZERO,
-                    )
-                    .await
-                    .map_err(Error::moon_invoice_generation)?;
-
-                (
-                    Some(invoice.address.clone()),
-                    Some(invoice),
-                    None,
-                    late_penalty,
-                )
-            }
-            LoanType::Fiat => {
-                if !offer.loan_asset.is_fiat() {
-                    return Err(Error::FiatLoanWithoutFiatAsset {
-                        asset: offer.loan_asset,
-                    });
                 }
+                // This is a new card.
+                None => {
+                    let card = data
+                        .moon
+                        .create_card(user.id.clone())
+                        .await
+                        .map_err(Error::moon_card_generation)?;
 
-                let fiat_loan_details = body
-                    .fiat_loan_details
-                    .ok_or(Error::MissingFiatLoanDetails)?;
+                    card.id
+                }
+            };
 
-                (
-                    None,
-                    None,
-                    Some(fiat_loan_details),
-                    LatePenalty::FullLiquidation,
-                )
-            }
-            LoanType::Bringin => {
-                let ip_address = connection_details
-                    .ip
-                    .ok_or_else(|| Error::CannotUseBringinWithoutIp)?;
-
-                let address = bringin::get_address(
-                    &data.db,
-                    &data.config.bringin_url,
-                    offer.loan_asset,
-                    &user.id,
-                    &ip_address,
+            let invoice = data
+                .moon
+                .generate_invoice(
                     loan_amount,
+                    contract_id.to_string(),
+                    card_id,
+                    &user.id,
+                    crate::moon::Currency::UsdcPolygon,
+                    Decimal::ZERO,
                 )
                 .await
-                .map_err(Error::from)?;
+                .map_err(Error::moon_invoice_generation)?;
 
-                (Some(address), None, None, LatePenalty::FullLiquidation)
+            (Some(invoice.address.clone()), Some(invoice), None)
+        }
+        LoanType::Fiat => {
+            if !offer.loan_asset.is_fiat() {
+                return Err(Error::FiatLoanWithoutFiatAsset {
+                    asset: offer.loan_asset,
+                });
             }
-        };
+
+            let fiat_loan_details = body
+                .fiat_loan_details
+                .ok_or(Error::MissingFiatLoanDetails)?;
+
+            (None, None, Some(fiat_loan_details))
+        }
+        LoanType::Bringin => {
+            let ip_address = connection_details
+                .ip
+                .ok_or_else(|| Error::CannotUseBringinWithoutIp)?;
+
+            let address = bringin::get_address(
+                &data.db,
+                &data.config.bringin_url,
+                offer.loan_asset,
+                &user.id,
+                &ip_address,
+                loan_amount,
+            )
+            .await
+            .map_err(Error::from)?;
+
+            (Some(address), None, None)
+        }
+    };
 
     let initial_price = get_bitmex_index_price(&data.config, now, offer.loan_asset)
         .await
@@ -421,10 +401,12 @@ async fn post_contract_request(
     .map_err(Error::database)?;
 
     let installments = {
-        let interest_rate = match offer.loan_payout {
-            LoanPayout::Direct | LoanPayout::Indirect => offer.interest_rate,
+        let (interest_rate, late_penalty) = match offer.loan_payout {
+            LoanPayout::Direct | LoanPayout::Indirect => {
+                (offer.interest_rate, LatePenalty::FullLiquidation)
+            }
             // These loans are 0-interest if they are repaid before 30 days pass.
-            LoanPayout::MoonCardInstant => Decimal::ZERO,
+            LoanPayout::MoonCardInstant => (Decimal::ZERO, LatePenalty::InstallmentRestructure),
         };
 
         generate_installments(

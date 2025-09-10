@@ -9,6 +9,7 @@ use crate::mempool::TrackContractFunding;
 use crate::model::generate_installments;
 use crate::model::ContractVersion;
 use crate::model::LatePenalty;
+use crate::model::LoanType;
 use crate::notifications::Notifications;
 use crate::routes::lender::loan_applications::TakeLoanApplicationSchema;
 use crate::wallet::Wallet;
@@ -166,6 +167,13 @@ pub async fn take_application(
     let non_zero_duration_days =
         NonZeroU64::new(loan_application.duration_days as u64).ok_or(Error::ZeroLoanDuration)?;
 
+    let late_penalty = match loan_application.loan_type {
+        LoanType::PayWithMoon | LoanType::StableCoin | LoanType::Fiat | LoanType::Bringin => {
+            LatePenalty::FullLiquidation
+        }
+        LoanType::MoonCardInstant => LatePenalty::InstallmentRestructure,
+    };
+
     let installments = generate_installments(
         now,
         contract_id,
@@ -173,7 +181,7 @@ pub async fn take_application(
         non_zero_duration_days,
         loan_application.interest_rate,
         loan_application.loan_amount,
-        LatePenalty::FullLiquidation,
+        late_penalty,
     );
 
     db::installments::insert(db, installments)
