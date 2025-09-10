@@ -127,6 +127,8 @@ pub async fn register_password_auth_user(
 }
 
 /// Register a borrower for an API account.
+///
+/// The account is created via a creator API key.
 pub async fn register_api_account(
     db_tx: &mut sqlx::Transaction<'_, Postgres>,
     name: &str,
@@ -164,6 +166,76 @@ pub async fn register_api_account(
     .await?;
 
     db::api_keys::insert_borrower(&mut **db_tx, api_key_hash, &borrower_id, "account key").await?;
+
+    // Not dealing with referral codes or discounts for API accounts (for now).
+
+    let borrower = Borrower {
+        id: borrower_id,
+        name: row.name,
+        email: row.email,
+        used_referral_code: None,
+        first_time_discount_rate_referee: None,
+        timezone: row.timezone,
+        locale: row.locale,
+        totp_enabled: false,
+        created_at: row.created_at,
+        updated_at: row.updated_at,
+    };
+
+    let borrower = new_model_borrower(borrower, vec![]);
+
+    Ok(borrower)
+}
+
+pub enum RegisterAccountByokError {
+    Database(anyhow::Error),
+    UsedEmail,
+}
+
+/// Register a borrower for an API account.
+///
+/// THe borrower brings their own key (client-side generated API key).
+pub async fn register_api_account_byok(
+    db_tx: &mut sqlx::Transaction<'_, Postgres>,
+    name: &str,
+    email: &str,
+    timezone: Option<&str>,
+    api_key_hash: &ApiKeyHash,
+) -> Result<model::Borrower, RegisterAccountByokError> {
+    let borrower_id = uuid::Uuid::new_v4().to_string();
+    let email = email.to_ascii_lowercase().trim().to_string();
+    let res = sqlx::query!(
+        r#"
+           INSERT INTO borrowers (id, name, email, timezone)
+           VALUES ($1, $2, $3, $4)
+           RETURNING *
+        "#,
+        borrower_id,
+        name,
+        email,
+        timezone
+    )
+    .fetch_one(&mut **db_tx)
+    .await;
+
+    let row = match res {
+        Ok(row) => row,
+        Err(e) => {
+            if let Some(db_error) = e.as_database_error() {
+                if matches!(db_error.kind(), sqlx::error::ErrorKind::UniqueViolation) {
+                    return Err(RegisterAccountByokError::UsedEmail);
+                }
+            }
+
+            return Err(RegisterAccountByokError::Database(e.into()));
+        }
+    };
+
+    // TODO: We are not modelling the `UsedApiKey` error explicitly. But we probably don't want to
+    // surface this to the client anyway.
+    db::api_keys::insert_borrower(&mut **db_tx, api_key_hash, &borrower_id, "byok account key")
+        .await
+        .map_err(RegisterAccountByokError::Database)?;
 
     // Not dealing with referral codes or discounts for API accounts (for now).
 
