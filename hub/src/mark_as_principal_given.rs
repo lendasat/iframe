@@ -98,17 +98,13 @@ pub async fn mark_as_principal_given(
     // We don't want to fail this upwards because the contract request has already been
     // approved.
     if let Err(e) = async {
-        let loan_url = config
-            .borrower_frontend_origin
-            .join(&format!("/my-contracts/{contract_id}"))?;
-
         let borrower = db::borrowers::get_user_by_id(pool, &contract.borrower_id)
             .await?
             .context("Borrower not found")?;
 
         // TODO: Send a custom email for indirect (e-commerce) loans.
         notifications
-            .send_loan_paid_out(contract_id, borrower, loan_url)
+            .send_loan_paid_out(contract_id, borrower)
             .await;
 
         anyhow::Ok(())

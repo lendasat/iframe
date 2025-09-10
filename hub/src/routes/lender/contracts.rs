@@ -236,13 +236,8 @@ async fn put_update_extension_policy(
 
     if !extension_max_duration_days.is_zero() {
         if let Err(err) = async {
-            let loan_url = data
-                .config
-                .borrower_frontend_origin
-                .join(format!("/my-contracts/{contract_id}").as_str())?;
-
             data.notifications
-                .send_contract_extension_enabled(borrower, loan_url, contract_id.as_str())
+                .send_contract_extension_enabled(borrower, contract_id.as_str())
                 .await;
             anyhow::Ok(())
         }
@@ -291,7 +286,6 @@ async fn put_approve_contract(
         &data.db,
         &data.wallet,
         &data.mempool,
-        &data.config,
         data.electrum.as_ref(),
         contract_id,
         &user.id,
@@ -386,17 +380,12 @@ async fn delete_reject_contract(
 
     // We don't want to fail this upwards because the contract request has already been approved.
     if let Err(err) = async {
-        let loan_url = data
-            .config
-            .borrower_frontend_origin
-            .join(&format!("/my-contracts/{contract_id}"))?;
-
         let borrower = db::borrowers::get_user_by_id(&data.db, &contract.borrower_id)
             .await?
             .context("Borrower not found")?;
 
         data.notifications
-            .send_loan_request_rejected(contract_id.as_str(), borrower, loan_url)
+            .send_loan_request_rejected(contract_id.as_str(), borrower)
             .await;
 
         anyhow::Ok(())
@@ -472,24 +461,13 @@ async fn put_confirm_installment_payment(
             .map_err(Error::database)?;
     }
 
-    let loan_url = data
-        .config
-        .borrower_frontend_origin
-        .join(&format!("/my-contracts/{}", contract_id.as_str()))
-        .expect("to be valid url");
-
     let borrower = db::borrowers::get_user_by_id(&data.db, &contract.borrower_id)
         .await
         .map_err(Error::database)?
         .ok_or(Error::MissingBorrower)?;
 
     data.notifications
-        .send_installment_confirmed(
-            borrower,
-            loan_url,
-            body.installment_id,
-            contract_id.as_str(),
-        )
+        .send_installment_confirmed(borrower, body.installment_id, contract_id.as_str())
         .await;
 
     Ok(())
@@ -824,11 +802,6 @@ async fn post_liquidation_tx(
             .await?
             .context("Borrower not found")?;
 
-        let loan_url = data
-            .config
-            .borrower_frontend_origin
-            .join(&format!("/my-contracts/{contract_id}"))?;
-
         let emails = db::contract_emails::load_contract_emails(&data.db, &contract.id).await?;
         if emails.defaulted_loan_liquidated_sent {
             // Email already sent
@@ -836,7 +809,7 @@ async fn post_liquidation_tx(
         }
 
         data.notifications
-            .send_loan_liquidated_after_default(contract_id.as_str(), borrower, loan_url)
+            .send_loan_liquidated_after_default(contract_id.as_str(), borrower)
             .await;
 
         // Not actually used, but required. I think the compiler is tripping here.

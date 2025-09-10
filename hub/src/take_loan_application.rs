@@ -198,17 +198,13 @@ pub async fn take_application(
         .map_err(Error::Database)?;
     }
 
-    let loan_url = config
-        .borrower_frontend_origin
-        .join(format!("/my-contracts/{contract_id}").as_str())
-        .expect("to be a correct URL");
     let borrower = db::borrowers::get_user_by_id(db, contract.borrower_id.as_str())
         .await
         .map_err(Error::Database)?
         .ok_or(Error::MissingBorrower)?;
 
     notifications
-        .send_loan_application_taken_borrower(contract_id.to_string().as_str(), borrower, loan_url)
+        .send_loan_application_taken_borrower(contract_id.to_string().as_str(), borrower)
         .await;
 
     mempool_actor

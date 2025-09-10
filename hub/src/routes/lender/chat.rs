@@ -78,14 +78,8 @@ async fn new_chat_notification(
         .map_err(Error::database)?
         .ok_or(Error::MissingBorrower)?;
 
-    let loan_url = data
-        .config
-        .borrower_frontend_origin
-        .join(format!("/my-contracts/{}", body.contract_id.as_str()).as_str())
-        .expect("to be a correct URL");
-
     data.notifications
-        .send_chat_notification_borrower(body.contract_id.as_str(), borrower, loan_url)
+        .send_chat_notification_borrower(body.contract_id.as_str(), borrower)
         .await;
 
     Ok(())

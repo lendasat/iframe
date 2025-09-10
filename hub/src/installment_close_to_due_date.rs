@@ -1,4 +1,3 @@
-use crate::config::Config;
 use crate::db;
 use crate::notifications::Notifications;
 use anyhow::Result;
@@ -24,13 +23,12 @@ const CHECK_INSTALLMENT_CLOSE_TO_DUE_DATE_SCHEDULER: &str = "0 0 12 * * *";
 
 pub async fn add_installment_close_to_due_date_job(
     scheduler: &JobScheduler,
-    config: Config,
     db: Pool<Postgres>,
     notifications: Arc<Notifications>,
 ) -> Result<()> {
     let db = db.clone();
     let check_for_close_to_due_date_installments_job =
-        create_installment_close_to_due_date_check(scheduler, config, db, notifications).await?;
+        create_installment_close_to_due_date_check(scheduler, db, notifications).await?;
     let uuid = scheduler
         .add(check_for_close_to_due_date_installments_job)
         .await?;
@@ -45,7 +43,6 @@ pub async fn add_installment_close_to_due_date_job(
 
 async fn create_installment_close_to_due_date_check(
     scheduler: &JobScheduler,
-    config: Config,
     db: Pool<Postgres>,
     notifications: Arc<Notifications>,
 ) -> Result<Job, JobSchedulerError> {
@@ -56,7 +53,6 @@ async fn create_installment_close_to_due_date_check(
 
             Box::pin({
                 let db = db.clone();
-                let config = config.clone();
                 let notifications = notifications.clone();
                 async move {
                     let installments =
@@ -93,15 +89,9 @@ async fn create_installment_close_to_due_date_check(
                         );
 
                         tokio::spawn({
-                            let config = config.clone();
                             let notifications = notifications.clone();
                             let db = db.clone();
                             async move {
-                                let loan_url = config
-                                    .borrower_frontend_origin
-                                    .join(&format!("/my-contracts/{contract_id}"))
-                                    .expect("to be a correct URL");
-
                                 match db::borrowers::get_user_by_id(&db, &contract.borrower_id)
                                     .await
                                 {
@@ -112,7 +102,6 @@ async fn create_installment_close_to_due_date_check(
                                                 installment.id,
                                                 borrower,
                                                 &formatted_date(installment.due_date),
-                                                loan_url,
                                             )
                                             .await;
                                     }

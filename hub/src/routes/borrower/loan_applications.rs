@@ -108,15 +108,9 @@ async fn create_loan_application(
     .await
     .map_err(Error::database)?;
 
-    let application_url = data
-        .config
-        .lender_frontend_origin
-        .join(format!("/loan-applications/{}", loan.loan_deal_id.as_str()).as_str())
-        .expect("to be a valid url");
-
     data.notifications
         .send_new_loan_application_available(
-            application_url,
+            loan.loan_deal_id.as_str(),
             loan.loan_amount,
             loan.loan_asset,
             loan.interest_rate,

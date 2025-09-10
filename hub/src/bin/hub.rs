@@ -205,13 +205,7 @@ async fn main() -> Result<()> {
 
     // Start the subscription in a separate task
     tokio::spawn(subscribe_index_price([bitmex_tx, liquidation_tx]));
-    monitor_positions(
-        db.clone(),
-        liquidation_rx,
-        config.clone(),
-        notifications.clone(),
-    )
-    .await?;
+    monitor_positions(db.clone(), liquidation_rx, notifications.clone()).await?;
 
     // Spawn a task to handle BitMEX events and broadcast to WebSocket clients
     let broadcast_state = Arc::new(Mutex::new(Vec::new()));
@@ -280,28 +274,13 @@ async fn main() -> Result<()> {
 
     let sched = JobScheduler::new().await?;
 
-    add_contract_request_expiry_job(&sched, db.clone(), config.clone(), notifications.clone())
-        .await?;
-    add_loan_application_expiry_job(&sched, db.clone(), config.clone(), notifications.clone())
-        .await?;
+    add_contract_request_expiry_job(&sched, db.clone(), notifications.clone()).await?;
+    add_loan_application_expiry_job(&sched, db.clone(), notifications.clone()).await?;
     add_late_installment_job(&sched, db.clone()).await?;
-    add_process_defaulted_contracts_job(&sched, config.clone(), db.clone(), notifications.clone())
-        .await?;
-    add_installment_close_to_due_date_job(
-        &sched,
-        config.clone(),
-        db.clone(),
-        notifications.clone(),
-    )
-    .await?;
+    add_process_defaulted_contracts_job(&sched, db.clone(), notifications.clone()).await?;
+    add_installment_close_to_due_date_job(&sched, db.clone(), notifications.clone()).await?;
     add_contract_approval_expiry_job(&sched, db).await?;
-    add_daily_digest_job(
-        &sched,
-        notifications,
-        config.borrower_frontend_origin,
-        config.lender_frontend_origin,
-    )
-    .await?;
+    add_daily_digest_job(&sched, notifications).await?;
 
     sched.start().await?;
 
