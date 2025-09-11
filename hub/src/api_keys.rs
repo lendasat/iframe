@@ -1,3 +1,5 @@
+use anyhow::Context;
+use anyhow::Result;
 use rand::distributions::Alphanumeric;
 use rand::Rng;
 use sha2::Digest;
@@ -15,7 +17,7 @@ pub struct ApiKeyHash {
 }
 
 impl ApiKey {
-    pub fn new() -> (Self, ApiKeyHash) {
+    pub fn generate() -> (Self, ApiKeyHash) {
         // Generate short identifier for this specific key (12 chars)
         let key_id: String = (0..6)
             .map(|_| format!("{:02x}", rand::thread_rng().gen::<u8>()))
@@ -31,23 +33,19 @@ impl ApiKey {
         // Create full key
         let full_key = format!("lndst_sk_{key_id}_{secret_part}");
 
-        // Generate random salt
-        let salt: Vec<u8> = (0..16).map(|_| rand::thread_rng().gen()).collect();
+        let api_key_hash = ApiKeyHash::generate(key_id.clone(), &full_key);
 
-        // Hash with salt
-        let mut hasher = Sha256::new();
-        hasher.update(full_key.as_bytes());
-        hasher.update(&salt);
-        let hash = format!("{:x}", hasher.finalize());
-
-        let api_key = ApiKey {
-            key_id: key_id.clone(),
-            full_key,
-        };
-
-        let api_key_hash = ApiKeyHash { key_id, salt, hash };
+        let api_key = ApiKey { key_id, full_key };
 
         (api_key, api_key_hash)
+    }
+
+    pub fn new_from_full_key(full_key: &str) -> Result<(Self, ApiKeyHash)> {
+        let api_key = Self::from_string(full_key).context("invalid API key")?;
+
+        let api_key_hash = ApiKeyHash::generate(api_key.key_id.clone(), &api_key.full_key);
+
+        Ok((api_key, api_key_hash))
     }
 
     pub fn from_string(full_key: &str) -> Option<Self> {
@@ -73,6 +71,19 @@ impl ApiKey {
 }
 
 impl ApiKeyHash {
+    pub fn generate(key_id: String, full_key: &str) -> Self {
+        // Generate random salt
+        let salt: Vec<u8> = (0..16).map(|_| rand::thread_rng().gen()).collect();
+
+        // Hash with salt
+        let mut hasher = Sha256::new();
+        hasher.update(full_key.as_bytes());
+        hasher.update(&salt);
+        let hash = format!("{:x}", hasher.finalize());
+
+        Self { key_id, salt, hash }
+    }
+
     pub fn new(key_id: String, salt: Vec<u8>, hash: String) -> Self {
         Self { key_id, salt, hash }
     }
@@ -105,7 +116,7 @@ mod tests {
 
     #[test]
     fn test_api_key_generation() {
-        let (api_key, api_key_hash) = ApiKey::new();
+        let (api_key, api_key_hash) = ApiKey::generate();
 
         // Check that key_id is 12 characters
         assert_eq!(api_key.key_id().len(), 12);
@@ -123,7 +134,7 @@ mod tests {
 
     #[test]
     fn test_api_key_hash_properties() {
-        let (_api_key, api_key_hash) = ApiKey::new();
+        let (_api_key, api_key_hash) = ApiKey::generate();
 
         // Check salt is 16 bytes
         assert_eq!(api_key_hash.salt.len(), 16);
@@ -134,7 +145,7 @@ mod tests {
 
     #[test]
     fn test_api_key_verification() {
-        let (api_key, api_key_hash) = ApiKey::new();
+        let (api_key, api_key_hash) = ApiKey::generate();
 
         // Verify with correct key
         assert!(api_key_hash.verify(&api_key));
@@ -147,13 +158,13 @@ mod tests {
         assert!(!api_key_hash.verify(&wrong_api_key));
 
         // Test with completely different key
-        let (different_key, _) = ApiKey::new();
+        let (different_key, _) = ApiKey::generate();
         assert!(!api_key_hash.verify(&different_key));
     }
 
     #[test]
     fn test_api_key_from_string() {
-        let (api_key, _) = ApiKey::new();
+        let (api_key, _) = ApiKey::generate();
         let full_key = api_key.full_key();
 
         // Parse back from string
@@ -169,8 +180,8 @@ mod tests {
 
     #[test]
     fn test_api_key_uniqueness() {
-        let (key1, hash1) = ApiKey::new();
-        let (key2, hash2) = ApiKey::new();
+        let (key1, hash1) = ApiKey::generate();
+        let (key2, hash2) = ApiKey::generate();
 
         // Keys should be different
         assert_ne!(key1.full_key(), key2.full_key());
@@ -181,7 +192,7 @@ mod tests {
 
     #[test]
     fn test_api_key_alphanumeric_only() {
-        let (api_key, _) = ApiKey::new();
+        let (api_key, _) = ApiKey::generate();
         let parts: Vec<&str> = api_key.full_key().split('_').collect();
         let secret_part = parts[3];
 

@@ -89,7 +89,7 @@ async fn post_api_key(
     AppJson(body): AppJson<CreateApiKey>,
 ) -> Result<AppJson<ApiKeyResponse>, Error> {
     // Generate new API key
-    let (api_key, api_key_hash) = ApiKey::new();
+    let (api_key, api_key_hash) = ApiKey::generate();
 
     // Insert into database
     db::api_keys::insert_borrower(&data.db, &api_key_hash, &user.id, &body.description)
