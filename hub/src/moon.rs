@@ -79,7 +79,6 @@ pub struct Manager {
     client: MoonCardClient,
     visa_product_id: Uuid,
     db: Pool<Postgres>,
-    config: Config,
     notifications: Arc<Notifications>,
 }
 
@@ -102,7 +101,6 @@ impl Manager {
             client: MoonCardClient::new(api_key, base_url, webhook_url),
             visa_product_id,
             db,
-            config,
             notifications,
         }
     }
@@ -352,12 +350,8 @@ impl Manager {
             .context("Failed loading borrower")?
             .context("Borrower not found")?;
 
-        let card_details_url = self.config.borrower_frontend_origin.join("/cards")?;
-
         // TODO: This notification does not distinguish between new cards and top-ups.
-        self.notifications
-            .send_moon_card_ready(borrower, card_details_url)
-            .await;
+        self.notifications.send_moon_card_ready(borrower).await;
 
         Ok(())
     }

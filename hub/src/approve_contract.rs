@@ -1,4 +1,3 @@
-use crate::config::Config;
 use crate::db;
 use crate::electrum;
 use crate::electrum::RegisterAddress;
@@ -50,7 +49,6 @@ pub async fn approve_contract(
     db: &PgPool,
     wallet: &Wallet,
     mempool_actor: &xtra::Address<mempool::Actor>,
-    config: &Config,
     electrum_actor: Option<&xtra::Address<electrum::Actor>>,
     contract_id: String,
     lender_id: &str,
@@ -140,16 +138,11 @@ pub async fn approve_contract(
             .map_err(Error::TrackContract)?;
     }
 
-    let loan_url = config
-        .borrower_frontend_origin
-        .join(format!("my-contracts/{}", contract.id.as_str()).as_str())
-        .expect("to be a correct URL");
-
     // We don't want to fail this upwards because the contract request has already been
     // approved.
     if let Err(e) = async {
         notifications
-            .send_loan_request_approved(contract_id.as_str(), borrower, loan_url)
+            .send_loan_request_approved(contract_id.as_str(), borrower)
             .await;
 
         anyhow::Ok(())

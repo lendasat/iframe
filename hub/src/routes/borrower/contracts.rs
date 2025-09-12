@@ -458,7 +458,6 @@ async fn post_contract_request(
             &data.db,
             &data.wallet,
             &data.mempool,
-            &data.config,
             data.electrum.as_ref(),
             contract.id.clone(),
             lender_id,
@@ -470,12 +469,6 @@ async fn post_contract_request(
         contract = map_to_api_contract(&data, db_contract).await?;
     }
 
-    let lender_loan_url = data
-        .config
-        .lender_frontend_origin
-        .join(&format!("/my-contracts/{}", contract.id))
-        .expect("to be a correct URL");
-
     // We don't want to fail this upwards because the contract request has been sent already.
     if let Err(e) = async {
         let lender = db::lenders::get_user_by_id(&data.db, &contract.lender.id)
@@ -486,11 +479,7 @@ async fn post_contract_request(
         let borrower_id = user.id.clone();
         if offer.auto_accept {
             data.notifications
-                .send_notification_about_auto_accepted_loan(
-                    lender,
-                    lender_loan_url,
-                    contract.id.as_str(),
-                )
+                .send_notification_about_auto_accepted_loan(lender, contract.id.as_str())
                 .await;
 
             tracing::info!(
@@ -501,7 +490,7 @@ async fn post_contract_request(
             );
         } else {
             data.notifications
-                .send_new_loan_request(lender, lender_loan_url, contract.id.as_str())
+                .send_new_loan_request(lender, contract.id.as_str())
                 .await;
 
             tracing::info!(
@@ -930,19 +919,13 @@ async fn put_installment_paid(
             .map_err(Error::database)?;
     }
 
-    let loan_url = data
-        .config
-        .lender_frontend_origin
-        .join(&format!("/my-contracts/{}", contract.id))
-        .expect("to be valid url");
-
     if let Err(e) = async {
         let lender = db::lenders::get_user_by_id(&data.db, &contract.lender_id)
             .await?
             .context("Failed to find lender")?;
 
         data.notifications
-            .send_installment_paid(lender, loan_url, body.installment_id, contract_id.as_str())
+            .send_installment_paid(lender, body.installment_id, contract_id.as_str())
             .await;
 
         anyhow::Ok(())
@@ -1741,19 +1724,13 @@ async fn put_report_btc_payment(
             .map_err(Error::database)?;
     }
 
-    let loan_url = data
-        .config
-        .lender_frontend_origin
-        .join(&format!("/my-contracts/{}", contract.id))
-        .expect("to be valid url");
-
     if let Err(e) = async {
         let lender = db::lenders::get_user_by_id(&data.db, &contract.lender_id)
             .await?
             .context("Failed to find lender")?;
 
         data.notifications
-            .send_installment_paid(lender, loan_url, installment.id, &contract.id)
+            .send_installment_paid(lender, installment.id, &contract.id)
             .await;
 
         anyhow::Ok(())

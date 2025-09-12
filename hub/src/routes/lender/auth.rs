@@ -211,19 +211,8 @@ async fn post_register(
         .verification_code
         .expect("to have verification code for new user");
 
-    let verification_url = data
-        .config
-        .lender_frontend_origin
-        .join(format!("/verifyemail/{}", verification_code.as_str()).as_str())
-        .expect("to be a correct URL");
-
     data.notifications
-        .send_verification_code(
-            user.name().as_str(),
-            user.email().as_str(),
-            verification_url,
-            verification_code.as_str(),
-        )
+        .send_verification_code_lender(&user, verification_code.as_str())
         .await;
 
     db_tx.commit().await.map_err(Error::database)?;
@@ -440,12 +429,6 @@ async fn post_pake_verify(
         "Lender logged in"
     );
 
-    let profile_url = data
-        .config
-        .borrower_frontend_origin
-        .join("/settings/profile")
-        .expect("to be a correct URL");
-
     let location = geo_location::get_geo_info(ip_address.as_str()).await.ok();
 
     if let Err(err) = db::user_logins::insert_lender_login_activity(
@@ -473,7 +456,6 @@ async fn post_pake_verify(
     data.notifications
         .send_login_information_lender(
             &user,
-            profile_url,
             ip_address.as_str(),
             OffsetDateTime::now_utc(),
             location.map(|a| a.to_string()),
@@ -613,12 +595,6 @@ async fn post_totp_verify_login(
         "Lender logged in with TOTP"
     );
 
-    let profile_url = data
-        .config
-        .borrower_frontend_origin
-        .join("/settings/profile")
-        .expect("to be a correct URL");
-
     let location = geo_location::get_geo_info(ip_address.as_str()).await.ok();
 
     if let Err(err) = db::user_logins::insert_lender_login_activity(
@@ -646,7 +622,6 @@ async fn post_totp_verify_login(
     data.notifications
         .send_login_information_lender(
             &user,
-            profile_url,
             ip_address.as_str(),
             OffsetDateTime::now_utc(),
             location.map(|a| a.to_string()),
@@ -769,28 +744,12 @@ async fn forgot_password_handler(
             .await
             .map_err(Error::database)?;
 
-    let mut password_reset_url = data
-        .config
-        .lender_frontend_origin
-        .join(format!("/resetpassword/{}/{}", password_reset_token, user.email).as_str())
-        .expect("to be a correct URL");
-
-    // If this user has contracts before the PAKE upgrade, we do not allow them to reset their
-    // password using a mnemonic. Using a mnemonic would remove the passphrase embedded in their
-    // encrypted local wallet, and this passphrase is needed to spend contracts created before the
-    // PAKE upgrade.
-    if has_contracts_before_pake {
-        password_reset_url = password_reset_url
-            .join("?nomn=true")
-            .expect("to be valid url");
-    }
-
     data.notifications
-        .send_password_reset_token(
-            user.name().as_str(),
-            user.email().as_str(),
+        .send_password_reset_token_lender(
+            &user,
+            &password_reset_token,
             PASSWORD_TOKEN_EXPIRES_IN_MINUTES,
-            password_reset_url,
+            has_contracts_before_pake,
         )
         .await;
 

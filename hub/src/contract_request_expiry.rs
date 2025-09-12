@@ -1,4 +1,3 @@
-use crate::config::Config;
 use crate::db;
 use crate::db::contracts::ExpiredContract;
 use crate::notifications::Notifications;
@@ -32,12 +31,11 @@ const CHECK_CONTRACT_REQUESTS_EXPIRED_SCHEDULER: &str = "0 0/30 * * * *";
 pub async fn add_contract_request_expiry_job(
     scheduler: &JobScheduler,
     database: Pool<Postgres>,
-    config: Config,
     notifications: Arc<Notifications>,
 ) -> Result<()> {
     let database = database.clone();
     let check_for_expiring_contracts_job =
-        create_contract_request_expiry_check(scheduler, database, config, notifications).await?;
+        create_contract_request_expiry_check(scheduler, database, notifications).await?;
     let uuid = scheduler.add(check_for_expiring_contracts_job).await?;
 
     tracing::debug!(
@@ -51,7 +49,6 @@ pub async fn add_contract_request_expiry_job(
 async fn create_contract_request_expiry_check(
     scheduler: &JobScheduler,
     database: Pool<Postgres>,
-    config: Config,
     notifications: Arc<Notifications>,
 ) -> Result<Job, JobSchedulerError> {
     let mut check_for_expiring_contracts_job = Job::new_async(
@@ -61,7 +58,6 @@ async fn create_contract_request_expiry_check(
 
             Box::pin({
                 let database = database.clone();
-                let config = config.clone();
                 let notifications = notifications.clone();
                 async move {
                     match db::contracts::expire_requested_contracts(
@@ -81,14 +77,12 @@ async fn create_contract_request_expiry_check(
                             expire_loan_offers(&database, contracts.as_slice()).await;
                             notify_borrowers_about_expired_contracts(
                                 &database,
-                                config.clone(),
                                 contracts.as_slice(),
                                 notifications.clone(),
                             )
                             .await;
                             notify_lenders_about_expired_offer(
                                 &database,
-                                config.clone(),
                                 contracts.as_slice(),
                                 notifications.clone(),
                             )
@@ -142,18 +136,12 @@ async fn expire_loan_offers(database: &Pool<Postgres>, contracts: &[ExpiredContr
 
 async fn notify_borrowers_about_expired_contracts(
     db: &Pool<Postgres>,
-    config: Config,
     contracts: &[ExpiredContract],
     notifications: Arc<Notifications>,
 ) {
     for contract in contracts.iter() {
-        if let Err(err) = notify_borrower_about_expired_contracts(
-            db,
-            config.clone(),
-            notifications.clone(),
-            contract,
-        )
-        .await
+        if let Err(err) =
+            notify_borrower_about_expired_contracts(db, notifications.clone(), contract).await
         {
             tracing::error!(
                 contract_id = contract.contract_id,
@@ -165,7 +153,6 @@ async fn notify_borrowers_about_expired_contracts(
 
 async fn notify_borrower_about_expired_contracts(
     db: &Pool<Postgres>,
-    config: Config,
     notifications: Arc<Notifications>,
     contract: &ExpiredContract,
 ) -> Result<()> {
@@ -176,17 +163,12 @@ async fn notify_borrower_about_expired_contracts(
         return Ok(());
     }
 
-    let loan_url = config
-        .borrower_frontend_origin
-        .join("requests")
-        .expect("to be a correct URL");
-
     let borrower = db::borrowers::get_user_by_id(db, contract.borrower_id.as_str())
         .await?
         .context("Could not find borrower")?;
 
     notifications
-        .send_expired_loan_request_borrower(contract.contract_id.as_str(), borrower, loan_url)
+        .send_expired_loan_request_borrower(contract.contract_id.as_str(), borrower)
         .await;
 
     Ok(())
@@ -194,14 +176,12 @@ async fn notify_borrower_about_expired_contracts(
 
 async fn notify_lenders_about_expired_offer(
     db: &Pool<Postgres>,
-    config: Config,
     contracts: &[ExpiredContract],
     notifications: Arc<Notifications>,
 ) {
     for contract in contracts.iter() {
         if let Err(err) =
-            notify_lender_about_expired_offer(db, config.clone(), notifications.clone(), contract)
-                .await
+            notify_lender_about_expired_offer(db, notifications.clone(), contract).await
         {
             tracing::error!(
                 contract_id = contract.contract_id,
@@ -213,7 +193,6 @@ async fn notify_lenders_about_expired_offer(
 
 async fn notify_lender_about_expired_offer(
     db: &Pool<Postgres>,
-    config: Config,
     notifications: Arc<Notifications>,
     contract: &ExpiredContract,
 ) -> Result<()> {
@@ -224,17 +203,12 @@ async fn notify_lender_about_expired_offer(
         return Ok(());
     }
 
-    let loan_url = config
-        .lender_frontend_origin
-        .join("/create-loan-offer")
-        .expect("to be a correct URL");
-
     let lender = db::lenders::get_user_by_id(db, contract.lender_id.as_str())
         .await?
         .context("Could not find lender")?;
 
     notifications
-        .send_expired_loan_request_lender(lender, loan_url, contract.contract_id.as_str())
+        .send_expired_loan_request_lender(lender, contract.contract_id.as_str())
         .await;
 
     Ok(())

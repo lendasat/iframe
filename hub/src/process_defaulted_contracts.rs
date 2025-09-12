@@ -1,4 +1,3 @@
-use crate::config::Config;
 use crate::db;
 use crate::model::generate_installments;
 use crate::model::Contract;
@@ -33,17 +32,16 @@ const PROCESS_DEFAULTED_CONTRACTS_SCHEDULER: &str = "0 5 * * * *";
 
 pub async fn add_process_defaulted_contracts_job(
     scheduler: &JobScheduler,
-    config: Config,
     database: Pool<Postgres>,
     notifications: Arc<Notifications>,
 ) -> Result<()> {
     let database = database.clone();
 
     tracing::info!("Running process defaulted contracts job immediately on startup");
-    run_process_defaulted_contracts(&database, &config, &notifications).await;
+    run_process_defaulted_contracts(&database, &notifications).await;
 
     let process_defaulted_contracts_job =
-        create_process_defaulted_contracts_job(scheduler, config, database, notifications).await?;
+        create_process_defaulted_contracts_job(scheduler, database, notifications).await?;
     let uuid = scheduler.add(process_defaulted_contracts_job).await?;
 
     tracing::debug!(
@@ -54,11 +52,7 @@ pub async fn add_process_defaulted_contracts_job(
     Ok(())
 }
 
-async fn run_process_defaulted_contracts(
-    db: &Pool<Postgres>,
-    config: &Config,
-    notifications: &Arc<Notifications>,
-) {
+async fn run_process_defaulted_contracts(db: &Pool<Postgres>, notifications: &Arc<Notifications>) {
     tracing::info!("Running process defaulted contracts check");
 
     // Get all contracts with relevant statuses
@@ -181,14 +175,12 @@ async fn run_process_defaulted_contracts(
             );
 
             tokio::spawn({
-                let config = config.clone();
                 let db = db.clone();
                 let notifications = notifications.clone();
                 let contract = contract.clone();
                 async move {
                     if let Err(e) = notify_borrower_about_restructured_contract(
                         &db,
-                        &config,
                         &contract,
                         late_installments[0].clone(),
                         installments.clone(),
@@ -205,7 +197,6 @@ async fn run_process_defaulted_contracts(
 
                     if let Err(e) = notify_lender_about_restructured_contract(
                         &db,
-                        &config,
                         &contract,
                         late_installments[0].clone(),
                         installments,
@@ -244,18 +235,13 @@ async fn run_process_defaulted_contracts(
         );
 
         tokio::spawn({
-            let config = config.clone();
             let db = db.clone();
             let notifications = notifications.clone();
             let contract = contract.clone();
             async move {
-                if let Err(e) = notify_borrower_about_late_installment(
-                    &db,
-                    &config,
-                    &contract,
-                    notifications.clone(),
-                )
-                .await
+                if let Err(e) =
+                    notify_borrower_about_late_installment(&db, &contract, notifications.clone())
+                        .await
                 {
                     tracing::error!(
                         contract_id = %contract.id,
@@ -264,13 +250,9 @@ async fn run_process_defaulted_contracts(
                     );
                 }
 
-                if let Err(e) = notify_lender_about_late_installment(
-                    &db,
-                    &config,
-                    &contract,
-                    notifications.clone(),
-                )
-                .await
+                if let Err(e) =
+                    notify_lender_about_late_installment(&db, &contract, notifications.clone())
+                        .await
                 {
                     tracing::error!(
                         contract_id = %contract.id,
@@ -285,7 +267,6 @@ async fn run_process_defaulted_contracts(
 
 async fn create_process_defaulted_contracts_job(
     scheduler: &JobScheduler,
-    config: Config,
     db: Pool<Postgres>,
     notifications: Arc<Notifications>,
 ) -> Result<Job, JobSchedulerError> {
@@ -293,10 +274,9 @@ async fn create_process_defaulted_contracts_job(
         Job::new_async(PROCESS_DEFAULTED_CONTRACTS_SCHEDULER, move |_uuid, _l| {
             Box::pin({
                 let db = db.clone();
-                let config = config.clone();
                 let notifications = notifications.clone();
                 async move {
-                    run_process_defaulted_contracts(&db, &config, &notifications).await;
+                    run_process_defaulted_contracts(&db, &notifications).await;
                 }
             })
         })?;
@@ -321,7 +301,6 @@ async fn create_process_defaulted_contracts_job(
 
 async fn notify_borrower_about_late_installment(
     db: &Pool<Postgres>,
-    config: &Config,
     contract: &Contract,
     notifications: Arc<Notifications>,
 ) -> Result<()> {
@@ -331,17 +310,12 @@ async fn notify_borrower_about_late_installment(
         return Ok(());
     }
 
-    let loan_url = config
-        .borrower_frontend_origin
-        .join(&format!("/my-contracts/{}", contract.id))
-        .expect("to be a correct URL");
-
     let borrower = db::borrowers::get_user_by_id(db, &contract.borrower_id)
         .await?
         .context("Could not find borrower")?;
 
     notifications
-        .send_loan_defaulted_borrower(contract.id.as_str(), borrower, loan_url)
+        .send_loan_defaulted_borrower(contract.id.as_str(), borrower)
         .await;
 
     Ok(())
@@ -349,7 +323,6 @@ async fn notify_borrower_about_late_installment(
 
 async fn notify_lender_about_late_installment(
     db: &Pool<Postgres>,
-    config: &Config,
     contract: &Contract,
     notifications: Arc<Notifications>,
 ) -> Result<()> {
@@ -359,17 +332,12 @@ async fn notify_lender_about_late_installment(
         return Ok(());
     }
 
-    let loan_url = config
-        .lender_frontend_origin
-        .join(&format!("/my-contracts/{}", contract.id))
-        .expect("to be a correct URL");
-
     let lender = db::lenders::get_user_by_id(db, &contract.lender_id)
         .await?
         .context("Could not find lender")?;
 
     notifications
-        .send_loan_defaulted_lender(lender, loan_url, &contract.id)
+        .send_loan_defaulted_lender(lender, &contract.id)
         .await;
 
     Ok(())
@@ -377,7 +345,6 @@ async fn notify_lender_about_late_installment(
 
 async fn notify_borrower_about_restructured_contract(
     db: &Pool<Postgres>,
-    config: &Config,
     contract: &Contract,
     late_installment: Installment,
     new_installments: Vec<Installment>,
@@ -389,11 +356,6 @@ async fn notify_borrower_about_restructured_contract(
         return Ok(());
     }
 
-    let loan_url = config
-        .borrower_frontend_origin
-        .join(&format!("/my-contracts/{}", contract.id))
-        .expect("to be a correct URL");
-
     let borrower = db::borrowers::get_user_by_id(db, &contract.borrower_id)
         .await?
         .context("Could not find borrower")?;
@@ -402,7 +364,6 @@ async fn notify_borrower_about_restructured_contract(
         .send_restructured_contract_borrower(
             contract.id.as_str(),
             borrower,
-            loan_url,
             late_installment,
             new_installments,
         )
@@ -423,7 +384,6 @@ async fn notify_borrower_about_restructured_contract(
 
 async fn notify_lender_about_restructured_contract(
     db: &Pool<Postgres>,
-    config: &Config,
     contract: &Contract,
     late_installment: Installment,
     new_installments: Vec<Installment>,
@@ -435,23 +395,12 @@ async fn notify_lender_about_restructured_contract(
         return Ok(());
     }
 
-    let loan_url = config
-        .lender_frontend_origin
-        .join(&format!("/my-contracts/{}", contract.id))
-        .expect("to be a correct URL");
-
     let lender = db::lenders::get_user_by_id(db, &contract.lender_id)
         .await?
         .context("Could not find lender")?;
 
     if let Err(e) = notifications
-        .send_restructured_contract_lender(
-            lender,
-            loan_url,
-            &contract.id,
-            late_installment,
-            new_installments,
-        )
+        .send_restructured_contract_lender(lender, &contract.id, late_installment, new_installments)
         .await
     {
         tracing::error!("Could not send restructured contract lender email: {e:#}");

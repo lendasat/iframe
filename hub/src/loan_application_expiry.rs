@@ -1,4 +1,3 @@
-use crate::config::Config;
 use crate::db;
 use crate::db::loan_applications::ExpiredApplication;
 use crate::notifications::Notifications;
@@ -28,12 +27,11 @@ const CHECK_LOAN_APPLICATION_EXPIRED_SCHEDULER: &str = "0 0/30 * * * *";
 pub async fn add_loan_application_expiry_job(
     scheduler: &JobScheduler,
     database: Pool<Postgres>,
-    config: Config,
     notifications: Arc<Notifications>,
 ) -> Result<()> {
     let database = database.clone();
     let check_for_expiring_loan_applications_job =
-        create_application_expiry_expiry_check(scheduler, database, config, notifications).await?;
+        create_application_expiry_expiry_check(scheduler, database, notifications).await?;
     let uuid = scheduler
         .add(check_for_expiring_loan_applications_job)
         .await?;
@@ -49,7 +47,6 @@ pub async fn add_loan_application_expiry_job(
 async fn create_application_expiry_expiry_check(
     scheduler: &JobScheduler,
     database: Pool<Postgres>,
-    config: Config,
     notifications: Arc<Notifications>,
 ) -> Result<Job, JobSchedulerError> {
     let mut check_for_expiring_applications_job = Job::new_async(
@@ -59,7 +56,6 @@ async fn create_application_expiry_expiry_check(
 
             Box::pin({
                 let database = database.clone();
-                let config = config.clone();
                 let notifications = notifications.clone();
                 async move {
                     match db::loan_applications::expire_loan_applications(
@@ -77,7 +73,6 @@ async fn create_application_expiry_expiry_check(
                             });
                             notify_borrowers_about_expired_application(
                                 &database,
-                                config.clone(),
                                 applications.as_slice(),
                                 notifications.clone(),
                             )
@@ -112,18 +107,12 @@ async fn create_application_expiry_expiry_check(
 
 async fn notify_borrowers_about_expired_application(
     db: &Pool<Postgres>,
-    config: Config,
     applications: &[ExpiredApplication],
     notifications: Arc<Notifications>,
 ) {
     for application in applications.iter() {
-        if let Err(err) = notify_borrower_about_expired_application(
-            db,
-            config.clone(),
-            notifications.clone(),
-            application,
-        )
-        .await
+        if let Err(err) =
+            notify_borrower_about_expired_application(db, notifications.clone(), application).await
         {
             tracing::error!(
                 application_id = application.application_id,
@@ -135,15 +124,9 @@ async fn notify_borrowers_about_expired_application(
 
 async fn notify_borrower_about_expired_application(
     db: &Pool<Postgres>,
-    config: Config,
     notifications: Arc<Notifications>,
     application: &ExpiredApplication,
 ) -> Result<()> {
-    let loan_url = config
-        .borrower_frontend_origin
-        .join("requests")
-        .expect("to be a correct URL");
-
     let borrower = db::borrowers::get_user_by_id(db, application.borrower_id.as_str())
         .await?
         .context("Could not find borrower")?;
@@ -152,7 +135,6 @@ async fn notify_borrower_about_expired_application(
         .send_expired_loan_application_borrower(
             borrower,
             LOAN_APPLICATION_TIMEOUT / 7,
-            loan_url,
             application.application_id.as_str(),
         )
         .await;

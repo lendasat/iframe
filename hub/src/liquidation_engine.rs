@@ -1,5 +1,4 @@
 use crate::bitmex_index_pricefeed::BitmexIndexPrice;
-use crate::config::Config;
 use crate::db;
 use crate::model;
 use crate::model::db::LiquidationStatus;
@@ -29,11 +28,9 @@ const TIME_BETWEEN_PRICE_CHECKS: i64 = 5;
 pub async fn monitor_positions(
     db: Pool<Postgres>,
     mut bitmex_rx: Receiver<BitmexIndexPrice>,
-    config: Config,
     notifications: Arc<Notifications>,
 ) -> Result<()> {
     tokio::spawn({
-        let config = config.clone();
         async move {
             // Maintain separate price collections for each currency
             let mut currency_prices: HashMap<Currency, Vec<Decimal>> = HashMap::new();
@@ -56,8 +53,6 @@ pub async fn monitor_positions(
                 if prices.len() > 10 {
                     prices.remove(0); // Remove the oldest (first) price
                 }
-
-                let config = config.clone();
 
                 // Calculate average price only for the currency that just updated
                 let current_currency = price.currency;
@@ -89,7 +84,6 @@ pub async fn monitor_positions(
                                 &db,
                                 current_currency,
                                 average_price,
-                                config.clone(),
                                 notifications.clone(),
                             )
                             .await;
@@ -109,7 +103,6 @@ async fn check_margin_call_or_liquidation(
     db: &Pool<Postgres>,
     currency: Currency,
     latest_price: Decimal,
-    config: Config,
     notifications: Arc<Notifications>,
 ) {
     // TODO: For performance reasons, we should not constantly load from the DB but use some form of
@@ -162,7 +155,6 @@ async fn check_margin_call_or_liquidation(
                             liquidate_contract(
                                 db,
                                 &contract,
-                                config.clone(),
                                 latest_price,
                                 current_ltv,
                                 liquidation_price,
@@ -173,7 +165,6 @@ async fn check_margin_call_or_liquidation(
                             second_margin_call(
                                 db,
                                 &contract,
-                                config.clone(),
                                 latest_price,
                                 current_ltv,
                                 liquidation_price,
@@ -184,7 +175,6 @@ async fn check_margin_call_or_liquidation(
                             first_margin_call_contract(
                                 db,
                                 &contract,
-                                config.clone(),
                                 latest_price,
                                 current_ltv,
                                 liquidation_price,
@@ -244,7 +234,6 @@ async fn healthy_state(db: &Pool<Postgres>, contract: &Contract) {
 async fn first_margin_call_contract(
     db: &Pool<Postgres>,
     contract: &Contract,
-    config: Config,
     price: Decimal,
     current_ltv: Decimal,
     liquidation_price: Decimal,
@@ -283,7 +272,6 @@ async fn first_margin_call_contract(
     if let Err(err) = send_notification(
         db,
         contract,
-        config,
         price,
         current_ltv,
         liquidation_price,
@@ -302,7 +290,6 @@ async fn first_margin_call_contract(
 async fn second_margin_call(
     db: &Pool<Postgres>,
     contract: &Contract,
-    config: Config,
     latest_price: Decimal,
     current_ltv: Decimal,
     liquidation_price: Decimal,
@@ -340,7 +327,6 @@ async fn second_margin_call(
     if let Err(err) = send_notification(
         db,
         contract,
-        config,
         latest_price,
         current_ltv,
         liquidation_price,
@@ -359,7 +345,6 @@ async fn second_margin_call(
 async fn liquidate_contract(
     db: &Pool<Postgres>,
     contract: &Contract,
-    config: Config,
     latest_price: Decimal,
     current_ltv: Decimal,
     liquidation_price: Decimal,
@@ -396,7 +381,6 @@ async fn liquidate_contract(
     if let Err(err) = send_notification(
         db,
         contract,
-        config,
         latest_price,
         current_ltv,
         liquidation_price,
@@ -413,22 +397,15 @@ async fn liquidate_contract(
 async fn send_notification(
     pool: &Pool<Postgres>,
     contract: &Contract,
-    config: Config,
     price: Decimal,
     current_ltv: Decimal,
     liquidation_price: Decimal,
     status: LiquidationStatus,
     notifications: Arc<Notifications>,
 ) -> Result<()> {
-    let contract_id = &contract.id;
-
     let borrower = db::borrowers::get_user_by_id(pool, contract.borrower_id.as_str())
         .await?
         .context("borrower not found")?;
-
-    let borrower_contract_url = config
-        .borrower_frontend_origin
-        .join(format!("/my-contracts/{contract_id}").as_str())?;
 
     match status {
         LiquidationStatus::Healthy => {
@@ -442,7 +419,6 @@ async fn send_notification(
                     price,
                     current_ltv,
                     liquidation_price,
-                    borrower_contract_url,
                 )
                 .await;
         }
@@ -453,7 +429,6 @@ async fn send_notification(
                     contract.clone(),
                     price,
                     liquidation_price,
-                    borrower_contract_url,
                 )
                 .await;
 
@@ -461,12 +436,8 @@ async fn send_notification(
                 .await?
                 .context("lender not found")?;
 
-            let lender_contract_url = config
-                .lender_frontend_origin
-                .join(format!("/my-contracts/{}", contract.id).as_str())?;
-
             notifications
-                .send_liquidation_notice_lender(lender, contract.clone(), lender_contract_url)
+                .send_liquidation_notice_lender(lender, contract.clone())
                 .await;
         }
     }

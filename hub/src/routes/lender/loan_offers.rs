@@ -143,14 +143,9 @@ async fn create_loan_offer(
         } => (max_duration_days, Some(interest_rate)),
     };
 
-    let offer_url = data
-        .config
-        .borrower_frontend_origin
-        .join(format!("/requests?offer={}", offer.loan_deal_id).as_str())
-        .map_err(|e| Error::InvalidUrl(e.to_string()))?;
     data.notifications
         .send_new_loan_offer_available(
-            offer_url,
+            &offer.loan_deal_id,
             offer.loan_amount_min,
             offer.loan_amount_max,
             offer.loan_asset,
@@ -836,8 +831,6 @@ enum Error {
     KycOffersNotEnabled,
     /// Indirect payouts require auto-accept to be enabled.
     IndirectPayoutRequiresAutoAccept,
-    /// Invalid url, e.g. couldn't parse an url
-    InvalidUrl(#[allow(dead_code)] String),
     /// Referenced loan offer does not exist.
     MissingLoanOffer { offer_id: String },
     /// User is in jail and can't do anything
@@ -897,10 +890,6 @@ impl IntoResponse for Error {
             Error::InvalidBtcRepaymentAddress => (
                 StatusCode::BAD_REQUEST,
                 "Invalid BTC repayment address".to_string(),
-            ),
-            Error::InvalidUrl(_) => (
-                StatusCode::INTERNAL_SERVER_ERROR,
-                "Something went wrong".to_owned(),
             ),
             Error::MissingLoanOffer { offer_id } => (
                 StatusCode::NOT_FOUND,

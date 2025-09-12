@@ -228,7 +228,6 @@ async fn update_collateral(
     if is_newly_confirmed {
         if let Err(err) = send_loan_collateralized_email_to_lender(
             &db,
-            config.clone(),
             &contract.id,
             &contract.lender_id,
             &contract.borrower_id,
@@ -1107,7 +1106,6 @@ pub enum Data {
 
 async fn send_loan_collateralized_email_to_lender(
     db: &Pool<Postgres>,
-    config: Config,
     contract_id: &str,
     lender_id: &str,
     borrower_id: &str,
@@ -1130,12 +1128,8 @@ async fn send_loan_collateralized_email_to_lender(
             .await?
             .context("Cannot send collateral-funded email to unknown lender")?;
 
-        let loan_url = config
-            .lender_frontend_origin
-            .join(format!("/my-contracts/{contract_id}").as_str())?;
-
         notifications
-            .send_loan_collateralized_lender(lender, loan_url, contract_id)
+            .send_loan_collateralized_lender(lender, contract_id)
             .await;
     }
 

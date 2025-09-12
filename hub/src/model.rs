@@ -166,14 +166,6 @@ impl Lender {
             Err(_) => false,
         }
     }
-
-    pub(crate) fn name(&self) -> String {
-        self.name.clone()
-    }
-
-    pub(crate) fn email(&self) -> String {
-        self.email.clone()
-    }
 }
 
 #[derive(Debug, Serialize, Deserialize)]
