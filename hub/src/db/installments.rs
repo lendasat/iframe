@@ -1,5 +1,6 @@
 use crate::db;
 use crate::model;
+use crate::model::ContractStatus;
 use anyhow::bail;
 use anyhow::Result;
 use bitcoin::Amount;
@@ -221,27 +222,34 @@ pub async fn get_close_to_due_date_installments(db: &PgPool) -> Result<Vec<model
     let window_start = OffsetDateTime::now_utc();
     let window_end = OffsetDateTime::now_utc() + time::Duration::days(3);
 
+    let statuses = ContractStatus::can_be_checked_for_late_installments_variants()
+        .map(model::db::ContractStatus::from)
+        .collect::<Vec<_>>();
+
     let installments = sqlx::query_as!(
         Installment,
         r#"
             SELECT
-                id,
-                contract_id,
-                principal,
-                interest,
-                due_date,
-                status AS "status: InstallmentStatus",
-                late_penalty AS "late_penalty: LatePenalty",
-                paid_date,
-                payment_id
+                installments.id,
+                installments.contract_id,
+                installments.principal,
+                installments.interest,
+                installments.due_date,
+                installments.status AS "status: InstallmentStatus",
+                installments.late_penalty AS "late_penalty: LatePenalty",
+                installments.paid_date,
+                installments.payment_id
             FROM installments
+            JOIN contracts ON installments.contract_id = contracts.id
             WHERE
-                status = 'Pending' AND
-                due_date > $1 AND
-                due_date <= $2
+                installments.status = 'Pending' AND
+                installments.due_date > $1 AND
+                installments.due_date <= $2 AND
+                contracts.status = ANY($3)
         "#,
         window_start,
         window_end,
+        &statuses as &[model::db::ContractStatus]
     )
     .fetch_all(db)
     .await?;
@@ -260,24 +268,32 @@ pub async fn get_close_to_due_date_installments(db: &PgPool) -> Result<Vec<model
 ///
 /// The list of [`Installment`]s that were marked as [`InstallmentStatus::Late`].
 pub async fn mark_late_installments(db: &PgPool) -> Result<Vec<model::Installment>> {
+    let statuses = ContractStatus::can_be_checked_for_late_installments_variants()
+        .map(model::db::ContractStatus::from)
+        .collect::<Vec<_>>();
+
     let installments = sqlx::query_as!(
         Installment,
         r#"
             UPDATE installments
                 SET status = 'Late'
-                WHERE due_date < NOW()
-                  AND status = 'Pending'
+                FROM contracts
+                WHERE installments.contract_id = contracts.id
+                  AND installments.due_date < NOW()
+                  AND installments.status = 'Pending'
+                  AND contracts.status = ANY($1)
             RETURNING
-                id,
-                contract_id,
-                principal,
-                interest,
-                due_date,
-                status AS "status: InstallmentStatus",
-                late_penalty AS "late_penalty: LatePenalty",
-                paid_date,
-                payment_id
-        "#
+                installments.id,
+                installments.contract_id,
+                installments.principal,
+                installments.interest,
+                installments.due_date,
+                installments.status AS "status: InstallmentStatus",
+                installments.late_penalty AS "late_penalty: LatePenalty",
+                installments.paid_date,
+                installments.payment_id
+        "#,
+        &statuses as &[model::db::ContractStatus]
     )
     .fetch_all(db)
     .await?;

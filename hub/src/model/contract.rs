@@ -497,6 +497,14 @@ impl ContractStatus {
     pub fn can_be_checked_for_undercollateralization_variants() -> impl Iterator<Item = Self> {
         enum_iterator::all::<Self>().filter(|s| s.can_be_checked_for_undercollateralization())
     }
+
+    /// convenience method to get all states which can have a late installment
+    ///
+    /// For now, it is the same set of states as [`Self::can_be_checked_for_undercollateralization`]
+    /// which also check if a contract is _open_
+    pub fn can_be_checked_for_late_installments_variants() -> impl Iterator<Item = Self> {
+        enum_iterator::all::<Self>().filter(|s| s.can_be_checked_for_undercollateralization())
+    }
 }
 
 impl FromStr for ContractStatus {
