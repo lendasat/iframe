@@ -80,7 +80,7 @@ const formSchema = z
       .max(4 * ONE_YEAR, "Maximum duration cannot exceed 4 years"),
     loan_asset: z.nativeEnum(LoanAsset),
     loan_payout: z.nativeEnum(LoanPayout),
-    loan_repayment_address: z.string().min(1, "Repayment address is required"),
+    loan_repayment_address: z.string(),
     auto_accept: z.boolean(),
     kyc_link: z
       .string()
@@ -104,7 +104,22 @@ const formSchema = z
     message:
       "Reserve amount must be greater than or equal to maximum loan amount",
     path: ["loan_amount_reserve"],
-  });
+  })
+  .refine(
+    (data) => {
+      // Repayment address is required for stable coin loans, optional for fiat loans
+      if (LoanAssetHelper.isStableCoin(data.loan_asset)) {
+        return (
+          data.loan_repayment_address && data.loan_repayment_address.length > 0
+        );
+      }
+      return true;
+    },
+    {
+      message: "Repayment address is required for stablecoin loans",
+      path: ["loan_repayment_address"],
+    },
+  );
 
 type FormData = z.infer<typeof formSchema>;
 
@@ -155,7 +170,7 @@ export function CreateLoanOfferForm({
         duration_days_max: data.duration_days_max,
         loan_asset: data.loan_asset,
         loan_payout: data.loan_payout,
-        loan_repayment_address: data.loan_repayment_address,
+        loan_repayment_address: data.loan_repayment_address || "",
         lender_pk: "", // Auto-generated and will be overwritten
         lender_derivation_path: "", // Auto-generated and will be overwritten
         auto_accept: data.auto_accept,
@@ -182,6 +197,9 @@ export function CreateLoanOfferForm({
       setIsSubmitting(false);
     }
   };
+
+  const loanAsset = form.watch("loan_asset");
+  const isStableCoinLoan = LoanAssetHelper.isStableCoin(loanAsset);
 
   return (
     <ScrollArea className="h-screen">
@@ -580,34 +598,35 @@ export function CreateLoanOfferForm({
                 </CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
-                <FormField
-                  control={form.control}
-                  name="loan_repayment_address"
-                  render={({ field }) => {
-                    const loanAsset = form.watch("loan_asset");
-                    return (
-                      <FormItem>
-                        <FormLabel className="flex items-center gap-2">
-                          <CreditCard className="h-4 w-4" />
-                          Repayment Address
-                        </FormLabel>
-                        <FormControl>
-                          <LoanAddressInputField
-                            loanAddress={field.value}
-                            setLoanAddress={field.onChange}
-                            loanAsset={loanAsset}
-                            renderWarning={true}
-                            placeholder="Enter repayment wallet address"
-                          />
-                        </FormControl>
-                        <FormDescription>
-                          Address where loan repayments will be sent
-                        </FormDescription>
-                        <FormMessage />
-                      </FormItem>
-                    );
-                  }}
-                />
+                {isStableCoinLoan && (
+                  <FormField
+                    control={form.control}
+                    name="loan_repayment_address"
+                    render={({ field }) => {
+                      return (
+                        <FormItem>
+                          <FormLabel className="flex items-center gap-2">
+                            <CreditCard className="h-4 w-4" />
+                            Repayment Address
+                          </FormLabel>
+                          <FormControl>
+                            <LoanAddressInputField
+                              loanAddress={field.value}
+                              setLoanAddress={field.onChange}
+                              loanAsset={loanAsset}
+                              renderWarning={true}
+                              placeholder="Enter repayment wallet address"
+                            />
+                          </FormControl>
+                          <FormDescription>
+                            Address where loan repayments will be sent
+                          </FormDescription>
+                          <FormMessage />
+                        </FormItem>
+                      );
+                    }}
+                  />
+                )}
 
                 {kycOffersEnabled && (
                   <FormField

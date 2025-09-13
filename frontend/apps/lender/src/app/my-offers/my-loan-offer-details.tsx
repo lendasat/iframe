@@ -302,6 +302,7 @@ function MyLoanOfferDetails() {
   const loanAsset = offer.loan_asset;
   const coinLabel = LoanAssetHelper.print(loanAsset);
   const loanTypeLabel = repaymentPlanLabel(offer.repayment_plan);
+  const isStablecoinOffer = LoanAssetHelper.isStableCoin(loanAsset);
 
   const handleEdit = () => {
     setIsEditing(true);
@@ -956,37 +957,39 @@ function MyLoanOfferDetails() {
                 </CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
-                <FormField
-                  control={form.control}
-                  name="loan_repayment_address"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel className="flex items-center gap-2">
-                        <CreditCard className="h-4 w-4" />
-                        Repayment Address
-                      </FormLabel>
-                      <FormControl>
-                        {isEditing ? (
-                          <LoanAddressInputField
-                            loanAddress={field.value || ""}
-                            setLoanAddress={field.onChange}
-                            loanAsset={loanAsset}
-                            renderWarning={true}
-                            placeholder="Enter repayment wallet address"
-                          />
-                        ) : (
-                          <div className="bg-muted break-all rounded-lg border px-3 py-2 text-sm">
-                            {offer.loan_repayment_address}
-                          </div>
-                        )}
-                      </FormControl>
-                      <FormDescription>
-                        Address where loan repayments will be sent
-                      </FormDescription>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
+                {isStablecoinOffer && (
+                  <FormField
+                    control={form.control}
+                    name="loan_repayment_address"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel className="flex items-center gap-2">
+                          <CreditCard className="h-4 w-4" />
+                          Repayment Address
+                        </FormLabel>
+                        <FormControl>
+                          {isEditing ? (
+                            <LoanAddressInputField
+                              loanAddress={field.value || ""}
+                              setLoanAddress={field.onChange}
+                              loanAsset={loanAsset}
+                              renderWarning={true}
+                              placeholder="Enter repayment wallet address"
+                            />
+                          ) : (
+                            <div className="bg-muted break-all rounded-lg border px-3 py-2 text-sm">
+                              {offer.loan_repayment_address}
+                            </div>
+                          )}
+                        </FormControl>
+                        <FormDescription>
+                          Address where loan repayments will be sent
+                        </FormDescription>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                )}
 
                 {(isEditing && offer.btc_loan_repayment_address) ||
                 (!isEditing && offer.btc_loan_repayment_address) ? (
