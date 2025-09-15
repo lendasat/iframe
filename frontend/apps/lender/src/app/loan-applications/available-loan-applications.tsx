@@ -1,5 +1,5 @@
 import { useLenderHttpClient } from "@frontend/http-client-lender";
-import { Box, Flex, Heading } from "@radix-ui/themes";
+import { ScrollArea } from "@frontend/shadcn";
 import { useNavigate } from "react-router-dom";
 import { useAsync } from "react-use";
 import { LoanApplicationTable } from "./loan-application-table";
@@ -15,16 +15,16 @@ function AvailableLoanApplications() {
   const loanApplications = value || [];
 
   return (
-    <div>
-      <Box className={"px-6 py-4 md:px-8"}>
-        <Flex gap={"1"} align={"center"}>
-          <Heading className={"text-font dark:text-font-dark"} size={"6"}>
+    <ScrollArea className="h-[calc(100vh-4rem)] w-full">
+      <div className="px-6 py-4 md:px-8">
+        <div className="flex gap-1 items-center">
+          <h2 className="text-2xl font-semibold text-font dark:text-font-dark">
             Open loan requests
-          </Heading>
-        </Flex>
-      </Box>
+          </h2>
+        </div>
+      </div>
       {/*TODO: re-implement filters if needed */}
-      <Box className="pt-3" px={"6"}>
+      <div className="pt-3 px-6 pb-6">
         <LoanApplicationTable
           loading={loading}
           loanApplications={loanApplications}
@@ -42,8 +42,8 @@ function AvailableLoanApplications() {
             navigate("/loan-applications/" + value.id);
           }}
         />
-      </Box>
-    </div>
+      </div>
+    </ScrollArea>
   );
 }
 
