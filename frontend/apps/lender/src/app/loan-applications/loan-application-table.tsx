@@ -1,5 +1,3 @@
-"use client";
-
 import {
   LoanApplication,
   LoanApplicationStatus,
@@ -15,13 +13,17 @@ import {
 } from "@frontend/ui-shared";
 import {
   Badge,
-  Box,
   Button,
-  DataList,
-  Flex,
+  Card,
+  CardContent,
   Skeleton,
   Table,
-} from "@radix-ui/themes";
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@frontend/shadcn";
 import {
   ColumnFiltersState,
   createColumnHelper,
@@ -55,78 +57,114 @@ const MobileLoanApplicationCard = ({
   onActionColumnAction?: (application: LoanApplication) => void;
 }) => {
   return (
-    <Box
-      className={`rounded-lg border p-4 ${
-        selected ? "bg-purple-50" : "bg-white"
-      } cursor-pointer`}
+    <Card
+      className={`cursor-pointer ${selected ? "bg-purple-50" : ""}`}
       onClick={() => onClick(application.id)}
     >
-      <DataList.Root>
-        <DataList.Item align="center">
-          <DataList.Label minWidth="88px">Borrower</DataList.Label>
-          <DataList.Value className="flex flex-1 justify-end">
-            <Skeleton loading={loading}>{application.borrower.name}</Skeleton>
-          </DataList.Value>
-        </DataList.Item>
-        <DataList.Item align="center">
-          <DataList.Label minWidth="88px">Amount</DataList.Label>
-          <DataList.Value className="flex flex-1 justify-end">
-            <Skeleton loading={loading}>
-              {formatCurrency(
-                application.loan_amount,
-                LoanAssetHelper.toCurrency(application.loan_asset),
+      <CardContent className="p-4">
+        <dl className="space-y-3">
+          <div className="flex items-center justify-between">
+            <dt className="min-w-[88px] text-sm font-medium text-gray-600">
+              Borrower
+            </dt>
+            <dd className="text-right text-sm">
+              {loading ? (
+                <Skeleton className="h-4 w-20" />
+              ) : (
+                application.borrower.name
               )}
-            </Skeleton>
-          </DataList.Value>
-        </DataList.Item>
-        <DataList.Item align="center">
-          <DataList.Label minWidth="88px">Duration</DataList.Label>
-          <DataList.Value className="flex flex-1 justify-end">
-            <Skeleton loading={loading}>
-              {getFormatedStringFromDays(application.duration_days)}
-            </Skeleton>
-          </DataList.Value>
-        </DataList.Item>
-        <DataList.Item align="center">
-          <DataList.Label minWidth="88px">Interest Rate</DataList.Label>
-          <DataList.Value className="flex flex-1 justify-end">
-            <Skeleton loading={loading}>
-              {(application.interest_rate * 100).toFixed(1)}%
-            </Skeleton>
-          </DataList.Value>
-        </DataList.Item>
-        <DataList.Item align="center">
-          <DataList.Label minWidth="88px">LTV</DataList.Label>
-          <DataList.Value className="flex flex-1 justify-end">
-            <Skeleton loading={loading}>
-              {(application.ltv * 100).toFixed(0)}%
-            </Skeleton>
-          </DataList.Value>
-        </DataList.Item>
-        <DataList.Item align="center">
-          <DataList.Label minWidth="88px">Coin</DataList.Label>
-          <DataList.Value className="flex flex-1 justify-end">
-            <Badge color="purple" size="2">
-              <Skeleton loading={loading}>
-                {LoanAssetHelper.print(application.loan_asset)}
-              </Skeleton>
-            </Badge>
-          </DataList.Value>
-        </DataList.Item>
-        {enableActionColumn && onActionColumnAction && (
-          <DataList.Item align="center">
-            <DataList.Label minWidth="88px">Pick</DataList.Label>
-            <DataList.Value className="flex flex-1 justify-end">
-              <Skeleton loading={loading}>
-                <Button onClick={() => onActionColumnAction(application)}>
-                  Select
-                </Button>
-              </Skeleton>
-            </DataList.Value>
-          </DataList.Item>
-        )}
-      </DataList.Root>
-    </Box>
+            </dd>
+          </div>
+          <div className="flex items-center justify-between">
+            <dt className="min-w-[88px] text-sm font-medium text-gray-600">
+              Amount
+            </dt>
+            <dd className="text-right text-sm">
+              {loading ? (
+                <Skeleton className="h-4 w-24" />
+              ) : (
+                formatCurrency(
+                  application.loan_amount,
+                  LoanAssetHelper.toCurrency(application.loan_asset),
+                )
+              )}
+            </dd>
+          </div>
+          <div className="flex items-center justify-between">
+            <dt className="min-w-[88px] text-sm font-medium text-gray-600">
+              Duration
+            </dt>
+            <dd className="text-right text-sm">
+              {loading ? (
+                <Skeleton className="h-4 w-20" />
+              ) : (
+                getFormatedStringFromDays(application.duration_days)
+              )}
+            </dd>
+          </div>
+          <div className="flex items-center justify-between">
+            <dt className="min-w-[88px] text-sm font-medium text-gray-600">
+              Interest Rate
+            </dt>
+            <dd className="text-right text-sm">
+              {loading ? (
+                <Skeleton className="h-4 w-16" />
+              ) : (
+                `${(application.interest_rate * 100).toFixed(1)}%`
+              )}
+            </dd>
+          </div>
+          <div className="flex items-center justify-between">
+            <dt className="min-w-[88px] text-sm font-medium text-gray-600">
+              LTV
+            </dt>
+            <dd className="text-right text-sm">
+              {loading ? (
+                <Skeleton className="h-4 w-12" />
+              ) : (
+                `${(application.ltv * 100).toFixed(0)}%`
+              )}
+            </dd>
+          </div>
+          <div className="flex items-center justify-between">
+            <dt className="min-w-[88px] text-sm font-medium text-gray-600">
+              Coin
+            </dt>
+            <dd className="text-right text-sm">
+              {loading ? (
+                <Skeleton className="h-5 w-16" />
+              ) : (
+                <Badge className="bg-purple-100 text-purple-800">
+                  {LoanAssetHelper.print(application.loan_asset)}
+                </Badge>
+              )}
+            </dd>
+          </div>
+          {enableActionColumn && onActionColumnAction && (
+            <div className="flex items-center justify-between pt-2">
+              <dt className="min-w-[88px] text-sm font-medium text-gray-600">
+                Pick
+              </dt>
+              <dd className="text-right text-sm">
+                {loading ? (
+                  <Skeleton className="h-8 w-16" />
+                ) : (
+                  <Button
+                    size="sm"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      onActionColumnAction(application);
+                    }}
+                  >
+                    Select
+                  </Button>
+                )}
+              </dd>
+            </div>
+          )}
+        </dl>
+      </CardContent>
+    </Card>
   );
 };
 
@@ -258,7 +296,7 @@ export function LoanApplicationTable({
       },
       cell: ({ row }) => {
         if (loading) {
-          return <Skeleton loading={true}>Loading</Skeleton>;
+          return <Skeleton className="h-4 w-12" />;
         }
         return <>{((row.getValue("ltv") as number) * 100).toFixed(0)}%</>;
       },
@@ -282,7 +320,7 @@ export function LoanApplicationTable({
       },
       cell: ({ cell }) => {
         return (
-          <Badge color="purple" size={"2"}>
+          <Badge className="bg-purple-100 text-purple-800">
             {LoanAssetHelper.print(cell.getValue())}
           </Badge>
         );
@@ -295,7 +333,7 @@ export function LoanApplicationTable({
       },
       cell: ({ cell }) => {
         return (
-          <Badge color="green" size={"2"}>
+          <Badge className="bg-green-100 text-green-800">
             {LoanApplicationStatusHelper.print(cell.getValue())}
           </Badge>
         );
@@ -400,21 +438,21 @@ export function LoanApplicationTable({
   });
 
   return (
-    <Box className="w-full">
-      <Box className="hidden md:block">
-        <Box className="mt-4 rounded-md border">
-          <Table.Root variant="surface" size={"2"} layout={"auto"}>
-            <Table.Header>
+    <div className="w-full">
+      <div className="hidden md:block">
+        <div className="mt-4 rounded-md border">
+          <Table>
+            <TableHeader>
               {table.getHeaderGroups().map((headerGroup) => (
-                <Table.Row key={headerGroup.id}>
+                <TableRow key={headerGroup.id}>
                   {headerGroup.headers.map((header) => {
                     return (
-                      <Table.ColumnHeaderCell
+                      <TableHead
                         key={header.id}
-                        className={"text-font dark:text-font-dark"}
+                        className="text-font dark:text-font-dark"
                       >
                         {header.isPlaceholder ? null : (
-                          <Box
+                          <div
                             {...{
                               className: header.column.getCanSort()
                                 ? "cursor-pointer select-none"
@@ -422,7 +460,7 @@ export function LoanApplicationTable({
                               onClick: header.column.getToggleSortingHandler(),
                             }}
                           >
-                            <Flex gap={"1"} align={"center"}>
+                            <div className="flex items-center gap-1">
                               {flexRender(
                                 header.column.columnDef.header,
                                 header.getContext(),
@@ -436,28 +474,30 @@ export function LoanApplicationTable({
                                     <LuArrowUpDown />
                                   ))
                                 : undefined}
-                            </Flex>
-                          </Box>
+                            </div>
+                          </div>
                         )}
-                      </Table.ColumnHeaderCell>
+                      </TableHead>
                     );
                   })}
-                </Table.Row>
+                </TableRow>
               ))}
-            </Table.Header>
-            <Table.Body>
+            </TableHeader>
+            <TableBody>
               {table.getRowModel().rows?.length ? (
                 table.getRowModel().rows.map((row) => (
-                  <Table.Row
+                  <TableRow
                     key={row.id}
                     className={
-                      row.getIsSelected() ? "dark:purple-100 bg-purple-50" : ""
+                      row.getIsSelected()
+                        ? "bg-purple-50 dark:bg-purple-100"
+                        : ""
                     }
                     onClick={row.getToggleSelectedHandler()}
                     data-state={row.getIsSelected() && "selected"}
                   >
                     {row.getVisibleCells().map((cell) => (
-                      <Table.Cell
+                      <TableCell
                         key={cell.id}
                         className={
                           row.getIsSelected()
@@ -466,41 +506,43 @@ export function LoanApplicationTable({
                         }
                       >
                         {loading ? (
-                          <Skeleton loading={loading}>Loading</Skeleton>
+                          <Skeleton className="h-4 w-20" />
                         ) : (
                           flexRender(
                             cell.column.columnDef.cell,
                             cell.getContext(),
                           )
                         )}
-                      </Table.Cell>
+                      </TableCell>
                     ))}
-                  </Table.Row>
+                  </TableRow>
                 ))
               ) : (
-                <Table.Row>
-                  <Table.Cell
+                <TableRow>
+                  <TableCell
                     colSpan={columns.length}
                     className="h-24 text-center"
                   >
                     No results.
-                  </Table.Cell>
-                </Table.Row>
+                  </TableCell>
+                </TableRow>
               )}
-            </Table.Body>
-          </Table.Root>
-        </Box>
-      </Box>
+            </TableBody>
+          </Table>
+        </div>
+      </div>
       {/* Mobile view */}
-      <Box className="block md:hidden">
-        <Box className="space-y-4">
+      <div className="block md:hidden">
+        <div className="space-y-4">
           {loading ? (
             // Loading state for mobile
             [...Array(3)].map((_, i) => (
               // biome-ignore lint/suspicious/noArrayIndexKey: <explanation>
-              <Box key={i} className="rounded-lg border p-4">
-                <Skeleton loading={true}>Loading</Skeleton>
-              </Box>
+              <Card key={i}>
+                <CardContent className="p-4">
+                  <Skeleton className="h-20 w-full" />
+                </CardContent>
+              </Card>
             ))
           ) : table.getRowModel().rows?.length ? (
             table
@@ -521,19 +563,19 @@ export function LoanApplicationTable({
                 />
               ))
           ) : (
-            <Box className="text-font dark:text-font-dark p-4 text-center">
+            <div className="text-font dark:text-font-dark p-4 text-center">
               No results.
-            </Box>
+            </div>
           )}
-        </Box>
-      </Box>
+        </div>
+      </div>
 
       {/* Pagination */}
-      <Box className="flex items-center justify-end space-x-2 py-4">
-        <Box className="space-x-2">
+      <div className="flex items-center justify-end space-x-2 py-4">
+        <div className="space-x-2">
           <Button
             variant="outline"
-            size="2"
+            size="sm"
             onClick={() => table.previousPage()}
             disabled={!table.getCanPreviousPage()}
           >
@@ -541,14 +583,14 @@ export function LoanApplicationTable({
           </Button>
           <Button
             variant="outline"
-            size="2"
+            size="sm"
             onClick={() => table.nextPage()}
             disabled={!table.getCanNextPage()}
           >
             Next
           </Button>
-        </Box>
-      </Box>
-    </Box>
+        </div>
+      </div>
+    </div>
   );
 }
