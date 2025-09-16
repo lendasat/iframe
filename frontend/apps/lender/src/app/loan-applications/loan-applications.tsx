@@ -167,9 +167,12 @@ export default function TakeLoanApplication() {
   );
 
   return (
-    <ScrollArea className="h-full w-full">
-      <div className="space-y-4 p-4">
-        <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+    <ScrollArea className="h-[calc(100vh-4rem)] w-full">
+      <div className="px-6 py-4 md:px-8">
+        <h2 className="text-2xl font-semibold text-font dark:text-font-dark mb-6">
+          Loan Application Details
+        </h2>
+        <div className="grid grid-cols-1 gap-4 md:grid-cols-2 pb-8">
           <Card>
             <CardContent className="p-6">
               <div className="mb-4 flex items-center gap-2">
