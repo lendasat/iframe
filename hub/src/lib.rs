@@ -21,6 +21,7 @@ pub mod contract_requests;
 pub mod daily_digest;
 pub mod db;
 pub mod electrum;
+mod esplora_client;
 pub mod expiry;
 pub mod geo_location;
 pub mod installment_close_to_due_date;

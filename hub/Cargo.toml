@@ -18,6 +18,7 @@ bitcoin-units = "0.1.2"
 bitmex-stream = { git = "https://github.com/get10101/bitmex-stream", rev = "c68668b" }
 descriptor-wallet = { path = "../descriptor-wallet" }
 electrum-client = "0.24.0"
+esplora-client = { version = "0.12.1", features = ["blocking-https"] }
 enum-iterator = "2.1.0"
 futures = "0.3"
 handlebars = "4.3.7"
