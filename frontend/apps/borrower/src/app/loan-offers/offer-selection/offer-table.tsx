@@ -480,7 +480,12 @@ export function LoanOfferTable({
     return loanOffers;
   }, [loanOffers, loading]);
 
-  const [sorting, setSorting] = useState<SortingState>([]);
+  const [sorting, setSorting] = useState<SortingState>([
+    {
+      id: "interest_rate",
+      desc: false, // false = ascending order (lowest first)
+    },
+  ]);
   const [columnVisibility, setColumnVisibility] = useState<VisibilityState>({
     actions: enableActionColumn || false,
   });
