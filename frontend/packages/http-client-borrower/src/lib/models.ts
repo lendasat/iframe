@@ -822,6 +822,20 @@ export interface TopupCardResponse {
   expires_at: string;
 }
 
+export interface NewCardRequest {
+  currency: Currency;
+  amount_usd: number;
+}
+
+export interface NewCardResponse {
+  invoice_id: string;
+  address: string;
+  usd_amount: number;
+  crypto_amount: number;
+  currency: Currency;
+  expires_at: string;
+}
+
 export interface GetCollateralTransactionsResponse {
   contract_id: string;
   contract_status: ContractStatus;

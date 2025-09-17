@@ -40,6 +40,8 @@ import {
   VerifyTotpRequest,
   PakeVerifyTotpResponse,
   TotpLoginVerifyRequest,
+  NewCardRequest,
+  NewCardResponse,
 } from "./models";
 import { isAllowedPageWithoutLogin, parseRFC3339Date } from "./utils";
 import { IsRegisteredResponse } from "@frontend/base-http-client";
@@ -232,6 +234,7 @@ export interface HttpClient {
   getUserCards: () => Promise<UserCardDetail[]>;
   getCardTransactions: (cardId: string) => Promise<CardTransaction[]>;
   topupCard: (request: TopupCardRequest) => Promise<TopupCardResponse>;
+  newCard: (request: NewCardRequest) => Promise<NewCardResponse>;
 
   newChatNotification: (request: NotifyUser) => Promise<void>;
 
@@ -1067,6 +1070,19 @@ export const createHttpClient = (
     }
   };
 
+  const newCard = async (request: NewCardRequest): Promise<NewCardResponse> => {
+    try {
+      const response: AxiosResponse<NewCardResponse> = await axiosClient.post(
+        "/api/moon/new",
+        request,
+      );
+      return response.data;
+    } catch (error) {
+      handleError(error, "creating new card");
+      throw error; // Satisfies the linter, though it won't actually be reached.
+    }
+  };
+
   const putUpdateProfile = async (request: PutUpdateProfile): Promise<void> => {
     try {
       await axiosClient.put("/api/users/", request);
@@ -1306,6 +1322,7 @@ export const createHttpClient = (
     commentOnDispute,
     getLenderProfile,
     getBorrowerProfile,
+    newCard,
     getUserCards,
     getCardTransactions,
     topupCard,

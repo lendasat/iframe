@@ -20,6 +20,7 @@ import NoCreditCard from "./../../assets/creditcard-illustration.png";
 import CardHistory from "./CardHistory";
 import { CardPickerModal } from "./CardPickerModal";
 import { TopUpModal } from "./TopUpModal";
+import { NewCardModal } from "./NewCardModal";
 
 export default function Cards() {
   const [visible, setVisible] = useState<boolean>(false);
@@ -27,6 +28,7 @@ export default function Cards() {
   const [copiedField, setCopiedField] = useState<string | null>(null);
   const [cardPickerOpen, setCardPickerOpen] = useState<boolean>(false);
   const [topUpModalOpen, setTopUpModalOpen] = useState<boolean>(false);
+  const [newCardModalOpen, setNewCardModalOpen] = useState<boolean>(false);
 
   const { getUserCards } = useHttpClientBorrower();
 
@@ -100,12 +102,22 @@ export default function Cards() {
             <p className="text-muted-foreground mb-6 max-w-md">
               Get started by requesting your first crypto-backed credit card
             </p>
-            <Button asChild size="lg">
-              <Link to="/requests">
-                <Plus className="mr-2 h-4 w-4" />
-                Get Your First Card
-              </Link>
-            </Button>
+            <div className="flex flex-col gap-3 sm:flex-row">
+              <Button asChild size="lg">
+                <Link to="/requests">
+                  <Plus className="mr-2 h-4 w-4" />
+                  Get Card with Loan
+                </Link>
+              </Button>
+              <Button
+                onClick={() => setNewCardModalOpen(true)}
+                variant="outline"
+                size="lg"
+              >
+                <DollarSign className="mr-2 h-4 w-4" />
+                Get Card Without Loan
+              </Button>
+            </div>
           </div>
         ) : (
           <div className="space-y-8">
@@ -264,11 +276,12 @@ export default function Cards() {
                     <DollarSign className="mr-2 h-4 w-4" />
                     Add Funds
                   </Button>
-                  <Button asChild className="flex-1">
-                    <Link to="/requests?product=pay_with_moon">
-                      <Plus className="mr-2 h-4 w-4" />
-                      Request New Card
-                    </Link>
+                  <Button
+                    onClick={() => setNewCardModalOpen(true)}
+                    className="flex-1"
+                  >
+                    <Plus className="mr-2 h-4 w-4" />
+                    Get Card Without Loan
                   </Button>
                 </div>
               </div>
@@ -314,6 +327,12 @@ export default function Cards() {
             cardName="Lendasat Card"
           />
         )}
+
+        {/* New Card Modal */}
+        <NewCardModal
+          open={newCardModalOpen}
+          onOpenChange={setNewCardModalOpen}
+        />
       </div>
     </div>
   );

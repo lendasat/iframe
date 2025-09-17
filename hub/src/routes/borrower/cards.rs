@@ -34,6 +34,7 @@ pub(crate) fn router(app_state: Arc<AppState>) -> OpenApiRouter {
         .routes(routes!(get_cards))
         .routes(routes!(get_card_transactions))
         .routes(routes!(topup_card))
+        .routes(routes!(new_card))
         .route_layer(middleware::from_fn_with_state(
             app_state.clone(),
             jwt_or_api_auth::auth,
@@ -240,7 +241,7 @@ async fn topup_card(
         .generate_invoice(
             request.amount_usd,
             lendasat_id,
-            request.card_id,
+            Some(request.card_id),
             &user.id,
             request.currency,
             data.config.card_topup_fee,
@@ -256,6 +257,105 @@ async fn topup_card(
         .map_err(Error::database)?;
 
     Ok(AppJson(TopupCardResponse {
+        invoice_id: invoice.id,
+        address: invoice.address,
+        usd_amount: invoice.usd_amount_owed,
+        crypto_amount: invoice.crypto_amount_owed,
+        currency: request.currency,
+        expires_at: invoice.expires_at,
+    }))
+}
+
+/// Response from creating a new card containing the invoice details.
+#[derive(Debug, Serialize, ToSchema)]
+struct NewCardResponse {
+    /// The invoice ID
+    invoice_id: Uuid,
+    /// The blockchain address to send payment to
+    address: String,
+    /// The amount in USD
+    #[serde(with = "rust_decimal::serde::float")]
+    usd_amount: Decimal,
+    /// The amount in cryptocurrency
+    #[serde(with = "rust_decimal::serde::float")]
+    crypto_amount: Decimal,
+    /// The currency to pay in
+    currency: moon::Currency,
+    /// When the invoice expires
+    #[serde(with = "time::serde::rfc3339")]
+    expires_at: OffsetDateTime,
+}
+
+/// Request body for creating a new card.
+#[derive(Debug, Clone, Deserialize, Serialize, ToSchema)]
+pub struct NewCardRequest {
+    /// The currency to use for the new card
+    currency: moon::Currency,
+    /// The amount in USD to add to the card
+    #[serde(with = "rust_decimal::serde::float")]
+    amount_usd: Decimal,
+}
+
+/// Create a new card by generating an invoice.
+///
+/// The card will only be created once the invoice has been paid
+#[utoipa::path(
+    post,
+    path = "/new",
+    tag = CARDS_TAG,
+    request_body = NewCardRequest,
+    responses(
+        (
+            status = 200,
+            description = "Invoice generated successfully",
+            body = NewCardResponse
+        ),
+        (
+            status = 400,
+            description = "Invalid request"
+        ),
+        (
+            status = 500,
+            description = "Failed to generate invoice"
+        )
+    ),
+    security(
+        (
+            "api_key" = []
+        )
+    )
+)]
+#[instrument(skip_all, fields(borrower_id = user.id), err(Debug))]
+async fn new_card(
+    State(data): State<Arc<AppState>>,
+    Extension(user): Extension<Borrower>,
+    AppJson(request): AppJson<NewCardRequest>,
+) -> Result<AppJson<NewCardResponse>, Error> {
+    // Generate a unique contract ID for this topup
+    let lendasat_id = Uuid::new_v4().to_string();
+
+    // Generate the invoice
+    let invoice = data
+        .moon
+        .generate_invoice(
+            request.amount_usd,
+            lendasat_id,
+            None,
+            &user.id,
+            request.currency,
+            data.config.card_topup_fee,
+        )
+        .await
+        .map_err(|e| Error::InvoiceGeneration(format!("{e:#}")))?;
+
+    // Persist the invoice
+    data.moon
+        .persist_invoice(&invoice)
+        .await
+        .context("Failed to persist invoice")
+        .map_err(Error::database)?;
+
+    Ok(AppJson(NewCardResponse {
         invoice_id: invoice.id,
         address: invoice.address,
         usd_amount: invoice.usd_amount_owed,

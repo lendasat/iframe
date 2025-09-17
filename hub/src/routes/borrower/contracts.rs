@@ -282,7 +282,7 @@ async fn post_contract_request(
                 .generate_invoice(
                     loan_amount,
                     contract_id.to_string(),
-                    card_id,
+                    Some(card_id),
                     &user.id,
                     crate::moon::Currency::UsdcPolygon,
                     Decimal::ZERO,
