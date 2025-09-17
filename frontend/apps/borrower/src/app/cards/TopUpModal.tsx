@@ -351,6 +351,31 @@ export function TopUpModal({
             </div>
           )}
 
+          {/* Terms Statement */}
+          <div className="rounded-lg border border-blue-200 bg-blue-50 p-3">
+            <p className="text-sm text-blue-800">
+              By topping up your card, you accept our{" "}
+              <a
+                href="https://tos.lendasat.com/"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="underline hover:text-blue-900"
+              >
+                Lendasat Terms & Conditions
+              </a>
+              {" and "}
+              <a
+                href="https://paywithmoon.com/terms-conditions"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="underline hover:text-blue-900"
+              >
+                Moon Terms & Conditions
+              </a>
+              .
+            </p>
+          </div>
+
           {/* Action Buttons */}
           <div className="flex space-x-3">
             <Button

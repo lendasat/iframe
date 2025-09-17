@@ -7,6 +7,12 @@ import { Card, CardContent } from "@frontend/shadcn";
 import { Button } from "@frontend/shadcn";
 import { Badge } from "@frontend/shadcn";
 import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "@frontend/shadcn";
+import {
   Plus,
   Eye,
   EyeOff,
@@ -15,6 +21,7 @@ import {
   Check,
   MoreVertical,
   DollarSign,
+  Info,
 } from "lucide-react";
 import NoCreditCard from "./../../assets/creditcard-illustration.png";
 import CardHistory from "./CardHistory";
@@ -29,6 +36,7 @@ export default function Cards() {
   const [cardPickerOpen, setCardPickerOpen] = useState<boolean>(false);
   const [topUpModalOpen, setTopUpModalOpen] = useState<boolean>(false);
   const [newCardModalOpen, setNewCardModalOpen] = useState<boolean>(false);
+  const [cardTermsOpen, setCardTermsOpen] = useState<boolean>(false);
 
   const { getUserCards } = useHttpClientBorrower();
 
@@ -153,17 +161,26 @@ export default function Cards() {
                           </Button>
                         )}
                       </div>
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => setVisible(!visible)}
-                      >
-                        {visible ? (
-                          <EyeOff className="h-4 w-4" />
-                        ) : (
-                          <Eye className="h-4 w-4" />
-                        )}
-                      </Button>
+                      <div className="flex items-center space-x-2">
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => setCardTermsOpen(true)}
+                        >
+                          <Info className="h-4 w-4" />
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => setVisible(!visible)}
+                        >
+                          {visible ? (
+                            <EyeOff className="h-4 w-4" />
+                          ) : (
+                            <Eye className="h-4 w-4" />
+                          )}
+                        </Button>
+                      </div>
                     </div>
 
                     {/* Credit Card Visual */}
@@ -333,6 +350,97 @@ export default function Cards() {
           open={newCardModalOpen}
           onOpenChange={setNewCardModalOpen}
         />
+
+        {/* Card Terms Dialog */}
+        <Dialog open={cardTermsOpen} onOpenChange={setCardTermsOpen}>
+          <DialogContent className="max-w-md">
+            <DialogHeader>
+              <DialogTitle>Card Terms & Conditions</DialogTitle>
+            </DialogHeader>
+            <div className="space-y-4">
+              <div className="space-y-3">
+                <ul className="space-y-2 text-sm">
+                  <li className="flex items-start space-x-2">
+                    <span className="font-bold text-green-600">•</span>
+                    <span>Spend up to $4,000/month</span>
+                  </li>
+                  <li className="flex items-start space-x-2">
+                    <span className="font-bold text-green-600">•</span>
+                    <span>
+                      Accepted at millions of merchants in 130+ countries
+                    </span>
+                  </li>
+                  <li className="flex items-start space-x-2">
+                    <span className="font-bold text-green-600">•</span>
+                    <span>1% fee or minimum $1 per transaction</span>
+                  </li>
+                  <li className="flex items-start space-x-2">
+                    <span className="font-bold text-green-600">•</span>
+                    <span>No KYC required</span>
+                  </li>
+                  <li className="flex items-start space-x-2">
+                    <span className="font-bold text-green-600">•</span>
+                    <span>Card valid for 3 years</span>
+                  </li>
+                </ul>
+              </div>
+
+              <div className="border-t pt-4">
+                <h4 className="mb-2 font-semibold">Terms & Conditions</h4>
+                <div className="space-y-2 text-sm">
+                  <p>
+                    By using this card you accept our{" "}
+                    <a
+                      href="https://tos.lendasat.com/"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-blue-600 underline hover:text-blue-800"
+                    >
+                      Lendasat Terms & Conditions
+                    </a>
+                    {" and "}
+                    <a
+                      href="https://paywithmoon.com/terms-conditions"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-blue-600 underline hover:text-blue-800"
+                    >
+                      Moon Terms & Conditions
+                    </a>
+                    {" and "}
+                    <a
+                      href="https://paywithmoon.com/terms-conditions"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-blue-600 underline hover:text-blue-800"
+                    >
+                      Card Holder Agreement
+                    </a>
+                    {" and "}
+                    <a
+                      href="https://paywithmoon.com/terms-conditions"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-blue-600 underline hover:text-blue-800"
+                    >
+                      Statement of Eligibility
+                    </a>
+                    .
+                  </p>
+                </div>
+              </div>
+
+              <div className="pt-4">
+                <Button
+                  onClick={() => setCardTermsOpen(false)}
+                  className="w-full"
+                >
+                  Close
+                </Button>
+              </div>
+            </div>
+          </DialogContent>
+        </Dialog>
       </div>
     </div>
   );
