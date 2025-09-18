@@ -114,7 +114,7 @@ export default function Cards() {
               <Button asChild size="lg">
                 <Link to="/requests">
                   <Plus className="mr-2 h-4 w-4" />
-                  Get Card with Loan
+                  Finance a card
                 </Link>
               </Button>
               <Button
@@ -123,7 +123,7 @@ export default function Cards() {
                 size="lg"
               >
                 <DollarSign className="mr-2 h-4 w-4" />
-                Get Card Without Loan
+                Purchase a card
               </Button>
             </div>
           </div>
@@ -298,7 +298,7 @@ export default function Cards() {
                     className="flex-1"
                   >
                     <Plus className="mr-2 h-4 w-4" />
-                    Get Card Without Loan
+                    Purchase a card
                   </Button>
                 </div>
               </div>
