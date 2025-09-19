@@ -262,18 +262,13 @@ async fn post_contract_request(
                     if is_us_ip {
                         return Err(Error::CannotTopUpMoonCardFromUs);
                     } else {
-                        card_id
+                        Some(card_id)
                     }
                 }
-                // This is a new card.
-                None => {
-                    let card = data
-                        .moon
-                        .create_card(user.id.clone())
-                        .await
-                        .map_err(Error::moon_card_generation)?;
 
-                    card.id
+                None => {
+                    // We will create a new card when the invoice was paid
+                    None
                 }
             };
 
@@ -2305,8 +2300,6 @@ enum Error {
     GeoJs(#[allow(dead_code)] String),
     /// Moon cards cannot be topped up from the US.
     CannotTopUpMoonCardFromUs,
-    /// Failed to create Moon card.
-    MoonCardGeneration(#[allow(dead_code)] String),
     /// Failed to generate Moon invoice.
     MoonInvoiceGeneration(#[allow(dead_code)] String),
     /// Failed to get price from BitMEX.
@@ -2468,10 +2461,6 @@ impl Error {
         Self::GeoJs(format!("{e:#}"))
     }
 
-    fn moon_card_generation(e: impl std::fmt::Display) -> Self {
-        Self::MoonCardGeneration(format!("{e:#}"))
-    }
-
     fn moon_invoice_generation(e: impl std::fmt::Display) -> Self {
         Self::MoonInvoiceGeneration(format!("{e:#}"))
     }
@@ -2566,7 +2555,6 @@ impl IntoResponse for Error {
             Error::Database(_)
             | Error::MissingLoanOffer { .. }
             | Error::MissingLender
-            | Error::MoonCardGeneration(_)
             | Error::MoonInvoiceGeneration(_)
             | Error::BitMexPrice(_)
             | Error::CurrencyConversion(_)

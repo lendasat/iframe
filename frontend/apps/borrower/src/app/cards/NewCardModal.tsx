@@ -14,15 +14,13 @@ import { useState, useEffect } from "react";
 import {
   useHttpClientBorrower,
   Currency,
-  TopupCardResponse,
+  NewCardResponse,
 } from "@frontend/http-client-borrower";
 import { QRCodeSVG } from "qrcode.react";
 
-interface TopUpModalProps {
+interface NewCardModalProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  cardId: string;
-  cardName: string;
 }
 
 type PaymentMethod = "usdc" | "bitcoin" | "usdt";
@@ -54,21 +52,16 @@ const paymentMethods = [
   },
 ];
 
-export function TopUpModal({
-  open,
-  onOpenChange,
-  cardId,
-  cardName,
-}: TopUpModalProps) {
+export function NewCardModal({ open, onOpenChange }: NewCardModalProps) {
   const [selectedMethod, setSelectedMethod] = useState<PaymentMethod>("usdc");
   const [amount, setAmount] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [invoiceData, setInvoiceData] = useState<TopupCardResponse>();
+  const [invoiceData, setInvoiceData] = useState<NewCardResponse>();
   const [copiedAddress, setCopiedAddress] = useState(false);
   const [timeRemaining, setTimeRemaining] = useState<string>("");
 
-  const { topupCard } = useHttpClientBorrower();
+  const { newCard } = useHttpClientBorrower();
 
   // Countdown timer effect
   useEffect(() => {
@@ -107,9 +100,9 @@ export function TopUpModal({
     }
   };
 
-  const handleTopUp = async () => {
+  const handleCreateCard = async () => {
     if (!amount || parseFloat(amount) <= 0) {
-      setError("Please enter a valid amount to top up.");
+      setError("Please enter a valid amount to fund your new card.");
       return;
     }
 
@@ -121,17 +114,16 @@ export function TopUpModal({
         (method) => method.id === selectedMethod,
       )!;
 
-      const response = await topupCard({
+      const response = await newCard({
         currency: selectedPaymentMethod.currency,
         amount_usd: parseFloat(amount),
-        card_id: cardId,
       });
 
       setInvoiceData(response);
       // Keep modal open to show invoice details
     } catch (err) {
-      console.error(`Failed to top-up ${err}`);
-      setError("Failed to initiate top-up. Please try again.");
+      console.error(`Failed to create new card ${err}`);
+      setError("Failed to initiate card creation. Please try again.");
     } finally {
       setLoading(false);
     }
@@ -154,7 +146,7 @@ export function TopUpModal({
     (method) => method.id === selectedMethod,
   )!;
 
-  // Show invoice details if topup was successful
+  // Show invoice details if card creation was successful
   if (invoiceData) {
     return (
       <Dialog open={open} onOpenChange={handleClose}>
@@ -164,7 +156,7 @@ export function TopUpModal({
               Payment Instructions
             </DialogTitle>
             <p className="text-muted-foreground">
-              Send payment to complete your top-up
+              Send payment to complete your new card creation
             </p>
           </DialogHeader>
 
@@ -238,10 +230,10 @@ export function TopUpModal({
               <p className="text-sm text-blue-800">
                 <strong>Important:</strong> Send exactly{" "}
                 {invoiceData.crypto_amount} {selectedPaymentMethod.name} to the
-                address above. The payment will be processed automatically once
-                confirmed on the blockchain. This page will not be updated
-                automatically. We will send an email once the funds have been
-                added to the card.
+                address above. Once payment is confirmed, your new card will be
+                created and activated automatically. This page will not be
+                updated automatically. We will send an email once your card is
+                ready.
               </p>
             </div>
 
@@ -259,15 +251,17 @@ export function TopUpModal({
       <DialogContent className="flex max-h-[90vh] max-w-md flex-col">
         <DialogHeader>
           <DialogTitle className="text-xl font-semibold">
-            Top Up Card
+            Create New Card
           </DialogTitle>
-          <p className="text-muted-foreground">Add funds to {cardName}</p>
+          <p className="text-muted-foreground">
+            Fund your new Lendasat Card without taking a loan
+          </p>
         </DialogHeader>
 
         <div className="flex-1 space-y-6 overflow-y-auto pr-2">
           {/* Amount Input */}
           <div className="space-y-2">
-            <Label htmlFor="amount">Amount (USD)</Label>
+            <Label htmlFor="amount">Initial Amount (USD)</Label>
             <div className="relative">
               <Input
                 id="amount"
@@ -340,7 +334,7 @@ export function TopUpModal({
             <div className="bg-secondary/50 rounded-lg border p-4">
               <div className="space-y-2">
                 <div className="flex justify-between text-sm">
-                  <span className="text-muted-foreground">Amount</span>
+                  <span className="text-muted-foreground">Initial Amount</span>
                   <span>${parseFloat(amount || "0").toFixed(2)}</span>
                 </div>
                 <div className="flex justify-between text-sm">
@@ -354,7 +348,7 @@ export function TopUpModal({
           {/* Terms Statement */}
           <div className="rounded-lg border border-blue-200 bg-blue-50 p-3">
             <p className="text-sm text-blue-800">
-              By topping up your card, you accept our{" "}
+              By creating a card, you accept our{" "}
               <a
                 href="https://tos.lendasat.com/"
                 target="_blank"
@@ -387,11 +381,11 @@ export function TopUpModal({
               Cancel
             </Button>
             <Button
-              onClick={handleTopUp}
+              onClick={handleCreateCard}
               className="flex-1"
               disabled={loading || !amount || parseFloat(amount) <= 0}
             >
-              {loading ? "Processing..." : "Generate Invoice"}
+              {loading ? "Processing..." : "Create Card"}
             </Button>
           </div>
         </div>

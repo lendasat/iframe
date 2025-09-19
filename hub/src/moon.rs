@@ -191,7 +191,7 @@ impl Manager {
         &self,
         usd_amount: Decimal,
         contract_id: String,
-        card_id: Uuid,
+        card_id: Option<Uuid>,
         borrower_id: &str,
         currency: Currency,
         lendasat_fee_percent: Decimal,
@@ -218,7 +218,7 @@ impl Manager {
             .await
             .context("Moon error")?;
 
-        tracing::debug!(invoice = ?res, %card_id, borrower_id,
+        tracing::debug!(invoice = ?res, ?card_id, borrower_id,
             lendasat_fee = lendasat_fee_percent.to_string(), "Generated a Moon invoice");
 
         let invoice = Invoice {
@@ -228,7 +228,7 @@ impl Manager {
             crypto_amount_owed: res.crypto_amount_owed,
             lendasat_fee,
             lendasat_id: contract_id,
-            card_id: Some(card_id),
+            card_id,
             borrower_id: borrower_id.to_string(),
             asset: currency,
             expires_at: res.exchange_rate_lock_expiration,
@@ -333,8 +333,15 @@ impl Manager {
             "Invoice successfully paid"
         );
 
-        let card_id = invoice.card_id.context("No card found for invoice")?;
-        let card_id = Uuid::from_str(&card_id).context("Invalid card ID")?;
+        let card_id = match invoice.card_id {
+            None => {
+                tracing::info!("Invoice paid for a new card, getting new card");
+                let card = self.create_card(invoice.borrower_id.clone()).await?;
+
+                card.id
+            }
+            Some(card_id) => Uuid::from_str(&card_id).context("Invalid card ID")?,
+        };
 
         let response = self.client.add_balance(card_id, card_amount).await?;
 
