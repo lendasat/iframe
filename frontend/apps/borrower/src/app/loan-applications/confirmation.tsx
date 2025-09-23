@@ -40,9 +40,9 @@ import { useWallet } from "@frontend/browser-wallet";
 import {
   formatCurrency,
   getFormatedStringFromDays,
+  LoanAddressInputField,
   LoanAsset,
   LoanAssetHelper,
-  LoanAddressInputField,
   newFormatCurrency,
   ONE_YEAR,
   usePriceForCurrency,
@@ -64,11 +64,14 @@ type ConfirmationFormValues = z.infer<typeof confirmationFormSchema>;
 
 interface ConfirmationProps {
   selectedAssetType: LoanAsset;
-  selectedLoanAmount: string;
-  selectedLoanDuration: string;
+  selectedLoanAmountMin: string;
+  selectedLoanAmountMax: string;
+  selectedLoanDurationMin: string;
+  selectedLoanDurationMax: string;
   selectedInterestRate: string;
   originationFee: number;
   ltv: string;
+  disabled: boolean;
 }
 
 const validateBitcoinAddress = (address: string) => {
@@ -79,18 +82,19 @@ const validateBitcoinAddress = (address: string) => {
     network = Network.regtest;
   }
 
-  const valid = validate(address, network);
-
-  return valid;
+  return validate(address, network);
 };
 
 export const Confirmation = ({
   selectedAssetType,
-  selectedLoanAmount: selectedLoanAmountString,
-  selectedLoanDuration: selectedLoanDurationString,
+  selectedLoanAmountMin: selectedLoanAmountMinString,
+  selectedLoanAmountMax: selectedLoanAmountMaxString,
+  selectedLoanDurationMin: selectedLoanDurationMinString,
+  selectedLoanDurationMax: selectedLoanDurationMaxString,
   selectedInterestRate,
   originationFee,
   ltv: ltvAsString,
+  disabled,
 }: ConfirmationProps) => {
   const navigate = useNavigate();
   const { getNpub, getPkAndDerivationPath } = useWallet();
@@ -106,17 +110,27 @@ export const Confirmation = ({
   const [hideWalletConnectButton, setHideWalletConnectButton] = useState(false);
 
   // Parse numeric values
-  const selectedLoanAmount = parseInt(selectedLoanAmountString || "0");
-  const selectedLoanDuration = parseInt(selectedLoanDurationString || "0");
+  const selectedLoanAmountMin = parseInt(selectedLoanAmountMinString || "0");
+  const selectedLoanAmountMax = parseInt(selectedLoanAmountMaxString || "0");
+  const selectedLoanDurationMin = parseInt(
+    selectedLoanDurationMinString || "0",
+  );
+  const selectedLoanDurationMax = parseInt(
+    selectedLoanDurationMaxString || "0",
+  );
   const ltv = (parseFloat(ltvAsString) || 50.0) / 100;
 
-  // Calculate loan details
+  // For display calculations, use the minimum values
+  const displayLoanAmount = selectedLoanAmountMin;
+  const displayLoanDuration = selectedLoanDurationMin;
+
+  // Calculate loan details (using minimum values for display)
   const interestRate = Number.parseFloat(selectedInterestRate);
-  const actualInterest = interestRate / (ONE_YEAR / selectedLoanDuration);
-  const actualInterestUsdAmount = (selectedLoanAmount * actualInterest) / 100.0;
+  const actualInterest = interestRate / (ONE_YEAR / displayLoanDuration);
+  const actualInterestUsdAmount = (displayLoanAmount * actualInterest) / 100.0;
 
   // Collataral and its value
-  const collateralAmount = (selectedLoanAmount + actualInterestUsdAmount) / ltv;
+  const collateralAmount = (displayLoanAmount + actualInterestUsdAmount) / ltv;
   const collateralAmountBtc = collateralAmount / latestPrice;
 
   // Calculate fees
@@ -125,7 +139,7 @@ export const Confirmation = ({
   const discountedOriginationFee =
     originationFee - originationFee * discountedFee;
 
-  const originationFeeUsd = selectedLoanAmount * discountedOriginationFee;
+  const originationFeeUsd = displayLoanAmount * discountedOriginationFee;
   const originationFeeBtc = originationFeeUsd / latestPrice;
 
   // How much the user needs to deposit
@@ -133,7 +147,7 @@ export const Confirmation = ({
   const totalDepositAmount = collateralAmount + originationFeeUsd;
 
   // The total amount the user will owe
-  const outstandingBalanceUsd = selectedLoanAmount + actualInterestUsdAmount;
+  const outstandingBalanceUsd = displayLoanAmount + actualInterestUsdAmount;
 
   // Calculate liquidation price
   const liquidationPrice = outstandingBalanceUsd / (collateralAmountBtc * 0.9);
@@ -182,8 +196,10 @@ export const Confirmation = ({
 
       const res = await postLoanApplication({
         ltv,
-        loan_amount: selectedLoanAmount,
-        duration_days: selectedLoanDuration,
+        loan_amount_min: selectedLoanAmountMin,
+        loan_amount_max: selectedLoanAmountMax,
+        duration_days_min: selectedLoanDurationMin,
+        duration_days_max: selectedLoanDurationMax,
         borrower_npub: borrowerNpub,
         borrower_pk: borrowerPk.pubkey,
         borrower_derivation_path: borrowerPk.path,
@@ -218,12 +234,12 @@ export const Confirmation = ({
             Conditions to borrow{" "}
             <strong>
               {formatCurrency(
-                selectedLoanAmount || 0,
+                displayLoanAmount || 0,
                 LoanAssetHelper.toCurrency(selectedAssetType),
               )}
             </strong>{" "}
             {LoanAssetHelper.print(selectedAssetType)} for{" "}
-            {getFormatedStringFromDays(selectedLoanDuration)}
+            {getFormatedStringFromDays(displayLoanDuration)}
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
@@ -276,7 +292,7 @@ export const Confirmation = ({
               </TooltipProvider>
             </div>
             <div className="flex flex-col items-end">
-              {selectedLoanDuration !== ONE_YEAR && (
+              {displayLoanDuration !== ONE_YEAR && (
                 <div className="flex gap-2">
                   <span className="text-sm font-semibold">
                     {actualInterest.toFixed(2)}%
@@ -286,7 +302,7 @@ export const Confirmation = ({
                   </span>
                 </div>
               )}
-              {selectedLoanDuration === ONE_YEAR && (
+              {displayLoanDuration === ONE_YEAR && (
                 <span className="text-sm font-semibold">
                   {actualInterest.toFixed(2)}% p.a.
                 </span>
@@ -502,7 +518,7 @@ export const Confirmation = ({
               )}
 
               <div className="flex flex-col">
-                <Button type="submit" disabled={isCreatingRequest}>
+                <Button type="submit" disabled={isCreatingRequest || disabled}>
                   {isCreatingRequest ? (
                     <>
                       <Loader2 className="animate-spin" />

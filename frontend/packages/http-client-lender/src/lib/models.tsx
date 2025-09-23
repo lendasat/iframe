@@ -537,8 +537,10 @@ export interface LoanApplication {
   borrower: BorrowerStats;
   ltv: number;
   interest_rate: number;
-  loan_amount: number;
-  duration_days: number;
+  loan_amount_min: number;
+  loan_amount_max: number;
+  duration_days_min: number;
+  duration_days_max: number;
   liquidation_price: number;
   borrower_loan_address?: string;
   borrower_btc_address: string;
@@ -583,6 +585,8 @@ export interface TakeLoanApplicationSchema {
   lender_pk: string;
   lender_derivation_path: string;
   fiat_loan_details?: FiatLoanDetails;
+  loan_amount: number;
+  duration_days: number;
 }
 
 export interface NotifyUser {

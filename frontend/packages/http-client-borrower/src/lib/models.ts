@@ -356,8 +356,10 @@ export function repaymentPlanLabel(plan: RepaymentPlan): string {
 export interface PostLoanApplication {
   ltv: number;
   interest_rate: number;
-  loan_amount: number;
-  duration_days: number;
+  loan_amount_min: number;
+  loan_amount_max: number;
+  duration_days_min: number;
+  duration_days_max: number;
   loan_asset: LoanAsset;
   loan_type: LoanType;
   borrower_loan_address: string;
@@ -573,8 +575,10 @@ export interface LoanApplication {
   borrower_id: string;
   ltv: number;
   interest_rate: number;
-  loan_amount: number;
-  duration_days: number;
+  loan_amount_min: number;
+  loan_amount_max: number;
+  duration_days_min: number;
+  duration_days_max: number;
   borrower_loan_address?: string;
   borrower_btc_address: string;
   loan_asset: LoanAsset;

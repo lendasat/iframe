@@ -271,9 +271,16 @@ pub struct CreateLoanApplicationSchema {
     /// Yearly interest rate.
     #[serde(with = "rust_decimal::serde::float")]
     pub interest_rate: Decimal,
+    /// Minimum loan amount for range
     #[serde(with = "rust_decimal::serde::float")]
-    pub loan_amount: Decimal,
-    pub duration_days: i32,
+    pub loan_amount_min: Decimal,
+    /// Maximum loan amount for range
+    #[serde(with = "rust_decimal::serde::float")]
+    pub loan_amount_max: Decimal,
+    /// Minimum duration for range
+    pub duration_days_min: i32,
+    /// Maximum duration for range
+    pub duration_days_max: i32,
     // TODO: we might want to accept a list here in case the borrower doesn't care about the asset
     // and the `loan_type` supports multiple. For now, we stick with a single type
     pub loan_asset: LoanAsset,
@@ -567,8 +574,11 @@ pub struct LoanApplication {
     #[serde(with = "rust_decimal::serde::float")]
     pub interest_rate: Decimal,
     #[serde(with = "rust_decimal::serde::float")]
-    pub loan_amount: Decimal,
-    pub duration_days: i32,
+    pub loan_amount_min: Decimal,
+    #[serde(with = "rust_decimal::serde::float")]
+    pub loan_amount_max: Decimal,
+    pub duration_days_min: i32,
+    pub duration_days_max: i32,
     /// This is optional because certain integrations (such as Pay with Moon) define their own loan
     /// address.
     pub borrower_loan_address: Option<String>,

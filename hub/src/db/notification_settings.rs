@@ -468,9 +468,11 @@ pub async fn was_daily_digest_sent(
 #[derive(Debug, Clone)]
 pub struct DailyDigestApplication {
     pub id: String,
-    pub loan_amount: rust_decimal::Decimal,
+    pub loan_amount_min: rust_decimal::Decimal,
+    pub loan_amount_max: rust_decimal::Decimal,
     pub interest_rate: rust_decimal::Decimal,
-    pub duration_days: i32,
+    pub duration_days_min: i32,
+    pub duration_days_max: i32,
     pub loan_asset: String,
     pub created_at: OffsetDateTime,
 }
@@ -484,9 +486,11 @@ pub async fn get_available_applications_since(
         r#"
         SELECT
             la.id as "id!",
-            la.loan_amount,
+            la.loan_amount_min,
+            la.loan_amount_max,
+            la.duration_days_min,
+            la.duration_days_max,
             la.interest_rate,
-            la.duration_days,
             la.loan_asset::text as "loan_asset!",
             la.created_at
         FROM loan_applications la

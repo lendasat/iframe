@@ -178,6 +178,32 @@ async fn post_take_loan_application(
         return Err(Error::UserInJail);
     }
 
+    // Validate that the lender's specified values are within the borrower's ranges
+    let loan_application = db::loan_applications::get_loan_by_id(&data.db, loan_deal_id.as_str())
+        .await
+        .map_err(Error::database)?
+        .ok_or(Error::LoanApplicationNotFound(loan_deal_id.clone()))?;
+
+    if body.loan_amount < loan_application.loan_amount_min
+        || body.loan_amount > loan_application.loan_amount_max
+    {
+        return Err(Error::InvalidLoanAmount {
+            amount: body.loan_amount,
+            min: loan_application.loan_amount_min,
+            max: loan_application.loan_amount_max,
+        });
+    }
+
+    if body.duration_days < loan_application.duration_days_min
+        || body.duration_days > loan_application.duration_days_max
+    {
+        return Err(Error::InvalidDuration {
+            duration: body.duration_days,
+            min: loan_application.duration_days_min,
+            max: loan_application.duration_days_max,
+        });
+    }
+
     let wallet = data.wallet.clone();
     let contract_id = take_application(
         &data.db,
@@ -203,10 +229,13 @@ struct LoanApplication {
     #[serde(with = "rust_decimal::serde::float")]
     interest_rate: Decimal,
     #[serde(with = "rust_decimal::serde::float")]
-    loan_amount: Decimal,
+    loan_amount_min: Decimal,
+    #[serde(with = "rust_decimal::serde::float")]
+    loan_amount_max: Decimal,
     #[serde(with = "rust_decimal::serde::float")]
     liquidation_price: Decimal,
-    duration_days: i32,
+    duration_days_min: i32,
+    duration_days_max: i32,
     loan_asset: LoanAsset,
     status: LoanApplicationStatus,
     #[schema(value_type = String)]
@@ -226,6 +255,9 @@ pub struct TakeLoanApplicationSchema {
     pub loan_repayment_address: String,
     pub lender_npub: Npub,
     pub fiat_loan_details: Option<FiatLoanDetailsWrapper>,
+    #[serde(with = "rust_decimal::serde::float")]
+    pub loan_amount: Decimal,
+    pub duration_days: i32,
 }
 
 async fn map_to_api_loan_application(
@@ -256,14 +288,18 @@ async fn map_to_api_loan_application(
         .await
         .map_err(Error::from)?;
 
+    // For display purposes, use the minimum values
+    let display_loan_amount = request.loan_amount_min;
+    let display_duration = request.duration_days_min;
+
     let origination_fee_amount =
-        calculate_origination_fee(request.loan_amount, origination_fee_rate, price)
+        calculate_origination_fee(display_loan_amount, origination_fee_rate, price)
             .map_err(Error::origination_fee_calculation)?;
 
     let initial_collateral = calculate_initial_funding_amount(
-        request.loan_amount,
+        display_loan_amount,
         request.interest_rate,
-        request.duration_days as u32,
+        display_duration as u32,
         request.ltv,
         price,
         origination_fee_amount,
@@ -271,11 +307,11 @@ async fn map_to_api_loan_application(
     .map_err(Error::initial_collateral_calculation)?;
 
     let interest_usd = calculate_interest_usd(
-        request.loan_amount,
+        display_loan_amount,
         request.interest_rate,
-        request.duration_days as u32,
+        display_duration as u32,
     );
-    let outstanding_balance_usd = request.loan_amount + interest_usd;
+    let outstanding_balance_usd = display_loan_amount + interest_usd;
     let liquidation_price = calculate_liquidation_price(
         outstanding_balance_usd,
         Decimal::from_u64(initial_collateral.to_sat()).expect("to fit into decimal"),
@@ -287,8 +323,10 @@ async fn map_to_api_loan_application(
         borrower,
         ltv: request.ltv,
         interest_rate: request.interest_rate,
-        loan_amount: request.loan_amount,
-        duration_days: request.duration_days,
+        loan_amount_min: request.loan_amount_min,
+        loan_amount_max: request.loan_amount_max,
+        duration_days_min: request.duration_days_min,
+        duration_days_max: request.duration_days_max,
         loan_asset: request.loan_asset,
         status: request.status,
         liquidation_price,
@@ -345,6 +383,18 @@ enum Error {
     ZeroLoanDuration,
     /// User is in jail and can't do anything
     UserInJail,
+    /// Invalid loan amount specified by lender
+    InvalidLoanAmount {
+        amount: Decimal,
+        min: Decimal,
+        max: Decimal,
+    },
+    /// Invalid duration specified by lender
+    InvalidDuration {
+        duration: i32,
+        min: i32,
+        max: i32,
+    },
 }
 
 impl Error {
@@ -412,6 +462,16 @@ impl IntoResponse for Error {
             ),
 
             Error::UserInJail => (StatusCode::BAD_REQUEST, "Invalid request".to_string()),
+
+            Error::InvalidLoanAmount { amount, min, max } => (
+                StatusCode::BAD_REQUEST,
+                format!("Loan amount {amount} must be between {min} and {max}"),
+            ),
+
+            Error::InvalidDuration { duration, min, max } => (
+                StatusCode::BAD_REQUEST,
+                format!("Duration {duration} days must be between {min} and {max} days"),
+            ),
         };
         (status, AppJson(ErrorResponse { message })).into_response()
     }

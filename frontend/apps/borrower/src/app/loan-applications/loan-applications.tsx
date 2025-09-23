@@ -17,7 +17,6 @@ import { ScrollArea } from "@frontend/shadcn";
 import {
   Form,
   FormControl,
-  FormDescription,
   FormField,
   FormItem,
   FormLabel,
@@ -29,11 +28,17 @@ import { Currency } from "@frontend/ui-shared";
 
 // Define the form schema with Zod
 const loanFormSchema = z.object({
-  loanAmount: z
+  loanAmountMin: z
     .string()
-    .min(1, "Loan amount is required")
+    .min(1, "Minimum loan amount is required")
     .refine((val) => !Number.isNaN(Number(val)) && Number(val) > 0, {
-      message: "Loan amount must be greater than 0",
+      message: "Minimum loan amount must be greater than 0",
+    }),
+  loanAmountMax: z
+    .string()
+    .min(1, "Maximum loan amount is required")
+    .refine((val) => !Number.isNaN(Number(val)) && Number(val) > 0, {
+      message: "Maximum loan amount must be greater than 0",
     }),
   assetType: z.string(),
   interestRate: z
@@ -46,11 +51,20 @@ const loanFormSchema = z.object({
         message: "Interest rate must be between 1% and 20%",
       },
     ),
-  loanDuration: z
+  loanDurationMin: z
     .string()
-    .min(1, "Duration is required")
+    .min(1, "Minimum duration is required")
     .refine((val) => !Number.isNaN(Number(val)) && Number(val) >= 1, {
-      message: "Duration must be at least 1 day",
+      message: "Minimum duration must be at least 1 day",
+    }),
+  loanDurationMax: z
+    .string()
+    .min(1, "Maximum duration is required")
+    .refine((val) => !Number.isNaN(Number(val)) && Number(val) >= 1, {
+      message: "Maximum duration must be at least 1 day",
+    })
+    .refine((val) => !Number.isNaN(Number(val)) && Number(val) <= 1440, {
+      message: "Maximum duration cannot exceed 1440 days",
     }),
   ltv: z
     .string()
@@ -77,7 +91,6 @@ const getLoanAssetFromProductType = (productType: string): LoanAsset => {
     case LoanProductTypes.PayWithMoon:
     case LoanProductTypes.Bringin:
       return LoanAsset.USDC_POL;
-    case LoanProductTypes.Any:
     default:
       return LoanAsset.USDC_POL;
   }
@@ -95,18 +108,22 @@ export default function LoanApplication() {
   // Initialize form with values from search params or defaults
   const form = useForm<LoanFormValues>({
     resolver: zodResolver(loanFormSchema),
+    mode: "onChange", // Validate on every change for real-time feedback
     defaultValues: {
-      loanAmount: searchParams.get("amount") || "1000",
+      loanAmountMin: searchParams.get("amount") || "1000",
+      loanAmountMax: searchParams.get("amount") || "1000",
       assetType: defaultAsset,
       interestRate: searchParams.get("interest") || "13.5",
-      loanDuration: searchParams.get("duration") || "7",
+      loanDurationMin: searchParams.get("durationMin") || "30",
+      loanDurationMax: searchParams.get("durationMax") || "360",
       ltv: searchParams.get("ltv") || "50",
     },
   });
 
   // Get methods and values from form
-  const { watch } = form;
+  const { watch, formState } = form;
   const formValues = watch();
+  const { isValid } = formState;
 
   // Update search params whenever form values change
   const updateSearchParams = (name: string, value: string) => {
@@ -122,69 +139,17 @@ export default function LoanApplication() {
 
   return (
     <ScrollArea className="h-screen">
-      <div className="space-y-8 px-4 py-10 pb-20">
+      <div className="space-y-8 px-4 py-10">
         <Form {...form}>
           <form className="space-y-8">
-            {/* First Row: Amount, Duration, Asset Type */}
-            <div className="grid gap-6 sm:grid-cols-1 md:grid-cols-3">
-              <FormField
-                control={form.control}
-                name="loanAmount"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Amount</FormLabel>
-                    <FormControl>
-                      <div className="relative flex items-center">
-                        {selectedCurrency === Currency.EUR ? (
-                          <Euro className="absolute left-2 top-1/2 h-4 w-4 -translate-y-1/2 transform" />
-                        ) : (
-                          <DollarSign className="absolute left-2 top-1/2 h-4 w-4 -translate-y-1/2 transform" />
-                        )}
-                        <Input
-                          {...field}
-                          type="number"
-                          min={1}
-                          className="pl-6"
-                          onChange={(e) => {
-                            field.onChange(e);
-                            updateSearchParams("amount", e.target.value);
-                          }}
-                        />
-                      </div>
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-
-              <FormField
-                control={form.control}
-                name="loanDuration"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Duration (days)</FormLabel>
-                    <FormControl>
-                      <Input
-                        {...field}
-                        type="number"
-                        min={1}
-                        onChange={(e) => {
-                          field.onChange(e);
-                          updateSearchParams("duration", e.target.value);
-                        }}
-                      />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-
+            <div className="grid gap-6 sm:grid-cols-1">
+              {/* Asset Type */}
               <FormField
                 control={form.control}
                 name="assetType"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Asset</FormLabel>
+                    <FormLabel>What do you want to borrow?</FormLabel>
                     <Select
                       onValueChange={(value) => {
                         field.onChange(value);
@@ -213,14 +178,130 @@ export default function LoanApplication() {
               />
             </div>
 
-            {/* Second Row: Interest Rate and LTV */}
+            <div className="space-y-6">
+              <FormLabel>How much do you wish to borrow?</FormLabel>
+              <div className="grid gap-6 sm:grid-cols-2">
+                <FormField
+                  control={form.control}
+                  name="loanAmountMin"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel className="text-sm">Minimum Amount</FormLabel>
+                      <FormControl>
+                        <div className="relative flex max-w-2xl items-center">
+                          {selectedCurrency === Currency.EUR ? (
+                            <Euro className="absolute left-2 top-1/2 h-4 w-4 -translate-y-1/2 transform" />
+                          ) : (
+                            <DollarSign className="absolute left-2 top-1/2 h-4 w-4 -translate-y-1/2 transform" />
+                          )}
+                          <Input
+                            {...field}
+                            type="number"
+                            min={1}
+                            className="pl-6"
+                            onChange={(e) => {
+                              field.onChange(e);
+                              updateSearchParams("amountMin", e.target.value);
+                            }}
+                          />
+                        </div>
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <FormField
+                  control={form.control}
+                  name="loanAmountMax"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel className="text-sm">Maximum Amount</FormLabel>
+                      <FormControl>
+                        <div className="relative flex max-w-2xl items-center">
+                          {selectedCurrency === Currency.EUR ? (
+                            <Euro className="absolute left-2 top-1/2 h-4 w-4 -translate-y-1/2 transform" />
+                          ) : (
+                            <DollarSign className="absolute left-2 top-1/2 h-4 w-4 -translate-y-1/2 transform" />
+                          )}
+                          <Input
+                            {...field}
+                            type="number"
+                            min={1}
+                            className="pl-6"
+                            onChange={(e) => {
+                              field.onChange(e);
+                              updateSearchParams("amountMax", e.target.value);
+                            }}
+                          />
+                        </div>
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              </div>
+            </div>
+
+            {/* Loan Duration Range */}
+            <div className="space-y-4">
+              <FormLabel>
+                How many days do you want your loan to last for?
+              </FormLabel>
+              <div className="grid gap-6 sm:grid-cols-2">
+                <FormField
+                  control={form.control}
+                  name="loanDurationMin"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel className="text-sm">Minimum Days</FormLabel>
+                      <FormControl>
+                        <Input
+                          {...field}
+                          type="number"
+                          min={1}
+                          onChange={(e) => {
+                            field.onChange(e);
+                            updateSearchParams("durationMin", e.target.value);
+                          }}
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <FormField
+                  control={form.control}
+                  name="loanDurationMax"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel className="text-sm">Maximum Days</FormLabel>
+                      <FormControl>
+                        <Input
+                          {...field}
+                          type="number"
+                          min={1}
+                          max={1440}
+                          onChange={(e) => {
+                            field.onChange(e);
+                            updateSearchParams("durationMax", e.target.value);
+                          }}
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              </div>
+            </div>
+
+            {/* Interest Rate and LTV */}
             <div className="grid gap-6 sm:grid-cols-2">
               <FormField
                 control={form.control}
                 name="interestRate"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Interest rate (% p.a.)</FormLabel>
+                    <FormLabel>Preferred interest rate (p.a.)</FormLabel>
                     <FormControl>
                       <div className="relative flex items-center">
                         <Input
@@ -229,18 +310,15 @@ export default function LoanApplication() {
                           min={1}
                           max={20}
                           step={0.5}
-                          className="pr-6"
+                          className="pr-8"
                           onChange={(e) => {
-                            field.onChange(e);
+                            field.onChange(e.target.value);
                             updateSearchParams("interest", e.target.value);
                           }}
                         />
                         <Percent className="absolute right-2 top-1/2 h-4 w-4 -translate-y-1/2 transform" />
                       </div>
                     </FormControl>
-                    <FormDescription>
-                      Annual interest rate for your loan
-                    </FormDescription>
                     <FormMessage />
                   </FormItem>
                 )}
@@ -251,7 +329,7 @@ export default function LoanApplication() {
                 name="ltv"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>LTV (%)</FormLabel>
+                    <FormLabel>Loan-to-value ratio</FormLabel>
                     <FormControl>
                       <div className="relative flex items-center">
                         <Input
@@ -260,19 +338,15 @@ export default function LoanApplication() {
                           min={1}
                           max={70}
                           step={1}
-                          className="pr-6"
+                          className="pr-8"
                           onChange={(e) => {
-                            field.onChange(e);
+                            field.onChange(e.target.value);
                             updateSearchParams("ltv", e.target.value);
                           }}
                         />
                         <Percent className="absolute right-2 top-1/2 h-4 w-4 -translate-y-1/2 transform" />
                       </div>
                     </FormControl>
-                    <FormDescription>
-                      The maximum percentage of your collateral's value you can
-                      borrow.
-                    </FormDescription>
                     <FormMessage />
                   </FormItem>
                 )}
@@ -280,14 +354,18 @@ export default function LoanApplication() {
             </div>
           </form>
         </Form>
-        {/* Confirmation */}
+        {/* Confirmation - only show when form is valid */}
+
         <Confirmation
           selectedAssetType={formValues.assetType as LoanAsset}
-          selectedLoanDuration={formValues.loanDuration}
-          selectedLoanAmount={formValues.loanAmount}
+          selectedLoanDurationMin={formValues.loanDurationMin}
+          selectedLoanDurationMax={formValues.loanDurationMax}
+          selectedLoanAmountMin={formValues.loanAmountMin}
+          selectedLoanAmountMax={formValues.loanAmountMax}
           selectedInterestRate={formValues.interestRate}
           originationFee={0.015}
           ltv={formValues.ltv}
+          disabled={!isValid}
         />
       </div>
     </ScrollArea>

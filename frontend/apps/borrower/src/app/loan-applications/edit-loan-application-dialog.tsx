@@ -20,11 +20,19 @@ import { z } from "zod";
 import { LoanApplication } from "@frontend/http-client-borrower";
 
 const loanApplicationSchema = z.object({
-  loan_amount: z
+  loan_amount_min: z
     .number({ coerce: true })
     .int("Amount must be an integer")
     .min(10, "Amount must be greater than $10"),
-  duration_days: z
+  loan_amount_max: z
+    .number({ coerce: true })
+    .int("Amount must be an integer")
+    .min(10, "Amount must be greater than $10"),
+  duration_days_min: z
+    .number({ coerce: true })
+    .int("Duration must be an integer")
+    .positive("Duration must be greater than 7 days"),
+  duration_days_max: z
     .number({ coerce: true })
     .int("Duration must be an integer")
     .positive("Duration must be greater than 7 days"),
@@ -43,8 +51,10 @@ interface EditLoanApplicationDialogProps {
   handleDialogClose: () => void;
   currentLoanApplication: LoanApplication;
   onSubmit: (
-    loan_amount: number,
-    duration_days: number,
+    loan_amount_min: number,
+    loan_amount_max: number,
+    duration_days_min: number,
+    duration_days_max: number,
     interest_rate: number,
     ltv: number,
   ) => Promise<void>;
@@ -57,8 +67,10 @@ function EditLoanApplicationDialog({
   onSubmit,
 }: EditLoanApplicationDialogProps) {
   const startingValues = {
-    loan_amount: currentLoanApplication.loan_amount,
-    duration_days: currentLoanApplication.duration_days,
+    loan_amount_min: currentLoanApplication.loan_amount_min,
+    loan_amount_max: currentLoanApplication.loan_amount_max,
+    duration_days_min: currentLoanApplication.duration_days_min,
+    duration_days_max: currentLoanApplication.duration_days_max,
     interest_rate: parseFloat(
       (currentLoanApplication.interest_rate * 100).toFixed(3),
     ),
@@ -74,8 +86,10 @@ function EditLoanApplicationDialog({
     values: z.infer<typeof loanApplicationSchema>,
   ) => {
     await onSubmit(
-      values.loan_amount,
-      values.duration_days,
+      values.loan_amount_min,
+      values.loan_amount_max,
+      values.duration_days_min,
+      values.duration_days_max,
       parseFloat((values.interest_rate / 100).toFixed(3)),
       parseFloat((values.ltv / 100).toFixed(2)),
     );
@@ -94,48 +108,76 @@ function EditLoanApplicationDialog({
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmitForm)}>
             <div className="grid gap-4 py-4">
-              <FormField
-                control={form.control}
-                name="loan_amount"
-                render={({ field }) => {
-                  return (
-                    <FormItem>
-                      <div className="grid grid-cols-4 items-center gap-4">
-                        <FormLabel>Loan amount ($)</FormLabel>
-                        <FormControl>
-                          <Input
-                            type="number"
-                            className="col-span-3"
-                            {...field}
-                          />
-                        </FormControl>
-                      </div>
-                      <FormMessage />
-                    </FormItem>
-                  );
-                }}
-              />
-              <FormField
-                control={form.control}
-                name="duration_days"
-                render={({ field }) => {
-                  return (
-                    <FormItem>
-                      <div className="grid grid-cols-4 items-center gap-4">
-                        <FormLabel>Duration (days)</FormLabel>
-                        <FormControl>
-                          <Input
-                            type="number"
-                            className="col-span-3"
-                            {...field}
-                          />
-                        </FormControl>
-                      </div>
-                      <FormMessage />
-                    </FormItem>
-                  );
-                }}
-              />
+              <div className="space-y-4">
+                <FormLabel>Loan Amount Range ($)</FormLabel>
+                <div className="grid grid-cols-2 gap-4">
+                  <FormField
+                    control={form.control}
+                    name="loan_amount_min"
+                    render={({ field }) => {
+                      return (
+                        <FormItem>
+                          <FormLabel className="text-xs">Minimum</FormLabel>
+                          <FormControl>
+                            <Input type="number" {...field} />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      );
+                    }}
+                  />
+                  <FormField
+                    control={form.control}
+                    name="loan_amount_max"
+                    render={({ field }) => {
+                      return (
+                        <FormItem>
+                          <FormLabel className="text-xs">Maximum</FormLabel>
+                          <FormControl>
+                            <Input type="number" {...field} />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      );
+                    }}
+                  />
+                </div>
+              </div>
+              <div className="space-y-4">
+                <FormLabel>Duration Range (days)</FormLabel>
+                <div className="grid grid-cols-2 gap-4">
+                  <FormField
+                    control={form.control}
+                    name="duration_days_min"
+                    render={({ field }) => {
+                      return (
+                        <FormItem>
+                          <FormLabel className="text-xs">Minimum</FormLabel>
+                          <FormControl>
+                            <Input type="number" {...field} />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      );
+                    }}
+                  />
+                  <FormField
+                    control={form.control}
+                    name="duration_days_max"
+                    render={({ field }) => {
+                      return (
+                        <FormItem>
+                          <FormLabel className="text-xs">Maximum</FormLabel>
+                          <FormControl>
+                            <Input type="number" {...field} />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      );
+                    }}
+                  />
+                </div>
+              </div>
               <FormField
                 control={form.control}
                 name="interest_rate"

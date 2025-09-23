@@ -1380,13 +1380,16 @@ impl Notifications {
         }
     }
 
+    #[allow(clippy::too_many_arguments)]
     pub(crate) async fn send_new_loan_application_available(
         &self,
         loan_deal_id: &str,
-        loan_amount: Decimal,
+        loan_amount_min: Decimal,
+        loan_amount_max: Decimal,
         asset: LoanAsset,
         interest_rate: Decimal,
-        duration: i32,
+        duration_min: i32,
+        duration_max: i32,
     ) {
         match db::notification_settings::get_lenders_for_loan_loan_application(&self.db).await {
             Ok(contact_details) => {
@@ -1403,10 +1406,12 @@ impl Notifications {
                         application_url.clone(),
                         crate::telegram_bot::LenderNotificationKind::NewApplicationAvailable {
                             name: lender.name.clone(),
-                            loan_amount,
+                            loan_amount_min,
+                            loan_amount_max,
                             asset,
                             interest_rate,
-                            duration,
+                            duration_min,
+                            duration_max,
                         },
                     )
                     .await

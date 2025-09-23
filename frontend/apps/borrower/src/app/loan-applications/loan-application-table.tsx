@@ -99,15 +99,26 @@ export function LoanApplicationTable({
               <TableRow key={application.loan_deal_id}>
                 <TableCell>
                   <Skeleton loading={loading}>
-                    {formatCurrency(
-                      application.loan_amount,
-                      LoanAssetHelper.toCurrency(application.loan_asset),
-                    )}
+                    {application.loan_amount_min === application.loan_amount_max
+                      ? formatCurrency(
+                          application.loan_amount_min,
+                          LoanAssetHelper.toCurrency(application.loan_asset),
+                        )
+                      : `${formatCurrency(
+                          application.loan_amount_min,
+                          LoanAssetHelper.toCurrency(application.loan_asset),
+                        )} - ${formatCurrency(
+                          application.loan_amount_max,
+                          LoanAssetHelper.toCurrency(application.loan_asset),
+                        )}`}
                   </Skeleton>
                 </TableCell>
                 <TableCell>
                   <Skeleton loading={loading}>
-                    {getFormatedStringFromDays(application.duration_days)}
+                    {application.duration_days_min ===
+                    application.duration_days_max
+                      ? getFormatedStringFromDays(application.duration_days_min)
+                      : `${getFormatedStringFromDays(application.duration_days_min)} - ${getFormatedStringFromDays(application.duration_days_max)}`}
                   </Skeleton>
                 </TableCell>
                 <TableCell>
@@ -160,16 +171,20 @@ export function LoanApplicationTable({
           handleDialogClose={() => setIsDialogOpen(false)}
           currentLoanApplication={selectedLoanApplication}
           onSubmit={async (
-            loan_amount: number,
-            duration_days: number,
+            loan_amount_min: number,
+            loan_amount_max: number,
+            duration_days_min: number,
+            duration_days_max: number,
             interest_rate: number,
             ltv: number,
           ) => {
             try {
               await editLoanApplication(
                 selectedLoanApplication.loan_deal_id,
-                loan_amount,
-                duration_days,
+                loan_amount_min,
+                loan_amount_max,
+                duration_days_min,
+                duration_days_max,
                 interest_rate,
                 ltv,
               );
