@@ -1,6 +1,6 @@
 {
   "db_name": "PostgreSQL",
-  "query": "\n        INSERT INTO loan_applications (\n            id,\n            borrower_id,\n            ltv,\n            interest_rate,\n            loan_amount,\n            duration_days,\n            loan_asset,\n            loan_type,\n            borrower_pk,\n            borrower_derivation_path,\n            borrower_loan_address,\n            borrower_btc_address,\n            borrower_npub,\n            client_contract_id,\n            status,\n            repayment_plan,\n            loan_deal_id\n        )\n        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $1)\n        RETURNING\n            loan_deal_id,\n            borrower_id,\n            ltv,\n            interest_rate,\n            loan_amount,\n            duration_days,\n            loan_asset AS \"loan_asset: crate::model::LoanAsset\",\n            loan_type AS \"loan_type: crate::model::db::LoanType\",\n            status AS \"status: crate::model::LoanApplicationStatus\",\n            borrower_pk,\n            borrower_derivation_path,\n            borrower_loan_address,\n            borrower_btc_address,\n            borrower_npub,\n            client_contract_id,\n            repayment_plan AS \"repayment_plan: crate::model::RepaymentPlan\",\n            created_at,\n            updated_at\n        ",
+  "query": "\n        INSERT INTO loan_applications (\n            id,\n            borrower_id,\n            ltv,\n            interest_rate,\n            loan_amount_min,\n            loan_amount_max,\n            duration_days_min,\n            duration_days_max,\n            loan_asset,\n            loan_type,\n            borrower_pk,\n            borrower_derivation_path,\n            borrower_loan_address,\n            borrower_btc_address,\n            borrower_npub,\n            client_contract_id,\n            status,\n            repayment_plan,\n            loan_deal_id\n        )\n        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $1)\n        RETURNING\n            loan_deal_id,\n            borrower_id,\n            ltv,\n            interest_rate,\n            loan_amount_min,\n            loan_amount_max,\n            duration_days_min,\n            duration_days_max,\n            loan_asset AS \"loan_asset: crate::model::LoanAsset\",\n            loan_type AS \"loan_type: crate::model::db::LoanType\",\n            status AS \"status: crate::model::LoanApplicationStatus\",\n            borrower_pk,\n            borrower_derivation_path,\n            borrower_loan_address,\n            borrower_btc_address,\n            borrower_npub,\n            client_contract_id,\n            repayment_plan AS \"repayment_plan: crate::model::RepaymentPlan\",\n            created_at,\n            updated_at\n        ",
   "describe": {
     "columns": [
       {
@@ -25,16 +25,26 @@
       },
       {
         "ordinal": 4,
-        "name": "loan_amount",
+        "name": "loan_amount_min",
         "type_info": "Numeric"
       },
       {
         "ordinal": 5,
-        "name": "duration_days",
-        "type_info": "Int4"
+        "name": "loan_amount_max",
+        "type_info": "Numeric"
       },
       {
         "ordinal": 6,
+        "name": "duration_days_min",
+        "type_info": "Int4"
+      },
+      {
+        "ordinal": 7,
+        "name": "duration_days_max",
+        "type_info": "Int4"
+      },
+      {
+        "ordinal": 8,
         "name": "loan_asset: crate::model::LoanAsset",
         "type_info": {
           "Custom": {
@@ -61,7 +71,7 @@
         }
       },
       {
-        "ordinal": 7,
+        "ordinal": 9,
         "name": "loan_type: crate::model::db::LoanType",
         "type_info": {
           "Custom": {
@@ -79,7 +89,7 @@
         }
       },
       {
-        "ordinal": 8,
+        "ordinal": 10,
         "name": "status: crate::model::LoanApplicationStatus",
         "type_info": {
           "Custom": {
@@ -98,37 +108,37 @@
         }
       },
       {
-        "ordinal": 9,
+        "ordinal": 11,
         "name": "borrower_pk",
         "type_info": "Text"
       },
       {
-        "ordinal": 10,
+        "ordinal": 12,
         "name": "borrower_derivation_path",
         "type_info": "Text"
       },
       {
-        "ordinal": 11,
+        "ordinal": 13,
         "name": "borrower_loan_address",
         "type_info": "Text"
       },
       {
-        "ordinal": 12,
+        "ordinal": 14,
         "name": "borrower_btc_address",
         "type_info": "Text"
       },
       {
-        "ordinal": 13,
+        "ordinal": 15,
         "name": "borrower_npub",
         "type_info": "Text"
       },
       {
-        "ordinal": 14,
+        "ordinal": 16,
         "name": "client_contract_id",
         "type_info": "Uuid"
       },
       {
-        "ordinal": 15,
+        "ordinal": 17,
         "name": "repayment_plan: crate::model::RepaymentPlan",
         "type_info": {
           "Custom": {
@@ -144,12 +154,12 @@
         }
       },
       {
-        "ordinal": 16,
+        "ordinal": 18,
         "name": "created_at",
         "type_info": "Timestamptz"
       },
       {
-        "ordinal": 17,
+        "ordinal": 19,
         "name": "updated_at",
         "type_info": "Timestamptz"
       }
@@ -161,6 +171,8 @@
         "Numeric",
         "Numeric",
         "Numeric",
+        "Numeric",
+        "Int4",
         "Int4",
         {
           "Custom": {
@@ -246,6 +258,8 @@
       false,
       false,
       false,
+      false,
+      false,
       true,
       false,
       false,
@@ -255,5 +269,5 @@
       false
     ]
   },
-  "hash": "adbe0e49733430218c92ac3e70af0954035b580ad8194fc79544a940ff82e13a"
+  "hash": "18b983534db5dcea66777b6ba8fcfec9806e285786c36bc78bf999b269456513"
 }

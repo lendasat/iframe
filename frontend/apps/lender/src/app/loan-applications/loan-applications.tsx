@@ -1,4 +1,4 @@
-import { useState, ReactNode } from "react";
+import { useState, ReactNode, useEffect } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { useAsync } from "react-use";
 import { useWallet } from "@frontend/browser-wallet";
@@ -6,7 +6,7 @@ import {
   LoanApplicationStatus,
   useLenderHttpClient,
 } from "@frontend/http-client-lender";
-import { addDays } from "date-fns";
+import { addDays, format } from "date-fns";
 import { AlertCircle, Info } from "lucide-react";
 import { FiatLoanDetails } from "@frontend/http-client-lender";
 import { AlertTitle, Card, CardContent } from "@frontend/shadcn";
@@ -15,6 +15,7 @@ import { Alert, AlertDescription } from "@frontend/shadcn";
 import { ScrollArea } from "@frontend/shadcn";
 import { Skeleton } from "@frontend/shadcn";
 import { Separator } from "@frontend/shadcn";
+import { Input } from "@frontend/shadcn";
 import {
   formatCurrency,
   getFormatedStringFromDays,
@@ -40,6 +41,8 @@ interface TakeLoanParams {
   lender_derivation_path: string;
   loan_repayment_address: string;
   fiat_loan_details?: FiatLoanDetails;
+  loan_amount: number;
+  duration_days: number;
 }
 
 export default function TakeLoanApplication() {
@@ -52,6 +55,8 @@ export default function TakeLoanApplication() {
   const [isTaking, setIsTaking] = useState<boolean>(false);
   const [error, setError] = useState<string>("");
   const [loanAddress, setLoanAddress] = useState<string>("");
+  const [loanAmount, setLoanAmount] = useState<number>(0);
+  const [duration, setDuration] = useState<number>(0);
   const [hideWalletConnectButton, setHideWalletConnectButton] =
     useState<boolean>(false);
 
@@ -65,6 +70,15 @@ export default function TakeLoanApplication() {
     }
     return undefined;
   }, [id]);
+
+  // Initialize form values when loan application loads
+  useEffect(() => {
+    if (loanApplication) {
+      // Set default values to the minimum of the range
+      setLoanAmount(loanApplication.loan_amount_max);
+      setDuration(loanApplication.duration_days_max);
+    }
+  }, [loanApplication]);
 
   const {
     value: lenderPubkey,
@@ -82,20 +96,28 @@ export default function TakeLoanApplication() {
 
   const interestRate: number | undefined = loanApplication?.interest_rate;
 
+  // For calculations, use minimum values as they represent the guaranteed minimum
+  const displayLoanAmount = loanApplication?.loan_amount_max;
+  const displayDuration = loanApplication?.duration_days_max;
+
   const actualInterest: number | undefined =
     loanApplication &&
-    (loanApplication.interest_rate / ONE_YEAR) * loanApplication.duration_days;
+    displayDuration &&
+    (loanApplication.interest_rate / ONE_YEAR) * displayDuration;
 
   const actualInterestUsdAmount: number | undefined =
     loanApplication &&
     actualInterest &&
-    loanApplication.loan_amount * actualInterest;
+    displayLoanAmount &&
+    displayLoanAmount * actualInterest;
 
   const liquidationPrice: number | undefined =
     loanApplication?.liquidation_price;
 
   const expiry: Date | undefined =
-    loanApplication && addDays(new Date(), loanApplication.duration_days);
+    loanApplication && displayDuration
+      ? addDays(new Date(), displayDuration)
+      : undefined;
 
   const onSubmit = async (
     encryptedFiatLoanDetails?: FiatLoanDetails,
@@ -122,12 +144,47 @@ export default function TakeLoanApplication() {
         return;
       }
 
+      if (loanAmount <= 0) {
+        setError("Please specify a valid loan amount");
+        return;
+      }
+
+      if (duration <= 0) {
+        setError("Please specify a valid duration");
+        return;
+      }
+
+      // Validate that the specified values are within the borrower's ranges
+      if (
+        loanApplication &&
+        (loanAmount < loanApplication.loan_amount_min ||
+          loanAmount > loanApplication.loan_amount_max)
+      ) {
+        setError(
+          `Loan amount must be between ${loanApplication.loan_amount_min} and ${loanApplication.loan_amount_max}`,
+        );
+        return;
+      }
+
+      if (
+        loanApplication &&
+        (duration < loanApplication.duration_days_min ||
+          duration > loanApplication.duration_days_max)
+      ) {
+        setError(
+          `Duration must be between ${loanApplication.duration_days_min} and ${loanApplication.duration_days_max} days`,
+        );
+        return;
+      }
+
       const params: TakeLoanParams = {
         lender_npub: lenderNpub,
         lender_pk: lenderPubkey.pubkey,
         lender_derivation_path: lenderPubkey.path,
         loan_repayment_address: loanAddress,
         fiat_loan_details: encryptedFiatLoanDetails,
+        loan_amount: loanAmount,
+        duration_days: duration,
       };
 
       const contractId: string | undefined = await takeLoanApplication(
@@ -169,10 +226,10 @@ export default function TakeLoanApplication() {
   return (
     <ScrollArea className="h-[calc(100vh-4rem)] w-full">
       <div className="px-6 py-4 md:px-8">
-        <h2 className="text-2xl font-semibold text-font dark:text-font-dark mb-6">
+        <h2 className="text-font dark:text-font-dark mb-6 text-2xl font-semibold">
           Loan Application Details
         </h2>
-        <div className="grid grid-cols-1 gap-4 md:grid-cols-2 pb-8">
+        <div className="grid grid-cols-1 gap-4 pb-8 md:grid-cols-2">
           <Card>
             <CardContent className="p-6">
               <div className="mb-4 flex items-center gap-2">
@@ -184,7 +241,7 @@ export default function TakeLoanApplication() {
                     <strong>
                       {loanApplication &&
                         formatCurrency(
-                          loanApplication.loan_amount,
+                          loanAmount,
                           LoanAssetHelper.toCurrency(
                             loanApplication.loan_asset,
                           ),
@@ -195,8 +252,7 @@ export default function TakeLoanApplication() {
                   {loading ? (
                     <Skeleton className="inline-block h-5 w-24" />
                   ) : (
-                    loanApplication &&
-                    getFormatedStringFromDays(loanApplication.duration_days)
+                    loanApplication && getFormatedStringFromDays(duration)
                   )}
                 </h4>
               </div>
@@ -211,7 +267,7 @@ export default function TakeLoanApplication() {
                     <Skeleton className="h-5 w-24" />
                   ) : (
                     <div className="flex flex-col items-end">
-                      {loanApplication?.duration_days !== ONE_YEAR && (
+                      {displayDuration !== ONE_YEAR && (
                         <div className="flex items-center gap-2">
                           <span className="text-sm font-semibold">
                             {actualInterest &&
@@ -224,7 +280,7 @@ export default function TakeLoanApplication() {
                           </span>
                         </div>
                       )}
-                      {loanApplication?.duration_days === ONE_YEAR && (
+                      {displayDuration === ONE_YEAR && (
                         <span className="text-sm font-semibold">
                           {actualInterest && (actualInterest * 100).toFixed(2)}%
                           p.a.
@@ -277,15 +333,11 @@ export default function TakeLoanApplication() {
               <DataItem
                 label="Expiry Date"
                 value={
-                  loading ? (
+                  loading || !expiry ? (
                     <Skeleton className="h-5 w-24" />
                   ) : (
                     <span className="text-sm font-semibold">
-                      {expiry?.toLocaleDateString([], {
-                        day: "numeric",
-                        month: "short",
-                        year: "numeric",
-                      })}
+                      {format(expiry, "MMM dd, yyyy")}
                     </span>
                   )
                 }
@@ -322,6 +374,70 @@ export default function TakeLoanApplication() {
               ) : (
                 // Actual content when loaded
                 <>
+                  {/* Loan Amount and Duration Input Fields */}
+                  <div className="space-y-4">
+                    <div>
+                      <label
+                        htmlFor="loan-amount"
+                        className="mb-2 block text-sm font-medium"
+                      >
+                        Loan Amount (
+                        {LoanAssetHelper.toCurrency(
+                          loanApplication?.loan_asset,
+                        )}
+                        )
+                      </label>
+                      <Input
+                        id="loan-amount"
+                        type="number"
+                        placeholder={`Between ${loanApplication?.loan_amount_min || 0} and ${loanApplication?.loan_amount_max || 0}`}
+                        value={loanAmount || ""}
+                        onChange={(e) => setLoanAmount(Number(e.target.value))}
+                        min={loanApplication?.loan_amount_min}
+                        max={loanApplication?.loan_amount_max}
+                      />
+                      <p className="text-muted-foreground mt-1 text-xs">
+                        Must be between{" "}
+                        {formatCurrency(
+                          loanApplication?.loan_amount_min || 0,
+                          LoanAssetHelper.toCurrency(
+                            loanApplication?.loan_asset,
+                          ),
+                        )}{" "}
+                        and{" "}
+                        {formatCurrency(
+                          loanApplication?.loan_amount_max || 0,
+                          LoanAssetHelper.toCurrency(
+                            loanApplication?.loan_asset,
+                          ),
+                        )}
+                      </p>
+                    </div>
+
+                    <div>
+                      <label
+                        htmlFor="duration"
+                        className="mb-2 block text-sm font-medium"
+                      >
+                        Duration (days)
+                      </label>
+                      <Input
+                        id="duration"
+                        type="number"
+                        placeholder={`Between ${loanApplication?.duration_days_min || 0} and ${loanApplication?.duration_days_max || 0}`}
+                        value={duration || ""}
+                        onChange={(e) => setDuration(Number(e.target.value))}
+                        min={loanApplication?.duration_days_min}
+                        max={loanApplication?.duration_days_max}
+                      />
+                      <p className="text-muted-foreground mt-1 text-xs">
+                        Must be between{" "}
+                        {loanApplication?.duration_days_min || 0} and{" "}
+                        {loanApplication?.duration_days_max || 0} days
+                      </p>
+                    </div>
+                  </div>
+
                   {!isFiatLoanApplication && (
                     <div className="space-y-2">
                       <LoanAddressInputField
@@ -335,7 +451,7 @@ export default function TakeLoanApplication() {
                         renderWarning={true}
                       />
                       <p className="text-muted-foreground text-sm">
-                        This address will be used to transfer the loan amount
+                        The borrower will repay you to this address
                       </p>
                     </div>
                   )}
@@ -350,7 +466,7 @@ export default function TakeLoanApplication() {
                             <p>
                               You are lending USD{" "}
                               {formatCurrency(
-                                loanApplication.loan_amount,
+                                loanAmount,
                                 LoanAssetHelper.toCurrency(
                                   loanApplication.loan_asset,
                                 ),

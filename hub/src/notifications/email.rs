@@ -1260,9 +1260,11 @@ impl Email {
             .iter()
             .map(|app| {
                 serde_json::json!({
-                    "loan_amount": format_decimal_with_commas(app.loan_amount, 0),
+                    "loan_amount_min": format_decimal_with_commas(app.loan_amount_min, 0),
+                    "loan_amount_max": format_decimal_with_commas(app.loan_amount_max, 0),
                     "interest_rate": format!("{:.1}", app.interest_rate * Decimal::from(100)),
-                    "duration_days": app.duration_days,
+                    "duration_days_min": app.duration_days_min,
+                    "duration_days_max": app.duration_days_max,
                     "loan_asset": app.loan_asset
                 })
             })

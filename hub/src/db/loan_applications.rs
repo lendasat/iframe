@@ -22,8 +22,10 @@ pub struct LoanApplication {
     pub borrower_id: String,
     pub ltv: Decimal,
     pub interest_rate: Decimal,
-    pub loan_amount: Decimal,
-    pub duration_days: i32,
+    pub loan_amount_min: Decimal,
+    pub loan_amount_max: Decimal,
+    pub duration_days_min: i32,
+    pub duration_days_max: i32,
     pub borrower_loan_address: Option<String>,
     pub borrower_btc_address: String,
     pub loan_asset: LoanAsset,
@@ -45,8 +47,10 @@ impl From<LoanApplication> for model::LoanApplication {
             borrower_id: value.borrower_id,
             ltv: value.ltv,
             interest_rate: value.interest_rate,
-            loan_amount: value.loan_amount,
-            duration_days: value.duration_days,
+            loan_amount_min: value.loan_amount_min,
+            loan_amount_max: value.loan_amount_max,
+            duration_days_min: value.duration_days_min,
+            duration_days_max: value.duration_days_max,
             borrower_loan_address: value.borrower_loan_address,
             borrower_btc_address: Address::from_str(value.borrower_btc_address.as_str())
                 .expect("to be a valid address"),
@@ -75,8 +79,10 @@ pub(crate) async fn load_all_available_loan_applications(
             borrower_id,
             ltv,
             interest_rate,
-            loan_amount,
-            duration_days,
+            loan_amount_min,
+            loan_amount_max,
+            duration_days_min,
+            duration_days_max,
             loan_asset AS "loan_asset: crate::model::LoanAsset",
             status AS "status: crate::model::LoanApplicationStatus",
             loan_type AS "loan_type: crate::model::db::LoanType",
@@ -114,8 +120,10 @@ pub async fn load_all_loan_applications_by_borrower(
             borrower_id,
             ltv,
             interest_rate,
-            loan_amount,
-            duration_days,
+            loan_amount_min,
+            loan_amount_max,
+            duration_days_min,
+            duration_days_max,
             loan_asset AS "loan_asset: crate::model::LoanAsset",
             status AS "status: crate::model::LoanApplicationStatus",
             loan_type AS "loan_type: crate::model::db::LoanType",
@@ -155,8 +163,10 @@ pub async fn get_loan_application_by_borrower_and_application_id(
             borrower_id,
             ltv,
             interest_rate,
-            loan_amount,
-            duration_days,
+            loan_amount_min,
+            loan_amount_max,
+            duration_days_min,
+            duration_days_max,
             loan_asset AS "loan_asset: crate::model::LoanAsset",
             status AS "status: crate::model::LoanApplicationStatus",
             loan_type AS "loan_type: crate::model::db::LoanType",
@@ -218,7 +228,10 @@ pub async fn insert_loan_application(
 
     let loan_type = db::LoanType::from(application.loan_type);
 
-    let loan_amount = application.loan_amount.round_dp(2);
+    let loan_amount_min = application.loan_amount_min;
+    let loan_amount_max = application.loan_amount_max;
+    let duration_days_min = application.duration_days_min;
+    let duration_days_max = application.duration_days_max;
 
     let borrower_npub = application.borrower_npub.unwrap_or(config.fallback_npub);
 
@@ -246,8 +259,10 @@ pub async fn insert_loan_application(
             borrower_id,
             ltv,
             interest_rate,
-            loan_amount,
-            duration_days,
+            loan_amount_min,
+            loan_amount_max,
+            duration_days_min,
+            duration_days_max,
             loan_asset,
             loan_type,
             borrower_pk,
@@ -260,14 +275,16 @@ pub async fn insert_loan_application(
             repayment_plan,
             loan_deal_id
         )
-        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $1)
+        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $1)
         RETURNING
             loan_deal_id,
             borrower_id,
             ltv,
             interest_rate,
-            loan_amount,
-            duration_days,
+            loan_amount_min,
+            loan_amount_max,
+            duration_days_min,
+            duration_days_max,
             loan_asset AS "loan_asset: crate::model::LoanAsset",
             loan_type AS "loan_type: crate::model::db::LoanType",
             status AS "status: crate::model::LoanApplicationStatus",
@@ -285,8 +302,10 @@ pub async fn insert_loan_application(
         borrower_id,
         application.ltv,
         application.interest_rate,
-        loan_amount,
-        application.duration_days,
+        loan_amount_min,
+        loan_amount_max,
+        duration_days_min,
+        duration_days_max,
         application.loan_asset as LoanAsset,
         loan_type as db::LoanType,
         application.borrower_pk.to_string(),
@@ -321,8 +340,10 @@ pub async fn get_loan_by_id(
             borrower_id,
             ltv,
             interest_rate,
-            loan_amount,
-            duration_days,
+            loan_amount_min,
+            loan_amount_max,
+            duration_days_min,
+            duration_days_max,
             loan_asset AS "loan_asset: crate::model::LoanAsset",
             status AS "status: crate::model::LoanApplicationStatus",
             loan_type AS "loan_type: crate::model::db::LoanType",

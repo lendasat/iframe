@@ -158,8 +158,10 @@ export interface HttpClient {
   getLoanApplications: () => Promise<LoanApplication[]>;
   editLoanApplication: (
     id: string,
-    loan_amount: number,
-    duration_days: number,
+    loan_amount_min: number,
+    loan_amount_max: number,
+    duration_days_min: number,
+    duration_days_max: number,
     interest_rate: number,
     ltv: number,
   ) => Promise<void>;
@@ -582,15 +584,19 @@ export const createHttpClient = (
 
   const editLoanApplication = async (
     id: string,
-    loan_amount: number,
-    duration_days: number,
+    loan_amount_min: number,
+    loan_amount_max: number,
+    duration_days_min: number,
+    duration_days_max: number,
     interest_rate: number,
     ltv: number,
   ): Promise<void> => {
     try {
       await axiosClient.put(`/api/loan-applications/edit/${id}`, {
-        loan_amount: loan_amount,
-        duration_days: duration_days,
+        loan_amount_min: loan_amount_min,
+        loan_amount_max: loan_amount_max,
+        duration_days_min: duration_days_min,
+        duration_days_max: duration_days_max,
         interest_rate: interest_rate,
         ltv: ltv,
       });

@@ -82,11 +82,20 @@ const MobileLoanApplicationCard = ({
             <dd className="text-right text-sm">
               {loading ? (
                 <Skeleton className="h-4 w-24" />
-              ) : (
+              ) : application.loan_amount_min ===
+                application.loan_amount_max ? (
                 formatCurrency(
-                  application.loan_amount,
+                  application.loan_amount_min,
                   LoanAssetHelper.toCurrency(application.loan_asset),
                 )
+              ) : (
+                `${formatCurrency(
+                  application.loan_amount_min,
+                  LoanAssetHelper.toCurrency(application.loan_asset),
+                )} - ${formatCurrency(
+                  application.loan_amount_max,
+                  LoanAssetHelper.toCurrency(application.loan_asset),
+                )}`
               )}
             </dd>
           </div>
@@ -97,8 +106,11 @@ const MobileLoanApplicationCard = ({
             <dd className="text-right text-sm">
               {loading ? (
                 <Skeleton className="h-4 w-20" />
+              ) : application.duration_days_min ===
+                application.duration_days_max ? (
+                getFormatedStringFromDays(application.duration_days_min)
               ) : (
-                getFormatedStringFromDays(application.duration_days)
+                `${getFormatedStringFromDays(application.duration_days_min)} - ${getFormatedStringFromDays(application.duration_days_max)}`
               )}
             </dd>
           </div>
@@ -229,64 +241,76 @@ export function LoanApplicationTable({
         );
       },
     }),
-    columnHelper.accessor((row) => row.loan_amount, {
+    columnHelper.accessor((row) => row.loan_amount_min, {
       id: "amount",
       header: () => {
         return "Amount";
       },
       cell: ({ cell }) => {
-        const value = cell.getValue() as number;
         const loanApplication = cell.row.original;
         return (
           <>
-            {formatCurrency(
-              value,
-              LoanAssetHelper.toCurrency(loanApplication.loan_asset),
-            )}
+            {loanApplication.loan_amount_min === loanApplication.loan_amount_max
+              ? formatCurrency(
+                  loanApplication.loan_amount_min,
+                  LoanAssetHelper.toCurrency(loanApplication.loan_asset),
+                )
+              : `${formatCurrency(
+                  loanApplication.loan_amount_min,
+                  LoanAssetHelper.toCurrency(loanApplication.loan_asset),
+                )} - ${formatCurrency(
+                  loanApplication.loan_amount_max,
+                  LoanAssetHelper.toCurrency(loanApplication.loan_asset),
+                )}`}
           </>
         );
       },
       filterFn: (
         row: Row<LoanApplication>,
-        columnId: string,
+        _columnId: string,
         filterValue: string,
       ) => {
         if (!filterValue) return true;
 
-        const amount = row.getValue(columnId) as number;
-
+        const application = row.original;
         const searchValue = parseFloat(filterValue.replace(/[^0-9.]/g, ""));
         return (
           !Number.isNaN(searchValue) &&
-          searchValue >= amount &&
-          searchValue <= amount
+          searchValue >= application.loan_amount_min &&
+          searchValue <= application.loan_amount_max
         );
       },
     }),
-    columnHelper.accessor((row) => row.duration_days, {
+    columnHelper.accessor((row) => row.duration_days_min, {
       id: "duration",
       header: () => {
         return "Duration";
       },
       cell: ({ cell }) => {
-        const value = cell.getValue() as number;
-        return <>{getFormatedStringFromDays(value)}</>;
+        const loanApplication = cell.row.original;
+        return (
+          <>
+            {loanApplication.duration_days_min ===
+            loanApplication.duration_days_max
+              ? getFormatedStringFromDays(loanApplication.duration_days_min)
+              : `${getFormatedStringFromDays(loanApplication.duration_days_min)} - ${getFormatedStringFromDays(loanApplication.duration_days_max)}`}
+          </>
+        );
       },
       enableColumnFilter: true,
       filterFn: (
         row: Row<LoanApplication>,
-        columnId: string,
+        _columnId: string,
         filterValue: string,
       ) => {
         if (!filterValue) return true;
 
-        const duration = row.getValue(columnId) as number;
-
+        const application = row.original;
         const searchValue = parseFloat(filterValue.replace(/[^0-9.]/g, ""));
         return (
           !Number.isNaN(searchValue) &&
-          searchValue >= duration &&
-          searchValue <= duration
+          searchValue >= application.duration_days_min &&
+          searchValue <= application.duration_days_max
         );
       },
     }),
@@ -369,8 +393,10 @@ export function LoanApplicationTable({
           id: "dummy",
           ltv: 0,
           interest_rate: 0,
-          loan_amount: 0,
-          duration_days: 0,
+          loan_amount_min: 0,
+          loan_amount_max: 0,
+          duration_days_min: 0,
+          duration_days_max: 0,
           liquidation_price: 0.0,
           loan_asset: LoanAsset.USDT_POL,
           borrower: {

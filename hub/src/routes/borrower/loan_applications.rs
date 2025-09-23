@@ -93,9 +93,29 @@ async fn create_loan_application(
         });
     }
 
-    if body.loan_amount.is_zero() {
+    // Validate loan amount ranges
+    let loan_amount_min = body.loan_amount_min;
+    let loan_amount_max = body.loan_amount_max;
+
+    if loan_amount_min.is_zero() || loan_amount_max.is_zero() {
         return Err(Error::InvalidLoanAmount {
-            amount: body.loan_amount,
+            amount: loan_amount_min,
+        });
+    }
+
+    if loan_amount_min > loan_amount_max {
+        return Err(Error::InvalidLoanAmount {
+            amount: loan_amount_min,
+        });
+    }
+
+    // Validate duration ranges
+    let duration_min = body.duration_days_min;
+    let duration_max = body.duration_days_max;
+
+    if duration_min > duration_max || duration_min <= 0 {
+        return Err(Error::InvalidDuration {
+            duration: duration_min,
         });
     }
 
@@ -111,10 +131,12 @@ async fn create_loan_application(
     data.notifications
         .send_new_loan_application_available(
             loan.loan_deal_id.as_str(),
-            loan.loan_amount,
+            loan.loan_amount_min,
+            loan.loan_amount_max,
             loan.loan_asset,
             loan.interest_rate,
-            loan.duration_days,
+            loan.duration_days_min,
+            loan.duration_days_max,
         )
         .await;
 
@@ -252,9 +274,16 @@ async fn put_mark_loan_application_as_deleted(
 
 #[derive(Deserialize, Debug, ToSchema)]
 pub struct EditLoanApplicationRequest {
+    /// Minimum loan amount for range
     #[serde(with = "rust_decimal::serde::float")]
-    loan_amount: Decimal,
-    duration_days: i32,
+    pub loan_amount_min: Decimal,
+    /// Maximum loan amount for range
+    #[serde(with = "rust_decimal::serde::float")]
+    pub loan_amount_max: Decimal,
+    /// Minimum duration for range
+    pub duration_days_min: i32,
+    /// Maximum duration for range
+    pub duration_days_max: i32,
     #[serde(with = "rust_decimal::serde::float")]
     interest_rate: Decimal,
     #[serde(with = "rust_decimal::serde::float")]
@@ -326,8 +355,10 @@ async fn put_edit_loan_application(
     let create_body = CreateLoanApplicationSchema {
         ltv: body.ltv,
         interest_rate: body.interest_rate,
-        loan_amount: body.loan_amount,
-        duration_days: body.duration_days,
+        loan_amount_min: body.loan_amount_min,
+        loan_amount_max: body.loan_amount_max,
+        duration_days_min: body.duration_days_min,
+        duration_days_max: body.duration_days_max,
         loan_asset: old_application.loan_asset,
         loan_type: old_application.loan_type,
         borrower_loan_address: old_application.borrower_loan_address,
@@ -392,6 +423,9 @@ enum Error {
     InvalidLoanAmount {
         amount: Decimal,
     },
+    InvalidDuration {
+        duration: i32,
+    },
 }
 
 impl Error {
@@ -429,6 +463,10 @@ impl IntoResponse for Error {
             Error::InvalidLoanAmount { amount } => (
                 StatusCode::BAD_REQUEST,
                 format!("Loan amount not valid. Was {amount}"),
+            ),
+            Error::InvalidDuration { duration } => (
+                StatusCode::BAD_REQUEST,
+                format!("Duration not valid. Was {duration}"),
             ),
         };
         (status, AppJson(LoanApplicationErrorResponse { message })).into_response()

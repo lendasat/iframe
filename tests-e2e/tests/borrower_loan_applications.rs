@@ -10,6 +10,7 @@ use hub::model::CreateLoanApplicationSchema;
 use hub::model::LoanAsset;
 use hub::model::LoanType;
 use hub::model::RepaymentPlan;
+use rust_decimal::Decimal;
 use rust_decimal_macros::dec;
 use serde::Deserialize;
 use serde::Serialize;
@@ -58,8 +59,10 @@ async fn borrower_loan_applications() {
     let loan_application = CreateLoanApplicationSchema {
         ltv: dec!(0.5),
         interest_rate: dec!(0.12),
-        loan_amount: dec!(123),
-        duration_days: 180,
+        loan_amount_min: dec!(123),
+        loan_amount_max: dec!(123),
+        duration_days_min: 180,
+        duration_days_max: 180,
         loan_asset: LoanAsset::UsdcPol,
         loan_type: LoanType::StableCoin,
         borrower_loan_address: Some(
@@ -109,6 +112,8 @@ async fn borrower_loan_applications() {
                 .unwrap(),
             lender_derivation_path: "586/1/0".parse().unwrap(),
             loan_repayment_address: "just_some_random_address".to_string(),
+            loan_amount: loan_application.loan_amount_min,
+            duration_days: loan_application.duration_days_min,
             lender_npub: "npub1w8yt6gww5cjlhqam95rq8nemk8lmceswj395sf7fzlpvdxve3uysy24gxg"
                 .to_string(),
         })
@@ -129,5 +134,8 @@ pub struct TakeLoanApplicationSchema {
     pub lender_pk: PublicKey,
     pub lender_derivation_path: bip32::DerivationPath,
     pub loan_repayment_address: String,
+    #[serde(with = "rust_decimal::serde::float")]
+    pub loan_amount: Decimal,
+    pub duration_days: i32,
     pub lender_npub: String,
 }

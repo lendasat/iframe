@@ -91,17 +91,18 @@ pub async fn take_application(
         .await
         .map_err(Error::from)?;
 
-    let origination_fee = calculate_origination_fee(
-        loan_application.loan_amount,
-        origination_fee_rate,
-        current_price,
-    )
-    .map_err(Error::OriginationFeeCalculation)?;
+    // Use the lender's specified values from the request
+    let loan_amount = take_application_body.loan_amount;
+    let duration_days = take_application_body.duration_days;
+
+    let origination_fee =
+        calculate_origination_fee(loan_amount, origination_fee_rate, current_price)
+            .map_err(Error::OriginationFeeCalculation)?;
 
     let initial_collateral = contract_requests::calculate_initial_funding_amount(
-        loan_application.loan_amount,
+        loan_amount,
         loan_application.interest_rate,
-        loan_application.duration_days as u32,
+        duration_days as u32,
         loan_application.ltv,
         current_price,
         origination_fee,
@@ -135,8 +136,8 @@ pub async fn take_application(
         loan_application.ltv,
         initial_collateral.to_sat(),
         origination_fee.to_sat(),
-        loan_application.loan_amount,
-        loan_application.duration_days,
+        loan_amount,
+        duration_days,
         loan_application.borrower_pk,
         loan_application.borrower_derivation_path,
         take_application_body.lender_pk,
@@ -165,7 +166,7 @@ pub async fn take_application(
     .map_err(Error::Database)?;
 
     let non_zero_duration_days =
-        NonZeroU64::new(loan_application.duration_days as u64).ok_or(Error::ZeroLoanDuration)?;
+        NonZeroU64::new(duration_days as u64).ok_or(Error::ZeroLoanDuration)?;
 
     let late_penalty = match loan_application.loan_type {
         LoanType::PayWithMoon | LoanType::StableCoin | LoanType::Fiat | LoanType::Bringin => {
@@ -180,7 +181,7 @@ pub async fn take_application(
         loan_application.repayment_plan,
         non_zero_duration_days,
         loan_application.interest_rate,
-        loan_application.loan_amount,
+        loan_amount,
         late_penalty,
     );
 

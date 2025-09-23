@@ -208,10 +208,12 @@ pub enum LenderNotificationKind {
     },
     NewApplicationAvailable {
         name: String,
-        loan_amount: Decimal,
+        loan_amount_min: Decimal,
+        loan_amount_max: Decimal,
         asset: LoanAsset,
         interest_rate: Decimal,
-        duration: i32,
+        duration_min: i32,
+        duration_max: i32,
     },
     ContractRestructured {
         late_installment: Installment,
@@ -324,11 +326,20 @@ impl xtra::Handler<Notification> for TelegramBot {
                     "Go to my profile".to_string(),
                 )
             }
-            NotificationTarget::Lender(LenderNotificationKind::NewApplicationAvailable { name, loan_amount, asset, interest_rate, duration }) => {
-                let loan_amount = loan_amount.round_dp(0).to_string();
+            NotificationTarget::Lender(LenderNotificationKind::NewApplicationAvailable { name, loan_amount_min, loan_amount_max, asset, interest_rate, duration_min, duration_max }) => {
+                let loan_amount_str = if loan_amount_min == loan_amount_max {
+                    loan_amount_min.round_dp(0).to_string()
+                } else {
+                    format!("{} - {}", loan_amount_min.round_dp(0), loan_amount_max.round_dp(0))
+                };
+                let duration_str = if duration_min == duration_max {
+                    format!("{duration_min} days")
+                } else {
+                    format!("{duration_min} - {duration_max} days")
+                };
                 let interest_rate = (interest_rate * Decimal::from(100)).round_dp(1).to_string();
                 (
-                    format!("Hi, {name}. A new loan request is available: \nA borrower is looking to borrow {loan_amount} of {asset} for {interest_rate}% for {duration} days. \n You can disable these messages in your settings.", ),
+                    format!("Hi, {name}. A new loan request is available: \nA borrower is looking to borrow {loan_amount_str} of {asset} for {interest_rate}% for {duration_str}. \n You can disable these messages in your settings.", ),
                     "Details".to_string(),
                 )
             }
