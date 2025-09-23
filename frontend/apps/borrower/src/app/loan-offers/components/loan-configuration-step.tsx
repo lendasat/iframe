@@ -173,7 +173,7 @@ export const LoanConfigurationStep = ({
                   </span>{" "}
                   at{" "}
                   <span className="text-foreground whitespace-nowrap font-semibold">
-                    {(offer.interest_rate * 100).toFixed(1)}% p.a.
+                    {(offer.interest_rate * 100).toFixed()}% p.a.
                   </span>{" "}
                   until{" "}
                   <span className="text-foreground whitespace-nowrap font-semibold">
@@ -191,7 +191,10 @@ export const LoanConfigurationStep = ({
                         Origination Fee:
                       </span>
                       <span className="font-medium">
-                        ${calculation.originationFeeUsd.toFixed(2)}
+                        {formatCurrency(
+                          calculation.originationFeeUsd,
+                          LoanAssetHelper.toCurrency(offer.loan_asset),
+                        )}
                       </span>
                     </div>
                   </div>

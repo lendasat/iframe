@@ -1,4 +1,5 @@
 import { useState } from "react";
+import type { ReactNode } from "react";
 import {
   Badge,
   Button,
@@ -14,17 +15,25 @@ import {
   SelectItem,
   SelectTrigger,
   SelectValue,
+  RadioGroup,
+  RadioGroupItem,
 } from "@frontend/shadcn";
 import { Filter, Search } from "lucide-react";
 import { useAsync } from "react-use";
 import {
   LoanOffer,
   useHttpClientBorrower,
+  LoanProductOption,
+  useAuth,
 } from "@frontend/http-client-borrower";
 import { toast } from "sonner";
 import { LoanAsset, LoanAssetHelper } from "@frontend/ui-shared";
 import { OffersSelectionTable } from "./offer-selection/offers-selection-new";
 import { useNavigate } from "react-router-dom";
+import { ReactComponent as Defi } from "../../assets/defi.svg";
+import { ReactComponent as Fiat } from "../../assets/fiat.svg";
+import { ReactComponent as Bringin } from "../../assets/bringin.svg";
+import { ReactComponent as MoonCard } from "../../assets/moon_card_satoshi_nakamoto.svg";
 
 export enum LoanProductTypes {
   Any = "any",
@@ -34,14 +43,52 @@ export enum LoanProductTypes {
   Bringin = "bringin",
 }
 
+interface LoanProductRadioCardItemProps {
+  value: string;
+  header: string;
+  subHeader: string;
+  img: ReactNode;
+}
+
+function LoanProductRadioCardItem({
+  value,
+  header,
+  subHeader,
+  img,
+}: LoanProductRadioCardItemProps) {
+  return (
+    <div className="relative">
+      <RadioGroupItem value={value} id={value} className="peer sr-only" />
+      <Label
+        htmlFor={value}
+        className="border-muted bg-popover hover:bg-accent hover:text-accent-foreground peer-data-[state=checked]:border-primary [&:has([data-state=checked])]:border-primary flex cursor-pointer flex-col items-center justify-center rounded-lg border-2 p-4"
+      >
+        <div className="flex flex-col items-center space-y-2">
+          <span className="text-foreground shrink-0 text-sm font-bold">
+            {header}
+          </span>
+          <span className="text-muted-foreground shrink-0 text-xs font-light">
+            {subHeader}
+          </span>
+          <div className="mt-2 w-[120px] rounded-2xl sm:w-[180px]">{img}</div>
+        </div>
+      </Label>
+    </div>
+  );
+}
+
 export const LoanRequestFlow = () => {
   const { getDirectLoanOffers } = useHttpClientBorrower();
+  const { enabledFeatures } = useAuth();
   const navigate = useNavigate();
 
   const [amount, setAmount] = useState<string | undefined>();
   const [paymentOption, setPaymentOption] = useState<
     LoanProductTypes | undefined
   >(LoanProductTypes.Any);
+  const [selectedLoanProductOption, setSelectedLoanProductOption] = useState<
+    LoanProductOption | undefined
+  >();
   const [duration, setDuration] = useState<string | undefined>();
   const [selectedOffer, setSelectedOffer] = useState<LoanOffer | undefined>();
 
@@ -103,9 +150,90 @@ export const LoanRequestFlow = () => {
     return true;
   });
 
+  const isBringinEnabled = enabledFeatures.includes(LoanProductOption.Bringin);
+
   return (
     <div className="bg-background min-h-screen p-4 md:p-8">
       <div className="mx-auto max-w-6xl space-y-4">
+        {/* Quick Asset Selection */}
+        <Card className="bg-gradient-card shadow-card">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Search className="h-5 w-5" />
+              Quick Asset Selection
+            </CardTitle>
+            <CardDescription>
+              Select how you would like to receive the loan
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="mx-auto">
+              <RadioGroup
+                value={selectedLoanProductOption}
+                onValueChange={(value: string) => {
+                  const option = value as LoanProductOption;
+                  setSelectedLoanProductOption(option);
+                  // Map LoanProductOption to LoanProductTypes for existing logic
+                  switch (option) {
+                    case LoanProductOption.StableCoins:
+                      setPaymentOption(LoanProductTypes.StableCoins);
+                      break;
+                    case LoanProductOption.PayWithMoonDebitCard:
+                      setPaymentOption(LoanProductTypes.PayWithMoon);
+                      break;
+                    case LoanProductOption.Bringin:
+                      setPaymentOption(LoanProductTypes.Bringin);
+                      break;
+                    case LoanProductOption.Fiat:
+                      setPaymentOption(LoanProductTypes.Fiat);
+                      break;
+                    default:
+                      setPaymentOption(LoanProductTypes.Any);
+                  }
+                }}
+                className={`grid gap-4 ${
+                  isBringinEnabled
+                    ? "grid-cols-2 lg:grid-cols-4"
+                    : "grid-cols-3 sm:grid-cols-3"
+                }`}
+              >
+                <LoanProductRadioCardItem
+                  key={"stable"}
+                  value={LoanProductOption.StableCoins.toString()}
+                  header={"Stablecoins"}
+                  subHeader={"USDC/USDT"}
+                  img={<Defi width="100%" height="100%" />}
+                />
+                <LoanProductRadioCardItem
+                  key={"moon"}
+                  value={LoanProductOption.PayWithMoonDebitCard.toString()}
+                  header={"Moon Visa® Card"}
+                  subHeader={"A prepaid visa card"}
+                  img={<MoonCard width="100%" height="100%" />}
+                />
+
+                {isBringinEnabled ? (
+                  <LoanProductRadioCardItem
+                    key={"bringin"}
+                    value={LoanProductOption.Bringin.toString()}
+                    header={"Bringin"}
+                    subHeader={"A bank account in Euros"}
+                    img={<Bringin width="100%" height="100%" />}
+                  />
+                ) : null}
+
+                <LoanProductRadioCardItem
+                  key={"fiat"}
+                  value={LoanProductOption.Fiat.toString()}
+                  header={"Fiat"}
+                  subHeader={"EUR/USD/CHF"}
+                  img={<Fiat width="100%" height="100%" />}
+                />
+              </RadioGroup>
+            </div>
+          </CardContent>
+        </Card>
+
         {/* Loan Request Form */}
         <Card className="bg-gradient-card shadow-card">
           <CardHeader>
