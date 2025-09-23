@@ -8,6 +8,7 @@ export enum TransactionType {
 }
 
 export enum Currency {
+  CHF = "CHF",
   USD = "Usd",
   EUR = "Eur",
 }
@@ -257,9 +258,10 @@ export class LoanAssetHelper {
       case LoanAsset.USDT_SOL:
       case LoanAsset.USDT_Liquid:
       case LoanAsset.USD:
-      case LoanAsset.CHF:
       case LoanAsset.MXN:
         return Currency.USD;
+      case LoanAsset.CHF:
+        return Currency.CHF;
     }
   }
 }

@@ -18,7 +18,14 @@ export const formatCurrency = (
   }
 
   // Map Currency enum to Intl currency codes
-  const currencyCode = currency === Currency.EUR ? "EUR" : "USD";
+  let currencyCode: string;
+  if (currency === Currency.EUR) {
+    currencyCode = "EUR";
+  } else if (currency === Currency.CHF) {
+    currencyCode = "CHF";
+  } else {
+    currencyCode = "USD";
+  }
 
   return i18n.t("intlCurrencyWithOptions", {
     val: value,

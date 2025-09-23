@@ -30,6 +30,7 @@ import BorrowerProfile from "./borrowerProfile";
 import Cards from "./cards/Cards";
 import LenderProfile from "./lenderProfile";
 import { LoanRequestFlow } from "./loan-offers/loan-request-flow";
+import LoanOfferDetails from "./loan-offers/loan-offer-details";
 import RestrictedAccessPage from "./RestrictedAccessPage";
 import { useEffect } from "react";
 import init from "browser-wallet";
@@ -106,7 +107,15 @@ function MainLayoutComponents() {
               <Route index element={<MyContracts />} />
               <Route path={":id"} element={<BitcoinCollateralizedLoan />} />
             </Route>
-            <Route path="/requests/*" element={<LoanRequestFlow />} />
+            <Route path="/requests" element={<LoanRequestFlow />} />
+            <Route
+              path="/loan-offers/:offerId"
+              element={<LoanOfferDetails />}
+            />
+            <Route
+              path="/loan-offers/:offerId/:step"
+              element={<LoanOfferDetails />}
+            />
 
             <Route
               path="/cards"

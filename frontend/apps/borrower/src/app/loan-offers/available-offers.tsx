@@ -43,7 +43,7 @@ function AvailableOffers() {
               product = LoanProductOption.Fiat;
             }
             navigate(
-              `/requests?amount=${value.loan_amount_min}&duration=${value.duration_days_min}&product=${product}&offer=${value.id}`,
+              `/loan-offers/${value.id}?amount=${value.loan_amount_min}&duration=${value.duration_days_min}&paymentType=${product}`,
             );
           }}
         />

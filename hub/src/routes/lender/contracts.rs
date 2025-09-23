@@ -24,6 +24,7 @@ use crate::model::Npub;
 use crate::model::TransactionType;
 use crate::routes::lender::auth::jwt_or_api_auth;
 use crate::routes::lender::CONTRACTS_TAG;
+use crate::routes::user_connection_details_middleware;
 use crate::routes::user_connection_details_middleware::UserConnectionDetails;
 use crate::routes::AppState;
 use crate::LTV_THRESHOLD_LIQUIDATION;
@@ -84,6 +85,12 @@ pub(crate) fn router(app_state: Arc<AppState>) -> OpenApiRouter {
             app_state.clone(),
             jwt_or_api_auth::auth,
         ))
+        .layer(
+            tower::ServiceBuilder::new().layer(middleware::from_fn_with_state(
+                app_state.clone(),
+                user_connection_details_middleware::ip_user_agent,
+            )),
+        )
         .with_state(app_state.clone())
 }
 
