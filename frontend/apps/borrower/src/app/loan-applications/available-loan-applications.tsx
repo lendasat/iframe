@@ -1,5 +1,4 @@
 import { useHttpClientBorrower } from "@frontend/http-client-borrower";
-import { Box } from "@radix-ui/themes";
 import { Link } from "react-router-dom";
 import { useAsyncRetry } from "react-use";
 import { LoanApplicationTable } from "./loan-application-table";
@@ -22,13 +21,13 @@ function AvailableLoanApplications() {
         </Button>
       </div>
       {/*TODO: re-implement filters if needed */}
-      <Box className="pt-3" px={"6"}>
+      <div className="px-6 pt-3">
         <LoanApplicationTable
           loading={loading}
           loanApplications={loanApplications}
           triggerRefresh={retry}
         />
-      </Box>
+      </div>
     </div>
   );
 }

@@ -12,8 +12,7 @@ import {
 } from "@frontend/ui-shared";
 import { useNavigate } from "react-router-dom";
 import { formatDistance } from "date-fns";
-import { Info } from "lucide-react";
-import { CaretSortIcon } from "@radix-ui/react-icons";
+import { ArrowUpDown, Info } from "lucide-react";
 import {
   Table,
   TableBody,
@@ -67,7 +66,7 @@ const ColumnHeader = ({
       onClick={() => toggleSortByColumn(currentColumn)}
     >
       {label}
-      <CaretSortIcon className="ml-1 h-4 w-4" />
+      <ArrowUpDown className="ml-1 h-4 w-4" />
     </Button>
   );
 };

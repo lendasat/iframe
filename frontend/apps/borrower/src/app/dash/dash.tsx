@@ -1,5 +1,5 @@
 import { SectionCards } from "./cards";
-import { ScrollArea } from "@radix-ui/themes";
+import { ScrollArea } from "@frontend/shadcn";
 import { DataTable } from "./table";
 import { useAsync } from "react-use";
 import { useHttpClientBorrower } from "@frontend/http-client-borrower";
