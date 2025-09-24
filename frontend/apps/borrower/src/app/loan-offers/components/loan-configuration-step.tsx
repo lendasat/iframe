@@ -1,4 +1,5 @@
 import {
+  Button,
   Card,
   CardContent,
   CardDescription,
@@ -85,24 +86,38 @@ export const LoanConfigurationStep = ({
                     Loan Amount ({LoanAssetHelper.print(offer.loan_asset)})
                   </FormLabel>
                   <FormControl>
-                    <Input
-                      type="string"
-                      placeholder="Enter amount"
-                      className="text-lg"
-                      {...field}
-                      onChange={(e) => {
-                        if (
-                          e.target.value.trim().length === 0 ||
-                          Number.isNaN(Number(e.target.value))
-                        ) {
-                          field.onChange(null);
-                        } else {
-                          const value = Number(e.target.value);
-                          field.onChange(value);
-                          updateUrlParams(value, undefined);
-                        }
-                      }}
-                    />
+                    <div className="relative flex items-center gap-2">
+                      <Input
+                        type="string"
+                        placeholder="Enter amount"
+                        className="text-lg"
+                        {...field}
+                        onChange={(e) => {
+                          if (
+                            e.target.value.trim().length === 0 ||
+                            Number.isNaN(Number(e.target.value))
+                          ) {
+                            field.onChange(null);
+                          } else {
+                            const value = Number(e.target.value);
+                            field.onChange(value);
+                            updateUrlParams(value, undefined);
+                          }
+                        }}
+                      />
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        className="absolute right-1"
+                        onClick={() => {
+                          field.onChange(offer.loan_amount_max);
+                          updateUrlParams(offer.loan_amount_max, undefined);
+                        }}
+                      >
+                        Max
+                      </Button>
+                    </div>
                   </FormControl>
                   <FormDescription>
                     Range:{" "}
@@ -130,24 +145,38 @@ export const LoanConfigurationStep = ({
                     Duration (Days)
                   </FormLabel>
                   <FormControl>
-                    <Input
-                      type="number"
-                      placeholder="Enter duration in days"
-                      className="text-lg"
-                      {...field}
-                      onChange={(e) => {
-                        if (
-                          e.target.value.trim().length === 0 ||
-                          Number.isNaN(Number(e.target.value))
-                        ) {
-                          field.onChange(null);
-                        } else {
-                          const value = Number(e.target.value);
-                          field.onChange(value);
-                          updateUrlParams(undefined, value);
-                        }
-                      }}
-                    />
+                    <div className="relative flex items-center gap-2">
+                      <Input
+                        type="number"
+                        placeholder="Enter duration in days"
+                        className="text-lg"
+                        {...field}
+                        onChange={(e) => {
+                          if (
+                            e.target.value.trim().length === 0 ||
+                            Number.isNaN(Number(e.target.value))
+                          ) {
+                            field.onChange(null);
+                          } else {
+                            const value = Number(e.target.value);
+                            field.onChange(value);
+                            updateUrlParams(undefined, value);
+                          }
+                        }}
+                      />
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        className="absolute right-1"
+                        onClick={() => {
+                          field.onChange(offer.duration_days_max);
+                          updateUrlParams(undefined, offer.duration_days_max);
+                        }}
+                      >
+                        Max
+                      </Button>
+                    </div>
                   </FormControl>
                   <FormDescription>
                     Range: {offer.duration_days_min} - {offer.duration_days_max}{" "}
