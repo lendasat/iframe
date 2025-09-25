@@ -33,6 +33,7 @@
     "i18n-iso-countries": "^7.14.0",
     "i18next-browser-languagedetector": "^8.2.0",
     "lucide-react": "^0.476.0",
+    "posthog-js": "^1.142.1",
     "query-string": "^9.1.1",
     "react": "19.0.0",
     "react-dom": "19.0.0",

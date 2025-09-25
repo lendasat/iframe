@@ -186,3 +186,4 @@ export * from "./lib/UserStatsPage";
 export * from "./lib/calculate-ltv";
 export * from "./lib/calculate-collateral-usd-value";
 export { default as i18n } from "./lib/i18n";
+export * from "./analytics";

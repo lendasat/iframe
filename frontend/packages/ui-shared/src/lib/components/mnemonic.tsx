@@ -89,7 +89,8 @@ export const MnemonicComponent = () => {
         </CardHeader>
         <CardContent className="mt-4">
           <div
-            className="grid max-w-lg px-4"
+            className="grid max-w-lg px-4 mnemonic seed-phrase"
+            data-private="true"
             style={{
               gridAutoFlow: "column",
               gridTemplateColumns: "1fr 1fr",
@@ -103,7 +104,10 @@ export const MnemonicComponent = () => {
                   <span className="text-font/60 dark:text-font-dark/60 text-gray-400 inline-block py-3 select-none">
                     {index + 1}.
                   </span>
-                  <span className="text-font/60 dark:text-font-dark/60">
+                  <span
+                    className="text-font/60 dark:text-font-dark/60"
+                    data-private="true"
+                  >
                     {isMnemonicVisible ? word : "****"}
                   </span>
                 </div>

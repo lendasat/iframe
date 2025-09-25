@@ -78,7 +78,7 @@ export const NostrChatSettings = () => {
               </Callout.Text>
             </Callout.Root>
             <Flex direction={"row"} gap={"2"} mt={"4"} align={"center"}>
-              <Code>
+              <Code data-private="true" className="private-key nsec">
                 {isNsecVisible
                   ? nsec
                   : "*******************************************************************"}
