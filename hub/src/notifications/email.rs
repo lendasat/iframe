@@ -1245,6 +1245,37 @@ impl Email {
             .await
     }
 
+    pub async fn send_new_application(
+        &self,
+        names_and_emails: Vec<(String, String)>,
+        application: crate::db::notification_settings::DailyDigestApplication,
+        application_url: Url,
+    ) -> Result<()> {
+        let template_name = "new_application";
+        let handlebars =
+            Self::prepare_template(template_name).context("failed preparing template")?;
+
+        let data = serde_json::json!({
+            "loan_amount_min": format_decimal_with_commas(application.loan_amount_min, 0),
+            "loan_amount_max": format_decimal_with_commas(application.loan_amount_max, 0),
+            "interest_rate": format!("{:.1}", application.interest_rate * Decimal::from(100)),
+            "duration_days_min": application.duration_days_min,
+            "duration_days_max": application.duration_days_max,
+            "loan_asset": application.loan_asset,
+            "application_url": application_url,
+            "unsubscribe_url": self.lender_notification_settings
+        });
+
+        let content_template = handlebars
+            .render(template_name, &data)
+            .context("failed rendering template")?;
+
+        let subject = format!("New loan application available - {}", application.id);
+
+        self.send_mass_emails_bcc(subject.as_str(), names_and_emails, content_template)
+            .await
+    }
+
     pub async fn send_daily_application_digest(
         &self,
         names_and_emails: Vec<(String, String)>,

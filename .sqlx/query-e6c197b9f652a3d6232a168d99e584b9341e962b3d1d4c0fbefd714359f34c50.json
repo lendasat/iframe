@@ -1,0 +1,50 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "\n        SELECT\n            l.id as \"id!\",\n            l.name as \"name!\",\n            l.email as email,\n            COALESCE(lns.daily_application_digest_email, true) as daily_application_digest_email,\n            COALESCE(lns.new_loan_applications_email, false) as new_loan_applications_email,\n            COALESCE(lns.new_loan_applications_telegram, true) as new_loan_applications_telegram\n        FROM lenders l\n        LEFT JOIN lender_notification_settings lns ON l.id = lns.lender_id\n        where l.verified = true\n        ",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "id!",
+        "type_info": "Bpchar"
+      },
+      {
+        "ordinal": 1,
+        "name": "name!",
+        "type_info": "Varchar"
+      },
+      {
+        "ordinal": 2,
+        "name": "email",
+        "type_info": "Varchar"
+      },
+      {
+        "ordinal": 3,
+        "name": "daily_application_digest_email",
+        "type_info": "Bool"
+      },
+      {
+        "ordinal": 4,
+        "name": "new_loan_applications_email",
+        "type_info": "Bool"
+      },
+      {
+        "ordinal": 5,
+        "name": "new_loan_applications_telegram",
+        "type_info": "Bool"
+      }
+    ],
+    "parameters": {
+      "Left": []
+    },
+    "nullable": [
+      true,
+      true,
+      true,
+      null,
+      null,
+      null
+    ]
+  },
+  "hash": "e6c197b9f652a3d6232a168d99e584b9341e962b3d1d4c0fbefd714359f34c50"
+}

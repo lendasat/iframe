@@ -9,6 +9,7 @@ pub struct LenderNotificationSettings {
     pub on_login_email: bool,
     pub on_login_telegram: bool,
     pub daily_application_digest_email: bool,
+    pub new_loan_applications_email: bool,
     pub new_loan_applications_telegram: bool,
     pub contract_status_changed_email: bool,
     pub contract_status_changed_telegram: bool,
@@ -25,6 +26,7 @@ impl From<LenderNotificationSettings> for crate::model::notifications::LenderNot
             on_login_email: value.on_login_email,
             on_login_telegram: value.on_login_telegram,
             daily_application_digest_email: value.daily_application_digest_email,
+            new_loan_applications_email: value.new_loan_applications_email,
             new_loan_applications_telegram: value.new_loan_applications_telegram,
             contract_status_changed_email: value.contract_status_changed_email,
             contract_status_changed_telegram: value.contract_status_changed_telegram,
@@ -81,6 +83,7 @@ pub async fn get_lender_notification_settings(
             on_login_email,
             on_login_telegram,
             daily_application_digest_email,
+            new_loan_applications_email,
             new_loan_applications_telegram,
             contract_status_changed_email,
             contract_status_changed_telegram,
@@ -187,6 +190,7 @@ pub async fn update_lender_notification_settings(
             on_login_email,
             on_login_telegram,
             daily_application_digest_email,
+            new_loan_applications_email,
             new_loan_applications_telegram,
             contract_status_changed_email,
             contract_status_changed_telegram,
@@ -194,12 +198,13 @@ pub async fn update_lender_notification_settings(
             new_chat_message_telegram,
             updated_at
         ) VALUES (
-            $1, $2, $3, $4, $5, $6, $7, $8, $9, CURRENT_TIMESTAMP
+            $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, CURRENT_TIMESTAMP
         )
         ON CONFLICT (lender_id) DO UPDATE SET
             on_login_email = EXCLUDED.on_login_email,
             on_login_telegram = EXCLUDED.on_login_telegram,
             daily_application_digest_email = EXCLUDED.daily_application_digest_email,
+            new_loan_applications_email = EXCLUDED.new_loan_applications_email,
             new_loan_applications_telegram = EXCLUDED.new_loan_applications_telegram,
             contract_status_changed_email = EXCLUDED.contract_status_changed_email,
             contract_status_changed_telegram = EXCLUDED.contract_status_changed_telegram,
@@ -212,6 +217,7 @@ pub async fn update_lender_notification_settings(
             on_login_email,
             on_login_telegram,
             daily_application_digest_email,
+            new_loan_applications_email,
             new_loan_applications_telegram,
             contract_status_changed_email,
             contract_status_changed_telegram,
@@ -224,6 +230,7 @@ pub async fn update_lender_notification_settings(
         settings.on_login_email,
         settings.on_login_telegram,
         settings.daily_application_digest_email,
+        settings.new_loan_applications_email,
         settings.new_loan_applications_telegram,
         settings.contract_status_changed_email,
         settings.contract_status_changed_telegram,
@@ -337,6 +344,7 @@ pub struct LenderContact {
     pub name: String,
     pub email: Option<String>,
     pub daily_application_digest_email: Option<bool>,
+    pub new_loan_applications_email: Option<bool>,
     pub new_loan_applications_telegram: Option<bool>,
 }
 
@@ -349,6 +357,7 @@ pub async fn get_lenders_for_loan_loan_application(pool: &PgPool) -> Result<Vec<
             l.name as "name!",
             l.email as email,
             COALESCE(lns.daily_application_digest_email, true) as daily_application_digest_email,
+            COALESCE(lns.new_loan_applications_email, false) as new_loan_applications_email,
             COALESCE(lns.new_loan_applications_telegram, true) as new_loan_applications_telegram
         FROM lenders l
         LEFT JOIN lender_notification_settings lns ON l.id = lns.lender_id
@@ -372,6 +381,7 @@ pub async fn get_lenders_for_application_digest_notifications(
             l.name as "name!",
             l.email as email,
             COALESCE(lns.daily_application_digest_email, true) as daily_application_digest_email,
+            COALESCE(lns.new_loan_applications_email, false) as new_loan_applications_email,
             COALESCE(lns.new_loan_applications_telegram, true) as new_loan_applications_telegram
         FROM lenders l
         LEFT JOIN lender_notification_settings lns ON l.id = lns.lender_id

@@ -1,0 +1,2 @@
+ALTER TABLE lender_notification_settings 
+DROP COLUMN new_loan_applications_email;
