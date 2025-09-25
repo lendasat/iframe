@@ -120,18 +120,24 @@ export const Confirmation = ({
   );
   const ltv = (parseFloat(ltvAsString) || 50.0) / 100;
 
-  // For display calculations, use the minimum values
-  const displayLoanAmount = selectedLoanAmountMin;
-  const displayLoanDuration = selectedLoanDurationMin;
-
-  // Calculate loan details (using minimum values for display)
+  // Calculate loan details for MIN values
   const interestRate = Number.parseFloat(selectedInterestRate);
-  const actualInterest = interestRate / (ONE_YEAR / displayLoanDuration);
-  const actualInterestUsdAmount = (displayLoanAmount * actualInterest) / 100.0;
+  const actualInterestMin = interestRate / (ONE_YEAR / selectedLoanDurationMin);
+  const actualInterestUsdAmountMin =
+    (selectedLoanAmountMin * actualInterestMin) / 100.0;
 
-  // Collataral and its value
-  const collateralAmount = (displayLoanAmount + actualInterestUsdAmount) / ltv;
-  const collateralAmountBtc = collateralAmount / latestPrice;
+  // Calculate loan details for MAX values
+  const actualInterestMax = interestRate / (ONE_YEAR / selectedLoanDurationMax);
+  const actualInterestUsdAmountMax =
+    (selectedLoanAmountMax * actualInterestMax) / 100.0;
+
+  // Outstanding balances
+  const outstandingBalanceUsdMax =
+    selectedLoanAmountMax + actualInterestUsdAmountMax;
+
+  // Collateral calculations for MAX
+  const collateralAmountMax = outstandingBalanceUsdMax / ltv;
+  const collateralAmountBtcMax = collateralAmountMax / latestPrice;
 
   // Calculate fees
   const discountedFee = user?.first_time_discount_rate || 0.0;
@@ -139,18 +145,16 @@ export const Confirmation = ({
   const discountedOriginationFee =
     originationFee - originationFee * discountedFee;
 
-  const originationFeeUsd = displayLoanAmount * discountedOriginationFee;
-  const originationFeeBtc = originationFeeUsd / latestPrice;
+  const originationFeeUsdMax = selectedLoanAmountMax * discountedOriginationFee;
+  const originationFeeBtcMax = originationFeeUsdMax / latestPrice;
 
-  // How much the user needs to deposit
-  const totalDepositAmountBTC = collateralAmountBtc + originationFeeBtc;
-  const totalDepositAmount = collateralAmount + originationFeeUsd;
+  const totalDepositAmountBTCMax =
+    collateralAmountBtcMax + originationFeeBtcMax;
+  const totalDepositAmountMax = collateralAmountMax + originationFeeUsdMax;
 
-  // The total amount the user will owe
-  const outstandingBalanceUsd = displayLoanAmount + actualInterestUsdAmount;
-
-  // Calculate liquidation price
-  const liquidationPrice = outstandingBalanceUsd / (collateralAmountBtc * 0.9);
+  // Liquidation prices
+  const liquidationPriceMax =
+    outstandingBalanceUsdMax / (collateralAmountBtcMax * 0.9);
 
   // Setup form with react-hook-form and zod validation
   const form = useForm<ConfirmationFormValues>({
@@ -234,12 +238,24 @@ export const Confirmation = ({
             Conditions to borrow{" "}
             <strong>
               {formatCurrency(
-                displayLoanAmount || 0,
+                selectedLoanAmountMin || 0,
                 LoanAssetHelper.toCurrency(selectedAssetType),
+              )}
+              {selectedLoanAmountMin !== selectedLoanAmountMax && (
+                <>
+                  {" - "}
+                  {formatCurrency(
+                    selectedLoanAmountMax || 0,
+                    LoanAssetHelper.toCurrency(selectedAssetType),
+                  )}
+                </>
               )}
             </strong>{" "}
             {LoanAssetHelper.print(selectedAssetType)} for{" "}
-            {getFormatedStringFromDays(displayLoanDuration)}
+            {getFormatedStringFromDays(selectedLoanDurationMin)}
+            {selectedLoanDurationMin !== selectedLoanDurationMax && (
+              <> - {getFormatedStringFromDays(selectedLoanDurationMax)}</>
+            )}
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
@@ -259,18 +275,17 @@ export const Confirmation = ({
                 </Tooltip>
               </TooltipProvider>
             </div>
-            <span
-              className={`text-sm font-semibold capitalize ${
-                discountedFee === 1 ? "line-through" : ""
-              }`}
-            >
-              {newFormatCurrency({
-                value: liquidationPrice,
-                currency: LoanAssetHelper.toCurrency(selectedAssetType),
-                maxFraction: 0,
-                minFraction: 0,
-              })}
-            </span>
+            <div className="flex flex-col items-end">
+              <span className="text-sm font-semibold capitalize">
+                {liquidationPriceMax &&
+                  newFormatCurrency({
+                    value: liquidationPriceMax,
+                    currency: LoanAssetHelper.toCurrency(selectedAssetType),
+                    maxFraction: 0,
+                    minFraction: 0,
+                  })}
+              </span>
+            </div>
           </div>
 
           <Separator />
@@ -292,28 +307,48 @@ export const Confirmation = ({
               </TooltipProvider>
             </div>
             <div className="flex flex-col items-end">
-              {displayLoanDuration !== ONE_YEAR && (
+              {(selectedLoanDurationMin !== ONE_YEAR ||
+                selectedLoanDurationMax !== ONE_YEAR) && (
                 <div className="flex gap-2">
                   <span className="text-sm font-semibold">
-                    {actualInterest.toFixed(2)}%
+                    {actualInterestMin.toFixed(2)}%
+                    {selectedLoanDurationMin !== selectedLoanDurationMax && (
+                      <> - {actualInterestMax.toFixed(2)}%</>
+                    )}
                   </span>
                   <span className="text-muted-foreground text-xs">
                     ({interestRate.toFixed(1)}% p.a.)
                   </span>
                 </div>
               )}
-              {displayLoanDuration === ONE_YEAR && (
-                <span className="text-sm font-semibold">
-                  {actualInterest.toFixed(2)}% p.a.
-                </span>
-              )}
+              {selectedLoanDurationMin === ONE_YEAR &&
+                selectedLoanDurationMax === ONE_YEAR && (
+                  <span className="text-sm font-semibold">
+                    {actualInterestMin.toFixed(2)}%
+                    {selectedLoanDurationMin !== selectedLoanDurationMax && (
+                      <> - {actualInterestMax.toFixed(2)}%</>
+                    )}{" "}
+                    p.a.
+                  </span>
+                )}
               <span className="text-muted-foreground text-xs">
                 ≈{" "}
                 {formatCurrency(
-                  actualInterestUsdAmount,
+                  actualInterestUsdAmountMin,
                   LoanAssetHelper.toCurrency(selectedAssetType),
                   1,
                   1,
+                )}
+                {actualInterestUsdAmountMin !== actualInterestUsdAmountMax && (
+                  <>
+                    {" - "}
+                    {formatCurrency(
+                      actualInterestUsdAmountMax,
+                      LoanAssetHelper.toCurrency(selectedAssetType),
+                      1,
+                      1,
+                    )}
+                  </>
                 )}{" "}
                 in total
               </span>
@@ -346,15 +381,20 @@ export const Confirmation = ({
               </div>
             </div>
             <div className="flex flex-col items-end">
-              <span className="text-sm font-semibold capitalize">
-                {collateralAmountBtc.toFixed(8)} BTC
+              <span className="text-sm capitalize">
+                up to{" "}
+                <span className="font-semibold">
+                  {collateralAmountBtcMax.toFixed(8)} BTC
+                </span>
               </span>
               <span className="text-muted-foreground text-xs">
-                ≈{" "}
-                {formatCurrency(
-                  collateralAmount,
-                  LoanAssetHelper.toCurrency(selectedAssetType),
-                )}
+                ≈ up to{" "}
+                <span className="font-medium">
+                  {formatCurrency(
+                    collateralAmountMax,
+                    LoanAssetHelper.toCurrency(selectedAssetType),
+                  )}
+                </span>
               </span>
             </div>
           </div>
@@ -371,22 +411,27 @@ export const Confirmation = ({
             </div>
             <div className="flex flex-col items-end">
               <span
-                className={`text-sm font-semibold capitalize ${
+                className={`text-sm capitalize ${
                   discountedFee === 1 ? "line-through" : ""
                 }`}
               >
-                {originationFeeBtc.toFixed(8)} BTC
+                up to{" "}
+                <span className="font-semibold">
+                  {originationFeeBtcMax.toFixed(8)} BTC
+                </span>
               </span>
               <span
                 className={`text-muted-foreground text-xs ${
                   discountedFee === 1 ? "line-through" : ""
                 }`}
               >
-                ≈{" "}
-                {formatCurrency(
-                  originationFeeUsd,
-                  LoanAssetHelper.toCurrency(selectedAssetType),
-                )}
+                ≈ up to{" "}
+                <span className="font-medium">
+                  {formatCurrency(
+                    originationFeeUsdMax,
+                    LoanAssetHelper.toCurrency(selectedAssetType),
+                  )}
+                </span>
               </span>
             </div>
           </div>
@@ -421,15 +466,20 @@ export const Confirmation = ({
               </div>
             </div>
             <div className="flex flex-col items-end">
-              <span className="text-sm font-semibold capitalize">
-                {totalDepositAmountBTC.toFixed(8)} BTC
+              <span className="text-sm capitalize">
+                up to{" "}
+                <span className="font-semibold">
+                  {totalDepositAmountBTCMax.toFixed(8)} BTC
+                </span>
               </span>
               <span className="text-muted-foreground text-xs">
-                ≈{" "}
-                {formatCurrency(
-                  totalDepositAmount,
-                  LoanAssetHelper.toCurrency(selectedAssetType),
-                )}
+                ≈ up to{" "}
+                <span className="font-medium">
+                  {formatCurrency(
+                    totalDepositAmountMax,
+                    LoanAssetHelper.toCurrency(selectedAssetType),
+                  )}
+                </span>
               </span>
             </div>
           </div>
