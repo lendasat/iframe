@@ -1,6 +1,6 @@
 {
   "db_name": "PostgreSQL",
-  "query": "\n        SELECT\n            id,\n            lender_id,\n            on_login_email,\n            on_login_telegram,\n            daily_application_digest_email,\n            new_loan_applications_telegram,\n            contract_status_changed_email,\n            contract_status_changed_telegram,\n            new_chat_message_email,\n            new_chat_message_telegram,\n            created_at,\n            updated_at\n        FROM lender_notification_settings\n        WHERE lender_id = $1\n        ",
+  "query": "\n        SELECT\n            id,\n            lender_id,\n            on_login_email,\n            on_login_telegram,\n            daily_application_digest_email,\n            new_loan_applications_email,\n            new_loan_applications_telegram,\n            contract_status_changed_email,\n            contract_status_changed_telegram,\n            new_chat_message_email,\n            new_chat_message_telegram,\n            created_at,\n            updated_at\n        FROM lender_notification_settings\n        WHERE lender_id = $1\n        ",
   "describe": {
     "columns": [
       {
@@ -30,36 +30,41 @@
       },
       {
         "ordinal": 5,
-        "name": "new_loan_applications_telegram",
+        "name": "new_loan_applications_email",
         "type_info": "Bool"
       },
       {
         "ordinal": 6,
-        "name": "contract_status_changed_email",
+        "name": "new_loan_applications_telegram",
         "type_info": "Bool"
       },
       {
         "ordinal": 7,
-        "name": "contract_status_changed_telegram",
+        "name": "contract_status_changed_email",
         "type_info": "Bool"
       },
       {
         "ordinal": 8,
-        "name": "new_chat_message_email",
+        "name": "contract_status_changed_telegram",
         "type_info": "Bool"
       },
       {
         "ordinal": 9,
-        "name": "new_chat_message_telegram",
+        "name": "new_chat_message_email",
         "type_info": "Bool"
       },
       {
         "ordinal": 10,
+        "name": "new_chat_message_telegram",
+        "type_info": "Bool"
+      },
+      {
+        "ordinal": 11,
         "name": "created_at",
         "type_info": "Timestamptz"
       },
       {
-        "ordinal": 11,
+        "ordinal": 12,
         "name": "updated_at",
         "type_info": "Timestamptz"
       }
@@ -81,8 +86,9 @@
       false,
       false,
       false,
+      false,
       false
     ]
   },
-  "hash": "1c751db91c071d418e149239f03f1d82adb146192f171fd975d4a45dff0315e1"
+  "hash": "afb3388e2a2168333cd0e7d4546257e3dc8bd1a62fabc2eb00c0a4467fbd0324"
 }

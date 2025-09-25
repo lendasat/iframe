@@ -295,6 +295,24 @@ export function NotificationSettings() {
                 <div className="flex gap-6">
                   <div className="flex items-center gap-2">
                     <Checkbox
+                      id="new_loan_applications_email"
+                      checked={localSettings.new_loan_applications_email}
+                      onCheckedChange={(checked) =>
+                        handleSettingChange(
+                          "new_loan_applications_email",
+                          checked as boolean,
+                        )
+                      }
+                    />
+                    <Label
+                      htmlFor="new_loan_applications_email"
+                      className="text-sm"
+                    >
+                      Email
+                    </Label>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <Checkbox
                       id="new_loan_applications_telegram"
                       checked={localSettings.new_loan_applications_telegram}
                       onCheckedChange={(checked) =>

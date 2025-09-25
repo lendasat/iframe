@@ -1,5 +1,6 @@
 use crate::config::Config;
 use crate::db;
+use crate::db::notification_settings::DailyDigestApplication;
 use crate::model;
 use crate::model::Borrower;
 use crate::model::Contract;
@@ -1393,6 +1394,42 @@ impl Notifications {
     ) {
         match db::notification_settings::get_lenders_for_loan_loan_application(&self.db).await {
             Ok(contact_details) => {
+                let filtered_users = contact_details
+                    .iter()
+                    .filter(|details| details.new_loan_applications_email.unwrap_or_default())
+                    .collect::<Vec<_>>();
+                let filtered_users = filtered_users
+                    .iter()
+                    .filter_map(|u| {
+                        u.email
+                            .as_ref()
+                            .map(|email| (u.name.clone(), email.clone()))
+                    })
+                    .collect::<Vec<(_, _)>>();
+
+                let application_url = self.lender_loan_applications_url(loan_deal_id);
+
+                if let Err(err) = self
+                    .email
+                    .send_new_application(
+                        filtered_users,
+                        DailyDigestApplication {
+                            id: loan_deal_id.to_string(),
+                            loan_amount_min,
+                            loan_amount_max,
+                            interest_rate,
+                            duration_days_min: duration_min,
+                            duration_days_max: duration_max,
+                            loan_asset: asset.to_currency().to_string(),
+                            created_at: OffsetDateTime::now_utc(),
+                        },
+                        application_url.clone(),
+                    )
+                    .await
+                {
+                    tracing::error!("Failed sending new application email notification {err:#}");
+                }
+
                 let filtered_users = contact_details
                     .iter()
                     .filter(|details| details.new_loan_applications_telegram.unwrap_or_default())
