@@ -385,6 +385,23 @@ async fn delete_reject_contract(
         .await
         .map_err(Error::database)?;
 
+    // Restore the loan offer's max amount after contract rejection
+    // We increase the available amount by the loan amount that was previously committed
+    if let Ok(Some(offer)) = db::loan_offers::loan_by_id(&data.db, &contract.loan_id).await {
+        if let Err(e) = db::loan_offers::increase_loan_amount_max(
+            &data.db,
+            &offer.loan_deal_id,
+            contract.loan_amount,
+        )
+        .await
+        {
+            tracing::error!(
+                "Failed to restore loan_amount_max for offer {} after contract rejection: {e:#}",
+                offer.loan_deal_id
+            );
+        }
+    }
+
     // We don't want to fail this upwards because the contract request has already been approved.
     if let Err(err) = async {
         let borrower = db::borrowers::get_user_by_id(&data.db, &contract.borrower_id)

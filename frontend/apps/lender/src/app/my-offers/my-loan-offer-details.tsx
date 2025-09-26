@@ -323,7 +323,7 @@ function MyLoanOfferDetails() {
                 : offer.status === LoanOfferStatus.Deleted
                   ? "This loan offer has been deleted and is no longer available"
                   : offer.status === LoanOfferStatus.Unavailable
-                    ? "This loan offer is temporarily unavailable"
+                    ? "This loan offer is unavailable"
                     : "View and manage your loan offer"}
             </p>
           </div>
@@ -389,7 +389,7 @@ function MyLoanOfferDetails() {
             <AlertDescription>
               {offer.status === LoanOfferStatus.Deleted
                 ? "This loan offer has been permanently deleted. It cannot be edited or reactivated. Borrowers can no longer view or accept this offer."
-                : "This loan offer is temporarily unavailable. It may have reached its reserve limit or been temporarily disabled. Contact support if you believe this is an error."}
+                : "This loan offer is unavailable. It may have reached its reserve limit or been temporarily disabled. Contact support if you believe this is an error."}
             </AlertDescription>
           </Alert>
         )}

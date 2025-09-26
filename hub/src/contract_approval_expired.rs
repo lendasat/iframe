@@ -1,4 +1,5 @@
 use crate::db;
+use crate::db::contracts::ExpiredApprovedContract;
 use anyhow::Result;
 use sqlx::Pool;
 use sqlx::Postgres;
@@ -55,9 +56,16 @@ async fn create_contract_approval_expiry_check(
                     )
                     .await
                     {
-                        Ok(contracts) => contracts.iter().for_each(|contract_id| {
-                            tracing::info!(contract_id, "Contract approval expired");
-                        }),
+                        Ok(contracts) => {
+                            for contract in contracts {
+                                tracing::info!(
+                                    contract_id = contract.contract_id,
+                                    "Contract approval expired"
+                                );
+                                restore_loan_amount_for_expired_contract(&database, &contract)
+                                    .await;
+                            }
+                        }
                         Err(err) => {
                             tracing::error!("Failed expire contract approval: {err:#}");
                         }
@@ -83,4 +91,28 @@ async fn create_contract_approval_expiry_check(
         .await?;
 
     Ok(check_for_expiring_contracts_job)
+}
+
+async fn restore_loan_amount_for_expired_contract(
+    database: &Pool<Postgres>,
+    expired_contract: &ExpiredApprovedContract,
+) {
+    if let Err(e) = db::loan_offers::increase_loan_amount_max(
+        database,
+        &expired_contract.loan_deal_id,
+        expired_contract.loan_amount,
+    )
+    .await
+    {
+        tracing::error!(
+            "Failed to restore loan_amount_max for offer {} after contract expiry: {e:#}",
+            expired_contract.loan_deal_id
+        );
+    }
+    tracing::debug!(
+        contract_id = expired_contract.contract_id,
+        offer_id = expired_contract.loan_deal_id,
+        restored_amount = %expired_contract.loan_amount,
+        "Restored loan_amount_max for expired contract request"
+    );
 }

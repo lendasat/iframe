@@ -1389,7 +1389,26 @@ pub(crate) async fn mark_liquidation_state_as(
     Ok(contract.into())
 }
 
-pub(crate) async fn mark_contract_state_as<'a, E>(
+pub async fn start_contract_dispute_lender<'a, E>(pool: E, contract_id: &str) -> Result<()>
+where
+    E: sqlx::Executor<'a, Database = Postgres>,
+{
+    mark_contract_state_as(pool, contract_id, db::ContractStatus::DisputeLenderStarted).await
+}
+
+pub async fn start_contract_dispute_borrower<'a, E>(pool: E, contract_id: &str) -> Result<()>
+where
+    E: sqlx::Executor<'a, Database = Postgres>,
+{
+    mark_contract_state_as(
+        pool,
+        contract_id,
+        db::ContractStatus::DisputeBorrowerStarted,
+    )
+    .await
+}
+
+async fn mark_contract_state_as<'a, E>(
     pool: E,
     contract_id: &str,
     status: db::ContractStatus,
@@ -1582,7 +1601,7 @@ pub async fn update_collateral(
 
                 // This is where the limitations of our state machine come into play. Here we're
                 // only considering the possibility that `CollateralConfirmed` can
-                // go back to to `Approved` after a reorg, but it could happen for
+                // go back to `Approved` after a reorg, but it could happen for
                 // other states too. In any case, this is all unlikely.
                 match contract.status {
                     ContractStatus::CollateralConfirmed => {
@@ -1676,6 +1695,8 @@ pub struct ExpiredContract {
     pub contract_id: String,
     pub borrower_id: String,
     pub lender_id: String,
+    pub loan_amount: Decimal,
+    pub loan_deal_id: String,
 }
 
 /// Expires contracts in state Requested and returns their details
@@ -1712,7 +1733,9 @@ pub(crate) async fn expire_requested_contracts(
             RETURNING
                 id as "contract_id",
                 borrower_id as "borrower_id",
-                lender_id as "lender_id"
+                lender_id as "lender_id",
+                loan_amount as "loan_amount",
+                loan_deal_id as "loan_deal_id"
         "#,
         OffsetDateTime::now_utc(),
         expiration_threshold
@@ -1743,7 +1766,9 @@ pub(crate) async fn expire_requested_contracts(
             RETURNING
                 id as "contract_id",
                 borrower_id as "borrower_id",
-                lender_id as "lender_id"
+                lender_id as "lender_id",
+                loan_amount as "loan_amount",
+                loan_deal_id as "loan_deal_id"
         "#,
         OffsetDateTime::now_utc(),
         pending_kyc_expiration_threshold
@@ -1845,16 +1870,23 @@ pub async fn has_contracts_before_pake_lender(
     Ok(row.entry_exists.unwrap_or(false))
 }
 
+pub struct ExpiredApprovedContract {
+    pub contract_id: String,
+    pub loan_deal_id: String,
+    pub loan_amount: Decimal,
+}
+
 /// Expires contracts in state `Approved` and returns their IDs.
 ///
 /// We give a contract in state `CollateralSeen` a chance to get confirmation.
 pub(crate) async fn expire_approved_contracts(
     pool: &Pool<Postgres>,
     expiry_in_hours: i64,
-) -> Result<Vec<String>> {
+) -> Result<Vec<ExpiredApprovedContract>> {
     let expiration_threshold = OffsetDateTime::now_utc() - time::Duration::hours(expiry_in_hours);
 
-    let rows = sqlx::query!(
+    let expired_approved_contracts = sqlx::query_as!(
+        ExpiredApprovedContract,
         r#"
             UPDATE
                 contracts
@@ -1863,7 +1895,10 @@ pub(crate) async fn expire_approved_contracts(
             WHERE
                 status = 'Approved' AND
                 created_at <= $2
-            RETURNING id;
+            RETURNING
+                id as "contract_id",
+                loan_amount as "loan_amount",
+                loan_deal_id as "loan_deal_id"
         "#,
         OffsetDateTime::now_utc(),
         expiration_threshold
@@ -1871,9 +1906,7 @@ pub(crate) async fn expire_approved_contracts(
     .fetch_all(pool)
     .await?;
 
-    let contract_ids = rows.into_iter().map(|row| row.id).collect();
-
-    Ok(contract_ids)
+    Ok(expired_approved_contracts)
 }
 
 #[allow(clippy::too_many_arguments)]

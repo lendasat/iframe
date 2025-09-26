@@ -821,3 +821,63 @@ pub async fn set_loan_offers_unavailable_by_contract_id(
 
     Ok(records.into_iter().map(|r| r.id).collect())
 }
+
+/// Increases loan_amount_max by the specified amount and updates status appropriately
+pub async fn increase_loan_amount_max<'a, E>(
+    pool: E,
+    offer_id: &str,
+    amount_to_add: Decimal,
+) -> Result<()>
+where
+    E: sqlx::Executor<'a, Database = Postgres>,
+{
+    sqlx::query!(
+        r#"
+        UPDATE loan_offers
+        SET
+            loan_amount_max = loan_amount_max + $1,
+            status = CASE
+                WHEN status = 'Unavailable' THEN 'Available'::loan_offer_status
+                ELSE status
+            END,
+            updated_at = CURRENT_TIMESTAMP
+        WHERE id = $2
+        "#,
+        amount_to_add,
+        offer_id
+    )
+    .execute(pool)
+    .await?;
+
+    Ok(())
+}
+
+/// Decreases loan_amount_max by the specified amount and sets status to Unavailable if max < min
+pub async fn decrease_loan_amount_max<'a, E>(
+    pool: E,
+    offer_id: &str,
+    amount_to_subtract: Decimal,
+) -> Result<()>
+where
+    E: sqlx::Executor<'a, Database = Postgres>,
+{
+    sqlx::query!(
+        r#"
+        UPDATE loan_offers
+        SET
+            loan_amount_max = GREATEST(0, loan_amount_max - $1),
+            status = CASE 
+                WHEN GREATEST(0, loan_amount_max - $1) < loan_amount_min THEN 'Unavailable'::loan_offer_status
+                ELSE status
+            END,
+            updated_at = CURRENT_TIMESTAMP
+        WHERE id = $2
+        "#,
+        amount_to_subtract,
+        offer_id
+    )
+    .execute(pool)
+    .await?;
+
+    Ok(())
+}

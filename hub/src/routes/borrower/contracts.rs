@@ -464,6 +464,17 @@ async fn post_contract_request(
         contract = map_to_api_contract(&data, db_contract).await?;
     }
 
+    // Update the loan offer's max amount after contract creation
+    // We reduce the available amount by the loan amount just committed
+    if let Err(e) =
+        db::loan_offers::decrease_loan_amount_max(&data.db, &offer.loan_deal_id, loan_amount).await
+    {
+        tracing::error!(
+            "Failed to update loan_amount_max for offer {}: {e:#}",
+            offer.loan_deal_id
+        );
+    }
+
     // We don't want to fail this upwards because the contract request has been sent already.
     if let Err(e) = async {
         let lender = db::lenders::get_user_by_id(&data.db, &contract.lender.id)
@@ -558,6 +569,23 @@ async fn cancel_contract_request(
     db::contracts::mark_contract_as_cancelled(&mut *db_tx, &contract_id)
         .await
         .map_err(Error::database)?;
+
+    // Restore the loan offer's max amount after contract cancellation
+    // We increase the available amount by the loan amount that was previously committed
+    if let Ok(Some(offer)) = db::loan_offers::loan_by_id(&data.db, &contract.loan_id).await {
+        if let Err(e) = db::loan_offers::increase_loan_amount_max(
+            &mut *db_tx,
+            &offer.loan_deal_id,
+            contract.loan_amount,
+        )
+        .await
+        {
+            tracing::error!(
+                "Failed to restore loan_amount_max for offer {} after contract cancellation: {e:#}",
+                offer.loan_deal_id
+            );
+        }
+    }
 
     db_tx
         .commit()
