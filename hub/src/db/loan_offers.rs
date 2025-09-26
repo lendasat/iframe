@@ -11,7 +11,6 @@ use rust_decimal::Decimal;
 use rust_decimal_macros::dec;
 use sqlx::Pool;
 use sqlx::Postgres;
-use std::str::FromStr;
 use time::OffsetDateTime;
 use url::Url;
 
@@ -31,22 +30,8 @@ pub(crate) async fn load_all_available_loan_offers(
             lo.loan_amount_max,
             lo.duration_days_min,
             lo.duration_days_max,
-            lo.loan_amount_reserve,
             lo.kyc_link,
             lo.auto_accept,
-            COALESCE(
-                lo.loan_amount_reserve - COALESCE(
-                    SUM(
-                        CASE
-                            WHEN c.status NOT IN ('Cancelled', 'RequestExpired')
-                            THEN c.loan_amount
-                            ELSE 0
-                        END
-                    ),
-                    0
-                ),
-                lo.loan_amount_reserve
-            ) AS loan_amount_reserve_remaining,
             lo.loan_asset AS "loan_asset: LoanAsset",
             lo.loan_payout AS "loan_payout: LoanPayout",
             lo.status AS "status: LoanOfferStatus",
@@ -74,28 +59,15 @@ pub(crate) async fn load_all_available_loan_offers(
     // Map the rows to LoanOffer structs
     let loan_offers: Vec<LoanOffer> = rows
         .into_iter()
-        .filter_map(|row| -> Option<LoanOffer> {
-            // Manually handle the loan_amount_reserve_remaining calculation
-            let loan_amount_reserve_remaining: Option<Decimal> = row
-                .loan_amount_reserve_remaining
-                .map(|v| Decimal::from_str(&v.to_string()).unwrap_or(row.loan_amount_max));
-
-            let loan_amount_reserve_remaining =
-                loan_amount_reserve_remaining.unwrap_or(row.loan_amount_reserve);
-            // If no reserve is remaining, the loan is not available anymore
-            if loan_amount_reserve_remaining < row.loan_amount_min {
-                return None;
-            }
-            // The max amount a user can take is the smaller value of either the reserve or the max
-            // defined loan amount
-            let loan_amount_max = row.loan_amount_max.min(loan_amount_reserve_remaining);
+        .map(|row| {
+            let loan_amount_max = row.loan_amount_max;
 
             let extension_policy = map_to_model_extension_policy(
                 row.extension_duration_days,
                 row.extension_interest_rate,
             );
 
-            Some(LoanOffer {
+            LoanOffer {
                 loan_deal_id: row.loan_deal_id,
                 lender_id: row.lender_id,
                 name: row.name,
@@ -103,8 +75,6 @@ pub(crate) async fn load_all_available_loan_offers(
                 interest_rate: row.interest_rate,
                 loan_amount_min: row.loan_amount_min,
                 loan_amount_max,
-                loan_amount_reserve: row.loan_amount_reserve,
-                loan_amount_reserve_remaining,
                 duration_days_min: row.duration_days_min,
                 duration_days_max: row.duration_days_max,
                 loan_asset: row.loan_asset,
@@ -125,7 +95,7 @@ pub(crate) async fn load_all_available_loan_offers(
                 }),
                 created_at: row.created_at,
                 updated_at: row.updated_at,
-            })
+            }
         })
         .collect();
 
@@ -140,7 +110,7 @@ pub async fn load_available_loan_offers_by_lender(
     let all_offers = load_all_loan_offers_by_lender(pool, lender_id).await?;
     let available_offers = all_offers
         .into_iter()
-        .filter(|offer| offer.loan_amount_reserve_remaining > dec!(0))
+        .filter(|offer| offer.loan_amount_max > dec!(0))
         .filter(|offer| offer.status == LoanOfferStatus::Available)
         .collect();
 
@@ -164,20 +134,6 @@ pub async fn load_all_loan_offers_by_lender(
             lo.loan_amount_max,
             lo.duration_days_min,
             lo.duration_days_max,
-            lo.loan_amount_reserve,
-            COALESCE(
-                lo.loan_amount_reserve - COALESCE(
-                    SUM(
-                        CASE
-                            WHEN c.status NOT IN ('Cancelled', 'RequestExpired')
-                            THEN c.loan_amount
-                            ELSE 0
-                        END
-                    ),
-                    0
-                ),
-                lo.loan_amount_reserve
-            ) AS loan_amount_reserve_remaining,
             lo.loan_asset AS "loan_asset: LoanAsset",
             lo.loan_payout AS "loan_payout: LoanPayout",
             lo.status AS "status: LoanOfferStatus",
@@ -209,11 +165,6 @@ pub async fn load_all_loan_offers_by_lender(
     let loan_offers: Vec<LoanOffer> = rows
         .into_iter()
         .map(|row| -> LoanOffer {
-            // Manually handle the loan_amount_reserve_remaining calculation
-            let loan_amount_reserve_remaining: Option<Decimal> = row
-                .loan_amount_reserve_remaining
-                .map(|v| Decimal::from_str(&v.to_string()).unwrap_or(row.loan_amount_max));
-
             let extension_policy = map_to_model_extension_policy(
                 row.extension_duration_days,
                 row.extension_interest_rate,
@@ -227,9 +178,6 @@ pub async fn load_all_loan_offers_by_lender(
                 interest_rate: row.interest_rate,
                 loan_amount_min: row.loan_amount_min,
                 loan_amount_max: row.loan_amount_max,
-                loan_amount_reserve: row.loan_amount_reserve,
-                loan_amount_reserve_remaining: loan_amount_reserve_remaining
-                    .unwrap_or(row.loan_amount_reserve),
                 duration_days_min: row.duration_days_min,
                 duration_days_max: row.duration_days_max,
                 loan_asset: row.loan_asset,
@@ -275,20 +223,6 @@ pub async fn get_loan_offer_by_lender_and_offer_id(
             lo.loan_amount_max,
             lo.duration_days_min,
             lo.duration_days_max,
-            lo.loan_amount_reserve,
-            COALESCE(
-                lo.loan_amount_reserve - COALESCE(
-                    SUM(
-                        CASE
-                            WHEN c.status NOT IN ('Cancelled', 'RequestExpired')
-                            THEN c.loan_amount
-                            ELSE 0
-                        END
-                    ),
-                    0
-                ),
-                lo.loan_amount_reserve
-            ) AS loan_amount_reserve_remaining,
             lo.loan_asset AS "loan_asset: LoanAsset",
             lo.loan_payout AS "loan_payout: LoanPayout",
             lo.status AS "status: LoanOfferStatus",
@@ -317,11 +251,6 @@ pub async fn get_loan_offer_by_lender_and_offer_id(
     .fetch_one(pool)
     .await?;
 
-    // Manually handle the fields and create the LoanOffer struct
-    let loan_amount_reserve_remaining: Option<Decimal> = row
-        .loan_amount_reserve_remaining
-        .map(|v| Decimal::from_str(&v.to_string()).unwrap_or(row.loan_amount_max));
-
     let extension_policy =
         map_to_model_extension_policy(row.extension_duration_days, row.extension_interest_rate);
 
@@ -333,9 +262,6 @@ pub async fn get_loan_offer_by_lender_and_offer_id(
         interest_rate: row.interest_rate,
         loan_amount_min: row.loan_amount_min,
         loan_amount_max: row.loan_amount_max,
-        loan_amount_reserve: row.loan_amount_reserve,
-        loan_amount_reserve_remaining: loan_amount_reserve_remaining
-            .unwrap_or(row.loan_amount_reserve),
         duration_days_min: row.duration_days_min,
         duration_days_max: row.duration_days_max,
         loan_asset: row.loan_asset,
@@ -419,7 +345,6 @@ pub async fn update_loan_offer(
     interest_rate: Option<Decimal>,
     loan_amount_min: Option<Decimal>,
     loan_amount_max: Option<Decimal>,
-    loan_amount_reserve: Option<Decimal>,
     duration_days_min: Option<i32>,
     duration_days_max: Option<i32>,
     auto_accept: Option<bool>,
@@ -443,7 +368,6 @@ pub async fn update_loan_offer(
     let new_interest_rate = interest_rate.unwrap_or(current_offer.interest_rate);
     let new_loan_amount_min = loan_amount_min.unwrap_or(current_offer.loan_amount_min);
     let new_loan_amount_max = loan_amount_max.unwrap_or(current_offer.loan_amount_max);
-    let new_loan_amount_reserve = loan_amount_reserve.unwrap_or(current_offer.loan_amount_reserve);
     let new_duration_days_min = duration_days_min.unwrap_or(current_offer.duration_days_min);
     let new_duration_days_max = duration_days_max.unwrap_or(current_offer.duration_days_max);
     let new_auto_accept = auto_accept.unwrap_or(current_offer.auto_accept);
@@ -499,7 +423,6 @@ pub async fn update_loan_offer(
           interest_rate,
           loan_amount_min,
           loan_amount_max,
-          loan_amount_reserve,
           duration_days_min,
           duration_days_max,
           loan_asset,
@@ -516,7 +439,7 @@ pub async fn update_loan_offer(
           repayment_plan,
           btc_loan_repayment_address
         )
-        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21, $22, $23, $24)
+        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21, $22, $23)
         RETURNING
           id,
           loan_deal_id,
@@ -526,8 +449,6 @@ pub async fn update_loan_offer(
           interest_rate,
           loan_amount_min,
           loan_amount_max,
-          loan_amount_reserve,
-          loan_amount_reserve as loan_amount_reserve_remaining,
           duration_days_min,
           duration_days_max,
           loan_asset AS "loan_asset: LoanAsset",
@@ -554,7 +475,6 @@ pub async fn update_loan_offer(
         new_interest_rate,
         new_loan_amount_min,
         new_loan_amount_max,
-        new_loan_amount_reserve,
         new_duration_days_min,
         new_duration_days_max,
         current_offer.loan_asset as LoanAsset,
@@ -589,8 +509,6 @@ pub async fn update_loan_offer(
         interest_rate: row.interest_rate,
         loan_amount_min: row.loan_amount_min,
         loan_amount_max: row.loan_amount_max,
-        loan_amount_reserve: row.loan_amount_reserve,
-        loan_amount_reserve_remaining: row.loan_amount_reserve_remaining,
         duration_days_min: row.duration_days_min,
         duration_days_max: row.duration_days_max,
         loan_asset: row.loan_asset,
@@ -654,7 +572,6 @@ pub async fn insert_loan_offer(
           interest_rate,
           loan_amount_min,
           loan_amount_max,
-          loan_amount_reserve,
           duration_days_min,
           duration_days_max,
           loan_asset,
@@ -671,7 +588,7 @@ pub async fn insert_loan_offer(
           repayment_plan,
           btc_loan_repayment_address
         )
-        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21, $22, $23, $24)
+        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21, $22, $23)
         RETURNING
           id,
           loan_deal_id,
@@ -681,8 +598,6 @@ pub async fn insert_loan_offer(
           interest_rate,
           loan_amount_min,
           loan_amount_max,
-          loan_amount_reserve,
-          loan_amount_reserve as loan_amount_reserve_remaining,
           duration_days_min,
           duration_days_max,
           loan_asset AS "loan_asset: LoanAsset",
@@ -709,7 +624,6 @@ pub async fn insert_loan_offer(
         offer.interest_rate,
         offer.loan_amount_min,
         offer.loan_amount_max,
-        offer.loan_amount_reserve,
         offer.duration_days_min,
         offer.duration_days_max,
         offer.loan_asset as LoanAsset,
@@ -743,8 +657,6 @@ pub async fn insert_loan_offer(
         interest_rate: row.interest_rate,
         loan_amount_min: row.loan_amount_min,
         loan_amount_max: row.loan_amount_max,
-        loan_amount_reserve: row.loan_amount_reserve,
-        loan_amount_reserve_remaining: row.loan_amount_reserve_remaining,
         duration_days_min: row.duration_days_min,
         duration_days_max: row.duration_days_max,
         loan_asset: row.loan_asset,
@@ -787,20 +699,6 @@ pub(crate) async fn loan_by_id(
             lo.loan_amount_max,
             lo.duration_days_min,
             lo.duration_days_max,
-            lo.loan_amount_reserve,
-            COALESCE(
-                lo.loan_amount_reserve - COALESCE(
-                    SUM(
-                        CASE
-                            WHEN c.status NOT IN ('Cancelled', 'RequestExpired')
-                            THEN c.loan_amount
-                            ELSE 0
-                        END
-                    ),
-                    0
-                ),
-                lo.loan_amount_reserve
-            ) AS loan_amount_reserve_remaining,
             lo.loan_asset AS "loan_asset: LoanAsset",
             lo.loan_payout AS "loan_payout: LoanPayout",
             lo.status AS "status: LoanOfferStatus",
@@ -829,11 +727,6 @@ pub(crate) async fn loan_by_id(
     .await?;
 
     if let Some(row) = row {
-        // We need to manually handle the Option<Decimal> for loan_amount_reserve_remaining
-        let loan_amount_reserve_remaining: Option<Decimal> = row
-            .loan_amount_reserve_remaining
-            .map(|v| Decimal::from_str(&v.to_string()).unwrap_or(row.loan_amount_max));
-
         let extension_policy =
             map_to_model_extension_policy(row.extension_duration_days, row.extension_interest_rate);
 
@@ -846,9 +739,6 @@ pub(crate) async fn loan_by_id(
             interest_rate: row.interest_rate,
             loan_amount_min: row.loan_amount_min,
             loan_amount_max: row.loan_amount_max,
-            loan_amount_reserve: row.loan_amount_reserve,
-            loan_amount_reserve_remaining: loan_amount_reserve_remaining
-                .unwrap_or(row.loan_amount_reserve),
             duration_days_min: row.duration_days_min,
             duration_days_max: row.duration_days_max,
             loan_asset: row.loan_asset,

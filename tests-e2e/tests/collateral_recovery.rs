@@ -72,7 +72,6 @@ async fn e2e_collateral_recovery_flow() {
         interest_rate: dec!(0.10),
         loan_amount_min: dec!(500),
         loan_amount_max: dec!(50_000),
-        loan_amount_reserve: dec!(50_000),
         duration_days_min: 7,
         duration_days_max: ONE_YEAR as i32,
         loan_asset: LoanAsset::UsdcEth,

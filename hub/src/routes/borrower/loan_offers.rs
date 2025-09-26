@@ -611,8 +611,6 @@ mod tests {
             interest_rate: dec!(0.10),
             loan_amount_min: dec!(1000),
             loan_amount_max: dec!(10000),
-            loan_amount_reserve: dec!(50000),
-            loan_amount_reserve_remaining: dec!(50000),
             duration_days_min: 30,
             duration_days_max: 360,
             loan_asset: LoanAsset::UsdcPol,

@@ -206,7 +206,6 @@ export interface CreateLoanOfferRequest {
   interest_rate: number;
   loan_amount_min: number;
   loan_amount_max: number;
-  loan_amount_reserve: number;
   duration_days_min: number;
   duration_days_max: number;
   loan_asset: LoanAsset;
@@ -228,7 +227,6 @@ export interface UpdateLoanOfferRequest {
   interest_rate?: number;
   loan_amount_min?: number;
   loan_amount_max?: number;
-  loan_amount_reserve?: number;
   duration_days_min?: number;
   duration_days_max?: number;
   auto_accept?: boolean;
@@ -269,8 +267,6 @@ export interface LoanOffer {
   interest_rate: number;
   loan_amount_min: number;
   loan_amount_max: number;
-  loan_amount_reserve: number;
-  loan_amount_reserve_remaining: number;
   duration_days_min: number;
   duration_days_max: number;
   loan_asset: LoanAsset;
