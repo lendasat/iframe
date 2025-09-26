@@ -1444,7 +1444,7 @@ importers:
         specifier: ^0.476.0
         version: 0.476.0(react@19.0.0)
       posthog-js:
-        specifier: ^1.268.5
+        specifier: ^1.142.1
         version: 1.268.5
       query-string:
         specifier: ^9.1.1

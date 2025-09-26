@@ -62,6 +62,28 @@ LDFLAGS="-L/opt/homebrew/opt/llvm/lib"
 CPPFLAGS="-I/opt/homebrew/opt/llvm/include"
 ```
 
+### WSL Slow Rust Compilation
+
+**Problem:**
+On WSL (Windows Subsystem for Linux), the hub backend compilation can take 10+ minutes, especially on the first build or after major changes.
+
+**Cause:**
+WSL has slower filesystem I/O compared to native Linux, which significantly impacts Rust compilation times. The hub is a large Rust project with many dependencies.
+
+**Expected Behavior:**
+- **First build**: 10-15 minutes
+- **Incremental builds**: 5-10 minutes
+
+**Solution:**
+This is expected behavior on WSL.
+
+=> **Be patient**: Start the frontend apps first while the hub compiles:
+   ```bash
+   just borrower  # Starts quickly
+   just lender    # Starts quickly
+   just watch-hub # Will take 10+ minutes
+   ```
+
 ## Database Issues
 
 ### SQLx Query Warnings

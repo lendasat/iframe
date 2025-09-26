@@ -234,6 +234,7 @@ rust-project.json
 
 hub.log*
 mempool.log*
+firebase-debug.log
 
 
 **/.vscode
