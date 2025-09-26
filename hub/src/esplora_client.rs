@@ -1,6 +1,7 @@
 use esplora_client::RETRYABLE_ERROR_CODES;
 use reqwest::Response;
-use serde::{Deserialize, Serialize};
+use serde::Deserialize;
+use serde::Serialize;
 use std::time::Duration;
 use thiserror::Error;
 

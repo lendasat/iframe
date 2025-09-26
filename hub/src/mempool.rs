@@ -1,4 +1,5 @@
 use crate::config::Config;
+use crate::contract_update_collateral;
 use crate::db;
 use crate::mark_as_principal_given::mark_as_principal_given;
 use crate::model::LoanPayout;
@@ -223,7 +224,8 @@ async fn update_collateral(
     // money in it, this contract address most likely belongs to a different contract already!
     // Thus we cannot proceed safely.
     let (contract, is_newly_confirmed) =
-        db::contracts::update_collateral(&db, contract_id, confirmed_collateral_sats).await?;
+        contract_update_collateral::update_collateral(&db, contract_id, confirmed_collateral_sats)
+            .await?;
 
     if is_newly_confirmed {
         if let Err(err) = send_loan_collateralized_email_to_lender(

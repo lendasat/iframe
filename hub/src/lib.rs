@@ -18,6 +18,7 @@ pub mod contract_approval_expired;
 pub mod contract_extension;
 pub mod contract_request_expiry;
 pub mod contract_requests;
+mod contract_update_collateral;
 pub mod daily_digest;
 pub mod db;
 pub mod electrum;
