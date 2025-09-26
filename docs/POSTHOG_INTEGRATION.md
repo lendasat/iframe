@@ -16,6 +16,7 @@ PostHog analytics has been integrated into the borrower and lender applications 
 ### 2. Configuration
 
 Environment variables (already added to `.env`):
+
 ```bash
 VITE_POSTHOG_KEY=phc_3MrZhmMPhgvjtBN54e9aDhV2iVAom8t3ocDizQxofyw
 VITE_POSTHOG_HOST=https://eu.i.posthog.com
@@ -24,6 +25,7 @@ VITE_POSTHOG_HOST=https://eu.i.posthog.com
 ### 3. Installation
 
 Install PostHog dependency:
+
 ```bash
 cd /mnt/c/lendasat/frontend
 pnpm add posthog-js --filter ui-shared
@@ -40,7 +42,7 @@ import { trackEvent } from "@frontend/ui-shared";
 // Simple event tracking - PostHog will automatically group and analyze these
 trackEvent("loan_application_started", {
   loan_amount: 10000,
-  duration_months: 12
+  duration_months: 12,
 });
 
 trackEvent("user_login", { method: "wallet" });
@@ -48,7 +50,7 @@ trackEvent("user_login", { method: "wallet" });
 trackEvent("offer_created", {
   offer_id: "offer-123",
   amount: 5000,
-  interest_rate: 5.5
+  interest_rate: 5.5,
 });
 ```
 
@@ -63,7 +65,7 @@ function MyComponent() {
   const handleClick = () => {
     posthog?.capture("custom_event", {
       property1: "value1",
-      property2: 123
+      property2: 123,
     });
   };
 
@@ -83,14 +85,14 @@ function LoginComponent() {
     // Identify the user
     posthog?.identify(userId, {
       email: email,
-      user_type: "borrower" // or "lender"
+      user_type: "borrower", // or "lender"
     });
 
     // Track login event
     LoanAnalytics.login("email");
   };
 
-  return /* your login UI */;
+  return; /* your login UI */
 }
 ```
 
@@ -123,6 +125,7 @@ PostHog will automatically create insights, funnels, and cohorts based on these 
 View analytics at: https://eu.posthog.com
 
 Use filters to segment by:
+
 - `app_type`: "borrower" or "lender"
 - `environment`: "development" or "production"
 
@@ -133,20 +136,25 @@ Use filters to segment by:
 PostHog session recording is configured with multiple layers of protection:
 
 #### 1. Global Configuration
+
 - `maskAllInputs: true` - All input fields masked by default
 - `maskTextSelector` for CSS selectors: `[data-private]`, `.mnemonic`, `.seed-phrase`, `.private-key`, `.secret`
 - Network request filtering for sensitive URLs
 
 #### 2. Marking Sensitive Elements
+
 Add these attributes to any element containing sensitive data:
+
 ```tsx
 <div data-private="true" className="mnemonic">
   {sensitiveData}
-</div>
+</div>;
 ```
 
 #### 3. Pausing Recording on Sensitive Pages
+
 Use the `useSensitivePage` hook:
+
 ```tsx
 import { useSensitivePage } from "@frontend/ui-shared";
 
@@ -157,6 +165,7 @@ function WalletPage() {
 ```
 
 #### 4. Protected Components
+
 - Mnemonic seed phrases - Fully masked
 - Nostr private keys (nsec) - Fully masked
 - Wallet settings pages - Recording paused

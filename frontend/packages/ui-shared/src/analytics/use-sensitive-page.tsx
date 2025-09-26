@@ -1,12 +1,6 @@
 import { usePostHog } from "posthog-js/react";
 import React, { useEffect } from "react";
 
-/**
- * Hook to disable PostHog session recording on sensitive pages
- * Use this on pages that display mnemonics, private keys, or other sensitive data
- *
- * @param isSensitive - Whether the current page contains sensitive data
- */
 export function useSensitivePage(isSensitive: boolean = true) {
   const posthog = usePostHog();
 
@@ -14,26 +8,19 @@ export function useSensitivePage(isSensitive: boolean = true) {
     if (!posthog) return;
 
     if (isSensitive) {
-      // Pause session recording when on sensitive page
-      posthog.sessionRecording?.pauseRecording();
+      posthog.opt_out_capturing();
     } else {
-      // Resume session recording when leaving sensitive page
-      posthog.sessionRecording?.resumeRecording();
+      posthog.opt_in_capturing();
     }
 
-    // Cleanup: resume recording when component unmounts
     return () => {
       if (isSensitive) {
-        posthog.sessionRecording?.resumeRecording();
+        posthog.opt_in_capturing();
       }
     };
   }, [posthog, isSensitive]);
 }
 
-/**
- * Higher-order component to wrap sensitive pages
- * Automatically disables session recording for the wrapped component
- */
 export function withSensitivePage<P extends object>(
   Component: React.ComponentType<P>
 ): React.ComponentType<P> {

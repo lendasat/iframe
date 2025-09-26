@@ -6,6 +6,7 @@
 
 **Problem:**
 When running `just watch-all`, you may encounter:
+
 ```
 x Failed to connect to daemon.
 `-> server is unavailable: channel closed
@@ -71,6 +72,7 @@ On WSL (Windows Subsystem for Linux), the hub backend compilation can take 10+ m
 WSL has slower filesystem I/O compared to native Linux, which significantly impacts Rust compilation times. The hub is a large Rust project with many dependencies.
 
 **Expected Behavior:**
+
 - **First build**: 10-15 minutes
 - **Incremental builds**: 5-10 minutes
 
@@ -78,11 +80,12 @@ WSL has slower filesystem I/O compared to native Linux, which significantly impa
 This is expected behavior on WSL.
 
 => **Be patient**: Start the frontend apps first while the hub compiles:
-   ```bash
-   just borrower  # Starts quickly
-   just lender    # Starts quickly
-   just watch-hub # Will take 10+ minutes
-   ```
+
+```bash
+just borrower  # Starts quickly
+just lender    # Starts quickly
+just watch-hub # Will take 10+ minutes
+```
 
 ## Database Issues
 
@@ -90,12 +93,14 @@ This is expected behavior on WSL.
 
 **Problem:**
 When running `just db-prepare`, you may see:
+
 ```
 warning: no queries found; please ensure that the `offline` feature is enabled in sqlx query data written to `sqlx-data.json` in the current directory; please check this into version control
 ```
 
 **Solution:**
 Update sqlx-cli:
+
 ```bash
 cargo install sqlx-cli
 ```
@@ -107,6 +112,7 @@ Running `just db-test-data` fails with "API key already exists" error.
 
 **Solution:**
 This means the test data has already been loaded. The test users are:
+
 - Bob the Lender: `bob_the_borrower@lendasat.com` / `password123`
 - Alice the Borrower: `alice_the_lender@lendasat.com` / `123password`
 
@@ -118,12 +124,14 @@ No action needed unless you want to reset the database completely.
 
 **Problem:**
 Hub fails to start with error:
+
 ```
 Mempool actor stopped: error sending request for url (http://localhost:7339/api/blocks/tip/height): Connection refused
 ```
 
 **Solution:**
 Ensure the mempool mock service is running first:
+
 ```bash
 just mempool-d
 # Wait for "Starting to listen on 0.0.0.0:7339" message
@@ -137,6 +145,7 @@ just hub
 Hub panics with "DB_URL must be set" or similar environment variable errors.
 
 **Solution:**
+
 1. Ensure you have copied `.env_sample` to `.env`
 2. Configure all required variables in `.env`
 3. For the hub, ensure `NETWORK=regtest` is set:
@@ -154,6 +163,7 @@ Frontend apps start but aren't accessible from Windows browser when running in W
 
 **Solution:**
 Use the `--host 0.0.0.0` flag when starting Vite:
+
 ```bash
 pnpm dev --host 0.0.0.0
 ```
