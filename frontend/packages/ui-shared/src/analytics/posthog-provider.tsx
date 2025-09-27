@@ -17,11 +17,10 @@ if (POSTHOG_KEY && POSTHOG_HOST && typeof window !== "undefined") {
     capture_pageview: true,
     capture_pageleave: true,
     session_recording: {
-      enabled: true,
       maskAllInputs: true,
       maskTextSelector: '[data-sensitive]',
     },
-    loaded: (ph) => {
+    loaded: () => {
       if (import.meta.env.DEV) {
         console.log("[PostHog] Initialized");
       }
