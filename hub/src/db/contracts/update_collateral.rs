@@ -1,11 +1,8 @@
-use crate::db::contracts::load_contract;
 use crate::model::db;
 use crate::model::Contract;
 use crate::model::ContractStatus;
-use anyhow::bail;
 use sqlx::Pool;
 use sqlx::Postgres;
-use std::cmp::Ordering;
 use time::OffsetDateTime;
 
 pub async fn update_status_and_collateral(

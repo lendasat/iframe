@@ -1,4 +1,4 @@
-use crate::mempool;
+use crate::blockchain::btsieve;
 use crate::model::Contract;
 use crate::wallet::Wallet;
 use anyhow::anyhow;
@@ -17,17 +17,17 @@ pub(crate) async fn prepare_liquidation_psbt(
     address: Address<NetworkUnchecked>,
     lender_amount: Amount,
     contract_index: u32,
-    mempool: xtra::Address<mempool::Actor>,
+    btsieve: xtra::Address<btsieve::Actor>,
     fee_rate_sats_per_vbyte: u64,
 ) -> Result<(Descriptor<PublicKey>, PublicKey, Psbt)> {
     let contract_address = contract
         .contract_address
         .ok_or_else(|| anyhow!("Database error: missing contract address",))?;
 
-    let collateral_outputs = mempool
-        .send(mempool::GetCollateralOutputs(contract_address))
+    let collateral_outputs = btsieve
+        .send(btsieve::GetCollateralOutputs(contract_address))
         .await
-        .expect("actor to be alive");
+        .expect("actor to be alive")?;
 
     if collateral_outputs.is_empty() {
         bail!("Database error: missing collateral outputs",);

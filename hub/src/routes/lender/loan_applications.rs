@@ -208,7 +208,6 @@ async fn post_take_loan_application(
     let contract_id = take_application(
         &data.db,
         wallet,
-        &data.mempool,
         &data.config,
         user.id.as_str(),
         data.notifications.clone(),

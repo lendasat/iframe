@@ -1,0 +1,14 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "\n            DELETE FROM contract_collateral_transactions\n            WHERE id = $1 \n        ",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Int4"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "5785af42ca0feaf3aa0e64f69761ccf3875b5f1b2281a5b2cd7aeddc5894dbfd"
+}

@@ -4,21 +4,18 @@ use axum::extract::ws::Message;
 use bitcoin::Network;
 use descriptor_wallet::DescriptorWallet;
 use hub::bitmex_index_pricefeed::subscribe_index_price;
+use hub::blockchain;
 use hub::config::Config;
 use hub::contract_approval_expired::add_contract_approval_expiry_job;
 use hub::contract_request_expiry::add_contract_request_expiry_job;
 use hub::daily_digest::add_daily_digest_job;
 use hub::db::connect_to_db;
 use hub::db::run_migration;
-use hub::electrum;
-use hub::electrum::TrackedContract;
 use hub::installment_close_to_due_date::add_installment_close_to_due_date_job;
 use hub::late_installments::add_late_installment_job;
 use hub::liquidation_engine::monitor_positions;
 use hub::loan_application_expiry::add_loan_application_expiry_job;
 use hub::logger::init_tracing;
-use hub::mempool;
-use hub::model::ContractStatus;
 use hub::moon;
 use hub::process_defaulted_contracts::add_process_defaulted_contracts_job;
 use hub::routes::borrower::spawn_borrower_server;
@@ -137,67 +134,21 @@ async fn main() -> Result<()> {
         notifications.clone(),
     ));
 
-    let (mempool_addr, mempool_mailbox) = xtra::Mailbox::unbounded();
-    let mempool = mempool::Actor::new(
+    let (btsieve_addr, btsieve_mailbox) = xtra::Mailbox::unbounded();
+    let btsieve = blockchain::btsieve::Actor::new(
         db.clone(),
-        network,
         config.clone(),
         notifications.clone(),
         moon_client.clone(),
-    );
+    )?;
 
     tokio::spawn(async {
-        let e = xtra::run(mempool_mailbox, mempool).await;
-        tracing::error!("Mempool actor stopped: {e:#}");
+        let e = xtra::run(btsieve_mailbox, btsieve).await;
+        tracing::error!("Btsieve actor stopped: {e:#}");
 
-        // TODO: Supervise [`mempool::Actor`].
-        panic!("Dying because we can't continue without mempool actor");
+        // TODO: Supervise [`blockchain::Btsieve`].
+        panic!("Dying because we can't continue without btsieve actor");
     });
-
-    let electrum_addr = match config.electrum_url {
-        Some(ref electrum_url) => {
-            tracing::info!(
-                %electrum_url,
-                "Starting hub with Electrum actor"
-            );
-
-            let open_contracts = hub::db::contracts::load_open_contracts(&db).await?;
-            let tracked_contracts = open_contracts
-                .iter()
-                .filter_map(|c| {
-                    c.contract_address.as_ref().map(|address| {
-                        (
-                            c.id.clone(),
-                            TrackedContract::new(
-                                address.clone().assume_checked(),
-                                matches!(c.status, ContractStatus::Approved),
-                            ),
-                        )
-                    })
-                })
-                .collect();
-
-            let (electrum_addr, electrum_mailbox) = xtra::Mailbox::unbounded();
-            let electrum = electrum::Actor::new(
-                electrum_url.to_string(),
-                db.clone(),
-                notifications.clone(),
-                tracked_contracts,
-                network,
-            )?;
-
-            tokio::spawn(async {
-                let e = xtra::run(electrum_mailbox, electrum).await;
-                tracing::error!("Electrum actor stopped: {e:#}");
-
-                // TODO: Supervise [`electrum::Actor`].
-                panic!("Dying because we can't continue without electrum actor");
-            });
-
-            Some(electrum_addr)
-        }
-        None => None,
-    };
 
     // Create a channel with a buffer size of 100
     let (bitmex_tx, mut bitmex_rx) = mpsc::channel(100);
@@ -254,8 +205,7 @@ async fn main() -> Result<()> {
         pake_protocols: Arc::new(Mutex::new(HashMap::default())),
         wallet: wallet.clone(),
         config: config.clone(),
-        mempool: mempool_addr,
-        electrum: electrum_addr,
+        btsieve: btsieve_addr,
         price_feed_ws_connections: broadcast_state.clone(),
         moon: moon_client.clone(),
         sideshift,

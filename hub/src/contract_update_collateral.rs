@@ -21,6 +21,7 @@ pub async fn update_collateral(
     pool: &Pool<Postgres>,
     contract_id: &str,
     updated_collateral_sats: u64,
+    all_unconfirmed: bool,
 ) -> anyhow::Result<(Contract, bool)> {
     let contract = load_contract(pool, contract_id).await?;
 
@@ -32,12 +33,15 @@ pub async fn update_collateral(
         return Ok((contract, false));
     }
 
-    if updated_collateral_sats < min_collateral {
-        // The balance was reduced below [`min_collateral`], which means likely that a tx we have
-        // seen before fell out of the mempool or we had a re-org
+    if updated_collateral_sats < current_collateral_sats {
+        // The balance was reduced which means the borrower either withdrew excess collateral or a
+        // tx which we have seen before fell out of the mempool or we had a re-org
         if contract.status == ContractStatus::CollateralConfirmed
             || contract.status == ContractStatus::CollateralSeen
         {
+            // we do not allow withdrawing excess collateral if we are not fully funded yet, hence,
+            // we assume the only reason why it has been reduced is due to a re-org.
+            // in this case, we go back to [`ContractStatus::Approved`]
             tracing::warn!(
                 contract_id = contract_id,
                 old_collateral_sats = current_collateral_sats,
@@ -45,7 +49,27 @@ pub async fn update_collateral(
                 status = ?contract.status,
                 "Collateral has been reduced of a newly funded contract"
             );
-            // TODO: change contract status to [`ContractStatus::Approved`]
+            let contract = update_status_and_collateral(
+                pool,
+                contract_id,
+                updated_collateral_sats,
+                ContractStatus::Approved,
+            )
+            .await?;
+            return Ok((contract, false));
+        } else if updated_collateral_sats == 0 && contract.status == ContractStatus::Closing {
+            tracing::info!(
+                contract_id = contract_id,
+                "All funds withdrawn, set contract to closed"
+            );
+            let contract = update_status_and_collateral(
+                pool,
+                contract_id,
+                updated_collateral_sats,
+                ContractStatus::Closed,
+            )
+            .await?;
+            return Ok((contract, false));
         } else {
             tracing::error!(
                 contract_id = contract_id,
@@ -59,9 +83,12 @@ pub async fn update_collateral(
 
     if contract.status == ContractStatus::Approved {
         // if the contract was just approved, now can move on
-        let status = if updated_collateral_sats > min_collateral {
-            // TODO: support collateral seen
-            ContractStatus::CollateralConfirmed
+        let status = if updated_collateral_sats >= min_collateral {
+            if all_unconfirmed {
+                ContractStatus::CollateralSeen
+            } else {
+                ContractStatus::CollateralConfirmed
+            }
         } else {
             ContractStatus::Approved
         };

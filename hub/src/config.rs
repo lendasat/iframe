@@ -58,6 +58,8 @@ pub struct Config {
     /// If configured, we expect a value like `tcp://electrum.blockstream.info:50001`.
     pub electrum_url: Option<Url>,
     pub card_topup_fee: Decimal,
+    pub esplora_urls: Vec<Url>,
+    pub esplora_sync_interval: u64,
 }
 
 impl Config {
@@ -212,6 +214,19 @@ impl Config {
             std::env::var("MOON_CARD_TOPUP_FEE").expect("MOON_CARD_TOPUP_FEE must be set");
         let card_topup_fee = Decimal::from_str(card_topup_fee.as_str()).expect("to be a decimal");
 
+        let esplora_sync_interval =
+            std::env::var("ESPLORA_SYNC_INTERVAL").expect("ESPLORA_SYNC_INTERVAL must be set");
+        let esplora_sync_interval =
+            u64::from_str(esplora_sync_interval.as_str()).expect("to be a number");
+
+        let esplora_urls_strings = std::env::var("ESPLORA_URLS").expect("ESPLORA_URLS must be set");
+        let esplora_urls_strings = esplora_urls_strings.split(",");
+        let mut esplora_urls = vec![];
+        for url in esplora_urls_strings {
+            let url = Url::parse(url).expect("to be a valid URL");
+            esplora_urls.push(url);
+        }
+
         Config {
             database_url,
             mempool_rest_url,
@@ -260,6 +275,8 @@ impl Config {
             fallback_npub,
             electrum_url,
             card_topup_fee,
+            esplora_urls,
+            esplora_sync_interval,
         }
     }
 }
