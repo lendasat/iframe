@@ -701,6 +701,58 @@ pub async fn load_contract_by_contract_id_and_lender_id(
     Ok(contract.map(|c| c.into()))
 }
 
+pub async fn load_all(pool: &Pool<Postgres>) -> Result<Vec<Contract>> {
+    let contracts = sqlx::query_as!(
+        db::Contract,
+        r#"
+        SELECT
+            id as "id!",
+            lender_id as "lender_id!",
+            borrower_id as "borrower_id!",
+            loan_deal_id as "loan_deal_id!",
+            initial_ltv as "initial_ltv!",
+            initial_collateral_sats as "initial_collateral_sats!",
+            origination_fee_sats as "origination_fee_sats!",
+            collateral_sats as "collateral_sats!",
+            loan_amount as "loan_amount!",
+            borrower_btc_address as "borrower_btc_address!",
+            borrower_pk as "borrower_pk!",
+            borrower_derivation_path,
+            lender_pk as "lender_pk!",
+            lender_derivation_path as "lender_derivation_path!",
+            borrower_loan_address,
+            lender_loan_repayment_address,
+            lender_btc_loan_repayment_address,
+            loan_type as "loan_type!: crate::model::db::LoanType",
+            contract_address,
+            contract_index,
+            borrower_npub as "borrower_npub!",
+            lender_npub as "lender_npub!",
+            status as "status!: crate::model::db::ContractStatus",
+            liquidation_status as "liquidation_status!: crate::model::db::LiquidationStatus",
+            duration_days as "duration_days!",
+            expiry_date as "expiry_date!",
+            contract_version as "contract_version!",
+            interest_rate as "interest_rate!",
+            extension_duration_days as "extension_duration_days!",
+            extension_interest_rate as "extension_interest_rate!",
+            asset as "asset!: crate::model::LoanAsset",
+            created_at as "created_at!",
+            updated_at as "updated_at!",
+            client_contract_id
+        FROM contracts"#,
+    )
+    .fetch_all(pool)
+    .await?;
+
+    let contracts = contracts
+        .into_iter()
+        .map(Contract::from)
+        .collect::<Vec<Contract>>();
+
+    Ok(contracts)
+}
+
 pub async fn load_open_contracts(pool: &Pool<Postgres>) -> Result<Vec<Contract>> {
     let contracts = sqlx::query_as!(
         db::Contract,

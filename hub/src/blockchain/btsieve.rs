@@ -125,10 +125,42 @@ impl xtra::Actor for Actor {
 
         let sync_interval = self.config.esplora_sync_interval;
 
+        // if this is set, we will fetch transactions for ALL contracts
+        let reset_txes = self.config.reset_tx_view_in_db;
+
         tokio::spawn({
             let actor = mailbox.address();
             let db = self.db.clone();
             async move {
+                if reset_txes {
+                    let contracts = db::contracts::load_all(&db)
+                        .await
+                        .expect("contracts to start btsive actor");
+                    tracing::info!(
+                        number_of_contracts = contracts.len(),
+                        "Getting tx for all contracts"
+                    );
+
+                    for contract in &contracts {
+                        if let Some(contract_address) = &contract.contract_address {
+                            if let Err(e) = actor
+                                .send(CheckAddressStatus {
+                                    contract_id: contract.id.clone(),
+                                    contract_address: contract_address.clone().assume_checked(),
+                                })
+                                .await
+                                .expect("actor to be alive")
+                            {
+                                tracing::error!(?contract, "Failed to track contract: {e:#}");
+                            }
+                        }
+                    }
+                    tracing::info!(
+                        number_of_contracts = contracts.len(),
+                        "Fetching tx for all contracts done"
+                    );
+                }
+
                 loop {
                     // TODO: Maybe we should not go against the database every time. We could rely
                     // on the `Actor` state.

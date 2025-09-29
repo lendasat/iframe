@@ -60,6 +60,7 @@ pub struct Config {
     pub card_topup_fee: Decimal,
     pub esplora_urls: Vec<Url>,
     pub esplora_sync_interval: u64,
+    pub reset_tx_view_in_db: bool,
 }
 
 impl Config {
@@ -227,6 +228,13 @@ impl Config {
             esplora_urls.push(url);
         }
 
+        let reset_tx_view_in_db = {
+            let value = std::env::var("ESPLORA_RESET_TX").ok();
+            let value = value.map(|v| bool::from_str(v.as_ref()).unwrap_or_default());
+
+            value.unwrap_or_default()
+        };
+
         Config {
             database_url,
             mempool_rest_url,
@@ -277,6 +285,7 @@ impl Config {
             card_topup_fee,
             esplora_urls,
             esplora_sync_interval,
+            reset_tx_view_in_db,
         }
     }
 }
