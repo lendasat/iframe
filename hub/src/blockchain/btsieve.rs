@@ -115,14 +115,8 @@ impl xtra::Actor for Actor {
     type Stop = anyhow::Error;
 
     async fn started(&mut self, mailbox: &Mailbox<Self>) -> Result<()> {
-        let first_client = self
-            .clients
-            .first()
-            .ok_or(anyhow!("no client configured"))?;
-        let starting_block_height = first_client.get_block_tip_height().await?;
-        tracing::info!(block_height = starting_block_height, "Latest block height");
-
-        self.block_height = starting_block_height;
+        // setting to 0 to ensure we will sync during startup
+        self.block_height = 0;
 
         let sync_interval = self.config.btsieve_sync_interval;
 
@@ -164,37 +158,16 @@ impl xtra::Actor for Actor {
                 }
 
                 loop {
-                    // TODO: Maybe we should not go against the database every time. We could rely
-                    // on the `Actor` state.
-                    let contracts = db::contracts::load_open_contracts(&db)
-                        .await
-                        .expect("contracts to start btsive actor");
                     tracing::trace!(
                         target: "btsieve",
-                        number_of_contracts = contracts.len(),
-                        "Checking tx for contracts"
+                        "Checking tx for blocks"
                     );
-                    for contract in contracts {
-                        let contract_address = match contract.contract_address {
-                            Some(ref contract_address) => contract_address,
-                            None => {
-                                tracing::error!(
-                                    contract_id = contract.id,
-                                    "Cannot track pending contract without contract address"
-                                );
-                                continue;
-                            }
-                        };
-                        if let Err(e) = actor
-                            .send(CheckAddressStatus {
-                                contract_id: contract.id.clone(),
-                                contract_address: contract_address.clone().assume_checked(),
-                            })
-                            .await
-                            .expect("actor to be alive")
-                        {
-                            tracing::error!(?contract, "Failed to track contract: {e:#}");
-                        }
+                    if let Err(e) = actor
+                        .send(CheckBlockHeight)
+                        .await
+                        .expect("actor to be alive")
+                    {
+                        tracing::error!("Failed to check for latest block height: {e:#}");
                     }
                     tokio::time::sleep(tokio::time::Duration::from_secs(sync_interval)).await;
                 }
@@ -206,6 +179,77 @@ impl xtra::Actor for Actor {
 
     async fn stopped(self) -> Self::Stop {
         anyhow!("Btsieve actor stopped")
+    }
+}
+
+/// Message to tell the [`crate::mempool::Actor`] to fetch the status of an address.
+#[derive(Debug)]
+pub struct CheckBlockHeight;
+
+impl xtra::Handler<CheckBlockHeight> for Actor {
+    type Return = Result<()>;
+
+    async fn handle(&mut self, _: CheckBlockHeight, ctx: &mut xtra::Context<Self>) -> Self::Return {
+        let client = self
+            .get_next_client()
+            .ok_or(anyhow!("no client configured"))?;
+
+        let latest_tip = client.get_block_tip_height().await?;
+
+        tracing::trace!(
+            target: "btsieve",
+            latest_tip = latest_tip,
+            "Fetched latest height"
+        );
+
+        if self.block_height < latest_tip {
+            self.block_height = latest_tip;
+            tracing::debug!(
+                last_known_height = self.block_height,
+                latest_tip = latest_tip,
+                "Found a new block"
+            );
+
+            let actor = ctx.mailbox().address();
+
+            let contracts = db::contracts::load_open_contracts(&self.db)
+                .await
+                .expect("contracts to start btsive actor");
+            tracing::trace!(
+                target: "btsieve",
+                number_of_contracts = contracts.len(),
+                "Checking tx for contracts"
+            );
+            tokio::spawn(async move {
+                for contract in contracts {
+                    let contract_address = match contract.contract_address {
+                        Some(ref contract_address) => contract_address,
+                        None => {
+                            tracing::error!(
+                                contract_id = contract.id,
+                                "Cannot track pending contract without contract address"
+                            );
+                            continue;
+                        }
+                    };
+                    if let Err(err) = actor
+                        .send(CheckAddressStatus {
+                            contract_id: contract.id.clone(),
+                            contract_address: contract_address.clone().assume_checked(),
+                        })
+                        .await
+                        .expect("actor to be alive")
+                    {
+                        tracing::error!(
+                            contract_id = contract.id,
+                            "Failed checking for new transactions for contract {err:#}"
+                        );
+                    }
+                }
+            });
+        }
+
+        Ok(())
     }
 }
 
