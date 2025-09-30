@@ -95,10 +95,6 @@ const editFormSchema = z
       .int()
       .min(1, "Maximum loan amount must be > 10")
       .optional(),
-    loan_amount_reserve: z
-      .number()
-      .min(1, "Reserve amount must be > 10")
-      .optional(),
     duration_days_min: z
       .number({
         required_error: "Minimum duration is required",
@@ -155,17 +151,6 @@ const editFormSchema = z
         "Maximum duration must be greater than or equal to minimum duration",
       path: ["duration_days_max"],
     },
-  )
-  .refine(
-    (data) =>
-      !data.loan_amount_reserve ||
-      !data.loan_amount_max ||
-      data.loan_amount_reserve >= data.loan_amount_max,
-    {
-      message:
-        "Reserve amount must be greater than or equal to maximum loan amount",
-      path: ["loan_amount_reserve"],
-    },
   );
 
 type EditFormData = z.infer<typeof editFormSchema>;
@@ -209,7 +194,6 @@ function MyLoanOfferDetails() {
           interest_rate: offer.interest_rate * 100, // Convert from decimal to percentage
           loan_amount_min: offer.loan_amount_min,
           loan_amount_max: offer.loan_amount_max,
-          loan_amount_reserve: offer.loan_amount_reserve,
           duration_days_min: offer.duration_days_min,
           duration_days_max: offer.duration_days_max,
           auto_accept: offer.auto_accept,
@@ -269,7 +253,6 @@ function MyLoanOfferDetails() {
           : undefined,
         loan_amount_min: data.loan_amount_min,
         loan_amount_max: data.loan_amount_max,
-        loan_amount_reserve: data.loan_amount_reserve,
         duration_days_min: data.duration_days_min,
         duration_days_max: data.duration_days_max,
         auto_accept: data.auto_accept,
@@ -340,7 +323,7 @@ function MyLoanOfferDetails() {
                 : offer.status === LoanOfferStatus.Deleted
                   ? "This loan offer has been deleted and is no longer available"
                   : offer.status === LoanOfferStatus.Unavailable
-                    ? "This loan offer is temporarily unavailable"
+                    ? "This loan offer is unavailable"
                     : "View and manage your loan offer"}
             </p>
           </div>
@@ -406,7 +389,7 @@ function MyLoanOfferDetails() {
             <AlertDescription>
               {offer.status === LoanOfferStatus.Deleted
                 ? "This loan offer has been permanently deleted. It cannot be edited or reactivated. Borrowers can no longer view or accept this offer."
-                : "This loan offer is temporarily unavailable. It may have reached its reserve limit or been temporarily disabled. Contact support if you believe this is an error."}
+                : "This loan offer is unavailable. It may have reached its reserve limit or been temporarily disabled. Contact support if you believe this is an error."}
             </AlertDescription>
           </Alert>
         )}
@@ -526,21 +509,6 @@ function MyLoanOfferDetails() {
                                   const newValue =
                                     value === "" ? 0 : parseInt(value);
                                   field.onChange(newValue);
-
-                                  // Auto-update reserve amount if it's less than max loan amount
-                                  const currentReserve = form.getValues(
-                                    "loan_amount_reserve",
-                                  );
-                                  if (
-                                    newValue &&
-                                    currentReserve &&
-                                    currentReserve < newValue
-                                  ) {
-                                    form.setValue(
-                                      "loan_amount_reserve",
-                                      newValue,
-                                    );
-                                  }
                                 }
                               }}
                             />
@@ -558,53 +526,6 @@ function MyLoanOfferDetails() {
                     )}
                   />
                 </div>
-
-                <FormField
-                  control={form.control}
-                  name="loan_amount_reserve"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Reserve Amount</FormLabel>
-                      <FormControl>
-                        {isEditing ? (
-                          <Input
-                            type="text"
-                            placeholder="e.g., 100000"
-                            inputMode="numeric"
-                            value={field.value || ""}
-                            onChange={(e) => {
-                              const value = e.target.value;
-                              if (value === "" || /^\d*$/.test(value)) {
-                                field.onChange(
-                                  value === "" ? 0 : parseInt(value),
-                                );
-                              }
-                            }}
-                          />
-                        ) : (
-                          <div className="bg-muted rounded-lg border px-3 py-2 text-sm">
-                            {formatCurrency(
-                              offer.loan_amount_reserve,
-                              LoanAssetHelper.toCurrency(offer.loan_asset),
-                            )}
-                            <span className="text-muted-foreground ml-2 text-xs">
-                              (
-                              {formatCurrency(
-                                offer.loan_amount_reserve_remaining,
-                                LoanAssetHelper.toCurrency(offer.loan_asset),
-                              )}{" "}
-                              remaining)
-                            </span>
-                          </div>
-                        )}
-                      </FormControl>
-                      <FormDescription>
-                        Max amount to lend across all requests for this offer.
-                      </FormDescription>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
 
                 <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
                   <FormField

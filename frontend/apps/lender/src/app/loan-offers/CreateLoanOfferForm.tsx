@@ -61,7 +61,6 @@ const formSchema = z
     interest_rate: z.number().min(0.5, "Interest rate must be positive"),
     loan_amount_min: z.number().int().min(1, "Minimum loan amount must be > 1"),
     loan_amount_max: z.number().int().min(1, "Maximum loan amount must be > 1"),
-    loan_amount_reserve: z.number().min(1, "Reserve amount must be > 1"),
     duration_days_min: z
       .number({
         required_error: "Minimum duration is required",
@@ -99,11 +98,6 @@ const formSchema = z
     message:
       "Maximum duration must be greater than or equal to minimum duration",
     path: ["duration_days_max"],
-  })
-  .refine((data) => data.loan_amount_reserve >= data.loan_amount_max, {
-    message:
-      "Reserve amount must be greater than or equal to maximum loan amount",
-    path: ["loan_amount_reserve"],
   })
   .refine(
     (data) => {
@@ -143,7 +137,6 @@ export function CreateLoanOfferForm({
       interest_rate: 8,
       loan_amount_min: 1000,
       loan_amount_max: 100000,
-      loan_amount_reserve: 100000,
       duration_days_min: 7,
       duration_days_max: 360,
       loan_asset: LoanAsset.USDC_POL,
@@ -165,7 +158,6 @@ export function CreateLoanOfferForm({
         interest_rate: data.interest_rate,
         loan_amount_min: data.loan_amount_min,
         loan_amount_max: data.loan_amount_max,
-        loan_amount_reserve: data.loan_amount_reserve,
         duration_days_min: data.duration_days_min,
         duration_days_max: data.duration_days_max,
         loan_asset: data.loan_asset,
@@ -353,17 +345,6 @@ export function CreateLoanOfferForm({
                                 const newValue =
                                   value === "" ? 0 : parseInt(value);
                                 field.onChange(newValue);
-
-                                // Auto-update reserve amount if it's less than max loan amount
-                                const currentReserve = form.getValues(
-                                  "loan_amount_reserve",
-                                );
-                                if (currentReserve < newValue) {
-                                  form.setValue(
-                                    "loan_amount_reserve",
-                                    newValue,
-                                  );
-                                }
                               }
                             }}
                           />
@@ -373,36 +354,6 @@ export function CreateLoanOfferForm({
                     )}
                   />
                 </div>
-
-                <FormField
-                  control={form.control}
-                  name="loan_amount_reserve"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Reserve Amount</FormLabel>
-                      <FormControl>
-                        <Input
-                          type="text"
-                          inputMode="numeric"
-                          pattern="[0-9]*"
-                          value={field.value || ""}
-                          onChange={(e) => {
-                            const value = e.target.value;
-                            if (value === "" || /^\d*$/.test(value)) {
-                              field.onChange(
-                                value === "" ? 0 : parseInt(value),
-                              );
-                            }
-                          }}
-                        />
-                      </FormControl>
-                      <FormDescription>
-                        Max amount to lend across all requests for this offer.
-                      </FormDescription>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
 
                 <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
                   <FormField

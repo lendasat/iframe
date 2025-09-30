@@ -1,6 +1,6 @@
 {
   "db_name": "PostgreSQL",
-  "query": "\n        SELECT\n            lo.id,\n            lo.loan_deal_id,\n            lo.lender_id,\n            lo.name,\n            lo.min_ltv,\n            lo.interest_rate,\n            lo.loan_amount_min,\n            lo.loan_amount_max,\n            lo.duration_days_min,\n            lo.duration_days_max,\n            lo.loan_amount_reserve,\n            COALESCE(\n                lo.loan_amount_reserve - COALESCE(\n                    SUM(\n                        CASE\n                            WHEN c.status NOT IN ('Cancelled', 'RequestExpired')\n                            THEN c.loan_amount\n                            ELSE 0\n                        END\n                    ),\n                    0\n                ),\n                lo.loan_amount_reserve\n            ) AS loan_amount_reserve_remaining,\n            lo.loan_asset AS \"loan_asset: LoanAsset\",\n            lo.loan_payout AS \"loan_payout: LoanPayout\",\n            lo.status AS \"status: LoanOfferStatus\",\n            lo.loan_repayment_address,\n            lo.lender_pk,\n            lo.lender_derivation_path,\n            lo.auto_accept,\n            lo.kyc_link,\n            lo.lender_npub,\n            lo.extension_duration_days,\n            lo.extension_interest_rate,\n            lo.repayment_plan AS \"repayment_plan: RepaymentPlan\",\n            lo.btc_loan_repayment_address,\n            lo.created_at,\n            lo.updated_at\n        FROM loan_offers lo\n            LEFT JOIN\n                contracts c ON lo.id = c.loan_deal_id\n        WHERE lo.id = $1\n        GROUP BY\n            lo.id\n    ",
+  "query": "\n        SELECT\n            lo.id,\n            lo.loan_deal_id,\n            lo.lender_id,\n            lo.name,\n            lo.min_ltv,\n            lo.interest_rate,\n            lo.loan_amount_min,\n            lo.loan_amount_max,\n            lo.duration_days_min,\n            lo.duration_days_max,\n            lo.loan_asset AS \"loan_asset: LoanAsset\",\n            lo.loan_payout AS \"loan_payout: LoanPayout\",\n            lo.status AS \"status: LoanOfferStatus\",\n            lo.loan_repayment_address,\n            lo.lender_pk,\n            lo.lender_derivation_path,\n            lo.auto_accept,\n            lo.kyc_link,\n            lo.lender_npub,\n            lo.extension_duration_days,\n            lo.extension_interest_rate,\n            lo.repayment_plan AS \"repayment_plan: RepaymentPlan\",\n            lo.btc_loan_repayment_address,\n            lo.created_at,\n            lo.updated_at\n        FROM loan_offers lo\n            LEFT JOIN\n                contracts c ON lo.id = c.loan_deal_id\n        WHERE lo.lender_id = $1\n        GROUP BY\n            lo.id\n        ",
   "describe": {
     "columns": [
       {
@@ -55,16 +55,6 @@
       },
       {
         "ordinal": 10,
-        "name": "loan_amount_reserve",
-        "type_info": "Numeric"
-      },
-      {
-        "ordinal": 11,
-        "name": "loan_amount_reserve_remaining",
-        "type_info": "Numeric"
-      },
-      {
-        "ordinal": 12,
         "name": "loan_asset: LoanAsset",
         "type_info": {
           "Custom": {
@@ -91,7 +81,7 @@
         }
       },
       {
-        "ordinal": 13,
+        "ordinal": 11,
         "name": "loan_payout: LoanPayout",
         "type_info": {
           "Custom": {
@@ -107,7 +97,7 @@
         }
       },
       {
-        "ordinal": 14,
+        "ordinal": 12,
         "name": "status: LoanOfferStatus",
         "type_info": {
           "Custom": {
@@ -123,47 +113,47 @@
         }
       },
       {
-        "ordinal": 15,
+        "ordinal": 13,
         "name": "loan_repayment_address",
         "type_info": "Varchar"
       },
       {
-        "ordinal": 16,
+        "ordinal": 14,
         "name": "lender_pk",
         "type_info": "Bpchar"
       },
       {
-        "ordinal": 17,
+        "ordinal": 15,
         "name": "lender_derivation_path",
         "type_info": "Text"
       },
       {
-        "ordinal": 18,
+        "ordinal": 16,
         "name": "auto_accept",
         "type_info": "Bool"
       },
       {
-        "ordinal": 19,
+        "ordinal": 17,
         "name": "kyc_link",
         "type_info": "Text"
       },
       {
-        "ordinal": 20,
+        "ordinal": 18,
         "name": "lender_npub",
         "type_info": "Text"
       },
       {
-        "ordinal": 21,
+        "ordinal": 19,
         "name": "extension_duration_days",
         "type_info": "Int4"
       },
       {
-        "ordinal": 22,
+        "ordinal": 20,
         "name": "extension_interest_rate",
         "type_info": "Numeric"
       },
       {
-        "ordinal": 23,
+        "ordinal": 21,
         "name": "repayment_plan: RepaymentPlan",
         "type_info": {
           "Custom": {
@@ -179,17 +169,17 @@
         }
       },
       {
-        "ordinal": 24,
+        "ordinal": 22,
         "name": "btc_loan_repayment_address",
         "type_info": "Text"
       },
       {
-        "ordinal": 25,
+        "ordinal": 23,
         "name": "created_at",
         "type_info": "Timestamptz"
       },
       {
-        "ordinal": 26,
+        "ordinal": 24,
         "name": "updated_at",
         "type_info": "Timestamptz"
       }
@@ -211,8 +201,6 @@
       false,
       false,
       false,
-      null,
-      false,
       false,
       false,
       false,
@@ -229,5 +217,5 @@
       false
     ]
   },
-  "hash": "a8a0a692d23458c67ba3080a91840e7d4102787a6dc22023306d17acc24d635d"
+  "hash": "9ce1a44f14847404622ab7c9a529b0abe1c4cc0e2112d084a35a8e359bcff928"
 }

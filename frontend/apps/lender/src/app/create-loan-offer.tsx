@@ -133,7 +133,6 @@ const CreateLoanOffer = () => {
       interest_rate: values.interest / 100,
       loan_amount_min: values.loanAmount.min,
       loan_amount_max: values.loanAmount.max,
-      loan_amount_reserve: values.loanReserve,
       duration_days_min: values.loanDuration.min,
       duration_days_max: values.loanDuration.max,
       loan_asset: values.loanAsset as LoanAsset,
@@ -153,11 +152,6 @@ const CreateLoanOffer = () => {
 
   const onSubmit = async (data: FormValues) => {
     console.log(`Submitting ${JSON.stringify(data)}`);
-
-    if (data.loanReserve < data.loanAmount.max) {
-      setError("Loan reserve cannot be smaller than max loan amount.");
-      return;
-    }
 
     setError("");
 
@@ -281,40 +275,6 @@ const CreateLoanOffer = () => {
                       )}
                     />
 
-                    {/* Reserve */}
-                    <FormField
-                      control={form.control}
-                      name="loanReserve"
-                      render={({ field }) => (
-                        <FormItem className="space-y-1">
-                          <FormLabel className="text-muted-foreground">
-                            Reserve (max amount across all requests for this
-                            offer)
-                          </FormLabel>
-                          <FormControl>
-                            <Input
-                              type="number"
-                              placeholder="Loan Reserve"
-                              value={field.value === 0 ? "" : field.value}
-                              onChange={(e) => {
-                                const value =
-                                  e.target.value === ""
-                                    ? 0
-                                    : Number(e.target.value);
-                                if (!Number.isNaN(value)) {
-                                  field.onChange(value);
-                                  form.setValue("autoAccept", true);
-                                }
-                              }}
-                              min={form.watch("loanAmount.max")}
-                              disabled={!autoApproveEnabled}
-                            />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-
                     {/* Auto Accept */}
                     <FormField
                       control={form.control}
@@ -334,8 +294,8 @@ const CreateLoanOffer = () => {
                                 />
                               </FormControl>
                               <FormLabel className="font-normal">
-                                Auto Accept (Requests within the "Reserve" will
-                                be automatically accepted)
+                                Auto Accept (Requests within the range of min
+                                and max amount will be automatically accepted)
                               </FormLabel>
                             </div>
                           </div>

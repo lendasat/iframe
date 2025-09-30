@@ -163,8 +163,6 @@ async fn create_loan_offer(
         interest_rate: offer.interest_rate,
         loan_amount_min: offer.loan_amount_min,
         loan_amount_max: offer.loan_amount_max,
-        loan_amount_reserve: offer.loan_amount_reserve,
-        loan_amount_reserve_remaining: offer.loan_amount_reserve_remaining,
         duration_days_min: offer.duration_days_min,
         duration_days_max: offer.duration_days_max,
         loan_asset: offer.loan_asset,
@@ -252,8 +250,6 @@ async fn get_my_loan_offers(
             loan_amount_max: offer.loan_amount_max,
             duration_days_min: offer.duration_days_min,
             duration_days_max: offer.duration_days_max,
-            loan_amount_reserve: offer.loan_amount_reserve,
-            loan_amount_reserve_remaining: offer.loan_amount_reserve_remaining,
             loan_asset: offer.loan_asset,
             loan_payout: offer.loan_payout,
             status: offer.status,
@@ -347,8 +343,6 @@ async fn get_loan_offer_by_lender_and_offer_id(
         interest_rate: offer.interest_rate,
         loan_amount_min: offer.loan_amount_min,
         loan_amount_max: offer.loan_amount_max,
-        loan_amount_reserve: offer.loan_amount_reserve,
-        loan_amount_reserve_remaining: offer.loan_amount_reserve_remaining,
         duration_days_min: offer.duration_days_min,
         duration_days_max: offer.duration_days_max,
         loan_asset: offer.loan_asset,
@@ -434,7 +428,6 @@ async fn put_update_loan_offer(
         body.interest_rate,
         body.loan_amount_min,
         body.loan_amount_max,
-        body.loan_amount_reserve,
         body.duration_days_min,
         body.duration_days_max,
         body.auto_accept,
@@ -478,8 +471,6 @@ async fn put_update_loan_offer(
         interest_rate: updated_offer.interest_rate,
         loan_amount_min: updated_offer.loan_amount_min,
         loan_amount_max: updated_offer.loan_amount_max,
-        loan_amount_reserve: updated_offer.loan_amount_reserve,
-        loan_amount_reserve_remaining: updated_offer.loan_amount_reserve_remaining,
         duration_days_min: updated_offer.duration_days_min,
         duration_days_max: updated_offer.duration_days_max,
         loan_asset: updated_offer.loan_asset,
@@ -567,8 +558,6 @@ async fn get_loan_offers(
             interest_rate: offer.interest_rate,
             loan_amount_min: offer.loan_amount_min,
             loan_amount_max: offer.loan_amount_max,
-            loan_amount_reserve: offer.loan_amount_reserve,
-            loan_amount_reserve_remaining: offer.loan_amount_reserve_remaining,
             duration_days_min: offer.duration_days_min,
             duration_days_max: offer.duration_days_max,
             loan_asset: offer.loan_asset,
@@ -685,9 +674,6 @@ struct UpdateLoanOfferRequest {
     /// New maximum loan amount
     #[serde(with = "rust_decimal::serde::float_option")]
     loan_amount_max: Option<Decimal>,
-    /// New reserve amount
-    #[serde(with = "rust_decimal::serde::float_option")]
-    loan_amount_reserve: Option<Decimal>,
     /// New minimum duration
     duration_days_min: Option<i32>,
     /// New maximum duration
@@ -720,10 +706,6 @@ struct LoanOffer {
     loan_amount_min: Decimal,
     #[serde(with = "rust_decimal::serde::float")]
     loan_amount_max: Decimal,
-    #[serde(with = "rust_decimal::serde::float")]
-    loan_amount_reserve: Decimal,
-    #[serde(with = "rust_decimal::serde::float")]
-    loan_amount_reserve_remaining: Decimal,
     auto_accept: bool,
     duration_days_min: i32,
     duration_days_max: i32,

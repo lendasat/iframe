@@ -1,6 +1,6 @@
 {
   "db_name": "PostgreSQL",
-  "query": "\n        SELECT\n            lo.id,\n            lo.loan_deal_id,\n            lo.lender_id,\n            lo.name,\n            lo.min_ltv,\n            lo.interest_rate,\n            lo.loan_amount_min,\n            lo.loan_amount_max,\n            lo.duration_days_min,\n            lo.duration_days_max,\n            lo.loan_amount_reserve,\n            COALESCE(\n                lo.loan_amount_reserve - COALESCE(\n                    SUM(\n                        CASE\n                            WHEN c.status NOT IN ('Cancelled', 'RequestExpired')\n                            THEN c.loan_amount\n                            ELSE 0\n                        END\n                    ),\n                    0\n                ),\n                lo.loan_amount_reserve\n            ) AS loan_amount_reserve_remaining,\n            lo.loan_asset AS \"loan_asset: LoanAsset\",\n            lo.loan_payout AS \"loan_payout: LoanPayout\",\n            lo.status AS \"status: LoanOfferStatus\",\n            lo.loan_repayment_address,\n            lo.lender_pk,\n            lo.lender_derivation_path,\n            lo.auto_accept,\n            lo.kyc_link,\n            lo.lender_npub,\n            lo.extension_duration_days,\n            lo.extension_interest_rate,\n            lo.repayment_plan AS \"repayment_plan: RepaymentPlan\",\n            lo.btc_loan_repayment_address,\n            lo.created_at,\n            lo.updated_at\n        FROM loan_offers lo\n            LEFT JOIN\n                contracts c ON lo.id = c.loan_deal_id\n        WHERE lo.lender_id = $1 and lo.id = $2\n        GROUP BY\n            lo.id\n        ",
+  "query": "\n        INSERT INTO loan_offers (\n          id,\n          loan_deal_id,\n          lender_id,\n          name,\n          min_ltv,\n          interest_rate,\n          loan_amount_min,\n          loan_amount_max,\n          duration_days_min,\n          duration_days_max,\n          loan_asset,\n          loan_payout,\n          status,\n          loan_repayment_address,\n          lender_pk,\n          lender_derivation_path,\n          auto_accept,\n          kyc_link,\n          lender_npub,\n          extension_duration_days,\n          extension_interest_rate,\n          repayment_plan,\n          btc_loan_repayment_address\n        )\n        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21, $22, $23)\n        RETURNING\n          id,\n          loan_deal_id,\n          lender_id,\n          name,\n          min_ltv,\n          interest_rate,\n          loan_amount_min,\n          loan_amount_max,\n          duration_days_min,\n          duration_days_max,\n          loan_asset AS \"loan_asset: LoanAsset\",\n          loan_payout AS \"loan_payout: LoanPayout\",\n          status AS \"status: crate::model::LoanOfferStatus\",\n          loan_repayment_address,\n          lender_pk,\n          lender_derivation_path,\n          auto_accept,\n          kyc_link,\n          lender_npub,\n          extension_duration_days,\n          extension_interest_rate,\n          repayment_plan AS \"repayment_plan: RepaymentPlan\",\n          btc_loan_repayment_address,\n          created_at,\n          updated_at\n        ",
   "describe": {
     "columns": [
       {
@@ -55,16 +55,6 @@
       },
       {
         "ordinal": 10,
-        "name": "loan_amount_reserve",
-        "type_info": "Numeric"
-      },
-      {
-        "ordinal": 11,
-        "name": "loan_amount_reserve_remaining",
-        "type_info": "Numeric"
-      },
-      {
-        "ordinal": 12,
         "name": "loan_asset: LoanAsset",
         "type_info": {
           "Custom": {
@@ -91,7 +81,7 @@
         }
       },
       {
-        "ordinal": 13,
+        "ordinal": 11,
         "name": "loan_payout: LoanPayout",
         "type_info": {
           "Custom": {
@@ -107,8 +97,8 @@
         }
       },
       {
-        "ordinal": 14,
-        "name": "status: LoanOfferStatus",
+        "ordinal": 12,
+        "name": "status: crate::model::LoanOfferStatus",
         "type_info": {
           "Custom": {
             "name": "loan_offer_status",
@@ -123,47 +113,47 @@
         }
       },
       {
-        "ordinal": 15,
+        "ordinal": 13,
         "name": "loan_repayment_address",
         "type_info": "Varchar"
       },
       {
-        "ordinal": 16,
+        "ordinal": 14,
         "name": "lender_pk",
         "type_info": "Bpchar"
       },
       {
-        "ordinal": 17,
+        "ordinal": 15,
         "name": "lender_derivation_path",
         "type_info": "Text"
       },
       {
-        "ordinal": 18,
+        "ordinal": 16,
         "name": "auto_accept",
         "type_info": "Bool"
       },
       {
-        "ordinal": 19,
+        "ordinal": 17,
         "name": "kyc_link",
         "type_info": "Text"
       },
       {
-        "ordinal": 20,
+        "ordinal": 18,
         "name": "lender_npub",
         "type_info": "Text"
       },
       {
-        "ordinal": 21,
+        "ordinal": 19,
         "name": "extension_duration_days",
         "type_info": "Int4"
       },
       {
-        "ordinal": 22,
+        "ordinal": 20,
         "name": "extension_interest_rate",
         "type_info": "Numeric"
       },
       {
-        "ordinal": 23,
+        "ordinal": 21,
         "name": "repayment_plan: RepaymentPlan",
         "type_info": {
           "Custom": {
@@ -179,17 +169,17 @@
         }
       },
       {
-        "ordinal": 24,
+        "ordinal": 22,
         "name": "btc_loan_repayment_address",
         "type_info": "Text"
       },
       {
-        "ordinal": 25,
+        "ordinal": 23,
         "name": "created_at",
         "type_info": "Timestamptz"
       },
       {
-        "ordinal": 26,
+        "ordinal": 24,
         "name": "updated_at",
         "type_info": "Timestamptz"
       }
@@ -197,7 +187,83 @@
     "parameters": {
       "Left": [
         "Bpchar",
-        "Bpchar"
+        "Bpchar",
+        "Bpchar",
+        "Varchar",
+        "Numeric",
+        "Numeric",
+        "Numeric",
+        "Numeric",
+        "Int4",
+        "Int4",
+        {
+          "Custom": {
+            "name": "loan_asset",
+            "kind": {
+              "Enum": [
+                "UsdcPol",
+                "UsdtPol",
+                "UsdcEth",
+                "UsdtEth",
+                "UsdcStrk",
+                "UsdtStrk",
+                "UsdcSol",
+                "UsdtSol",
+                "Usd",
+                "Eur",
+                "Chf",
+                "Unknown",
+                "UsdtLiquid",
+                "Mxn"
+              ]
+            }
+          }
+        },
+        {
+          "Custom": {
+            "name": "loan_payout",
+            "kind": {
+              "Enum": [
+                "Direct",
+                "Indirect",
+                "MoonCardInstant"
+              ]
+            }
+          }
+        },
+        {
+          "Custom": {
+            "name": "loan_offer_status",
+            "kind": {
+              "Enum": [
+                "Available",
+                "Unavailable",
+                "Deleted"
+              ]
+            }
+          }
+        },
+        "Varchar",
+        "Bpchar",
+        "Text",
+        "Bool",
+        "Text",
+        "Text",
+        "Int4",
+        "Numeric",
+        {
+          "Custom": {
+            "name": "repayment_plan",
+            "kind": {
+              "Enum": [
+                "Bullet",
+                "InterestOnlyWeekly",
+                "InterestOnlyMonthly"
+              ]
+            }
+          }
+        },
+        "Text"
       ]
     },
     "nullable": [
@@ -211,8 +277,6 @@
       false,
       false,
       false,
-      false,
-      null,
       false,
       false,
       false,
@@ -230,5 +294,5 @@
       false
     ]
   },
-  "hash": "bd5b5f628424021b19b5415d18f275853432f95bed3f72f0c8b18137d9f3b8c2"
+  "hash": "34017b30f0e09c68d995a4d41a54e5a4eb7ed19c43e3df374687f99b6ac0ccb0"
 }

@@ -37,7 +37,6 @@ export default function CreateLoanOfferPage() {
         interest_rate: data.interest_rate / 100,
         loan_amount_min: data.loan_amount_min,
         loan_amount_max: data.loan_amount_max,
-        loan_amount_reserve: data.loan_amount_reserve,
         duration_days_min: data.duration_days_min,
         duration_days_max: data.duration_days_max,
         loan_asset: data.loan_asset as LoanAsset,

@@ -1,5 +1,4 @@
 use crate::db;
-use crate::model::db::ContractStatus;
 use anyhow::bail;
 use anyhow::Context;
 use serde::Deserialize;
@@ -96,13 +95,9 @@ pub async fn start_dispute_borrower(
     )
     .await?;
 
-    db::contracts::mark_contract_state_as(
-        &mut *transaction,
-        contract_id,
-        ContractStatus::DisputeBorrowerStarted,
-    )
-    .await
-    .context("Failed marking contract as dispute started.")?;
+    db::contracts::start_contract_dispute_borrower(&mut *transaction, contract_id)
+        .await
+        .context("Failed marking contract as dispute started.")?;
 
     transaction.commit().await?;
 
@@ -126,13 +121,9 @@ pub async fn start_dispute_lender(
     )
     .await?;
 
-    db::contracts::mark_contract_state_as(
-        &mut *transaction,
-        contract_id,
-        ContractStatus::DisputeLenderStarted,
-    )
-    .await
-    .context("Failed marking contract as dispute started.")?;
+    db::contracts::start_contract_dispute_lender(&mut *transaction, contract_id)
+        .await
+        .context("Failed marking contract as dispute started.")?;
 
     transaction.commit().await?;
 
@@ -158,13 +149,9 @@ pub async fn create_lender_dispute(
     )
     .await?;
 
-    db::contracts::mark_contract_state_as(
-        &mut *transaction,
-        contract_id,
-        ContractStatus::DisputeLenderStarted,
-    )
-    .await
-    .context("Failed marking contract as dispute started.")?;
+    db::contracts::start_contract_dispute_lender(&mut *transaction, contract_id)
+        .await
+        .context("Failed marking contract as dispute started.")?;
 
     transaction.commit().await?;
 

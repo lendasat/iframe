@@ -15,8 +15,6 @@ export const loanOfferSchema = z
         path: ["max"],
       }),
 
-    loanReserve: z.number().min(1, "Loan reserve must be at least 1"),
-
     autoAccept: z.boolean(),
 
     ltv: z
@@ -91,17 +89,6 @@ export const loanOfferSchema = z
       message: "KYC link is required when KYC is enabled",
       path: ["kycLink"], // Path to the field that has the error
     },
-  )
-  .refine(
-    (data) => {
-      // Loan reserve must be >= max loan amount
-      return data.loanReserve >= data.loanAmount.max;
-    },
-    {
-      message:
-        "Loan reserve must be greater than or equal to maximum loan amount",
-      path: ["loanReserve"],
-    },
   );
 
 // Export the type
@@ -113,7 +100,6 @@ export const defaultLoanOfferValues: LoanOfferFormValues = {
     min: 1000,
     max: 100000,
   },
-  loanReserve: 100000,
   autoAccept: false,
   ltv: 50,
   interest: 7.5,

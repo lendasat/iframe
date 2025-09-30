@@ -74,6 +74,8 @@ async fn create_contract_request_expiry_check(
                                     "Contract request expired"
                                 );
                             });
+                            // Restore loan amounts for expired contracts and mark offers as
+                            // unavailable
                             expire_loan_offers(&database, contracts.as_slice()).await;
                             notify_borrowers_about_expired_contracts(
                                 &database,
@@ -116,6 +118,12 @@ async fn create_contract_request_expiry_check(
 }
 
 async fn expire_loan_offers(database: &Pool<Postgres>, contracts: &[ExpiredContract]) {
+    // First restore the loan amounts for each expired contract
+    for contract in contracts {
+        restore_loan_amount_for_expired_contract(database, contract).await;
+    }
+
+    // Then set the loan offers as unavailable
     let ids = contracts
         .iter()
         .map(|c| c.contract_id.clone())
@@ -131,6 +139,35 @@ async fn expire_loan_offers(database: &Pool<Postgres>, contracts: &[ExpiredContr
         Err(error) => {
             tracing::error!("Failed marking loan offer as unavailable: {error:#}");
         }
+    }
+}
+
+async fn restore_loan_amount_for_expired_contract(
+    database: &Pool<Postgres>,
+    expired_contract: &ExpiredContract,
+) {
+    // Get the loan offer to update its loan_amount_max
+    if let Ok(Some(offer)) =
+        db::loan_offers::loan_by_id(database, &expired_contract.loan_deal_id).await
+    {
+        if let Err(e) = db::loan_offers::increase_loan_amount_max(
+            database,
+            &offer.loan_deal_id,
+            expired_contract.loan_amount,
+        )
+        .await
+        {
+            tracing::error!(
+                "Failed to restore loan_amount_max for offer {} after contract expiry: {e:#}",
+                offer.loan_deal_id
+            );
+        }
+        tracing::info!(
+            contract_id = expired_contract.contract_id,
+            offer_id = offer.loan_deal_id,
+            restored_amount = %expired_contract.loan_amount,
+            "Restored loan_amount_max for expired contract request"
+        );
     }
 }
 

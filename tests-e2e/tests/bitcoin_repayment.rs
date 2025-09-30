@@ -71,7 +71,6 @@ async fn bitcoin_repayment_flow() {
         interest_rate: dec!(0.10),
         loan_amount_min: dec!(100),
         loan_amount_max: dec!(10_000),
-        loan_amount_reserve: dec!(10_000),
         duration_days_min: 7,
         duration_days_max: ONE_YEAR as i32,
         loan_asset: LoanAsset::UsdcPol, // USD-based loan for Bitcoin repayment support
