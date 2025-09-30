@@ -1285,6 +1285,13 @@ pub async fn mark_contract_as_closing_by_defaulting(
     mark_contract_state_as(pool, contract_id, db::ContractStatus::ClosingByDefaulting).await
 }
 
+pub async fn mark_contract_as_closing_by_recovering(
+    pool: &Pool<Postgres>,
+    contract_id: &str,
+) -> Result<()> {
+    mark_contract_state_as(pool, contract_id, db::ContractStatus::ClosingByRecovery).await
+}
+
 pub async fn mark_contract_as_undercollateralized(
     pool: &Pool<Postgres>,
     contract_id: &str,

@@ -1345,6 +1345,10 @@ async fn post_recover_tx(
         .expect("actor to be alive")
         .map_err(Error::post_claim_tx)?;
 
+    db::contracts::mark_contract_as_closing_by_recovering(&data.db, &contract_id)
+        .await
+        .map_err(Error::database)?;
+
     db::contract_collateral_transactions::insert_claim_collateral(
         &data.db,
         &contract_id,
