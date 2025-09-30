@@ -1434,11 +1434,12 @@ async fn map_timeline(
                     (tx.transaction_type == TransactionType::ClaimCollateral)
                         .then(|| tx.txid.clone())
                 }),
-                ContractStatus::ClosedByLiquidation
-                | ContractStatus::ClosingByLiquidation
-                | ContractStatus::Defaulted => transactions.iter().find_map(|tx| {
-                    (tx.transaction_type == TransactionType::Liquidation).then(|| tx.txid.clone())
-                }),
+                ContractStatus::ClosedByLiquidation | ContractStatus::ClosingByLiquidation => {
+                    transactions.iter().find_map(|tx| {
+                        (tx.transaction_type == TransactionType::Liquidation)
+                            .then(|| tx.txid.clone())
+                    })
+                }
                 ContractStatus::ClosingByDefaulting | ContractStatus::ClosedByDefaulting => {
                     transactions.iter().find_map(|tx| {
                         (tx.transaction_type == TransactionType::Defaulted).then(|| tx.txid.clone())
@@ -1454,6 +1455,7 @@ async fn map_timeline(
                 | ContractStatus::DisputeBorrowerStarted
                 | ContractStatus::DisputeLenderStarted
                 | ContractStatus::Cancelled
+                | ContractStatus::Defaulted
                 | ContractStatus::RequestExpired
                 | ContractStatus::ApprovalExpired
                 | ContractStatus::CollateralRecoverable => {

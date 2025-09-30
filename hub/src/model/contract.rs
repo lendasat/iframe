@@ -380,7 +380,7 @@ pub enum ContractStatus {
     /// The borrower failed to pay back the loan before loan term.
     ///
     /// If the lender liquidates their share of the collateral, we transition to
-    /// [`ContractStatus::ClosingByLiquidation`].
+    /// [`ContractStatus::ClosedByDefaulting`].
     Defaulted,
     /// The transaction spending the collateral contract outputs has been published on the
     /// blockchain, but is not yet confirmed.
@@ -544,7 +544,7 @@ impl FromStr for ContractStatus {
             "repaymentconfirmed" | "repayment_confirmed" => Ok(ContractStatus::RepaymentConfirmed),
             "undercollateralized" => Ok(ContractStatus::Undercollateralized),
             "defaulted" => Ok(ContractStatus::Defaulted),
-            "closing" => Ok(ContractStatus::ClosingByClaim),
+            "closingbyclaim" => Ok(ContractStatus::ClosingByClaim),
             "closed" => Ok(ContractStatus::Closed),
             "closingbyliquidation" => Ok(ContractStatus::ClosingByLiquidation),
             "closedbyliquidation" | "closed_by_liquidation" => {

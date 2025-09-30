@@ -67,7 +67,7 @@ pub async fn update_collateral(
             };
             tracing::info!(
                 contract_id = contract_id,
-                old_state = ?contract.status,
+                old_status = ?contract.status,
                 new_status = ?status,
                 "All funds withdrawn, set contract to closed"
             );
