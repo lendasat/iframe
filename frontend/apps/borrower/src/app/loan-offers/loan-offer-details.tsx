@@ -419,7 +419,9 @@ export const LoanOfferDetails = () => {
     if (offer && offer.repayment_plan === RepaymentPlan.InterestOnlyMonthly) {
       const loanAmount = watchLoanAmount || getInitialAmount();
       const loanDuration = watchLoanDuration || getInitialDuration();
-      const interest = loanAmount * offer?.interest_rate;
+      const rate = offer.interest_rate;
+      const ratePerDuration = (rate / ONE_YEAR) * loanDuration;
+      const interest = loanAmount * ratePerDuration;
       let numberOfPayments = Math.ceil(loanDuration / ONE_MONTH);
       return {
         monthlyInstallments: numberOfPayments,
