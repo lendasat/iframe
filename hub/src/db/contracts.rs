@@ -1270,11 +1270,19 @@ pub async fn mark_contract_as_closing_by_claim(
 ) -> Result<()> {
     mark_contract_state_as(pool, contract_id, db::ContractStatus::ClosingByClaim).await
 }
+
 pub async fn mark_contract_as_closing_by_liquidation(
     pool: &Pool<Postgres>,
     contract_id: &str,
 ) -> Result<()> {
     mark_contract_state_as(pool, contract_id, db::ContractStatus::ClosingByLiquidation).await
+}
+
+pub async fn mark_contract_as_closing_by_defaulting(
+    pool: &Pool<Postgres>,
+    contract_id: &str,
+) -> Result<()> {
+    mark_contract_state_as(pool, contract_id, db::ContractStatus::ClosingByDefaulting).await
 }
 
 pub async fn mark_contract_as_undercollateralized(

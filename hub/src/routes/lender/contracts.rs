@@ -774,6 +774,15 @@ async fn post_liquidation_tx(
     .map_err(Error::database)?
     .ok_or_else(|| Error::MissingContract(contract_id.clone()))?;
 
+    if !matches!(
+        contract.status,
+        ContractStatus::Defaulted | ContractStatus::Undercollateralized
+    ) {
+        return Err(Error::InvalidStateToLiquidate {
+            current_state: contract.status,
+        });
+    }
+
     let signed_claim_tx_str = body.tx;
     let signed_claim_tx: Transaction =
         bitcoin::consensus::encode::deserialize_hex(&signed_claim_tx_str)
@@ -798,9 +807,15 @@ async fn post_liquidation_tx(
     .await
     .map_err(Error::database)?;
 
-    db::contracts::mark_contract_as_closing_by_liquidation(&data.db, &contract_id)
-        .await
-        .map_err(Error::database)?;
+    if contract.status == ContractStatus::Undercollateralized {
+        db::contracts::mark_contract_as_closing_by_liquidation(&data.db, &contract_id)
+            .await
+            .map_err(Error::database)?;
+    } else {
+        db::contracts::mark_contract_as_closing_by_defaulting(&data.db, &contract_id)
+            .await
+            .map_err(Error::database)?;
+    }
 
     if let Err(e) = async {
         let contract = db::contracts::load_contract_by_contract_id_and_lender_id(
