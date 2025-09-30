@@ -270,7 +270,7 @@ export const LoanConfigurationStep = ({
 
               {monthlyInstallments &&
                 monthlyInstallments.monthlyInstallments > 1 && (
-                  <div className="mt-4 border-t pt-4">
+                  <div className="mt-4 space-y-3 border-t pt-4">
                     <div className="flex justify-between text-sm">
                       <span className="text-muted-foreground">
                         Monthly Payments:
@@ -282,6 +282,14 @@ export const LoanConfigurationStep = ({
                           LoanAssetHelper.toCurrency(offer.loan_asset),
                         )}
                       </span>
+                    </div>
+                    <div className="text-muted-foreground space-y-1 text-xs">
+                      <p>• First payment due after 30 days</p>
+                      <p>• A reminder will be sent a few days before</p>
+                      <p>
+                        • If you miss one installment, your position will get
+                        liquidated
+                      </p>
                     </div>
                   </div>
                 )}
