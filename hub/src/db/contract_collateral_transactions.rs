@@ -15,7 +15,7 @@ pub struct ContractCollateralTransaction {
     /// The amount in sats, note this is actually an unsigned int. It's only signed because of the
     /// db
     pub amount_deposited: i64,
-    pub block_time: Option<i64>,
+    pub block_time: Option<OffsetDateTime>,
     pub block_height: Option<i64>,
     pub contract_id: String,
     pub created_at: OffsetDateTime,
@@ -29,7 +29,7 @@ pub struct ContractTransactionInsert {
     /// The amount in sats, note this is actually an unsigned int. It's only signed because of the
     /// db
     pub amount_deposited: i64,
-    pub block_time: Option<u64>,
+    pub block_time: Option<OffsetDateTime>,
     pub block_height: Option<u32>,
     pub contract_id: String,
 }
@@ -39,7 +39,7 @@ pub async fn insert_funding(
     contract_id: &str,
     tx_id: &Txid,
     amount: i64,
-    block_time: Option<u64>,
+    block_time: Option<OffsetDateTime>,
     block_height: Option<u32>,
 ) -> Result<ContractCollateralTransaction> {
     insert_internal(
@@ -61,7 +61,7 @@ pub async fn insert_claim_collateral(
     contract_id: &str,
     tx_id: &Txid,
     amount: i64,
-    block_time: Option<u64>,
+    block_time: Option<OffsetDateTime>,
     block_height: Option<u32>,
 ) -> Result<ContractCollateralTransaction> {
     insert_internal(
@@ -89,7 +89,7 @@ pub async fn bulk_insert(
     let mut tx_ids = Vec::with_capacity(transactions.len());
     let mut amount_deposited = Vec::with_capacity(transactions.len());
     let mut amount_spent = Vec::with_capacity(transactions.len());
-    let mut block_times: Vec<Option<i64>> = Vec::with_capacity(transactions.len());
+    let mut block_times: Vec<Option<OffsetDateTime>> = Vec::with_capacity(transactions.len());
     let mut block_heights: Vec<Option<i64>> = Vec::with_capacity(transactions.len());
     let mut contract_ids = Vec::with_capacity(transactions.len());
 
@@ -97,7 +97,7 @@ pub async fn bulk_insert(
         tx_ids.push(tx.tx_id.to_string());
         amount_deposited.push(tx.amount_deposited);
         amount_spent.push(tx.amount_spent);
-        block_times.push(tx.block_time.map(|t| t as i64));
+        block_times.push(tx.block_time);
         block_heights.push(tx.block_height.map(|t| t as i64));
         contract_ids.push(tx.contract_id);
     }
@@ -117,7 +117,7 @@ pub async fn bulk_insert(
                 $1::text[], 
                 $2::bigint[],
                 $3::bigint[],
-                $4::bigint[],
+                $4::timestamptz[],
                 $5::bigint[],
                 $6::text[]
             )
@@ -136,7 +136,7 @@ pub async fn bulk_insert(
                 tx_id,
                 amount_spent,
                 amount_deposited,
-                block_time,
+                block_time as "block_time: OffsetDateTime",
                 block_height,
                 contract_id,
                 created_at as "created_at: OffsetDateTime"
@@ -144,7 +144,7 @@ pub async fn bulk_insert(
         &tx_ids[..],
         &amount_deposited[..],
         &amount_spent[..],
-        &block_times[..] as &[Option<i64>],
+        &block_times[..] as &[Option<OffsetDateTime>],
         &block_heights[..] as &[Option<i64>],
         &contract_ids[..]
     )
@@ -175,7 +175,7 @@ async fn insert_internal(
                 tx_id,
                 amount_deposited,
                 amount_spent,
-                block_time,
+                block_time as "block_time: OffsetDateTime",
                 block_height,
                 contract_id,
                 created_at as "created_at: OffsetDateTime"
@@ -183,7 +183,7 @@ async fn insert_internal(
         transaction.tx_id.to_string(),
         transaction.amount_deposited,
         transaction.amount_spent,
-        transaction.block_time.map(|b| b as i64),
+        transaction.block_time,
         transaction.block_height.map(|b| b as i64),
         transaction.contract_id
     )
@@ -205,7 +205,7 @@ pub async fn get_by_contract_id(
                 tx_id,
                 amount_deposited,
                 amount_spent,
-                block_time,
+                block_time as "block_time: OffsetDateTime",
                 block_height,
                 contract_id,
                 created_at as "created_at: OffsetDateTime"

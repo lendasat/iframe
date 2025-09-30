@@ -16,6 +16,7 @@ use esplora_client::Tx;
 use sqlx::Pool;
 use sqlx::Postgres;
 use std::sync::Arc;
+use time::OffsetDateTime;
 use xtra::Mailbox;
 
 pub struct Actor {
@@ -272,11 +273,14 @@ impl xtra::Handler<CheckAddressStatus> for Actor {
                 let amount_spent = total_amount_spent(&contract_address, &tx);
                 let amount_deposited = total_amount_deposited(&contract_address, &tx);
 
+                let now = OffsetDateTime::now_utc();
                 db::contract_collateral_transactions::ContractTransactionInsert {
                     tx_id: tx.txid,
                     amount_deposited: amount_deposited as i64,
                     amount_spent: amount_spent as i64,
-                    block_time: tx.confirmation_time().map(|t| t.timestamp),
+                    block_time: tx.confirmation_time().map(|t| {
+                        OffsetDateTime::from_unix_timestamp(t.timestamp as i64).unwrap_or(now)
+                    }),
                     block_height: tx.confirmation_time().map(|t| t.height),
                     contract_id: contract_id.clone(),
                 }

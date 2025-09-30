@@ -1166,14 +1166,8 @@ async fn map_to_api_contract(
             .map_err(Error::database)?;
 
     for (index, tx) in collateral_transactions.iter().enumerate() {
-        // TODO: this is not very nice
         let now = OffsetDateTime::now_utc();
-        let timestamp = tx
-            .block_time
-            .map(OffsetDateTime::from_unix_timestamp)
-            .transpose()
-            .unwrap_or(Some(now))
-            .unwrap_or(now);
+        let timestamp = tx.block_time.unwrap_or(now);
 
         let tx = LoanTransaction {
             id: index as i64,
