@@ -57,20 +57,27 @@ pub async fn update_collateral(
             )
             .await?;
             return Ok((contract, false));
-        } else if updated_collateral_sats == 0 && contract.status == ContractStatus::Closing {
+        } else if updated_collateral_sats == 0 {
+            let status = match contract.status {
+                ContractStatus::ClosingByClaim => ContractStatus::Closed,
+                ContractStatus::ClosingByLiquidation => ContractStatus::ClosedByLiquidation,
+                ContractStatus::ClosingByDefaulting => ContractStatus::ClosedByDefaulting,
+                ContractStatus::ClosingByRecovery => ContractStatus::ClosedByRecovery,
+                status => status,
+            };
             tracing::info!(
                 contract_id = contract_id,
+                old_state = ?contract.status,
+                new_status = ?status,
                 "All funds withdrawn, set contract to closed"
             );
-            let contract = update_status_and_collateral(
-                pool,
-                contract_id,
-                updated_collateral_sats,
-                ContractStatus::Closed,
-            )
-            .await?;
+            let contract =
+                update_status_and_collateral(pool, contract_id, updated_collateral_sats, status)
+                    .await?;
             return Ok((contract, false));
         } else {
+            // the collateral has been reduced. This will happen once we have "withdraw excess
+            // collateral"
             tracing::error!(
                 contract_id = contract_id,
                 old_collateral_sats = current_collateral_sats,
@@ -80,7 +87,7 @@ pub async fn update_collateral(
             );
         }
     }
-
+    // Else, collateral has been increased
     if contract.status == ContractStatus::Approved {
         // if the contract was just approved, now can move on
         let status = if updated_collateral_sats >= min_collateral {
@@ -99,6 +106,11 @@ pub async fn update_collateral(
     }
 
     // else, the contract is already funded, we just update the collateral
+    tracing::debug!(
+        contract_id = contract_id,
+        contract_status = ?contract.status,
+        "Contract collateral has been increased");
+
     update_collateral_sats(pool, contract_id, updated_collateral_sats).await?;
     let contract = Contract {
         collateral_sats: updated_collateral_sats,

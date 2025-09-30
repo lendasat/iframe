@@ -798,7 +798,7 @@ async fn post_liquidation_tx(
     .await
     .map_err(Error::database)?;
 
-    db::contracts::mark_contract_as_closing(&data.db, &contract_id)
+    db::contracts::mark_contract_as_closing_by_liquidation(&data.db, &contract_id)
         .await
         .map_err(Error::database)?;
 
@@ -1418,22 +1418,23 @@ async fn map_timeline(
                     (tx.transaction_type == TransactionType::PrincipalGiven)
                         .then(|| tx.txid.clone())
                 }),
-                ContractStatus::Closing | ContractStatus::Closed | ContractStatus::Defaulted => {
-                    transactions.iter().find_map(|tx| {
-                        (tx.transaction_type == TransactionType::ClaimCollateral)
-                            .then(|| tx.txid.clone())
-                    })
-                }
-                ContractStatus::ClosedByDefaulting => transactions.iter().find_map(|tx| {
-                    (tx.transaction_type == TransactionType::Defaulted).then(|| tx.txid.clone())
-                }),
-                ContractStatus::ClosedByLiquidation => transactions.iter().find_map(|tx| {
-                    (tx.transaction_type == TransactionType::Liquidation).then(|| tx.txid.clone())
-                }),
-                ContractStatus::ClosedByRecovery => transactions.iter().find_map(|tx| {
+                ContractStatus::ClosingByClaim
+                | ContractStatus::Closed
+                | ContractStatus::ClosingByRecovery
+                | ContractStatus::ClosedByRecovery => transactions.iter().find_map(|tx| {
                     (tx.transaction_type == TransactionType::ClaimCollateral)
                         .then(|| tx.txid.clone())
                 }),
+                ContractStatus::ClosedByLiquidation
+                | ContractStatus::ClosingByLiquidation
+                | ContractStatus::Defaulted => transactions.iter().find_map(|tx| {
+                    (tx.transaction_type == TransactionType::Liquidation).then(|| tx.txid.clone())
+                }),
+                ContractStatus::ClosingByDefaulting | ContractStatus::ClosedByDefaulting => {
+                    transactions.iter().find_map(|tx| {
+                        (tx.transaction_type == TransactionType::Defaulted).then(|| tx.txid.clone())
+                    })
+                }
                 ContractStatus::Requested
                 | ContractStatus::Approved
                 | ContractStatus::RepaymentProvided

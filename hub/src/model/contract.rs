@@ -365,12 +365,12 @@ pub enum ContractStatus {
     /// The lender has confirmed the repayment of the entire outstanding balance: principal plus
     /// interest.
     ///
-    /// If the borrower claims the collateral, we transition to [`ContractStatus::Closing`].
+    /// If the borrower claims the collateral, we transition to [`ContractStatus::ClosingByClaim`].
     RepaymentConfirmed,
     /// The loan contract is not sufficiently collateralized according to the required maximum LTV.
     ///
     /// If the lender liquidates their share of the collateral, we transition to
-    /// [`ContractStatus::Closing`].
+    /// [`ContractStatus::ClosingByLiquidation`].
     ///
     /// In theory, the value of the collateral may reduce the LTV enough such that the contract may
     /// not be considered undercollateralized anymore. In practice, we do not support this at this
@@ -380,24 +380,36 @@ pub enum ContractStatus {
     /// The borrower failed to pay back the loan before loan term.
     ///
     /// If the lender liquidates their share of the collateral, we transition to
-    /// [`ContractStatus::Closing`].
+    /// [`ContractStatus::ClosingByLiquidation`].
     Defaulted,
     /// The transaction spending the collateral contract outputs has been published on the
     /// blockchain, but is not yet confirmed.
     ///
     /// If the spend transaction is _confirmed_ on the blockchain, we transition to
     /// [`ContractStatus::Closed`].
-    Closing,
+    ClosingByClaim,
     /// The transaction spending the collateral contract outputs has been published and confirmed
     /// on the blockchain. The loan contract is now closed.
     ///
     /// This status implies that the borrower paid back the loan.
     Closed,
+    /// The transaction spending the collateral contract outputs has been published on the
+    /// blockchain, but is not yet confirmed.
+    ///
+    /// If the spend transaction is _confirmed_ on the blockchain, we transition to
+    /// [`ContractStatus::ClosedByLiquidation`].
+    ClosingByLiquidation,
     /// The transaction spending the collateral contract outputs has been published and confirmed
     /// on the blockchain. The loan contract is now closed.
     ///
     /// This status indicates that the loan contract was liquidated due to undercollateralization.
     ClosedByLiquidation,
+    /// The transaction spending the collateral contract outputs has been published on the
+    /// blockchain, but is not yet confirmed.
+    ///
+    /// If the spend transaction is _confirmed_ on the blockchain, we transition to
+    /// [`ContractStatus::ClosedByDefaulting`].
+    ClosingByDefaulting,
     /// The transaction spending the collateral contract outputs has been published and confirmed
     /// on the blockchain. The loan contract is now closed.
     ///
@@ -437,6 +449,12 @@ pub enum ContractStatus {
     /// If the borrower recovers the collateral, the contract transitions to
     /// [`ContractStatus::ClosedByRecovery`].
     CollateralRecoverable,
+    /// The transaction spending the collateral contract outputs has been published on the
+    /// blockchain, but is not yet confirmed.
+    ///
+    /// If the spend transaction is _confirmed_ on the blockchain, we transition to
+    /// [`ContractStatus::ClosedByRecovery`].
+    ClosingByRecovery,
     /// The transaction spending the collateral contract outputs has been published and confirmed
     /// on the blockchain. The loan contract is now closed.
     ///
@@ -455,7 +473,10 @@ impl ContractStatus {
             | ContractStatus::CollateralSeen
             | ContractStatus::CollateralConfirmed
             | ContractStatus::RepaymentConfirmed
-            | ContractStatus::Closing
+            | ContractStatus::ClosingByClaim
+            | ContractStatus::ClosingByDefaulting
+            | ContractStatus::ClosingByLiquidation
+            | ContractStatus::ClosingByRecovery
             | ContractStatus::Closed
             | ContractStatus::ClosedByLiquidation
             | ContractStatus::ClosedByDefaulting
@@ -523,11 +544,13 @@ impl FromStr for ContractStatus {
             "repaymentconfirmed" | "repayment_confirmed" => Ok(ContractStatus::RepaymentConfirmed),
             "undercollateralized" => Ok(ContractStatus::Undercollateralized),
             "defaulted" => Ok(ContractStatus::Defaulted),
-            "closing" => Ok(ContractStatus::Closing),
+            "closing" => Ok(ContractStatus::ClosingByClaim),
             "closed" => Ok(ContractStatus::Closed),
+            "closingbyliquidation" => Ok(ContractStatus::ClosingByLiquidation),
             "closedbyliquidation" | "closed_by_liquidation" => {
                 Ok(ContractStatus::ClosedByLiquidation)
             }
+            "closingbydefaulting" => Ok(ContractStatus::ClosingByDefaulting),
             "closedbydefaulting" | "closed_by_defaulting" => Ok(ContractStatus::ClosedByDefaulting),
             "extended" => Ok(ContractStatus::Extended),
             "rejected" => Ok(ContractStatus::Rejected),
@@ -543,6 +566,7 @@ impl FromStr for ContractStatus {
             "collateralrecoverable" | "collateral_recoverable" => {
                 Ok(ContractStatus::CollateralRecoverable)
             }
+            "closingbyrecovery" => Ok(ContractStatus::ClosingByRecovery),
             "closedbyrecovery" | "closed_by_recovery" => Ok(ContractStatus::ClosedByRecovery),
             _ => Err(format!("Invalid contract status: {s}")),
         }

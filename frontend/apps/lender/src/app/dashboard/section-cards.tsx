@@ -52,7 +52,10 @@ export const SectionCards = ({ contracts, isLoading }: SectionCardsProps) => {
       contract.status === ContractStatus.Closed ||
       contract.status === ContractStatus.ClosedByLiquidation ||
       contract.status === ContractStatus.ClosedByDefaulting ||
-      contract.status === ContractStatus.Closing ||
+      contract.status === ContractStatus.ClosingByClaim ||
+      contract.status === ContractStatus.ClosingByLiquidation ||
+      contract.status === ContractStatus.ClosingByDefaulting ||
+      contract.status === ContractStatus.ClosingByRecovery ||
       contract.status === ContractStatus.Extended,
   );
   const totalClosedInterest = closedContracts.reduce(

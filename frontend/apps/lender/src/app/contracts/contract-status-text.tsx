@@ -11,10 +11,10 @@ interface LoanStatusInformationProps {
 function LoanStatusInformation({ contract }: LoanStatusInformationProps) {
   if (contract === undefined) {
     return (
-      <div className="bg-gray-50 p-4 rounded-md border border-gray-200 flex items-start">
-        <Skeleton className="h-5 w-5 rounded-full mx-4" />
+      <div className="flex items-start rounded-md border border-gray-200 bg-gray-50 p-4">
+        <Skeleton className="mx-4 h-5 w-5 rounded-full" />
         <div>
-          <Skeleton className="h-6 w-[150px] mb-2" />
+          <Skeleton className="mb-2 h-6 w-[150px]" />
           <Skeleton className="h-4 w-[450px]" />
         </div>
       </div>
@@ -27,7 +27,7 @@ function LoanStatusInformation({ contract }: LoanStatusInformationProps) {
   const actionExpiryDateFormated = format(actionExpiryDate, "MMM, dd yyyy - p");
   const actionExpiresIn = formatDistanceToNowStrict(actionExpiryDate);
 
-  let icon = <LuInfo className="h-5 w-5 text-blue-500 mr-2 mt-0.5" />;
+  let icon = <LuInfo className="mr-2 mt-0.5 h-5 w-5 text-blue-500" />;
   let bgColor = "bg-blue-50";
   let borderColor = "border-blue-200";
   let titleColor = "text-blue-800";
@@ -37,7 +37,7 @@ function LoanStatusInformation({ contract }: LoanStatusInformationProps) {
 
   switch (contract.status) {
     case ContractStatus.Requested:
-      icon = <LuClock className="h-5 w-5 text-blue-500 mr-2 mt-0.5" />;
+      icon = <LuClock className="mr-2 mt-0.5 h-5 w-5 text-blue-500" />;
       message = (
         <>
           Your loan request is waiting for your approval. You have{" "}
@@ -49,7 +49,7 @@ function LoanStatusInformation({ contract }: LoanStatusInformationProps) {
       break;
 
     case ContractStatus.Approved:
-      icon = <LuCheck className="h-5 w-5 text-indigo-500 mr-2 mt-0.5" />;
+      icon = <LuCheck className="mr-2 mt-0.5 h-5 w-5 text-indigo-500" />;
       bgColor = "bg-indigo-50";
       borderColor = "border-indigo-200";
       titleColor = "text-indigo-800";
@@ -66,7 +66,7 @@ function LoanStatusInformation({ contract }: LoanStatusInformationProps) {
       break;
 
     case ContractStatus.CollateralSeen:
-      icon = <LuClock className="h-5 w-5 text-violet-500 mr-2 mt-0.5" />;
+      icon = <LuClock className="mr-2 mt-0.5 h-5 w-5 text-violet-500" />;
       bgColor = "bg-violet-50";
       borderColor = "border-violet-200";
       titleColor = "text-violet-800";
@@ -82,7 +82,7 @@ function LoanStatusInformation({ contract }: LoanStatusInformationProps) {
       break;
 
     case ContractStatus.CollateralConfirmed:
-      icon = <LuCheck className="h-5 w-5 text-violet-500 mr-2 mt-0.5" />;
+      icon = <LuCheck className="mr-2 mt-0.5 h-5 w-5 text-violet-500" />;
       bgColor = "bg-violet-50";
       borderColor = "border-violet-200";
       titleColor = "text-violet-800";
@@ -97,7 +97,7 @@ function LoanStatusInformation({ contract }: LoanStatusInformationProps) {
       break;
 
     case ContractStatus.PrincipalGiven:
-      icon = <LuCheck className="h-5 w-5 text-green-500 mr-2 mt-0.5" />;
+      icon = <LuCheck className="mr-2 mt-0.5 h-5 w-5 text-green-500" />;
       bgColor = "bg-green-50";
       borderColor = "border-green-200";
       titleColor = "text-green-800";
@@ -111,7 +111,7 @@ function LoanStatusInformation({ contract }: LoanStatusInformationProps) {
       break;
 
     case ContractStatus.RepaymentProvided:
-      icon = <LuClock className="h-5 w-5 text-teal-500 mr-2 mt-0.5" />;
+      icon = <LuClock className="mr-2 mt-0.5 h-5 w-5 text-teal-500" />;
       bgColor = "bg-teal-50";
       borderColor = "border-teal-200";
       titleColor = "text-teal-800";
@@ -126,7 +126,7 @@ function LoanStatusInformation({ contract }: LoanStatusInformationProps) {
       break;
 
     case ContractStatus.RepaymentConfirmed:
-      icon = <LuCheck className="h-5 w-5 text-emerald-500 mr-2 mt-0.5" />;
+      icon = <LuCheck className="mr-2 mt-0.5 h-5 w-5 text-emerald-500" />;
       bgColor = "bg-emerald-50";
       borderColor = "border-emerald-200";
       titleColor = "text-emerald-800";
@@ -142,7 +142,7 @@ function LoanStatusInformation({ contract }: LoanStatusInformationProps) {
       break;
 
     case ContractStatus.Undercollateralized:
-      icon = <LuTriangleAlert className="h-5 w-5 text-red-500 mr-2 mt-0.5" />;
+      icon = <LuTriangleAlert className="mr-2 mt-0.5 h-5 w-5 text-red-500" />;
       bgColor = "bg-red-50";
       borderColor = "border-red-200";
       titleColor = "text-red-800";
@@ -158,7 +158,7 @@ function LoanStatusInformation({ contract }: LoanStatusInformationProps) {
       break;
 
     case ContractStatus.Defaulted:
-      icon = <LuX className="h-5 w-5 text-red-500 mr-2 mt-0.5" />;
+      icon = <LuX className="mr-2 mt-0.5 h-5 w-5 text-red-500" />;
       bgColor = "bg-red-50";
       borderColor = "border-red-200";
       titleColor = "text-red-800";
@@ -172,8 +172,11 @@ function LoanStatusInformation({ contract }: LoanStatusInformationProps) {
       );
       break;
 
-    case ContractStatus.Closing:
-      icon = <LuClock className="h-5 w-5 text-slate-500 mr-2 mt-0.5" />;
+    case ContractStatus.ClosingByDefaulting:
+    case ContractStatus.ClosingByLiquidation:
+    case ContractStatus.ClosingByRecovery:
+    case ContractStatus.ClosingByClaim:
+      icon = <LuClock className="mr-2 mt-0.5 h-5 w-5 text-slate-500" />;
       bgColor = "bg-slate-50";
       borderColor = "border-slate-200";
       titleColor = "text-slate-800";
@@ -183,7 +186,7 @@ function LoanStatusInformation({ contract }: LoanStatusInformationProps) {
       break;
 
     case ContractStatus.Closed:
-      icon = <LuCheck className="h-5 w-5 text-gray-500 mr-2 mt-0.5" />;
+      icon = <LuCheck className="mr-2 mt-0.5 h-5 w-5 text-gray-500" />;
       bgColor = "bg-gray-50";
       borderColor = "border-gray-200";
       titleColor = "text-gray-800";
@@ -193,7 +196,7 @@ function LoanStatusInformation({ contract }: LoanStatusInformationProps) {
       break;
 
     case ContractStatus.ClosedByDefaulting:
-      icon = <LuCheck className="h-5 w-5 text-gray-500 mr-2 mt-0.5" />;
+      icon = <LuCheck className="mr-2 mt-0.5 h-5 w-5 text-gray-500" />;
       bgColor = "bg-gray-50";
       borderColor = "border-gray-200";
       titleColor = "text-gray-800";
@@ -205,7 +208,7 @@ function LoanStatusInformation({ contract }: LoanStatusInformationProps) {
       break;
 
     case ContractStatus.ClosedByLiquidation:
-      icon = <LuCheck className="h-5 w-5 text-gray-500 mr-2 mt-0.5" />;
+      icon = <LuCheck className="mr-2 mt-0.5 h-5 w-5 text-gray-500" />;
       bgColor = "bg-gray-50";
       borderColor = "border-gray-200";
       titleColor = "text-gray-800";
@@ -215,7 +218,7 @@ function LoanStatusInformation({ contract }: LoanStatusInformationProps) {
       break;
 
     case ContractStatus.Extended:
-      icon = <LuCheck className="h-5 w-5 text-purple-500 mr-2 mt-0.5" />;
+      icon = <LuCheck className="mr-2 mt-0.5 h-5 w-5 text-purple-500" />;
       bgColor = "bg-purple-50";
       borderColor = "border-purple-200";
       titleColor = "text-purple-800";
@@ -233,7 +236,7 @@ function LoanStatusInformation({ contract }: LoanStatusInformationProps) {
       break;
 
     case ContractStatus.Rejected:
-      icon = <LuX className="h-5 w-5 text-rose-500 mr-2 mt-0.5" />;
+      icon = <LuX className="mr-2 mt-0.5 h-5 w-5 text-rose-500" />;
       bgColor = "bg-rose-50";
       borderColor = "border-rose-200";
       titleColor = "text-rose-800";
@@ -245,7 +248,7 @@ function LoanStatusInformation({ contract }: LoanStatusInformationProps) {
     case ContractStatus.DisputeBorrowerStarted:
     case ContractStatus.DisputeLenderStarted:
       icon = (
-        <LuTriangleAlert className="h-5 w-5 text-orange-500 mr-2 mt-0.5" />
+        <LuTriangleAlert className="mr-2 mt-0.5 h-5 w-5 text-orange-500" />
       );
       bgColor = "bg-orange-50";
       borderColor = "border-orange-200";
@@ -262,7 +265,7 @@ function LoanStatusInformation({ contract }: LoanStatusInformationProps) {
       break;
 
     case ContractStatus.Cancelled:
-      icon = <LuX className="h-5 w-5 text-zinc-500 mr-2 mt-0.5" />;
+      icon = <LuX className="mr-2 mt-0.5 h-5 w-5 text-zinc-500" />;
       bgColor = "bg-zinc-50";
       borderColor = "border-zinc-200";
       titleColor = "text-zinc-800";
@@ -274,7 +277,7 @@ function LoanStatusInformation({ contract }: LoanStatusInformationProps) {
 
     case ContractStatus.RequestExpired:
     case ContractStatus.ApprovalExpired:
-      icon = <LuClock className="h-5 w-5 text-stone-500 mr-2 mt-0.5" />;
+      icon = <LuClock className="mr-2 mt-0.5 h-5 w-5 text-stone-500" />;
       bgColor = "bg-stone-50";
       borderColor = "border-stone-200";
       titleColor = "text-stone-800";
@@ -285,7 +288,7 @@ function LoanStatusInformation({ contract }: LoanStatusInformationProps) {
       break;
 
     case ContractStatus.CollateralRecoverable:
-      icon = <LuTriangleAlert className="h-5 w-5 text-red-500 mr-2 mt-0.5" />;
+      icon = <LuTriangleAlert className="mr-2 mt-0.5 h-5 w-5 text-red-500" />;
       bgColor = "bg-red-50";
       borderColor = "border-red-200";
       titleColor = "text-red-800";
@@ -302,7 +305,7 @@ function LoanStatusInformation({ contract }: LoanStatusInformationProps) {
       break;
 
     case ContractStatus.ClosedByRecovery:
-      icon = <LuCheck className="h-5 w-5 text-gray-500 mr-2 mt-0.5" />;
+      icon = <LuCheck className="mr-2 mt-0.5 h-5 w-5 text-gray-500" />;
       bgColor = "bg-gray-50";
       borderColor = "border-gray-200";
       titleColor = "text-gray-800";
@@ -320,7 +323,7 @@ function LoanStatusInformation({ contract }: LoanStatusInformationProps) {
 
   return (
     <div
-      className={`${bgColor} p-4 rounded-md border ${borderColor} flex items-start`}
+      className={`${bgColor} rounded-md border p-4 ${borderColor} flex items-start`}
     >
       {icon}
       <div>

@@ -123,7 +123,12 @@ const mapToInnerNotification = (
         case ContractStatus.RepaymentConfirmed:
           message = "Repayment confirmed";
           break;
-        case ContractStatus.Closing:
+        case ContractStatus.ClosingByClaim:
+        case ContractStatus.ClosingByDefaulting:
+        case ContractStatus.ClosingByLiquidation:
+        case ContractStatus.ClosingByRecovery:
+          message = "Contract closing";
+          break;
         case ContractStatus.Extended:
         case ContractStatus.Rejected:
           break;

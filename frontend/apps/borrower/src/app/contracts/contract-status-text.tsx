@@ -170,7 +170,10 @@ function LoanStatusInformation({ contract }: LoanStatusInformationProps) {
       );
       break;
 
-    case ContractStatus.Closing:
+    case ContractStatus.ClosingByClaim:
+    case ContractStatus.ClosingByDefaulting:
+    case ContractStatus.ClosingByLiquidation:
+    case ContractStatus.ClosingByRecovery:
       icon = <Clock className="mr-2 mt-0.5 h-5 w-5 text-slate-500" />;
       bgColor = "bg-slate-50";
       borderColor = "border-slate-200";

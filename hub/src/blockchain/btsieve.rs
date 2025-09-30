@@ -244,34 +244,11 @@ impl xtra::Handler<CheckAddressStatus> for Actor {
         // get all addresses for a transaction
         let new_txes = client.get_address_txes(&msg.contract_address, None).await?;
 
-        for known_tx in &known_confirmed_txs {
-            if !new_txes
-                .iter()
-                .any(|tx| tx.txid.to_string() == known_tx.tx_id)
-            {
-                tracing::warn!(
-                    txid = known_tx.tx_id,
-                    "A transaction we've seen before is now unknown"
-                );
-                if let Err(err) =
-                    db::contract_collateral_transactions::delete_by_id_and_contract_id(
-                        &self.db,
-                        known_tx.id,
-                    )
-                    .await
-                {
-                    tracing::error!(txid = known_tx.tx_id, "Failed deleting known tx {err:#}")
-                }
-            }
-        }
-
         // if we know all new transactions already, we don't have to process them again.
         if new_txes.iter().all(|tx| {
-            known_confirmed_txs.iter().any(|known_tx| {
-                known_tx.tx_id == tx.txid.to_string()
-                    && (known_tx.block_height.map(|t| t as u32)
-                        == tx.confirmation_time().map(|block_time| block_time.height))
-            })
+            known_confirmed_txs
+                .iter()
+                .any(|known_tx| known_tx.tx_id == tx.txid.to_string())
         }) {
             tracing::trace!(
                 target: "btsieve",
