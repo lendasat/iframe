@@ -123,7 +123,7 @@ impl xtra::Actor for Actor {
 
         self.block_height = starting_block_height;
 
-        let sync_interval = self.config.esplora_sync_interval;
+        let sync_interval = self.config.btsieve_sync_interval;
 
         // if this is set, we will fetch transactions for ALL contracts
         let reset_txes = self.config.reset_tx_view_in_db;

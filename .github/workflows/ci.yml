@@ -126,7 +126,7 @@ jobs:
           envkey_BRINGIN_WEBHOOK_URL: "https://webhook.site/0be287da-5ac6-4e99-b6fb-d5e26ac3e6b3"
           envkey_ETHERSCAN_API_KEY: "key"
           envkey_FALLBACK_NPUB: "npub1z774umv05tcwd8xxl0ftxs7muk7u9vqhqyglqz3e82wqr4w0m2uqlz05cf"
-          envkey_ESPLORA_SYNC_INTERVAL: 1
+          envkey_BTSIEVE_SYNC_INTERVAL: 1
           envkey_ESPLORA_URLS: "http://localhost:7339/api"
           file_name: .env
 

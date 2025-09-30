@@ -165,7 +165,7 @@ mod tests {
             electrum_url: None,
             card_topup_fee: dec!(0.01),
             esplora_urls: vec![],
-            esplora_sync_interval: 0,
+            btsieve_sync_interval: 0,
             reset_tx_view_in_db: false,
         }
     }
