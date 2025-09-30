@@ -159,6 +159,7 @@ impl xtra::Actor for Actor {
                         number_of_contracts = contracts.len(),
                         "Fetching tx for all contracts done"
                     );
+                    panic!("Synced up with blockchain");
                 }
 
                 loop {
