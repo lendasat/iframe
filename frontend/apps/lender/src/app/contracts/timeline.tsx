@@ -341,7 +341,7 @@ export function contractStatusDescription(status: ContractStatus): string {
     case ContractStatus.CollateralRecoverable:
       return "The contract has been abandoned due to lender inactivity.";
     case ContractStatus.ClosingByRecovery:
-      return "Your contract is being closed.";
+      return "Your contract is being recovered.";
     case ContractStatus.ClosedByRecovery:
       return "The contract has been closed after the borrower recovered their collateral.";
   }

@@ -202,8 +202,7 @@ impl xtra::Handler<CheckBlockHeight> for Actor {
             "Fetched latest height"
         );
 
-        if self.block_height < latest_tip {
-            self.block_height = latest_tip;
+        if self.block_height != latest_tip {
             tracing::debug!(
                 last_known_height = self.block_height,
                 latest_tip = latest_tip,
@@ -247,6 +246,9 @@ impl xtra::Handler<CheckBlockHeight> for Actor {
                     }
                 }
             });
+
+            // last but not least, update our internal block height
+            self.block_height = latest_tip;
         }
 
         Ok(())

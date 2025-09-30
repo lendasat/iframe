@@ -336,7 +336,7 @@ export const contractStatusDescription = (status: ContractStatus): string => {
     case ContractStatus.CollateralRecoverable:
       return "Collateral recovery is now available due to lender inactivity.";
     case ContractStatus.ClosingByRecovery:
-      return "Your collateral is being closed.";
+      return "Your collateral is being recovered.";
     case ContractStatus.ClosedByRecovery:
       return "The contract has been closed after collateral recovery.";
   }
