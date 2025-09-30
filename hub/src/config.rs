@@ -11,8 +11,6 @@ use uuid::Uuid;
 #[derive(Debug, Clone)]
 pub struct Config {
     pub database_url: String,
-    pub mempool_rest_url: String,
-    pub mempool_ws_url: String,
     pub network: Network,
     pub use_fake_price: bool,
     pub seed_file: String,
@@ -50,13 +48,6 @@ pub struct Config {
     pub bringin_webhook_url: Url,
     pub etherscan_api_key: String,
     pub fallback_npub: Npub,
-    /// The URL of the Electrum server used for transaction monitoring.
-    ///
-    /// Currently this is only used for monitoring collateral transactions, with a focus on
-    /// mempool.
-    ///
-    /// If configured, we expect a value like `tcp://electrum.blockstream.info:50001`.
-    pub electrum_url: Option<Url>,
     pub card_topup_fee: Decimal,
     pub esplora_urls: Vec<Url>,
     pub btsieve_sync_interval: u64,
@@ -66,9 +57,6 @@ pub struct Config {
 impl Config {
     pub fn init() -> Config {
         let database_url = std::env::var("DB_URL").expect("DB_URL must be set");
-        let mempool_rest_url =
-            std::env::var("MEMPOOL_REST_URL").expect("MEMPOOL_REST_URL must be set");
-        let mempool_ws_url = std::env::var("MEMPOOL_WS_URL").expect("MEMPOOL_WS_URL must be set");
 
         let network = std::env::var("NETWORK").expect("NETWORK must be set");
         let network = Network::from_str(&network).expect("Invalid Bitcoin network");
@@ -207,10 +195,6 @@ impl Config {
         let fallback_npub = std::env::var("FALLBACK_NPUB").expect("FALLBACK_NPUB must be set");
         let fallback_npub = fallback_npub.parse().expect("valid Npub");
 
-        let electrum_url = std::env::var("ELECTRUM_URL")
-            .map(|url| Url::parse(url.as_str()).expect("to be a valid URL"))
-            .ok();
-
         let card_topup_fee =
             std::env::var("MOON_CARD_TOPUP_FEE").expect("MOON_CARD_TOPUP_FEE must be set");
         let card_topup_fee = Decimal::from_str(card_topup_fee.as_str()).expect("to be a decimal");
@@ -237,8 +221,6 @@ impl Config {
 
         Config {
             database_url,
-            mempool_rest_url,
-            mempool_ws_url,
             network,
             use_fake_price,
             seed_file,
@@ -281,7 +263,6 @@ impl Config {
             bringin_webhook_url,
             etherscan_api_key,
             fallback_npub,
-            electrum_url,
             card_topup_fee,
             esplora_urls,
             btsieve_sync_interval,

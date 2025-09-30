@@ -10,8 +10,6 @@ with lib; let
   # Create environment variables for all non-null settings
   envVars = filterAttrs (n: v: v != null) {
     DB_URL = cfg.settings.databaseUrl;
-    MEMPOOL_REST_URL = cfg.settings.mempoolRestUrl;
-    MEMPOOL_WS_URL = cfg.settings.mempoolWsUrl;
     NETWORK = cfg.settings.network;
     USE_FAKE_PRICE =
       if cfg.settings.useFakePrice
@@ -68,7 +66,9 @@ with lib; let
     BRINGIN_WEBHOOK_URL = cfg.settings.bringin.webhookUrl;
     ETHERSCAN_API_KEY = cfg.settings.etherscanApiKey;
     FALLBACK_NPUB = cfg.settings.fallbackNpub;
-    ELECTRUM_URL = cfg.settings.electrumUrl;
+    ESPLORA_URLS = cfg.settings.esplora_urls;
+    BTSIEVE_SYNC_INTERVAL = cfg.settings.btsieve_sync_interval;
+    ESPLORA_RESET_TX = cfg.settings.esplora_reset_tx;
   };
 in {
   options.services.lendasat = {

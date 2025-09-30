@@ -113,8 +113,6 @@ mod tests {
     fn create_test_config(use_fake_price: bool, network: Network) -> Config {
         Config {
             database_url: "test".to_string(),
-            mempool_rest_url: "test".to_string(),
-            mempool_ws_url: "test".to_string(),
             network,
             use_fake_price,
             seed_file: "test".to_string(),
@@ -162,7 +160,6 @@ mod tests {
             fallback_npub: "npub16d3ewav9e39xctevl6nwcj6k62nm3dhk2g0jgj7n2vhc2m35989s5ej0d8"
                 .parse()
                 .unwrap(),
-            electrum_url: None,
             card_topup_fee: dec!(0.01),
             esplora_urls: vec![],
             btsieve_sync_interval: 0,

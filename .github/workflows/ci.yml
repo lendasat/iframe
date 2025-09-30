@@ -103,8 +103,6 @@ jobs:
           envkey_DB_URL: "postgres://hub:supersecretpassword@localhost:5555/hub"
           envkey_JWT_SECRET: "my_ultra_secure_secret"
           envkey_NETWORK: "regtest"
-          envkey_MEMPOOL_REST_URL: "http://localhost:7339"
-          envkey_MEMPOOL_WS_URL: "ws://localhost:7339/ws"
           envkey_MOON_API_KEY: "api-key"
           envkey_MOON_API_URL: "https://example.com"
           envkey_MOON_VISA_PRODUCT_ID: "4155e9b9-4a94-4894-acd8-90c728bd14e7"
