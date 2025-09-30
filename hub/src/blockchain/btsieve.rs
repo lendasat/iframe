@@ -231,6 +231,15 @@ impl xtra::Handler<CheckBlockHeight> for Actor {
                             continue;
                         }
                     };
+                    // If we ever want to optimise this actor, this might be the place to start.
+                    //
+                    // We are sending one message per contract, which can only be processed one by
+                    // one. I think the only thing that is being shared (that cannot be
+                    // cloned/copied) between these tasks is get_next_client, which could be shared
+                    // more efficiently as a Mutex.
+                    //
+                    // Although it's kind of a feature to throttle these requests, to avoid rate
+                    // limits.
                     if let Err(err) = actor
                         .send(CheckAddressStatus {
                             contract_id: contract.id.clone(),
