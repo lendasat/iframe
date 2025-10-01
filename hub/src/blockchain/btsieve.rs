@@ -211,10 +211,10 @@ impl xtra::Handler<CheckBlockHeight> for Actor {
 
             let actor = ctx.mailbox().address();
 
-            let contracts = db::contracts::load_open_contracts(&self.db)
+            let contracts = db::contracts::load_contracts_to_watch(&self.db)
                 .await
                 .expect("contracts to start btsive actor");
-            tracing::trace!(
+            tracing::debug!(
                 target: "btsieve",
                 number_of_contracts = contracts.len(),
                 "Checking tx for contracts"
@@ -279,6 +279,11 @@ impl xtra::Handler<CheckAddressStatus> for Actor {
         msg: CheckAddressStatus,
         _: &mut xtra::Context<Self>,
     ) -> Self::Return {
+        tracing::trace!(target: "btsieve",
+            contract_id = msg.contract_id,
+            address = msg.contract_address.to_string(),
+            "Checking address status");
+
         let contract_address = msg.contract_address.script_pubkey();
         let contract_id = msg.contract_id;
 

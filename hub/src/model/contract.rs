@@ -515,6 +515,36 @@ impl ContractStatus {
         }
     }
 
+    fn needs_to_be_checked_for_tx_updates(&self) -> bool {
+        match self {
+            ContractStatus::Requested
+            | ContractStatus::Closed
+            | ContractStatus::ClosedByLiquidation
+            | ContractStatus::ClosedByDefaulting
+            | ContractStatus::Extended
+            | ContractStatus::Rejected
+            | ContractStatus::Cancelled
+            | ContractStatus::RequestExpired
+            | ContractStatus::ApprovalExpired
+            | ContractStatus::ClosedByRecovery => false,
+            ContractStatus::Approved
+            | ContractStatus::CollateralSeen
+            | ContractStatus::CollateralConfirmed
+            | ContractStatus::PrincipalGiven
+            | ContractStatus::RepaymentProvided
+            | ContractStatus::RepaymentConfirmed
+            | ContractStatus::ClosingByClaim
+            | ContractStatus::ClosingByDefaulting
+            | ContractStatus::ClosingByLiquidation
+            | ContractStatus::ClosingByRecovery
+            | ContractStatus::CollateralRecoverable
+            | ContractStatus::Undercollateralized
+            | ContractStatus::Defaulted
+            | ContractStatus::DisputeBorrowerStarted
+            | ContractStatus::DisputeLenderStarted => true,
+        }
+    }
+
     pub fn can_be_checked_for_undercollateralization_variants() -> impl Iterator<Item = Self> {
         enum_iterator::all::<Self>().filter(|s| s.can_be_checked_for_undercollateralization())
     }
@@ -525,6 +555,13 @@ impl ContractStatus {
     /// which also check if a contract is _open_
     pub fn can_be_checked_for_late_installments_variants() -> impl Iterator<Item = Self> {
         enum_iterator::all::<Self>().filter(|s| s.can_be_checked_for_undercollateralization())
+    }
+
+    /// convenience method to get all states where a collateral update can happen
+    ///
+    /// This means, we need to watch the contract address for updates
+    pub fn needs_to_be_checked_for_tx_updates_variants() -> impl Iterator<Item = Self> {
+        enum_iterator::all::<Self>().filter(|s| s.needs_to_be_checked_for_tx_updates())
     }
 }
 

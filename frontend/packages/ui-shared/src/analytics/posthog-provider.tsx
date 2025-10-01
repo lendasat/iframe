@@ -18,7 +18,7 @@ if (POSTHOG_KEY && POSTHOG_HOST && typeof window !== "undefined") {
     capture_pageleave: true,
     session_recording: {
       maskAllInputs: true,
-      maskTextSelector: '[data-sensitive]',
+      maskTextSelector: "[data-sensitive]",
     },
     loaded: () => {
       if (import.meta.env.DEV) {
@@ -39,8 +39,6 @@ export function PostHogProvider({ children, appType }: PostHogProviderProps) {
   }, [appType]);
 
   return (
-    <PostHogReactProvider client={posthog}>
-      {children}
-    </PostHogReactProvider>
+    <PostHogReactProvider client={posthog}>{children}</PostHogReactProvider>
   );
 }

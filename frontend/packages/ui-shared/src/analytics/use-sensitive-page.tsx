@@ -22,7 +22,7 @@ export function useSensitivePage(isSensitive: boolean = true) {
 }
 
 export function withSensitivePage<P extends object>(
-  Component: React.ComponentType<P>
+  Component: React.ComponentType<P>,
 ): React.ComponentType<P> {
   return function SensitivePageWrapper(props: P) {
     useSensitivePage(true);

@@ -753,7 +753,11 @@ pub async fn load_all(pool: &Pool<Postgres>) -> Result<Vec<Contract>> {
     Ok(contracts)
 }
 
-pub async fn load_open_contracts(pool: &Pool<Postgres>) -> Result<Vec<Contract>> {
+pub async fn load_contracts_to_watch(pool: &Pool<Postgres>) -> Result<Vec<Contract>> {
+    let statuses = ContractStatus::needs_to_be_checked_for_tx_updates_variants()
+        .map(db::ContractStatus::from)
+        .collect::<Vec<_>>();
+
     let contracts = sqlx::query_as!(
         db::Contract,
         r#"
@@ -792,7 +796,8 @@ pub async fn load_open_contracts(pool: &Pool<Postgres>) -> Result<Vec<Contract>>
             created_at as "created_at!",
             updated_at as "updated_at!",
             client_contract_id
-        FROM contracts_to_be_watched"#,
+        FROM contracts where contracts.status = ANY($1)"#,
+        &statuses as &[db::ContractStatus]
     )
     .fetch_all(pool)
     .await?;
