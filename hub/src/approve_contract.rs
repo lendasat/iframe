@@ -1,8 +1,4 @@
 use crate::db;
-use crate::electrum;
-use crate::electrum::RegisterAddress;
-use crate::mempool;
-use crate::mempool::TrackContractFunding;
 use crate::model::Contract;
 use crate::model::ContractStatus;
 use crate::model::FiatLoanDetailsWrapper;
@@ -48,8 +44,6 @@ pub enum Error {
 pub async fn approve_contract(
     db: &PgPool,
     wallet: &Wallet,
-    mempool_actor: &xtra::Address<mempool::Actor>,
-    electrum_actor: Option<&xtra::Address<electrum::Actor>>,
     contract_id: String,
     lender_id: &str,
     notifications: Arc<Notifications>,
@@ -120,23 +114,6 @@ pub async fn approve_contract(
     )
     .await
     .map_err(Error::Database)?;
-
-    mempool_actor
-        .send(TrackContractFunding::new(
-            contract_id.clone(),
-            contract_address.clone(),
-        ))
-        .await
-        .expect("actor to be alive")
-        .map_err(Error::TrackContract)?;
-
-    if let Some(electrum_actor) = electrum_actor {
-        electrum_actor
-            .send(RegisterAddress::new(contract_id.clone(), contract_address))
-            .await
-            .expect("actor to be alive")
-            .map_err(Error::TrackContract)?;
-    }
 
     // We don't want to fail this upwards because the contract request has already been
     // approved.

@@ -103,8 +103,6 @@ jobs:
           envkey_DB_URL: "postgres://hub:supersecretpassword@localhost:5555/hub"
           envkey_JWT_SECRET: "my_ultra_secure_secret"
           envkey_NETWORK: "regtest"
-          envkey_MEMPOOL_REST_URL: "http://localhost:7339"
-          envkey_MEMPOOL_WS_URL: "ws://localhost:7339/ws"
           envkey_MOON_API_KEY: "api-key"
           envkey_MOON_API_URL: "https://example.com"
           envkey_MOON_VISA_PRODUCT_ID: "4155e9b9-4a94-4894-acd8-90c728bd14e7"
@@ -126,6 +124,8 @@ jobs:
           envkey_BRINGIN_WEBHOOK_URL: "https://webhook.site/0be287da-5ac6-4e99-b6fb-d5e26ac3e6b3"
           envkey_ETHERSCAN_API_KEY: "key"
           envkey_FALLBACK_NPUB: "npub1z774umv05tcwd8xxl0ftxs7muk7u9vqhqyglqz3e82wqr4w0m2uqlz05cf"
+          envkey_BTSIEVE_SYNC_INTERVAL: 1
+          envkey_ESPLORA_URLS: "http://localhost:7339/api"
           file_name: .env
 
       - name: Show disk space before test run

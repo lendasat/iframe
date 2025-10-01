@@ -4,8 +4,6 @@ use crate::contract_requests;
 use crate::contract_requests::calculate_origination_fee;
 use crate::db;
 use crate::discounted_origination_fee;
-use crate::mempool;
-use crate::mempool::TrackContractFunding;
 use crate::model::generate_installments;
 use crate::model::ContractVersion;
 use crate::model::LatePenalty;
@@ -53,7 +51,6 @@ pub enum Error {
 pub async fn take_application(
     db: &PgPool,
     wallet: Arc<Wallet>,
-    mempool_actor: &xtra::Address<mempool::Actor>,
     config: &Config,
     lender_id: &str,
     notifications: Arc<Notifications>,
@@ -207,15 +204,6 @@ pub async fn take_application(
     notifications
         .send_loan_application_taken_borrower(contract_id.to_string().as_str(), borrower)
         .await;
-
-    mempool_actor
-        .send(TrackContractFunding::new(
-            contract_id.to_string(),
-            contract_address,
-        ))
-        .await
-        .expect("actor to be alive")
-        .map_err(Error::TrackContract)?;
 
     // TODO: send notifications
 

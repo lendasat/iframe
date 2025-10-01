@@ -1,3 +1,5 @@
+mod update_collateral;
+
 use crate::db::contract_emails;
 use crate::db::loan_deals;
 use crate::db::map_to_db_extension_policy;
@@ -22,8 +24,8 @@ use bitcoin::PublicKey;
 use rust_decimal::Decimal;
 use sqlx::Pool;
 use sqlx::Postgres;
-use std::cmp::Ordering;
 use time::OffsetDateTime;
+pub use update_collateral::*;
 use uuid::Uuid;
 
 #[derive(Debug, Clone)]
@@ -699,7 +701,7 @@ pub async fn load_contract_by_contract_id_and_lender_id(
     Ok(contract.map(|c| c.into()))
 }
 
-pub async fn load_open_contracts(pool: &Pool<Postgres>) -> Result<Vec<Contract>> {
+pub async fn load_all(pool: &Pool<Postgres>) -> Result<Vec<Contract>> {
     let contracts = sqlx::query_as!(
         db::Contract,
         r#"
@@ -738,7 +740,64 @@ pub async fn load_open_contracts(pool: &Pool<Postgres>) -> Result<Vec<Contract>>
             created_at as "created_at!",
             updated_at as "updated_at!",
             client_contract_id
-        FROM contracts_to_be_watched"#,
+        FROM contracts"#,
+    )
+    .fetch_all(pool)
+    .await?;
+
+    let contracts = contracts
+        .into_iter()
+        .map(Contract::from)
+        .collect::<Vec<Contract>>();
+
+    Ok(contracts)
+}
+
+pub async fn load_contracts_to_watch(pool: &Pool<Postgres>) -> Result<Vec<Contract>> {
+    let statuses = ContractStatus::needs_to_be_checked_for_tx_updates_variants()
+        .map(db::ContractStatus::from)
+        .collect::<Vec<_>>();
+
+    let contracts = sqlx::query_as!(
+        db::Contract,
+        r#"
+        SELECT
+            id as "id!",
+            lender_id as "lender_id!",
+            borrower_id as "borrower_id!",
+            loan_deal_id as "loan_deal_id!",
+            initial_ltv as "initial_ltv!",
+            initial_collateral_sats as "initial_collateral_sats!",
+            origination_fee_sats as "origination_fee_sats!",
+            collateral_sats as "collateral_sats!",
+            loan_amount as "loan_amount!",
+            borrower_btc_address as "borrower_btc_address!",
+            borrower_pk as "borrower_pk!",
+            borrower_derivation_path,
+            lender_pk as "lender_pk!",
+            lender_derivation_path as "lender_derivation_path!",
+            borrower_loan_address,
+            lender_loan_repayment_address,
+            lender_btc_loan_repayment_address,
+            loan_type as "loan_type!: crate::model::db::LoanType",
+            contract_address,
+            contract_index,
+            borrower_npub as "borrower_npub!",
+            lender_npub as "lender_npub!",
+            status as "status!: crate::model::db::ContractStatus",
+            liquidation_status as "liquidation_status!: crate::model::db::LiquidationStatus",
+            duration_days as "duration_days!",
+            expiry_date as "expiry_date!",
+            contract_version as "contract_version!",
+            interest_rate as "interest_rate!",
+            extension_duration_days as "extension_duration_days!",
+            extension_interest_rate as "extension_interest_rate!",
+            asset as "asset!: crate::model::LoanAsset",
+            created_at as "created_at!",
+            updated_at as "updated_at!",
+            client_contract_id
+        FROM contracts where contracts.status = ANY($1)"#,
+        &statuses as &[db::ContractStatus]
     )
     .fetch_all(pool)
     .await?;
@@ -1210,8 +1269,32 @@ pub async fn mark_contract_as_defaulted(pool: &Pool<Postgres>, contract_id: &str
     mark_contract_state_as(pool, contract_id, db::ContractStatus::Defaulted).await
 }
 
-pub async fn mark_contract_as_closing(pool: &Pool<Postgres>, contract_id: &str) -> Result<()> {
-    mark_contract_state_as(pool, contract_id, db::ContractStatus::Closing).await
+pub async fn mark_contract_as_closing_by_claim(
+    pool: &Pool<Postgres>,
+    contract_id: &str,
+) -> Result<()> {
+    mark_contract_state_as(pool, contract_id, db::ContractStatus::ClosingByClaim).await
+}
+
+pub async fn mark_contract_as_closing_by_liquidation(
+    pool: &Pool<Postgres>,
+    contract_id: &str,
+) -> Result<()> {
+    mark_contract_state_as(pool, contract_id, db::ContractStatus::ClosingByLiquidation).await
+}
+
+pub async fn mark_contract_as_closing_by_defaulting(
+    pool: &Pool<Postgres>,
+    contract_id: &str,
+) -> Result<()> {
+    mark_contract_state_as(pool, contract_id, db::ContractStatus::ClosingByDefaulting).await
+}
+
+pub async fn mark_contract_as_closing_by_recovering(
+    pool: &Pool<Postgres>,
+    contract_id: &str,
+) -> Result<()> {
+    mark_contract_state_as(pool, contract_id, db::ContractStatus::ClosingByRecovery).await
 }
 
 pub async fn mark_contract_as_undercollateralized(
@@ -1511,183 +1594,6 @@ pub struct DefaultedContract {
     pub contract_id: String,
     pub borrower_id: String,
     pub lender_id: String,
-}
-
-/// Update the collateral of the [`Contract`] in the database.
-///
-/// The `collateral_sats` and `status` columns are only updated if something actually changes based
-/// on the reported `updated_collateral_sats` argument.
-///
-/// # Returns
-///
-/// A tuple with the updated [`Contract`] and a boolean indicating if the contract's collateral was
-/// just confirmed.
-///
-/// This function is the cost we have to pay for not modelling things properly.
-pub async fn update_collateral(
-    pool: &Pool<Postgres>,
-    contract_id: &str,
-    updated_collateral_sats: u64,
-) -> Result<(Contract, bool)> {
-    let contract = load_contract(pool, contract_id).await?;
-
-    let min_collateral = contract.initial_collateral_sats;
-    let current_collateral_sats = contract.collateral_sats;
-
-    // The status does not always change, but it's simpler to always write to the database if the
-    // collateral changes.
-    let (new_status, is_newly_confirmed) =
-        match updated_collateral_sats.cmp(&current_collateral_sats) {
-            Ordering::Greater => {
-                tracing::debug!(
-                    contract_id,
-                    before = current_collateral_sats,
-                    after = updated_collateral_sats,
-                    "Collateral increased"
-                );
-
-                match contract.status {
-                    ContractStatus::Requested => {
-                        // This means that a contract's newly assigned address already has money in
-                        // it. We can only get here if the _contract address_ was reused, which is a
-                        // really bad idea.
-                        bail!("Should not be able to add collateral to a Requested loan");
-                    }
-                    ContractStatus::Approved | ContractStatus::CollateralSeen => {
-                        match updated_collateral_sats >= min_collateral {
-                            true => {
-                                tracing::debug!(
-                                    contract_id,
-                                    collateral_sats = updated_collateral_sats,
-                                    "Collateral confirmed"
-                                );
-
-                                (ContractStatus::CollateralConfirmed, true)
-                            }
-                            false => (contract.status, false),
-                        }
-                    }
-                    ContractStatus::CollateralConfirmed
-                    | ContractStatus::PrincipalGiven
-                    | ContractStatus::RepaymentProvided
-                    | ContractStatus::RepaymentConfirmed
-                    | ContractStatus::Undercollateralized
-                    | ContractStatus::Defaulted
-                    | ContractStatus::Closing
-                    | ContractStatus::Closed
-                    | ContractStatus::ClosedByLiquidation
-                    | ContractStatus::ClosedByDefaulting
-                    | ContractStatus::Extended
-                    | ContractStatus::Rejected
-                    | ContractStatus::DisputeBorrowerStarted
-                    | ContractStatus::DisputeLenderStarted
-                    | ContractStatus::Cancelled
-                    | ContractStatus::RequestExpired
-                    | ContractStatus::ApprovalExpired
-                    | ContractStatus::CollateralRecoverable
-                    | ContractStatus::ClosedByRecovery => (contract.status, false),
-                }
-            }
-            Ordering::Less => {
-                // Currently, we are only tracking adding funds to a collateral output. If the
-                // collateral amount decreases, it's probably because an output was reorged
-                // away, which is rare.
-                tracing::warn!(
-                    contract_id,
-                    before = current_collateral_sats,
-                    after = updated_collateral_sats,
-                    "Collateral decreased. This is weird"
-                );
-
-                // This is where the limitations of our state machine come into play. Here we're
-                // only considering the possibility that `CollateralConfirmed` can
-                // go back to `Approved` after a reorg, but it could happen for
-                // other states too. In any case, this is all unlikely.
-                match contract.status {
-                    ContractStatus::CollateralConfirmed => {
-                        match updated_collateral_sats < min_collateral {
-                            true => {
-                                tracing::warn!(
-                                    contract_id,
-                                    collateral_sats = updated_collateral_sats,
-                                    "Moving contract from CollateralConfirmed back to Approved"
-                                );
-
-                                (ContractStatus::Approved, false)
-                            }
-                            false => (contract.status, false),
-                        }
-                    }
-                    _ => (contract.status, false),
-                }
-            }
-            Ordering::Equal => {
-                tracing::trace!(
-                    contract_id,
-                    collateral_sats = current_collateral_sats,
-                    "Collateral has not changed"
-                );
-
-                return Ok((contract, false));
-            }
-        };
-
-    let new_status = db::ContractStatus::from(new_status);
-
-    let contract = sqlx::query_as!(
-        db::Contract,
-        r#"
-        UPDATE contracts
-        SET
-            collateral_sats = $1,
-            status = $2,
-            updated_at = $3
-        WHERE id = $4
-        RETURNING
-            id,
-            lender_id,
-            borrower_id,
-            loan_deal_id,
-            initial_ltv,
-            initial_collateral_sats,
-            origination_fee_sats,
-            collateral_sats,
-            loan_amount,
-            borrower_btc_address,
-            borrower_pk,
-            borrower_derivation_path,
-            lender_pk,
-            lender_derivation_path,
-            borrower_loan_address,
-            lender_loan_repayment_address,
-            lender_btc_loan_repayment_address,
-            loan_type as "loan_type: crate::model::db::LoanType",
-            contract_address,
-            contract_index,
-            borrower_npub,
-            lender_npub,
-            status as "status: crate::model::db::ContractStatus",
-            liquidation_status as "liquidation_status: crate::model::db::LiquidationStatus",
-            duration_days,
-            expiry_date,
-            contract_version,
-            interest_rate,
-            client_contract_id,
-            extension_duration_days,
-            extension_interest_rate,
-            asset as "asset: crate::model::LoanAsset",
-            created_at,
-            updated_at
-        "#,
-        updated_collateral_sats as i64,
-        new_status as db::ContractStatus,
-        OffsetDateTime::now_utc(),
-        contract_id,
-    )
-    .fetch_one(pool)
-    .await?;
-
-    Ok((contract.into(), is_newly_confirmed))
 }
 
 #[derive(Clone)]

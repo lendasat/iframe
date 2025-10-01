@@ -21,7 +21,10 @@ export function collateralForStatus(
     case ContractStatus.RepaymentConfirmed:
     case ContractStatus.Undercollateralized:
     case ContractStatus.Defaulted:
-    case ContractStatus.Closing:
+    case ContractStatus.ClosingByClaim:
+    case ContractStatus.ClosingByDefaulting:
+    case ContractStatus.ClosingByLiquidation:
+    case ContractStatus.ClosingByRecovery:
     case ContractStatus.Closed:
     case ContractStatus.ClosedByLiquidation:
     case ContractStatus.ClosedByDefaulting:

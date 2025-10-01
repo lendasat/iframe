@@ -1,5 +1,17 @@
 import { LoanOffer } from "@frontend/http-client-borrower";
-import { Button, Checkbox, Dialog, Flex, Link, Text } from "@radix-ui/themes";
+import {
+  Button,
+  Checkbox,
+  Dialog,
+  DialogClose,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@frontend/shadcn";
+
 interface KycDialogProps {
   selectedOffer: LoanOffer;
   checked: boolean;
@@ -14,70 +26,71 @@ export function KycDialog({
   onConfirm,
 }: KycDialogProps) {
   return (
-    <Dialog.Root>
-      <Dialog.Trigger>
-        <Button color={"purple"} mt={"3"}>
+    <Dialog>
+      <DialogTrigger asChild>
+        <Button variant="default" className="mt-3">
           KYC Form
         </Button>
-      </Dialog.Trigger>
+      </DialogTrigger>
 
-      <Dialog.Content style={{ maxWidth: "450px" }}>
-        <Flex direction="column" gap="4">
-          <Dialog.Title>KYC Required</Dialog.Title>
+      <DialogContent className="max-w-[450px]">
+        <DialogHeader>
+          <DialogTitle>KYC Required</DialogTitle>
+          <DialogDescription className="space-y-4 pt-4">
+            <p>
+              For this offer KYC is required. KYC verification is performed by
+              the lender and we do not know if you have processed or succeeded
+              KYC with them in the past.
+            </p>
 
-          <Text as="p">
-            For this offer KYC is required. KYC verification is performed by the
-            lender and we do not know if you have processed or succeeded KYC
-            with them in the past.
-          </Text>
+            <div className="flex justify-center py-4">
+              <a
+                href={selectedOffer?.kyc_link}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="font-medium text-primary underline hover:text-primary/80"
+              >
+                Access KYC Form →
+              </a>
+            </div>
 
-          <Flex justify="center" py="4">
-            <Link
-              href={selectedOffer?.kyc_link}
-              target="_blank"
-              rel="noopener noreferrer"
-              weight="medium"
-            >
-              Access KYC Form →
-            </Link>
-          </Flex>
+            <p>
+              If this is your first time requesting from this lender, please
+              proceed to their KYC form to initiate the procedure.
+            </p>
 
-          <Text as="p">
-            If this is your first time requesting from this lender, please
-            proceed to their KYC form to initiate the procedure.
-          </Text>
+            <p>
+              Meanwhile, you can continue requesting the offer through Lendasat.
+              Once the KYC request has been approved, the Lender will accept
+              your loan request.
+            </p>
+          </DialogDescription>
+        </DialogHeader>
 
-          <Text as="p">
-            Meanwhile, you can continue requesting the offer through Lendasat.
-            Once the KYC request has been approved, the Lender will accept your
-            loan request.
-          </Text>
+        <div className="flex items-center gap-2 py-4">
+          <Checkbox
+            checked={checked}
+            onCheckedChange={onCheckedChange}
+            id="kyc-confirm"
+          />
+          <label htmlFor="kyc-confirm" className="text-sm">
+            I confirm I've submitted the KYC
+          </label>
+        </div>
 
-          <Flex gap="2" align="center">
-            <Checkbox
-              checked={checked}
-              onCheckedChange={onCheckedChange}
-              id="kyc-confirm"
-            />
-            <Text as="label" htmlFor="kyc-confirm">
-              I confirm I've submitted the KYC
-            </Text>
-          </Flex>
-
-          <Flex gap="3" justify="end" mt="4">
-            <Dialog.Close>
-              <Button variant="soft" color="gray">
-                Cancel
-              </Button>
-            </Dialog.Close>
-            <Dialog.Close>
-              <Button disabled={!checked} onClick={onConfirm}>
-                Confirm
-              </Button>
-            </Dialog.Close>
-          </Flex>
-        </Flex>
-      </Dialog.Content>
-    </Dialog.Root>
+        <DialogFooter>
+          <DialogClose asChild>
+            <Button variant="outline" type="button">
+              Cancel
+            </Button>
+          </DialogClose>
+          <DialogClose asChild>
+            <Button disabled={!checked} onClick={onConfirm}>
+              Confirm
+            </Button>
+          </DialogClose>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
   );
 }

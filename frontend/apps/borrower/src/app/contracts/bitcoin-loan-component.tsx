@@ -55,7 +55,10 @@ export function contractStatusLabelColor(status?: ContractStatus): string {
       return "bg-red-100 text-red-800";
     case ContractStatus.Defaulted:
       return "bg-red-100 text-red-800";
-    case ContractStatus.Closing:
+    case ContractStatus.ClosingByClaim:
+    case ContractStatus.ClosingByRecovery:
+    case ContractStatus.ClosingByDefaulting:
+    case ContractStatus.ClosingByLiquidation:
       return "bg-slate-100 text-slate-800";
     case ContractStatus.Closed:
       return "bg-gray-100 text-gray-800";
@@ -186,7 +189,7 @@ const EnhancedBitcoinLoan = () => {
               >
                 <div className="flex-shrink-0 px-4">
                   <div
-                    className="w-full overflow-x-scroll cursor-grab active:cursor-grabbing scrollbar-hide"
+                    className="scrollbar-hide w-full cursor-grab overflow-x-scroll active:cursor-grabbing"
                     onMouseDown={(e) => {
                       const slider = e.currentTarget;
                       let isDown = true;

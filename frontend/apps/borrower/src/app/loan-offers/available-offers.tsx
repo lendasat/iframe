@@ -2,7 +2,7 @@ import {
   LoanProductOption,
   useHttpClientBorrower,
 } from "@frontend/http-client-borrower";
-import { Box, ScrollArea } from "@radix-ui/themes";
+import { ScrollArea } from "@frontend/shadcn";
 import { useNavigate } from "react-router-dom";
 import { useAsync } from "react-use";
 import DashHeader from "../components/DashHeader";
@@ -20,10 +20,10 @@ function AvailableOffers() {
   const filteredLoanOffers = value || [];
 
   return (
-    <ScrollArea className="h-screen" type="always" scrollbars="vertical">
+    <ScrollArea className="h-screen">
       <DashHeader label="Available Offers" />
       {/*TODO: re-implement filters if needed */}
-      <Box className="pt-3" px={"6"} pb={"8"}>
+      <div className="px-6 pb-8 pt-3">
         <LoanOfferTable
           loading={loading}
           loanOffers={filteredLoanOffers}
@@ -47,7 +47,7 @@ function AvailableOffers() {
             );
           }}
         />
-      </Box>
+      </div>
     </ScrollArea>
   );
 }

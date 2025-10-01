@@ -1,7 +1,6 @@
-import { faWarning } from "@fortawesome/free-solid-svg-icons";
-import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { LoanOffer } from "@frontend/http-client-borrower";
-import { Callout } from "@radix-ui/themes";
+import { Alert, AlertDescription } from "@frontend/shadcn";
+import { AlertTriangle } from "lucide-react";
 import { ColumnFiltersState } from "@tanstack/react-table";
 import { LoanOfferTable } from "./offer-table";
 import { useState } from "react";
@@ -44,12 +43,10 @@ export const OffersSelectionTable = ({
         selectedOfferId={selectedOffer?.id}
       />
       {loadingError && (
-        <Callout.Root color="red" className="w-full">
-          <Callout.Icon>
-            <FontAwesomeIcon icon={faWarning} />
-          </Callout.Icon>
-          <Callout.Text>{loadingError.message}</Callout.Text>
-        </Callout.Root>
+        <Alert variant="destructive" className="w-full">
+          <AlertTriangle className="h-4 w-4" />
+          <AlertDescription>{loadingError.message}</AlertDescription>
+        </Alert>
       )}
     </>
   );

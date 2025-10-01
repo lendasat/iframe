@@ -1,35 +1,14 @@
 #![allow(clippy::unwrap_used)]
 
-use axum::body::Bytes;
-use axum::extract::ws::Message;
-use axum::extract::ws::WebSocket;
 use axum::extract::Path;
 use axum::extract::State;
-use axum::extract::WebSocketUpgrade;
 use axum::response::IntoResponse;
 use axum::Json;
-use bitcoin::absolute::LockTime;
-use bitcoin::consensus::serialize;
-use bitcoin::hashes::Hash;
-use bitcoin::transaction::Version;
 use bitcoin::Address;
-use bitcoin::Amount;
 use bitcoin::BlockHash;
-use bitcoin::CompactTarget;
-use bitcoin::TxMerkleNode;
-use bitcoin::TxOut;
+use bitcoin::ScriptBuf;
 use bitcoin::Txid;
-use futures::SinkExt;
-use futures::StreamExt;
-use futures::TryStreamExt;
-use hub::mempool::Action;
-use hub::mempool::Block;
-use hub::mempool::Data;
-use hub::mempool::Transaction;
-use hub::mempool::TransactionStatus;
-use hub::mempool::Vout;
-use hub::mempool::WsRequest;
-use hub::mempool::WsResponse;
+use hex::FromHex;
 use rand::thread_rng;
 use rand::Rng;
 use serde::Deserialize;
@@ -37,38 +16,40 @@ use serde::Serialize;
 use std::str::FromStr;
 use std::sync::Arc;
 use std::sync::RwLock;
-use tokio::sync::mpsc;
-use tokio_stream::StreamExt as _;
+use std::time::SystemTime;
 use tracing::instrument;
 
 pub mod logger;
 
 pub struct Blockchain {
-    pub height: u64,
-    pub txs: Vec<Transaction>,
+    pub height: u32,
+    pub txs: Vec<Tx>,
 
     /// Addresses tracked for _all_ users.
     pub tracked_addresses: Vec<String>,
-    pub events_tx: tokio::sync::broadcast::Sender<WsResponse>,
 }
 
 impl Blockchain {
-    pub fn get_by_address(&self, address: &str) -> Vec<Transaction> {
+    pub fn get_by_address(&self, address: &str) -> Vec<Tx> {
+        let script_pubkey = Address::from_str(address)
+            .unwrap()
+            .assume_checked()
+            .script_pubkey();
         self.txs
             .iter()
             .filter(|tx| {
-                tx.vout.iter().any(|vout| {
-                    vout.scriptpubkey_address.assume_checked_ref().to_string() == address
-                })
+                tx.vin.iter().any(|i| {
+                    i.prevout
+                        .clone()
+                        .map(|p| p.scriptpubkey == script_pubkey)
+                        .unwrap_or_default()
+                }) || tx
+                    .vout
+                    .iter()
+                    .any(|vout| vout.scriptpubkey == script_pubkey)
             })
             .cloned()
             .collect::<Vec<_>>()
-    }
-
-    pub fn get_by_txid(&self, txid: &str) -> Option<Transaction> {
-        let txid = Txid::from_str(txid).unwrap();
-
-        self.txs.iter().find(|tx| tx.txid == txid).cloned()
     }
 
     pub fn send_to_address(&mut self, address: String, amount: u64) {
@@ -76,16 +57,27 @@ impl Blockchain {
         let txid = hex::encode(txid);
         let txid = Txid::from_str(&txid).unwrap();
 
-        let tx = Transaction {
+        let address = Address::from_str(&address).unwrap();
+        let scriptpubkey = address.assume_checked().script_pubkey();
+
+        let tx = Tx {
             txid,
+            version: 2,
+            locktime: 0,
+            vin: vec![],
             vout: vec![Vout {
-                scriptpubkey_address: Address::from_str(&address).unwrap(),
                 value: amount,
+                scriptpubkey,
             }],
-            status: TransactionStatus {
+            size: 0,
+            weight: 0,
+            status: TxStatus {
                 confirmed: false,
                 block_height: None,
+                block_hash: None,
+                block_time: None,
             },
+            fee: 0,
         };
 
         tracing::debug!(?tx, "Transaction found in mempool");
@@ -98,26 +90,56 @@ impl Blockchain {
 
         let txid = tx.compute_txid();
 
-        let tx = Transaction {
+        let all_prevouts = tx
+            .input
+            .iter()
+            .map(|i| (i.previous_output.txid, i.previous_output.vout))
+            .collect::<Vec<_>>();
+
+        let mut maybe_prevout = None;
+        for (txid, vout) in all_prevouts {
+            maybe_prevout = self.txs.iter().find(|tx| tx.txid == txid).map(|tx| {
+                let vout = tx.vout.get(vout as usize).unwrap();
+                PrevOut {
+                    value: vout.value,
+                    scriptpubkey: vout.scriptpubkey.clone(),
+                }
+            });
+        }
+        let tx = Tx {
             txid,
+            version: 2,
+            locktime: 0,
+            vin: tx
+                .input
+                .iter()
+                .map(|i| Vin {
+                    txid,
+                    vout: 0,
+                    prevout: maybe_prevout.clone(),
+                    scriptsig: i.script_sig.clone(),
+                    witness: vec![],
+                    sequence: 0,
+                    is_coinbase: false,
+                })
+                .collect(),
             vout: tx
                 .output
                 .iter()
                 .map(|o| Vout {
-                    scriptpubkey_address: Address::from_script(
-                        &o.script_pubkey,
-                        bitcoin::params::REGTEST.clone(),
-                    )
-                    .unwrap()
-                    .as_unchecked()
-                    .clone(),
+                    scriptpubkey: o.script_pubkey.clone(),
                     value: o.value.to_sat(),
                 })
                 .collect(),
-            status: TransactionStatus {
+            size: 0,
+            weight: 0,
+            status: TxStatus {
                 confirmed: false,
                 block_height: None,
+                block_hash: None,
+                block_time: None,
             },
+            fee: 0,
         };
 
         tracing::debug!(?tx, "Transaction found in mempool");
@@ -127,7 +149,7 @@ impl Blockchain {
         txid
     }
 
-    pub fn mine_blocks(&mut self, n: u64) {
+    pub fn mine_blocks(&mut self, n: u32) {
         if n == 0 {
             return;
         }
@@ -135,9 +157,16 @@ impl Blockchain {
         for tx in self.txs.iter_mut() {
             // Every unconfirmed transaction is included in the _next_ block.
             if !tx.status.confirmed {
-                tx.status = TransactionStatus {
+                tx.status = TxStatus {
                     confirmed: true,
                     block_height: Some(self.height + 1),
+                    block_hash: None,
+                    block_time: Some(
+                        SystemTime::now()
+                            .duration_since(SystemTime::UNIX_EPOCH)
+                            .unwrap()
+                            .as_secs(),
+                    ),
                 };
 
                 tracing::debug!(?tx, "Transaction confirmed");
@@ -146,60 +175,9 @@ impl Blockchain {
 
         let new_height = self.height + n;
 
-        for height in (self.height + 1)..=new_height {
-            // This is obviously wrong, but it seems to work anyway.
-            let id = height.to_string();
-            let _ = self.events_tx.send(WsResponse::Block {
-                block: Block { height, id },
-            });
-        }
-
         self.height = new_height;
 
         tracing::debug!(height = self.height, "New blockheight");
-    }
-
-    pub fn get_block_raw(&self, height: u64) -> Option<bitcoin::block::Block> {
-        let transactions: Vec<Transaction> = self
-            .txs
-            .iter()
-            .filter(|tx| tx.status.block_height == Some(height))
-            .cloned()
-            .collect();
-        tracing::debug!("Found {} blocks at height: {}", transactions.len(), height);
-
-        let raw_block = bitcoin::block::Block {
-            header: bitcoin::block::Header {
-                version: bitcoin::block::Version::ONE,
-                prev_blockhash: BlockHash::all_zeros(),
-                merkle_root: TxMerkleNode::all_zeros(),
-                time: 0,
-                bits: CompactTarget::from_hex("0x000000").expect("valid hex"),
-                nonce: 0,
-            },
-            txdata: transactions
-                .iter()
-                .map(|tx| bitcoin::Transaction {
-                    version: Version::ONE,
-                    lock_time: LockTime::from_height(77777).unwrap(),
-                    input: vec![],
-                    output: tx
-                        .vout
-                        .iter()
-                        .map(|out| TxOut {
-                            value: Amount::from_sat(out.value),
-                            script_pubkey: out
-                                .scriptpubkey_address
-                                .clone()
-                                .assume_checked()
-                                .script_pubkey(),
-                        })
-                        .collect(),
-                })
-                .collect(),
-        };
-
-        Some(raw_block)
     }
 }
 
@@ -217,7 +195,7 @@ pub async fn get_block_tip_height(
 ///
 /// The `after_txid` query parameter is not supported.
 #[instrument(skip(blockchain), ret)]
-pub async fn get_address_transactions(
+pub async fn get_address_txes(
     State(blockchain): State<Arc<RwLock<Blockchain>>>,
     Path(address): Path<String>,
 ) -> impl IntoResponse {
@@ -241,50 +219,6 @@ pub async fn post_tx(
     (axum::http::StatusCode::OK, txid.to_string())
 }
 
-/// Mock of https://mempool.space/docs/api/rest#get-transaction.
-#[instrument(skip(blockchain), ret)]
-pub async fn get_tx(
-    State(blockchain): State<Arc<RwLock<Blockchain>>>,
-    Path(txid): Path<String>,
-) -> Result<impl IntoResponse, (axum::http::StatusCode, String)> {
-    let blockchain = blockchain.read().unwrap();
-
-    let tx = match blockchain.get_by_txid(&txid) {
-        Some(tx) => tx,
-        None => {
-            return Err((
-                axum::http::StatusCode::NOT_FOUND,
-                "Transaction not found".to_string(),
-            ))
-        }
-    };
-
-    Ok(Json(tx).into_response())
-}
-
-/// Mock of https://mempool.space/docs/api/rest#get-block-raw.
-#[instrument(skip(blockchain), ret)]
-pub async fn get_block_raw(
-    State(blockchain): State<Arc<RwLock<Blockchain>>>,
-    Path(height): Path<u64>,
-) -> Result<impl IntoResponse, (axum::http::StatusCode, String)> {
-    let blockchain = blockchain.read().unwrap();
-
-    let raw_block = match blockchain.get_block_raw(height) {
-        Some(block) => block,
-        None => {
-            return Err((
-                axum::http::StatusCode::NOT_FOUND,
-                "Block not found".to_string(),
-            ))
-        }
-    };
-
-    let serialized_block = serialize(&raw_block);
-
-    Ok(Bytes::from(serialized_block))
-}
-
 /// Internal API to add a transaction to the blockchain.
 ///
 /// This does not attempt to mock a `mempool.space` API.
@@ -306,7 +240,7 @@ pub async fn send_to_address(
 #[instrument(skip(blockchain))]
 pub async fn mine_blocks(
     State(blockchain): State<Arc<RwLock<Blockchain>>>,
-    Path(n): Path<u64>,
+    Path(n): Path<u32>,
 ) -> impl IntoResponse {
     let mut blockchain = blockchain.write().unwrap();
 
@@ -321,98 +255,74 @@ pub struct SendToAddress {
     pub amount: u64,
 }
 
-pub async fn handle_ws_upgrade(
-    ws: WebSocketUpgrade,
-    State(blockchain): State<Arc<RwLock<Blockchain>>>,
-) -> impl IntoResponse {
-    ws.on_upgrade(|socket| handle_ws(socket, blockchain))
+#[derive(Deserialize, Serialize, Debug, Clone)]
+pub struct Tx {
+    pub txid: Txid,
+    pub version: i32,
+    pub locktime: u32,
+    pub vin: Vec<Vin>,
+    pub vout: Vec<Vout>,
+    /// Transaction size in raw bytes (NOT virtual bytes).
+    pub size: usize,
+    /// Transaction weight units.
+    pub weight: u64,
+    pub status: TxStatus,
+    pub fee: u64,
 }
 
-pub async fn handle_ws(socket: WebSocket, blockchain: Arc<RwLock<Blockchain>>) {
-    let wants_blocks = Arc::new(RwLock::new(false));
+#[derive(Deserialize, Serialize, Debug, Clone)]
+pub struct Vout {
+    pub value: u64,
+    pub scriptpubkey: ScriptBuf,
+}
 
-    // Websocket to subscribers.
-    let (mut ws_sink, mut ws_stream) = socket.split();
+#[derive(Deserialize, Serialize, Debug, Clone)]
+pub struct PrevOut {
+    pub value: u64,
+    pub scriptpubkey: ScriptBuf,
+}
 
-    // Receiver of blockchain events.
-    let event_rx = {
-        let blockchain = blockchain.read().unwrap();
-        blockchain.events_tx.subscribe()
-    };
+#[derive(Deserialize, Serialize, Debug, Clone)]
+pub struct Vin {
+    pub txid: Txid,
+    pub vout: u32,
+    // None if coinbase
+    pub prevout: Option<PrevOut>,
+    pub scriptsig: ScriptBuf,
+    #[serde(
+        deserialize_with = "deserialize_witness",
+        serialize_with = "serialize_witness",
+        default
+    )]
+    pub witness: Vec<Vec<u8>>,
+    pub sequence: u32,
+    pub is_coinbase: bool,
+}
 
-    // Outgoing message queue (to be sent via the WS sink).
-    let (outgoing_queue_tx, outgoing_queue_rx) = mpsc::channel::<WsResponse>(10);
+fn deserialize_witness<'de, D>(d: D) -> Result<Vec<Vec<u8>>, D::Error>
+where
+    D: serde::de::Deserializer<'de>,
+{
+    let list = Vec::<String>::deserialize(d)?;
+    list.into_iter()
+        .map(|hex_str| Vec::<u8>::from_hex(&hex_str))
+        .collect::<Result<Vec<Vec<u8>>, _>>()
+        .map_err(serde::de::Error::custom)
+}
 
-    let mut merged_stream = {
-        let event_stream =
-            tokio_stream::wrappers::BroadcastStream::new(event_rx).map_err(anyhow::Error::new);
-        let outgoing_queue_stream = tokio_stream::StreamExt::map(
-            tokio_stream::wrappers::ReceiverStream::new(outgoing_queue_rx),
-            anyhow::Ok,
-        );
+fn serialize_witness<S>(witness: &[Vec<u8>], s: S) -> Result<S::Ok, S::Error>
+where
+    S: serde::ser::Serializer,
+{
+    let hex_strings: Vec<String> = witness.iter().map(hex::encode).collect();
 
-        event_stream.merge(outgoing_queue_stream)
-    };
+    hex_strings.serialize(s)
+}
 
-    tokio::spawn({
-        let wants_blocks = wants_blocks.clone();
-        async move {
-            while let Some(Ok(msg)) = tokio_stream::StreamExt::next(&mut merged_stream).await {
-                let msg = match msg {
-                    WsResponse::Blocks { .. } | WsResponse::Block { .. } => {
-                        if *wants_blocks.read().unwrap() {
-                            msg
-                        } else {
-                            continue;
-                        }
-                    }
-                    WsResponse::LoadingIndicator { response } => {
-                        WsResponse::LoadingIndicator { response }
-                    }
-                    WsResponse::LoadingIndicators {} => WsResponse::LoadingIndicators {},
-                    WsResponse::Conversions {} => WsResponse::Conversions {},
-                };
-
-                let msg = Message::Text(serde_json::to_string(&msg).unwrap());
-
-                ws_sink.send(msg).await.unwrap();
-            }
-        }
-    });
-
-    while let Some(Ok(msg)) = StreamExt::next(&mut ws_stream).await {
-        if let Message::Text(text) = msg {
-            if let Ok(msg) = serde_json::from_str::<WsRequest>(&text) {
-                match msg {
-                    WsRequest::Action {
-                        action: Action::Want,
-                        data,
-                    } if data.contains(&Data::Blocks) => {
-                        *wants_blocks.write().unwrap() = true;
-
-                        let height = blockchain.read().unwrap().height;
-
-                        if height == 0 {
-                            let _ = outgoing_queue_tx
-                                .send(WsResponse::Blocks { blocks: Vec::new() })
-                                .await;
-                        } else {
-                            // Mempool gives you some metadata about the last 6 blocks. The client
-                            // can used the highest block to figure out
-                            // the current blockchain height.
-                            let blocks = (height.checked_sub(5).unwrap_or_default()..=height)
-                                .map(|height| Block {
-                                    height,
-                                    id: height.to_string(),
-                                })
-                                .collect();
-
-                            let _ = outgoing_queue_tx.send(WsResponse::Blocks { blocks }).await;
-                        }
-                    }
-                    _ => {}
-                }
-            }
-        }
-    }
+#[derive(Deserialize, Serialize, Debug, Clone)]
+pub struct TxStatus {
+    pub confirmed: bool,
+    pub block_height: Option<u32>,
+    pub block_hash: Option<BlockHash>,
+    pub block_time: Option<u64>,
 }

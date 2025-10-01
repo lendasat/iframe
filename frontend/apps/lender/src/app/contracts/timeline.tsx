@@ -109,20 +109,20 @@ export const Timeline = ({ contract }: TimelineProps) => {
                   return (
                     <div
                       key={`${event.date.toString()}-${event.event.status}-${event.txid}`}
-                      className="relative pl-6 pb-4"
+                      className="relative pb-4 pl-6"
                     >
                       {/* Vertical line */}
                       {index < timelineEvents.length - 1 && (
-                        <div className="absolute left-[9px] top-[24px] bottom-0 w-0.5 bg-gray-200" />
+                        <div className="absolute bottom-0 left-[9px] top-[24px] w-0.5 bg-gray-200" />
                       )}
 
                       {/* Timeline dot */}
                       <div
-                        className={`absolute top-1 left-0 rounded-full w-[18px] h-[18px] ${currentStateColor} border-2 border-white ring-1 ring-gray-200`}
+                        className={`absolute left-0 top-1 h-[18px] w-[18px] rounded-full ${currentStateColor} border-2 border-white ring-1 ring-gray-200`}
                       />
 
                       <div>
-                        <div className="flex justify-between items-center">
+                        <div className="flex items-center justify-between">
                           <p className="font-medium">
                             {contractStatusToLabelString(event.event.status)}
                           </p>
@@ -132,11 +132,11 @@ export const Timeline = ({ contract }: TimelineProps) => {
                         </div>
                         {event.txid && url && (
                           <div className="flex items-center justify-between space-x-2">
-                            <p className="text-sm text-gray-600 mb-1">
+                            <p className="mb-1 text-sm text-gray-600">
                               Transaction ID
                             </p>
                             <div className="flex items-center">
-                              <p className="text-xs text-gray-600 mt-1 font-mono mr-2">
+                              <p className="mr-2 mt-1 font-mono text-xs text-gray-600">
                                 {shortenTxid(event.txid)}
                               </p>
                               <Button
@@ -170,7 +170,7 @@ export const Timeline = ({ contract }: TimelineProps) => {
                           </div>
                         )}
 
-                        <p className="text-sm text-gray-600 mb-1">
+                        <p className="mb-1 text-sm text-gray-600">
                           {contractStatusDescription(event.event.status)}
                         </p>
                       </div>
@@ -186,21 +186,21 @@ export const Timeline = ({ contract }: TimelineProps) => {
                   return (
                     <div
                       key={`${event.date.toString()}-installment-${event.txid}`}
-                      className="relative pl-6 pb-4"
+                      className="relative pb-4 pl-6"
                     >
                       {/* Vertical line */}
                       {index < timelineEvents.length - 1 && (
-                        <div className="absolute left-[9px] top-[24px] bottom-0 w-0.5 bg-gray-200" />
+                        <div className="absolute bottom-0 left-[9px] top-[24px] w-0.5 bg-gray-200" />
                       )}
 
                       {/* Timeline dot */}
                       <div
-                        className={`absolute top-1 left-0 rounded-full w-[18px] h-[18px] ${currentStateColor} border-2 border-white ring-1 ring-gray-200`}
+                        className={`absolute left-0 top-1 h-[18px] w-[18px] rounded-full ${currentStateColor} border-2 border-white ring-1 ring-gray-200`}
                       />
 
                       <div>
-                        <div className="flex justify-between items-center">
-                          <span className="font-medium flex items-center">
+                        <div className="flex items-center justify-between">
+                          <span className="flex items-center font-medium">
                             {event.event.installment_id ? (
                               <button
                                 type="button"
@@ -209,7 +209,7 @@ export const Timeline = ({ contract }: TimelineProps) => {
                                     event.event.installment_id!,
                                   )
                                 }
-                                className="text-blue-600 hover:text-blue-800 underline cursor-pointer"
+                                className="cursor-pointer text-blue-600 underline hover:text-blue-800"
                               >
                                 Installment Paid
                               </button>
@@ -217,7 +217,7 @@ export const Timeline = ({ contract }: TimelineProps) => {
                               "Installment Paid"
                             )}
                             {event.event.is_confirmed && (
-                              <CircleCheck className="ml-2 w-4 h-4" />
+                              <CircleCheck className="ml-2 h-4 w-4" />
                             )}
                           </span>
                           <Badge variant="outline" className="text-xs">
@@ -226,11 +226,11 @@ export const Timeline = ({ contract }: TimelineProps) => {
                         </div>
                         {event.txid && url && (
                           <div className="flex items-center justify-between space-x-2">
-                            <p className="text-sm text-gray-600 mb-1">
+                            <p className="mb-1 text-sm text-gray-600">
                               Transaction ID
                             </p>
                             <div className="flex items-center">
-                              <p className="text-xs text-gray-600 mt-1 font-mono mr-2">
+                              <p className="mr-2 mt-1 font-mono text-xs text-gray-600">
                                 {shortenTxid(event.txid)}
                               </p>
                               <Button
@@ -315,10 +315,13 @@ export function contractStatusDescription(status: ContractStatus): string {
       return "The contract is undercollateralized.";
     case ContractStatus.Defaulted:
       return "The borrower has not paid back in time.";
-    case ContractStatus.Closing:
+    case ContractStatus.ClosingByClaim:
       return "The collateral is being spent.";
     case ContractStatus.Closed:
       return "Your contract is closed.";
+    case ContractStatus.ClosingByLiquidation:
+    case ContractStatus.ClosingByDefaulting:
+      return "Your are liquidating the contract.";
     case ContractStatus.ClosedByLiquidation:
       return "You have liquidated the contract.";
     case ContractStatus.ClosedByDefaulting:
@@ -337,6 +340,8 @@ export function contractStatusDescription(status: ContractStatus): string {
       return "The contract request has expired.";
     case ContractStatus.CollateralRecoverable:
       return "The contract has been abandoned due to lender inactivity.";
+    case ContractStatus.ClosingByRecovery:
+      return "Your contract is being recovered.";
     case ContractStatus.ClosedByRecovery:
       return "The contract has been closed after the borrower recovered their collateral.";
   }

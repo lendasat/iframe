@@ -10,8 +10,6 @@ with lib; let
   # Create environment variables for all non-null settings
   envVars = filterAttrs (n: v: v != null) {
     DB_URL = cfg.settings.databaseUrl;
-    MEMPOOL_REST_URL = cfg.settings.mempoolRestUrl;
-    MEMPOOL_WS_URL = cfg.settings.mempoolWsUrl;
     NETWORK = cfg.settings.network;
     USE_FAKE_PRICE =
       if cfg.settings.useFakePrice
@@ -68,7 +66,9 @@ with lib; let
     BRINGIN_WEBHOOK_URL = cfg.settings.bringin.webhookUrl;
     ETHERSCAN_API_KEY = cfg.settings.etherscanApiKey;
     FALLBACK_NPUB = cfg.settings.fallbackNpub;
-    ELECTRUM_URL = cfg.settings.electrumUrl;
+    ESPLORA_URLS = lib.strings.concatStringsSep "," cfg.settings.esplora_urls;
+    BTSIEVE_SYNC_INTERVAL = toString cfg.settings.btsieve_sync_interval;
+    ESPLORA_RESET_TX = toString cfg.settings.esplora_reset_tx;
   };
 in {
   options.services.lendasat = {
@@ -81,28 +81,26 @@ in {
     };
 
     settings = {
-      # Required settings
       databaseUrl = mkOption {
         type = types.str;
         description = "PostgreSQL database URL";
         example = "postgres://user:pass@localhost:5432/hub";
       };
 
-      mempoolRestUrl = mkOption {
-        type = types.str;
-        description = "Mempool REST API URL";
-        example = "https://mempool.space/api";
+      esplora_urls = mkOption {
+        type = types.listOf types.str;
+        description = "Esplora endpoints used to find transactions on the Bitcoin blockchain";
+        example = ["https://mutinynet.com/api/"];
       };
 
-      mempoolWsUrl = mkOption {
-        type = types.str;
-        description = "Mempool WebSocket URL";
-        example = "wss://mempool.space/api/v1/ws";
+      btsieve_sync_interval = mkOption {
+        type = types.ints.u32;
+        description = "How often the server will check for new collateral-related transactions on the Bitcoin blockchain, in seconds";
+        example = 30;
       };
 
       network = mkOption {
         type = types.enum ["mainnet" "testnet" "signet" "regtest"];
-        default = null;
         description = "Bitcoin network to use";
       };
 
@@ -168,7 +166,6 @@ in {
         description = "Fallback Nostr public key";
       };
 
-      # Required API settings
       moon = {
         apiKey = mkOption {
           type = types.str;
@@ -255,6 +252,7 @@ in {
       };
 
       # Optional settings with defaults
+
       useFakePrice = mkOption {
         type = types.bool;
         default = false;
@@ -311,7 +309,6 @@ in {
         description = "Hub fee wallet directory";
       };
 
-      # Optional settings
       fakeClientIp = mkOption {
         type = types.nullOr types.str;
         default = null;
@@ -324,16 +321,22 @@ in {
         description = "Telegram bot token for notifications";
       };
 
-      electrumUrl = mkOption {
-        type = types.nullOr types.str;
-        default = null;
-        description = "Electrum server URL for transaction monitoring";
-        example = "tcp://electrum.blockstream.info:50001";
+      esplora_reset_tx = mkOption {
+        type = types.bool;
+        default = false;
+        description = "Whether to reset Lendasat's collateral transaction DB table on startup";
       };
     };
   };
 
   config = mkIf cfg.enable {
+    assertions = [
+      {
+        assertion = builtins.length cfg.settings.esplora_urls > 0;
+        message = "services.lendasat.settings.esplora_urls must contain at least one URL";
+      }
+    ];
+
     systemd.services.lendasat = {
       description = "Lendasat Hub - Bitcoin lending platform backend";
       wantedBy = ["multi-user.target"];

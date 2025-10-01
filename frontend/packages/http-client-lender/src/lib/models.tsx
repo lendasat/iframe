@@ -28,10 +28,12 @@ export enum ContractStatus {
   RepaymentConfirmed = "RepaymentConfirmed",
   Undercollateralized = "Undercollateralized",
   Defaulted = "Defaulted",
-  Closing = "Closing",
+  ClosingByClaim = "ClosingByClaim",
   Closed = "Closed",
-  ClosedByLiquidation = "ClosedByLiquidation",
+  ClosingByDefaulting = "ClosingByDefaulting",
   ClosedByDefaulting = "ClosedByDefaulting",
+  ClosingByLiquidation = "ClosingByLiquidation",
+  ClosedByLiquidation = "ClosedByLiquidation",
   Extended = "Extended",
   Rejected = "Rejected",
   DisputeBorrowerStarted = "DisputeBorrowerStarted",
@@ -40,6 +42,7 @@ export enum ContractStatus {
   RequestExpired = "RequestExpired",
   ApprovalExpired = "ApprovalExpired",
   CollateralRecoverable = "CollateralRecoverable",
+  ClosingByRecovery = "ClosingByRecovery",
   ClosedByRecovery = "ClosedByRecovery",
 }
 
@@ -47,10 +50,13 @@ export const isActionRequired = (status: ContractStatus) => {
   switch (status) {
     case ContractStatus.Approved:
     case ContractStatus.RepaymentConfirmed:
-    case ContractStatus.Closing:
+    case ContractStatus.ClosingByClaim:
     case ContractStatus.Closed:
+    case ContractStatus.ClosingByDefaulting:
     case ContractStatus.ClosedByDefaulting:
+    case ContractStatus.ClosingByLiquidation:
     case ContractStatus.ClosedByLiquidation:
+    case ContractStatus.ClosingByRecovery:
     case ContractStatus.ClosedByRecovery:
     case ContractStatus.Extended:
     case ContractStatus.Rejected:
@@ -74,7 +80,10 @@ export const isActionRequired = (status: ContractStatus) => {
 
 export const isContractOpen = (status: ContractStatus) => {
   switch (status) {
-    case ContractStatus.Closing:
+    case ContractStatus.ClosingByClaim:
+    case ContractStatus.ClosingByRecovery:
+    case ContractStatus.ClosingByDefaulting:
+    case ContractStatus.ClosingByLiquidation:
     case ContractStatus.Closed:
     case ContractStatus.ClosedByLiquidation:
     case ContractStatus.ClosedByDefaulting:
@@ -321,7 +330,10 @@ export const actionFromStatus = (contract: Contract) => {
     case ContractStatus.ClosedByDefaulting:
     case ContractStatus.ClosedByRecovery:
     case ContractStatus.Extended:
-    case ContractStatus.Closing:
+    case ContractStatus.ClosingByClaim:
+    case ContractStatus.ClosingByDefaulting:
+    case ContractStatus.ClosingByLiquidation:
+    case ContractStatus.ClosingByRecovery:
     case ContractStatus.Cancelled:
     case ContractStatus.CollateralRecoverable:
       statusText = "Details";
@@ -360,14 +372,20 @@ export function contractStatusToLabelString(status: ContractStatus): string {
     case ContractStatus.Defaulted:
       statusText = "Defaulted";
       break;
-    case ContractStatus.Closing:
+    case ContractStatus.ClosingByClaim:
       statusText = "Closing";
       break;
     case ContractStatus.Closed:
       statusText = "Closed by repayment";
       break;
+    case ContractStatus.ClosingByDefaulting:
+      statusText = "Closing by defaulting";
+      break;
     case ContractStatus.ClosedByDefaulting:
       statusText = "Closed by defaulting";
+      break;
+    case ContractStatus.ClosingByLiquidation:
+      statusText = "Closing by liquidation";
       break;
     case ContractStatus.ClosedByLiquidation:
       statusText = "Closed by liquidation";
@@ -393,6 +411,9 @@ export function contractStatusToLabelString(status: ContractStatus): string {
       break;
     case ContractStatus.CollateralRecoverable:
       statusText = "Abandoned (Collateral Recoverable)";
+      break;
+    case ContractStatus.ClosingByRecovery:
+      statusText = "Closing by recovery";
       break;
     case ContractStatus.ClosedByRecovery:
       statusText = "Closed by Recovery";

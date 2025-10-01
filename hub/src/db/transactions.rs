@@ -1,24 +1,8 @@
 use crate::model::LoanTransaction;
 use crate::model::TransactionType;
 use anyhow::Result;
-use bitcoin::Txid;
 use sqlx::PgPool;
 use sqlx::Postgres;
-
-pub async fn insert_funding_txid(
-    db_pool: &PgPool,
-    contract_id: &str,
-    funding_txid: &Txid,
-) -> Result<LoanTransaction> {
-    let loan_tx = insert(
-        db_pool,
-        contract_id,
-        funding_txid.to_string().as_str(),
-        TransactionType::Funding,
-    )
-    .await?;
-    Ok(loan_tx)
-}
 
 pub async fn insert_principal_given_txid(
     db_pool: &PgPool,
@@ -46,66 +30,6 @@ pub async fn insert_installment_paid_txid(
         contract_id,
         installment_paid,
         TransactionType::InstallmentPaid,
-    )
-    .await?;
-    Ok(loan_tx)
-}
-
-pub async fn insert_claim_txid(
-    db_pool: &PgPool,
-    contract_id: &str,
-    claim_txid: &Txid,
-) -> Result<LoanTransaction> {
-    let loan_tx = insert(
-        db_pool,
-        contract_id,
-        claim_txid.to_string().as_str(),
-        TransactionType::ClaimCollateral,
-    )
-    .await?;
-    Ok(loan_tx)
-}
-
-pub async fn insert_liquidation_txid(
-    db_pool: &PgPool,
-    contract_id: &str,
-    txid: &Txid,
-) -> Result<LoanTransaction> {
-    let loan_tx = insert(
-        db_pool,
-        contract_id,
-        txid.to_string().as_str(),
-        TransactionType::Liquidation,
-    )
-    .await?;
-    Ok(loan_tx)
-}
-
-pub async fn insert_defaulted_txid(
-    db_pool: &PgPool,
-    contract_id: &str,
-    txid: &Txid,
-) -> Result<LoanTransaction> {
-    let loan_tx = insert(
-        db_pool,
-        contract_id,
-        txid.to_string().as_str(),
-        TransactionType::Defaulted,
-    )
-    .await?;
-    Ok(loan_tx)
-}
-
-pub async fn insert_dispute_txid(
-    db_pool: &PgPool,
-    contract_id: &str,
-    dispute_txid: &Txid,
-) -> Result<LoanTransaction> {
-    let loan_tx = insert(
-        db_pool,
-        contract_id,
-        dispute_txid.to_string().as_str(),
-        TransactionType::Dispute,
     )
     .await?;
     Ok(loan_tx)

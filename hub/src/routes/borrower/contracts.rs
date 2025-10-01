@@ -3,12 +3,12 @@
 use crate::approve_contract;
 use crate::approve_contract::approve_contract;
 use crate::bitmex_index_price_rest::get_bitmex_index_price;
+use crate::blockchain::btsieve;
 use crate::bringin;
 use crate::contract_requests;
 use crate::db;
 use crate::db::contracts::update_borrower_btc_address;
 use crate::discounted_origination_fee;
-use crate::mempool;
 use crate::model;
 use crate::model::compute_outstanding_balance;
 use crate::model::compute_total_interest;
@@ -452,8 +452,6 @@ async fn post_contract_request(
         let db_contract = approve_contract(
             &data.db,
             &data.wallet,
-            &data.mempool,
-            data.electrum.as_ref(),
             contract.id.clone(),
             lender_id,
             data.notifications.clone(),
@@ -1068,10 +1066,11 @@ async fn get_claim_collateral_psbt(
         .ok_or(Error::MissingCollateralAddress)?;
 
     let collateral_outputs = data
-        .mempool
-        .send(mempool::GetCollateralOutputs(contract_address))
+        .btsieve
+        .send(btsieve::GetCollateralOutputs(contract_address))
         .await
-        .expect("actor to be alive");
+        .expect("astor to be alive")
+        .map_err(Error::track_contract)?;
 
     if collateral_outputs.is_empty() {
         return Err(Error::MissingCollateralOutputs);
@@ -1166,10 +1165,11 @@ async fn get_recover_collateral_psbt(
         .ok_or(Error::MissingCollateralAddress)?;
 
     let collateral_outputs = data
-        .mempool
-        .send(mempool::GetCollateralOutputs(contract_address))
+        .btsieve
+        .send(btsieve::GetCollateralOutputs(contract_address))
         .await
-        .expect("actor to be alive");
+        .expect("actor to be alive")
+        .map_err(Error::track_contract)?;
 
     if collateral_outputs.is_empty() {
         return Err(Error::MissingCollateralOutputs);
@@ -1251,27 +1251,31 @@ async fn post_claim_tx(
             .map_err(Error::ParseClaimTx)?;
     let claim_txid = signed_claim_tx.compute_txid();
 
-    data.mempool
-        .send(mempool::TrackCollateralClaim {
-            contract_id: contract_id.clone(),
-            claim_txid,
-            claim_type: mempool::ClaimTxType::Repaid,
-        })
-        .await
-        .expect("actor to be alive")
-        .map_err(Error::track_claim_tx)?;
+    let claim_amount = signed_claim_tx
+        .output
+        .iter()
+        .map(|o| o.value)
+        .sum::<Amount>();
+    let claim_amount = claim_amount.to_sat();
 
-    data.mempool
-        .send(mempool::PostTx(signed_claim_tx_str))
+    data.btsieve
+        .send(btsieve::PostTx(signed_claim_tx))
         .await
         .expect("actor to be alive")
         .map_err(Error::post_claim_tx)?;
 
-    // TODO: Use a database transaction.
-    db::transactions::insert_claim_txid(&data.db, &contract_id, &claim_txid)
-        .await
-        .map_err(Error::database)?;
-    db::contracts::mark_contract_as_closing(&data.db, &contract_id)
+    db::contract_collateral_transactions::insert_claim_collateral(
+        &data.db,
+        &contract_id,
+        &claim_txid,
+        claim_amount as i64,
+        None,
+        None,
+    )
+    .await
+    .map_err(Error::database)?;
+
+    db::contracts::mark_contract_as_closing_by_claim(&data.db, &contract_id)
         .await
         .map_err(Error::database)?;
 
@@ -1328,26 +1332,33 @@ async fn post_recover_tx(
         bitcoin::consensus::encode::deserialize_hex(&body.tx).map_err(Error::ParseClaimTx)?;
     let recovery_txid = signed_recovery_tx.compute_txid();
 
-    // Track the recovery transaction
-    data.mempool
-        .send(mempool::TrackCollateralClaim {
-            contract_id: contract_id.clone(),
-            claim_txid: recovery_txid,
-            claim_type: mempool::ClaimTxType::Recovery,
-        })
-        .await
-        .expect("actor to be alive")
-        .map_err(Error::track_claim_tx)?;
+    let claim_amount = signed_recovery_tx
+        .output
+        .iter()
+        .map(|o| o.value)
+        .sum::<Amount>();
+    let claim_amount = claim_amount.to_sat();
 
-    data.mempool
-        .send(mempool::PostTx(body.tx))
+    data.btsieve
+        .send(btsieve::PostTx(signed_recovery_tx))
         .await
         .expect("actor to be alive")
         .map_err(Error::post_claim_tx)?;
 
-    db::transactions::insert_claim_txid(&data.db, &contract_id, &recovery_txid)
+    db::contracts::mark_contract_as_closing_by_recovering(&data.db, &contract_id)
         .await
         .map_err(Error::database)?;
+
+    db::contract_collateral_transactions::insert_claim_collateral(
+        &data.db,
+        &contract_id,
+        &recovery_txid,
+        claim_amount as i64,
+        None,
+        None,
+    )
+    .await
+    .map_err(Error::database)?;
 
     db::contracts::mark_contract_as_closed_by_recovery(&data.db, &contract_id)
         .await
@@ -1398,7 +1409,6 @@ async fn post_extend_contract_request(
     let new_contract = crate::contract_extension::request_contract_extension(
         &data.db,
         &data.config,
-        &data.mempool,
         &contract_id,
         &user.id,
         body.new_duration,
@@ -1950,9 +1960,33 @@ async fn map_to_api_contract(
         .map_err(Error::database)?
         .ok_or(Error::MissingLender)?;
 
-    let transactions = db::transactions::get_all_for_contract_id(&data.db, &contract.id)
+    let mut transactions = db::transactions::get_all_for_contract_id(&data.db, &contract.id)
         .await
         .map_err(Error::database)?;
+
+    let collateral_transactions =
+        db::contract_collateral_transactions::get_by_contract_id(&data.db, &contract.id)
+            .await
+            .map_err(Error::database)?;
+    for (index, tx) in collateral_transactions.iter().enumerate() {
+        let now = OffsetDateTime::now_utc();
+        let timestamp = tx.block_time.unwrap_or(now);
+
+        let tx = LoanTransaction {
+            id: index as i64,
+            txid: tx.tx_id.clone(),
+            contract_id: contract.id.clone(),
+            transaction_type: {
+                if tx.amount_spent > 0 {
+                    TransactionType::ClaimCollateral
+                } else {
+                    TransactionType::Funding
+                }
+            },
+            timestamp,
+        };
+        transactions.push(tx);
+    }
 
     let parent_contract_id =
         db::contract_extensions::get_parent_by_extended(&data.db, &contract.id)
@@ -2176,22 +2210,29 @@ async fn map_timeline(
                     (tx.transaction_type == TransactionType::PrincipalGiven)
                         .then(|| tx.txid.clone())
                 }),
-                ContractStatus::Closing | ContractStatus::Closed | ContractStatus::Defaulted => {
+                ContractStatus::ClosingByClaim
+                | ContractStatus::Closed
+                | ContractStatus::Defaulted => transactions.iter().find_map(|tx| {
+                    (tx.transaction_type == TransactionType::ClaimCollateral)
+                        .then(|| tx.txid.clone())
+                }),
+                ContractStatus::ClosingByDefaulting | ContractStatus::ClosedByDefaulting => {
+                    transactions.iter().find_map(|tx| {
+                        (tx.transaction_type == TransactionType::Defaulted).then(|| tx.txid.clone())
+                    })
+                }
+                ContractStatus::ClosingByLiquidation | ContractStatus::ClosedByLiquidation => {
+                    transactions.iter().find_map(|tx| {
+                        (tx.transaction_type == TransactionType::Liquidation)
+                            .then(|| tx.txid.clone())
+                    })
+                }
+                ContractStatus::ClosingByRecovery | ContractStatus::ClosedByRecovery => {
                     transactions.iter().find_map(|tx| {
                         (tx.transaction_type == TransactionType::ClaimCollateral)
                             .then(|| tx.txid.clone())
                     })
                 }
-                ContractStatus::ClosedByDefaulting => transactions.iter().find_map(|tx| {
-                    (tx.transaction_type == TransactionType::Defaulted).then(|| tx.txid.clone())
-                }),
-                ContractStatus::ClosedByLiquidation => transactions.iter().find_map(|tx| {
-                    (tx.transaction_type == TransactionType::Liquidation).then(|| tx.txid.clone())
-                }),
-                ContractStatus::ClosedByRecovery => transactions.iter().find_map(|tx| {
-                    (tx.transaction_type == TransactionType::ClaimCollateral)
-                        .then(|| tx.txid.clone())
-                }),
                 ContractStatus::Requested
                 | ContractStatus::Approved
                 | ContractStatus::RepaymentProvided
@@ -2371,8 +2412,6 @@ enum Error {
     CreateClaimCollateralPsbt(#[allow(dead_code)] String),
     /// Failed to parse signed claim-collateral transaction.
     ParseClaimTx(#[allow(dead_code)] FromHexError),
-    /// Failed to track claim-collateral transaction.
-    TrackClaimTx(#[allow(dead_code)] String),
     /// Failed to post claim-collateral transaction.
     PostClaimTx(#[allow(dead_code)] String),
     /// The borrower is trying to interact with a contract that is not theirs, according to our
@@ -2525,10 +2564,6 @@ impl Error {
         Self::CreateClaimCollateralPsbt(format!("{e:#}"))
     }
 
-    fn track_claim_tx(e: impl std::fmt::Display) -> Self {
-        Self::TrackClaimTx(format!("{e:#}"))
-    }
-
     fn post_claim_tx(e: impl std::fmt::Display) -> Self {
         Self::PostClaimTx(format!("{e:#}"))
     }
@@ -2594,7 +2629,6 @@ impl IntoResponse for Error {
             | Error::MissingBorrower
             | Error::TrackContract(_)
             | Error::MissingCollateralOutputs
-            | Error::TrackClaimTx(_)
             | Error::PostClaimTx(_)
             | Error::InterestRateCalculation(_)
             | Error::InvalidDiscountRate { .. }

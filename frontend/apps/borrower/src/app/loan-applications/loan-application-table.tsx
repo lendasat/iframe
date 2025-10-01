@@ -14,14 +14,14 @@ import {
   AlertTitle,
   AlertDescription,
   Button,
+  Badge,
+  Skeleton,
 } from "@frontend/shadcn";
-import { Badge } from "@frontend/shadcn";
 import {
   formatCurrency,
   getFormatedStringFromDays,
   LoanAssetHelper,
 } from "@frontend/ui-shared";
-import { Skeleton } from "@radix-ui/themes";
 import { useState } from "react";
 import { LuPencil, LuTrash2 } from "react-icons/lu";
 import EditLoanApplicationDialog from "./edit-loan-application-dialog";
@@ -98,45 +98,56 @@ export function LoanApplicationTable({
             openLoanApplications.map((application) => (
               <TableRow key={application.loan_deal_id}>
                 <TableCell>
-                  <Skeleton loading={loading}>
-                    {application.loan_amount_min === application.loan_amount_max
-                      ? formatCurrency(
-                          application.loan_amount_min,
-                          LoanAssetHelper.toCurrency(application.loan_asset),
-                        )
-                      : `${formatCurrency(
-                          application.loan_amount_min,
-                          LoanAssetHelper.toCurrency(application.loan_asset),
-                        )} - ${formatCurrency(
-                          application.loan_amount_max,
-                          LoanAssetHelper.toCurrency(application.loan_asset),
-                        )}`}
-                  </Skeleton>
+                  {loading ? (
+                    <Skeleton className="h-4 w-24" />
+                  ) : application.loan_amount_min ===
+                    application.loan_amount_max ? (
+                    formatCurrency(
+                      application.loan_amount_min,
+                      LoanAssetHelper.toCurrency(application.loan_asset),
+                    )
+                  ) : (
+                    `${formatCurrency(
+                      application.loan_amount_min,
+                      LoanAssetHelper.toCurrency(application.loan_asset),
+                    )} - ${formatCurrency(
+                      application.loan_amount_max,
+                      LoanAssetHelper.toCurrency(application.loan_asset),
+                    )}`
+                  )}
                 </TableCell>
                 <TableCell>
-                  <Skeleton loading={loading}>
-                    {application.duration_days_min ===
-                    application.duration_days_max
-                      ? getFormatedStringFromDays(application.duration_days_min)
-                      : `${getFormatedStringFromDays(application.duration_days_min)} - ${getFormatedStringFromDays(application.duration_days_max)}`}
-                  </Skeleton>
+                  {loading ? (
+                    <Skeleton className="h-4 w-20" />
+                  ) : application.duration_days_min ===
+                    application.duration_days_max ? (
+                    getFormatedStringFromDays(application.duration_days_min)
+                  ) : (
+                    `${getFormatedStringFromDays(application.duration_days_min)} - ${getFormatedStringFromDays(application.duration_days_max)}`
+                  )}
                 </TableCell>
                 <TableCell>
-                  <Skeleton loading={loading}>
-                    {(application.interest_rate * 100).toFixed(1)}%
-                  </Skeleton>
+                  {loading ? (
+                    <Skeleton className="h-4 w-12" />
+                  ) : (
+                    `${(application.interest_rate * 100).toFixed(1)}%`
+                  )}
                 </TableCell>
                 <TableCell>
-                  <Skeleton loading={loading}>
-                    {(application.ltv * 100).toFixed(0)}%
-                  </Skeleton>
+                  {loading ? (
+                    <Skeleton className="h-4 w-12" />
+                  ) : (
+                    `${(application.ltv * 100).toFixed(0)}%`
+                  )}
                 </TableCell>
                 <TableCell>
-                  <Badge color="purple">
-                    <Skeleton loading={loading}>
+                  {loading ? (
+                    <Skeleton className="h-5 w-16" />
+                  ) : (
+                    <Badge variant="secondary">
                       {LoanAssetHelper.print(application.loan_asset)}
-                    </Skeleton>
-                  </Badge>
+                    </Badge>
+                  )}
                 </TableCell>
                 <TableCell className="flex gap-2">
                   <Button
