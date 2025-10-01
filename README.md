@@ -59,6 +59,10 @@ cargo install sqlx-cli
 For local API development we make use of [Postman](https://www.postman.com/downloads/).
 A [postman.json](./Lendasat Postman Collection.postman_collection.json) file has been provided.
 
+## Troubleshooting
+
+If you encounter issues during development, please refer to our [Troubleshooting Guide](./docs/TROUBLESHOOTING.md).
+
 ## MacOS wasm problems
 
 If you are on a Mac (M1 or intel) you might run into compilation errors when building the wallet for the borrower.

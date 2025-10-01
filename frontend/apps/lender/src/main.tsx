@@ -14,7 +14,7 @@ import { mainnet } from "viem/chains";
 import { WagmiProvider } from "wagmi";
 import App from "./app/app";
 import "@rainbow-me/rainbowkit/styles.css";
-import { ThemeProvider } from "@frontend/ui-shared";
+import { ThemeProvider, PostHogProvider } from "@frontend/ui-shared";
 
 const config = getDefaultConfig({
   appName: "Lendasat",
@@ -33,16 +33,18 @@ const root = ReactDOM.createRoot(document.getElementById("root")!);
 
 root.render(
   <StrictMode>
-    <WagmiProvider config={config}>
-      <QueryClientProvider client={queryClient}>
-        <RainbowKitProvider>
-          <Theme>
-            <ThemeProvider>
-              <RouterProvider router={router} />
-            </ThemeProvider>
-          </Theme>
-        </RainbowKitProvider>
-      </QueryClientProvider>
-    </WagmiProvider>
+    <PostHogProvider appType="lender">
+      <WagmiProvider config={config}>
+        <QueryClientProvider client={queryClient}>
+          <RainbowKitProvider>
+            <Theme>
+              <ThemeProvider>
+                <RouterProvider router={router} />
+              </ThemeProvider>
+            </Theme>
+          </RainbowKitProvider>
+        </QueryClientProvider>
+      </WagmiProvider>
+    </PostHogProvider>
   </StrictMode>,
 );

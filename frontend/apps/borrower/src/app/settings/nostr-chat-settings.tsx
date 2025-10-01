@@ -9,11 +9,14 @@ import {
   CardHeader,
   CardTitle,
 } from "@frontend/shadcn";
+import { useSensitivePage } from "@frontend/ui-shared";
 import { useAsync } from "react-use";
 import { LuCopy, LuEye, LuEyeOff } from "react-icons/lu";
 import { toast } from "sonner";
 
 export function NostrChatSettingsPage() {
+  // Pause PostHog session recording on this sensitive page
+  useSensitivePage(true);
   const [isNsecVisible, setIsNsecVisible] = useState(false);
   const [nsec, setNsec] = useState<string>("");
 
@@ -78,7 +81,7 @@ export function NostrChatSettingsPage() {
               your counterparty if Lendasat is down.
             </p>
             <div>
-              <code>
+              <code data-private="true" className="private-key nsec">
                 {isNsecVisible
                   ? nsec
                   : "*******************************************************************"}
