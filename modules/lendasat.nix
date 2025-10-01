@@ -68,7 +68,7 @@ with lib; let
     FALLBACK_NPUB = cfg.settings.fallbackNpub;
     ESPLORA_URLS = lib.strings.concatStringsSep "," cfg.settings.esplora_urls;
     BTSIEVE_SYNC_INTERVAL = toString cfg.settings.btsieve_sync_interval;
-    ESPLORA_RESET_TX = toString cfg.settings.esplora_reset_tx;
+    ESPLORA_RESET_TX = if cfg.settings.esplora_reset_tx then "true" else "false";
   };
 in {
   options.services.lendasat = {
