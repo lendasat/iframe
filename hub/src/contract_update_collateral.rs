@@ -88,7 +88,9 @@ pub async fn update_collateral(
         }
     }
     // Else, collateral has been increased
-    if contract.status == ContractStatus::Approved {
+    if contract.status == ContractStatus::Approved
+        || contract.status == ContractStatus::CollateralSeen
+    {
         // if the contract was just approved, now can move on
         let status = if updated_collateral_sats >= min_collateral {
             if all_unconfirmed {
