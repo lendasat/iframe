@@ -177,11 +177,12 @@ export const Collateral = ({ contract, refreshContract }: CollateralProps) => {
 
   const contractAddress = contract?.contract_address;
   const refundAddress = contract?.borrower_btc_address;
+  let collateral_minus_origination_fee =
+    contract && contract?.collateral_sats - contract?.origination_fee_sats;
   const collateralAmount =
-    contract &&
-    formatSatsToBitcoin(
-      contract?.collateral_sats - contract?.origination_fee_sats,
-    );
+    collateral_minus_origination_fee && collateral_minus_origination_fee > 0
+      ? formatSatsToBitcoin(collateral_minus_origination_fee)
+      : contract?.collateral_sats;
   calculateLtv();
 
   const collateralUsdValue = calculateCollateralUsdValue(
