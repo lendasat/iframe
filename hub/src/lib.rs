@@ -48,3 +48,6 @@ pub const LTV_THRESHOLD_MARGIN_CALL_1: Decimal = dec!(0.8);
 pub const LTV_THRESHOLD_MARGIN_CALL_2: Decimal = dec!(0.85);
 pub const LTV_THRESHOLD_LIQUIDATION: Decimal = dec!(0.9);
 pub const LEGACY_LTV_THRESHOLD_LIQUIDATION: Decimal = dec!(0.95);
+
+pub const GIT_TAG: &str = env!("GIT_TAG");
+pub const GIT_HASH: &str = env!("GIT_COMMIT_HASH");
