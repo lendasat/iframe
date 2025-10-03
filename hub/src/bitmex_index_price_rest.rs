@@ -164,6 +164,8 @@ mod tests {
             esplora_urls: vec![],
             btsieve_sync_interval: 0,
             reset_tx_view_in_db: false,
+            borrower_invite_code_required: false,
+            lender_invite_code_required: false,
         }
     }
 

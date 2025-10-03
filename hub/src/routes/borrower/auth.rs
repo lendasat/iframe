@@ -233,7 +233,11 @@ async fn post_register(
 
     let referral_code_valid = match &body.invite_code {
         None => {
-            return Err(Error::InviteCodeRequired);
+            if data.config.borrower_invite_code_required {
+                return Err(Error::InviteCodeRequired);
+            } else {
+                true
+            }
         }
         Some(code) => db::borrowers_referral_code::is_referral_code_valid(&data.db, code.as_str())
             .await
