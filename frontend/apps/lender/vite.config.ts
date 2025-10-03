@@ -8,12 +8,6 @@ export default defineConfig({
   server: {
     port: 4201,
     host: "localhost",
-    proxy: {
-      "/api": {
-        target: "http://localhost:7338",
-        changeOrigin: true,
-      },
-    },
   },
 
   preview: {
