@@ -1,5 +1,5 @@
 import { useHttpClientBorrower } from "@frontend/http-client-borrower";
-import { CurrencyFormatter } from "@frontend/ui-shared";
+import { CurrencyFormatter, useSensitivePage } from "@frontend/ui-shared";
 import { useState } from "react";
 import { useAsync } from "react-use";
 import { Link } from "react-router-dom";
@@ -30,6 +30,9 @@ import { TopUpModal } from "./TopUpModal";
 import { NewCardModal } from "./NewCardModal";
 
 export default function Cards() {
+  // Pause PostHog session recording on this sensitive page
+  useSensitivePage(true);
+
   const [visible, setVisible] = useState<boolean>(false);
   const [activeCardIndex, setActiveCardIndex] = useState<number>(0);
   const [copiedField, setCopiedField] = useState<string | null>(null);
