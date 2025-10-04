@@ -70,13 +70,6 @@ export function ShadCnRegistrationForm({
   waitlistLink,
   ...props
 }: RegistrationFormProps) {
-  if (
-    defaultReferralCode === null &&
-    import.meta.env.VITE_BITCOIN_NETWORK === "regtest"
-  ) {
-    defaultReferralCode = "BETA_PHASE_1";
-  }
-
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [isEmailValid, setIsEmailValid] = useState(true);
@@ -216,12 +209,11 @@ export function ShadCnRegistrationForm({
                   </div>
                 </div>
                 <div className="grid items-center gap-1.5">
-                  <Label htmlFor="confirmPassword">Referral Code</Label>
+                  <Label htmlFor="referralCode">Referral Code</Label>
                   <div className="flex w-full max-w-sm items-center space-x-2">
                     <Input
                       id="referralCode"
                       type={"text"}
-                      required
                       value={referralCode}
                       onChange={(e) => setReferralCode(e.target.value)}
                     />
@@ -279,7 +271,7 @@ export function ShadCnRegistrationForm({
           </form>
         </CardContent>
       </Card>
-      <div className="text-muted-foreground *:[a]:hover:text-primary text-center text-xs text-balance *:[a]:underline *:[a]:underline-offset-4">
+      <div className="text-muted-foreground *:[a]:hover:text-primary *:[a]:underline *:[a]:underline-offset-4 text-balance text-center text-xs">
         By using this service, you agree to our{" "}
         <a href="https://tos.lendasat.com">Terms of Service</a>.
       </div>

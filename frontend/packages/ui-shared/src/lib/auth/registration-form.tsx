@@ -15,17 +15,10 @@ interface RegistrationFormProps {
 
 export function RegistrationForm({
   handleRegister,
-  referralCode: defaultReferralCode,
+  referralCode,
   waitlistLink,
   loginLink,
 }: RegistrationFormProps) {
-  if (
-    defaultReferralCode === null &&
-    import.meta.env.VITE_BITCOIN_NETWORK === "regtest"
-  ) {
-    defaultReferralCode = "BETA_PHASE_1";
-  }
-
   return (
     <div className="flex min-h-svh flex-col items-center justify-center gap-6 bg-muted p-6 md:p-10">
       <div className="flex w-full max-w-md flex-col gap-6">
@@ -38,7 +31,7 @@ export function RegistrationForm({
         </div>
         <ShadCnRegistrationForm
           handleRegister={handleRegister}
-          referralCode={defaultReferralCode}
+          referralCode={referralCode}
           waitlistLink={waitlistLink}
           loginLink={loginLink}
         />

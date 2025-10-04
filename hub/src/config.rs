@@ -54,6 +54,8 @@ pub struct Config {
     pub esplora_urls: Vec<Url>,
     pub btsieve_sync_interval: u64,
     pub reset_tx_view_in_db: bool,
+    pub borrower_invite_code_required: bool,
+    pub lender_invite_code_required: bool,
 }
 
 impl fmt::Display for Config {
@@ -325,6 +327,19 @@ impl Config {
             value.unwrap_or_default()
         };
 
+        let borrower_invite_code_required = {
+            let value = std::env::var("BORROWER_INVITE_CODE_REQUIRED").ok();
+            let value = value.map(|v| bool::from_str(v.as_ref()).unwrap_or_default());
+
+            value.unwrap_or(true)
+        };
+        let lender_invite_code_required = {
+            let value = std::env::var("LENDER_INVITE_CODE_REQUIRED").ok();
+            let value = value.map(|v| bool::from_str(v.as_ref()).unwrap_or_default());
+
+            value.unwrap_or(true)
+        };
+
         Config {
             database_url,
             network,
@@ -373,6 +388,8 @@ impl Config {
             esplora_urls,
             btsieve_sync_interval,
             reset_tx_view_in_db,
+            borrower_invite_code_required,
+            lender_invite_code_required,
         }
     }
 }

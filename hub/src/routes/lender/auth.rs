@@ -13,6 +13,7 @@ use crate::db::waitlist::WaitlistRole;
 use crate::db::wallet_backups::NewLenderWalletBackup;
 use crate::geo_location;
 use crate::model::ForgotPasswordSchema;
+use crate::model::InviteCode;
 use crate::model::Lender;
 use crate::model::PakeLoginRequest;
 use crate::model::PakeLoginResponse;
@@ -164,21 +165,29 @@ async fn post_register(
 
     let invite_code = match body.invite_code {
         None => {
-            return Err(Error::InviteCodeRequired);
+            if data.config.lender_invite_code_required {
+                return Err(Error::InviteCodeRequired);
+            } else {
+                None
+            }
         }
-        Some(code) => db::invite_code::load_invite_code_lender(&data.db, code.as_str()).await,
-    };
-
-    let invite_code = match invite_code {
-        Ok(Some(code)) => code,
-        Ok(None) | Err(_) => {
-            return Err(Error::InvalidInviteCode);
+        Some(code) => {
+            let code = db::invite_code::load_invite_code_lender(&data.db, code.as_str())
+                .await
+                .map_err(Error::database)?;
+            if let Some(InviteCode { active: false, .. }) = code {
+                // We still check if the used code is active or not - if the user used an inactive
+                // code, we return an error
+                return Err(Error::ExpiredInviteCode);
+            } else if code.is_none() {
+                // User provided an invalid invite code, we also throw an error, even if no code was
+                // needed
+                return Err(Error::InvalidInviteCode);
+            } else {
+                code
+            }
         }
     };
-
-    if !invite_code.active {
-        return Err(Error::ExpiredInviteCode);
-    }
 
     let mut db_tx = data.db.begin().await.map_err(Error::database)?;
 
@@ -188,7 +197,7 @@ async fn post_register(
         body.email.as_str(),
         body.salt.as_str(),
         body.verifier.as_str(),
-        Some(invite_code),
+        invite_code,
     )
     .await
     .map_err(Error::database)?;
