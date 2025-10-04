@@ -25,6 +25,8 @@ use hub::telegram_bot::TelegramBot;
 use hub::wallet::Wallet;
 use hub::NotificationCenter;
 use hub::Notifications;
+use hub::GIT_HASH;
+use hub::GIT_TAG;
 use std::backtrace::Backtrace;
 use std::collections::HashMap;
 use std::sync::Arc;
@@ -49,9 +51,13 @@ async fn main() -> Result<()> {
     );
 
     init_tracing(LevelFilter::DEBUG, false).expect("to work");
-    tracing::info!("Hello World");
 
     let config = Config::init();
+
+    tracing::info!(config=%config,
+        git_tag = GIT_TAG,
+        git_hash=GIT_HASH,
+        "Hub Started");
 
     let db = connect_to_db(config.database_url.as_str()).await?;
     run_migration(&db).await?;

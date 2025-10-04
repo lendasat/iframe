@@ -3,6 +3,8 @@ use crate::model::OriginationFee;
 use bitcoin::Network;
 use rust_decimal::Decimal;
 use rust_decimal_macros::dec;
+use std::fmt;
+use std::fmt::Formatter;
 use std::ops::Div;
 use std::str::FromStr;
 use url::Url;
@@ -54,6 +56,110 @@ pub struct Config {
     pub reset_tx_view_in_db: bool,
     pub borrower_invite_code_required: bool,
     pub lender_invite_code_required: bool,
+}
+
+impl fmt::Display for Config {
+    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
+        writeln!(f, "Config {{")?;
+
+        // Pattern match to ensure all fields are handled
+        // This will cause a compile error if a field is added but not handled here
+        let Config {
+            database_url: _database_url,
+            network,
+            use_fake_price,
+            seed_file: _seed_file,
+            fallback_xpub: _fallback_xpub,
+            jwt_secret: _jwt_secret,
+            smtp_host,
+            smtp_port,
+            smtp_user,
+            smtp_pass: _smtp_pass,
+            smtp_from,
+            smtp_disabled,
+            borrower_frontend_origin,
+            borrower_listen_address,
+            lender_frontend_origin,
+            lender_listen_address,
+            hub_fee_descriptor,
+            hub_fee_wallet_dir,
+            origination_fee,
+            extension_origination_fee,
+            moon_api_key: _moon_api_key,
+            moon_api_url,
+            moon_webhook_url,
+            moon_visa_product_id,
+            sync_moon_tx,
+            sideshift_secret: _sideshift_secret,
+            sideshift_base_url,
+            sideshift_affiliate_id,
+            sideshift_commision_rate,
+            fake_client_ip,
+            telegram_bot_token: _telegram_bot_token,
+            custom_db_migration,
+            bringin_url,
+            bringin_api_secret: _bringin_api_secret,
+            bringin_api_key: _bringin_api_key,
+            bringin_webhook_url,
+            etherscan_api_key: _etherscan_api_key,
+            fallback_npub,
+            card_topup_fee,
+            esplora_urls,
+            btsieve_sync_interval,
+            reset_tx_view_in_db,
+        } = self;
+
+        writeln!(f, "  database_url: ***redacted***")?;
+        writeln!(f, "  seed_file: ***redacted***")?;
+        writeln!(f, "  fallback_xpub: ***redacted***")?;
+        writeln!(f, "  jwt_secret: ***redacted***")?;
+        writeln!(f, "  smtp_user: {smtp_user}")?;
+        writeln!(f, "  smtp_pass: ***redacted***")?;
+        writeln!(f, "  hub_fee_descriptor: {hub_fee_descriptor}")?;
+        writeln!(f, "  moon_api_key: ***redacted***")?;
+        writeln!(f, "  sideshift_secret: ***redacted***")?;
+        writeln!(f, "  telegram_bot_token: ***redacted***")?;
+        writeln!(f, "  bringin_api_secret: ***redacted***")?;
+        writeln!(f, "  bringin_api_key: ***redacted***")?;
+        writeln!(f, "  etherscan_api_key: ***redacted***")?;
+        writeln!(f, "  network: {network}")?;
+        writeln!(f, "  use_fake_price: {use_fake_price}")?;
+        writeln!(f, "  smtp_host: {smtp_host}")?;
+        writeln!(f, "  smtp_port: {smtp_port}")?;
+        writeln!(f, "  smtp_from: {smtp_from}")?;
+        writeln!(f, "  smtp_disabled: {smtp_disabled}")?;
+        writeln!(f, "  borrower_frontend_origin: {borrower_frontend_origin}")?;
+        writeln!(f, "  borrower_listen_address: {borrower_listen_address}")?;
+        writeln!(f, "  lender_frontend_origin: {lender_frontend_origin}")?;
+        writeln!(f, "  lender_listen_address: {lender_listen_address}")?;
+        writeln!(f, "  hub_fee_wallet_dir: {hub_fee_wallet_dir:?}")?;
+        writeln!(f, "  origination_fee: {origination_fee:?}")?;
+        writeln!(
+            f,
+            "  extension_origination_fee: {extension_origination_fee:?}"
+        )?;
+        writeln!(f, "  moon_api_url: {moon_api_url}")?;
+        writeln!(f, "  moon_webhook_url: {moon_webhook_url}")?;
+        writeln!(f, "  moon_visa_product_id: {moon_visa_product_id}")?;
+        writeln!(f, "  sync_moon_tx: {sync_moon_tx}")?;
+        writeln!(f, "  sideshift_base_url: {sideshift_base_url}")?;
+        writeln!(f, "  sideshift_affiliate_id: {sideshift_affiliate_id}")?;
+        writeln!(
+            f,
+            "  sideshift_commision_rate: {sideshift_commision_rate:?}"
+        )?;
+        writeln!(f, "  fake_client_ip: {fake_client_ip:?}")?;
+        writeln!(f, "  custom_db_migration: {custom_db_migration}")?;
+        writeln!(f, "  bringin_url: {bringin_url}")?;
+        writeln!(f, "  bringin_webhook_url: {bringin_webhook_url}")?;
+        writeln!(f, "  fallback_npub: {fallback_npub}")?;
+        writeln!(f, "  card_topup_fee: {card_topup_fee}")?;
+        writeln!(f, "  esplora_urls: {esplora_urls:?}")?;
+        writeln!(f, "  btsieve_sync_interval: {btsieve_sync_interval}")?;
+        writeln!(f, "  reset_tx_view_in_db: {reset_tx_view_in_db}")?;
+
+        write!(f, "}}")
+    }
 }
 
 impl Config {

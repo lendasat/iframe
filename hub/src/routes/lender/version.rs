@@ -1,12 +1,11 @@
 use crate::routes::lender::VERSION_TAG;
+use crate::GIT_HASH;
+use crate::GIT_TAG;
 use axum::Json;
 use serde::Serialize;
 use utoipa::ToSchema;
 use utoipa_axum::router::OpenApiRouter;
 use utoipa_axum::routes;
-
-const GIT_TAG: &str = env!("GIT_TAG");
-const GIT_HASH: &str = env!("GIT_COMMIT_HASH");
 
 pub(crate) fn router() -> OpenApiRouter {
     OpenApiRouter::new().routes(routes!(version))
