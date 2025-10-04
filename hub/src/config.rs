@@ -107,6 +107,8 @@ impl fmt::Display for Config {
             esplora_urls,
             btsieve_sync_interval,
             reset_tx_view_in_db,
+            borrower_invite_code_required,
+            lender_invite_code_required,
         } = self;
 
         writeln!(f, "  database_url: ***redacted***")?;
@@ -157,6 +159,14 @@ impl fmt::Display for Config {
         writeln!(f, "  esplora_urls: {esplora_urls:?}")?;
         writeln!(f, "  btsieve_sync_interval: {btsieve_sync_interval}")?;
         writeln!(f, "  reset_tx_view_in_db: {reset_tx_view_in_db}")?;
+        writeln!(
+            f,
+            "  borrower_invite_code_required: {borrower_invite_code_required}"
+        )?;
+        writeln!(
+            f,
+            "  lender_invite_code_required: {lender_invite_code_required}"
+        )?;
 
         write!(f, "}}")
     }
