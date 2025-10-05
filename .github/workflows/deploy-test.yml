@@ -53,6 +53,7 @@ jobs:
           envkey_VITE_BORROWER_BASE_URL: "https://apiborrowersignet.lendasat.com"
           envkey_VITE_LENDER_BASE_URL: "https://apilendersignet.lendasat.com"
           envkey_VITE_BITCOIN_NETWORK: "signet"
+          envkey_VITE_MEMPOOL_REST_URL: "https://mutinynet.com"
           envkey_VITE_TELEGRAM_BOT_URL: "https://t.me/lendasatsignetlenderbot"
           envkey_VITE_TELEGRAM_BOT_NAME: "@lendasatsignetlenderbot"
           envkey_VITE_APP_GIT_COMMIT_HASH: ${{ env.GIT_COMMIT_HASH }}
