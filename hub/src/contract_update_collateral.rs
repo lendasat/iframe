@@ -29,8 +29,19 @@ pub async fn update_collateral(
     let current_collateral_sats = contract.collateral_sats;
 
     if updated_collateral_sats == current_collateral_sats {
-        // nothing has changed, we can return early
-        return Ok((contract, false));
+        if contract.status == ContractStatus::CollateralSeen && !all_unconfirmed {
+            let contract = update_status_and_collateral(
+                pool,
+                contract_id,
+                updated_collateral_sats,
+                ContractStatus::CollateralConfirmed,
+            )
+            .await?;
+            return Ok((contract, true));
+        } else {
+            // nothing has changed, we can return early
+            return Ok((contract, false));
+        }
     }
 
     if updated_collateral_sats < current_collateral_sats {
