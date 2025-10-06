@@ -172,7 +172,7 @@ impl xtra::Actor for Actor {
                         .await
                         .expect("actor to be alive")
                     {
-                        tracing::error!("Failed to check for latest block height: {e:#}");
+                        tracing::error!("Failed to check for approved contracts: {e:#}");
                     }
                     tokio::time::sleep(tokio::time::Duration::from_secs(sync_interval)).await;
                 }
