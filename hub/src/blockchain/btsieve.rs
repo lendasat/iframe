@@ -123,14 +123,11 @@ impl xtra::Actor for Actor {
         // if this is set, we will fetch transactions for ALL contracts
         let reset_txes = self.config.reset_tx_view_in_db;
 
+        let contracts = db::contracts::load_all(&self.db).await?;
         tokio::spawn({
             let actor = mailbox.address();
-            let db = self.db.clone();
             async move {
                 if reset_txes {
-                    let contracts = db::contracts::load_all(&db)
-                        .await
-                        .expect("contracts to start btsive actor");
                     tracing::info!(
                         number_of_contracts = contracts.len(),
                         "Getting tx for all contracts"
@@ -168,6 +165,13 @@ impl xtra::Actor for Actor {
                         .expect("actor to be alive")
                     {
                         tracing::error!("Failed to check for latest block height: {e:#}");
+                    }
+                    if let Err(e) = actor
+                        .send(CheckForApprovedContracts)
+                        .await
+                        .expect("actor to be alive")
+                    {
+                        tracing::error!("Failed to check for approved contracts: {e:#}");
                     }
                     tokio::time::sleep(tokio::time::Duration::from_secs(sync_interval)).await;
                 }
@@ -211,9 +215,7 @@ impl xtra::Handler<CheckBlockHeight> for Actor {
 
             let actor = ctx.mailbox().address();
 
-            let contracts = db::contracts::load_contracts_to_watch(&self.db)
-                .await
-                .expect("contracts to start btsive actor");
+            let contracts = db::contracts::load_contracts_to_watch(&self.db).await?;
             tracing::debug!(
                 target: "btsieve",
                 number_of_contracts = contracts.len(),
@@ -259,6 +261,63 @@ impl xtra::Handler<CheckBlockHeight> for Actor {
             // last but not least, update our internal block height
             self.block_height = latest_tip;
         }
+
+        Ok(())
+    }
+}
+
+/// Message to tell the [`crate::mempool::Actor`] to fetch new contracts being funded.
+#[derive(Debug)]
+pub struct CheckForApprovedContracts;
+
+impl xtra::Handler<CheckForApprovedContracts> for Actor {
+    type Return = Result<()>;
+
+    async fn handle(
+        &mut self,
+        _: CheckForApprovedContracts,
+        ctx: &mut xtra::Context<Self>,
+    ) -> Self::Return {
+        tracing::debug!(
+            last_known_height = self.block_height,
+            "Checking for approved contracts"
+        );
+
+        let actor = ctx.mailbox().address();
+
+        let contracts = db::contracts::load_approved_contracts(&self.db).await?;
+        tracing::debug!(
+            target: "btsieve",
+            number_of_contracts = contracts.len(),
+            "Checking tx for approved contracts"
+        );
+        tokio::spawn(async move {
+            for contract in contracts {
+                let contract_address = match contract.contract_address {
+                    Some(ref contract_address) => contract_address,
+                    None => {
+                        tracing::error!(
+                            contract_id = contract.id,
+                            "Cannot track pending contract without contract address"
+                        );
+                        continue;
+                    }
+                };
+                if let Err(err) = actor
+                    .send(CheckAddressStatus {
+                        contract_id: contract.id.clone(),
+                        contract_address: contract_address.clone().assume_checked(),
+                    })
+                    .await
+                    .expect("actor to be alive")
+                {
+                    tracing::error!(
+                        contract_id = contract.id,
+                        "Failed checking for new transactions for approved contract {err:#}"
+                    );
+                }
+            }
+        });
 
         Ok(())
     }
