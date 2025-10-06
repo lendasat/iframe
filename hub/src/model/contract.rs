@@ -518,6 +518,8 @@ impl ContractStatus {
     fn needs_to_be_checked_for_tx_updates(&self) -> bool {
         match self {
             ContractStatus::Requested
+            // Note: Contracts in `ContractStatus::Approved are check seperately
+            | ContractStatus::Approved
             | ContractStatus::Closed
             | ContractStatus::ClosedByLiquidation
             | ContractStatus::ClosedByDefaulting
@@ -527,8 +529,7 @@ impl ContractStatus {
             | ContractStatus::RequestExpired
             | ContractStatus::ApprovalExpired
             | ContractStatus::ClosedByRecovery => false,
-            ContractStatus::Approved
-            | ContractStatus::CollateralSeen
+            ContractStatus::CollateralSeen
             | ContractStatus::CollateralConfirmed
             | ContractStatus::PrincipalGiven
             | ContractStatus::RepaymentProvided
