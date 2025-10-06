@@ -128,9 +128,7 @@ impl xtra::Actor for Actor {
             let db = self.db.clone();
             async move {
                 if reset_txes {
-                    let contracts = db::contracts::load_all(&db)
-                        .await
-                        .expect("contracts to start btsive actor");
+                    let contracts = db::contracts::load_all(&db).await?;
                     tracing::info!(
                         number_of_contracts = contracts.len(),
                         "Getting tx for all contracts"
@@ -218,9 +216,7 @@ impl xtra::Handler<CheckBlockHeight> for Actor {
 
             let actor = ctx.mailbox().address();
 
-            let contracts = db::contracts::load_contracts_to_watch(&self.db)
-                .await
-                .expect("contracts to start btsive actor");
+            let contracts = db::contracts::load_contracts_to_watch(&self.db).await?;
             tracing::debug!(
                 target: "btsieve",
                 number_of_contracts = contracts.len(),
@@ -290,9 +286,7 @@ impl xtra::Handler<CheckForApprovedContracts> for Actor {
 
         let actor = ctx.mailbox().address();
 
-        let contracts = db::contracts::load_approved_contracts(&self.db)
-            .await
-            .expect("contracts to start btsive actor");
+        let contracts = db::contracts::load_approved_contracts(&self.db).await?;
         tracing::debug!(
             target: "btsieve",
             number_of_contracts = contracts.len(),
