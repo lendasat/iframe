@@ -123,12 +123,11 @@ impl xtra::Actor for Actor {
         // if this is set, we will fetch transactions for ALL contracts
         let reset_txes = self.config.reset_tx_view_in_db;
 
+        let contracts = db::contracts::load_all(&self.db).await?;
         tokio::spawn({
             let actor = mailbox.address();
-            let db = self.db.clone();
             async move {
                 if reset_txes {
-                    let contracts = db::contracts::load_all(&db).await?;
                     tracing::info!(
                         number_of_contracts = contracts.len(),
                         "Getting tx for all contracts"
