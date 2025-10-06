@@ -180,7 +180,7 @@ pub async fn wait_until_contract_status(
 
             let current = match contracts.iter().find(|c| c.id == contract_id) {
                 Some(contract) => {
-                    if contract.status == status {
+                    if contract.status == status.into() {
                         tracing::debug!(
                                 "Contract {contract_id} reached status {status:?}",
                             );

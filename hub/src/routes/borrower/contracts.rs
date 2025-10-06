@@ -17,7 +17,6 @@ use crate::model::BitcoinInvoice;
 use crate::model::BitcoinInvoiceStatus;
 use crate::model::Borrower;
 use crate::model::ContractRequestSchema;
-use crate::model::ContractStatus;
 use crate::model::ContractVersion;
 use crate::model::Currency;
 use crate::model::ExtensionPolicy;
@@ -67,6 +66,7 @@ use bitcoin::Amount;
 use bitcoin::PublicKey;
 use bitcoin::Transaction;
 use bitcoin::Txid;
+use enum_iterator::Sequence;
 use miniscript::Descriptor;
 use rust_decimal::Decimal;
 use serde::Deserialize;
@@ -74,6 +74,7 @@ use serde::Serialize;
 use sqlx::Pool;
 use sqlx::Postgres;
 use std::num::NonZeroU64;
+use std::str::FromStr;
 use std::sync::Arc;
 use time::ext::NumericalDuration;
 use time::OffsetDateTime;
@@ -552,9 +553,11 @@ async fn cancel_contract_request(
     .await
     .map_err(Error::database)?;
 
-    if contract.status != ContractStatus::Requested && contract.status != ContractStatus::Approved {
+    if contract.status != model::ContractStatus::Requested
+        && contract.status != model::ContractStatus::Approved
+    {
         return Err(Error::InvalidCancelRequest {
-            status: contract.status,
+            status: contract.status.into(),
         });
     }
 
@@ -753,26 +756,30 @@ async fn get_contracts(
         order: query.sort_order.to_sql().to_string(),
     };
 
-    let total = if query.status.is_empty() {
+    let offset = query.offset();
+
+    let statuses = query
+        .status
+        .into_iter()
+        .map(|s| s.into())
+        .collect::<Vec<_>>();
+
+    let total = if statuses.is_empty() {
         db::contracts::count_contracts_by_borrower_id(&data.db, &user.id)
             .await
             .map_err(Error::database)?
     } else {
-        db::contracts::count_contracts_by_borrower_id_and_statuses(
-            &data.db,
-            &user.id,
-            &query.status,
-        )
-        .await
-        .map_err(Error::database)?
+        db::contracts::count_contracts_by_borrower_id_and_statuses(&data.db, &user.id, &statuses)
+            .await
+            .map_err(Error::database)?
     };
 
-    let contracts = if query.status.is_empty() {
+    let contracts = if statuses.is_empty() {
         db::contracts::load_contracts_by_borrower_id_paginated_with_sort(
             &data.db,
             &user.id,
             query.limit,
-            query.offset(),
+            offset,
             &sort_options,
         )
         .await
@@ -781,9 +788,9 @@ async fn get_contracts(
         db::contracts::load_contracts_by_borrower_id_and_statuses_paginated_with_sort(
             &data.db,
             &user.id,
-            &query.status,
+            &statuses,
             query.limit,
-            query.offset(),
+            offset,
             &sort_options,
         )
         .await
@@ -905,9 +912,9 @@ async fn put_installment_paid(
     .await
     .map_err(Error::database)?;
 
-    if contract.status != ContractStatus::PrincipalGiven {
+    if contract.status != model::ContractStatus::PrincipalGiven {
         return Err(Error::InvalidPaymentRequest {
-            status: contract.status,
+            status: contract.status.into(),
         });
     }
 
@@ -1152,9 +1159,9 @@ async fn get_recover_collateral_psbt(
     .map_err(Error::database)?;
 
     // Only allow collateral recovery if the contract is in the `CollateralRecoverable` state.
-    if contract.status != ContractStatus::CollateralRecoverable {
+    if contract.status != model::ContractStatus::CollateralRecoverable {
         return Err(Error::InvalidRecoveryRequest {
-            status: contract.status,
+            status: contract.status.into(),
         });
     }
 
@@ -1322,9 +1329,9 @@ async fn post_recover_tx(
     .map_err(Error::database)?;
 
     // Only allow collateral recovery if the contract is in the `CollateralRecoverable` state.
-    if contract.status != ContractStatus::CollateralRecoverable {
+    if contract.status != model::ContractStatus::CollateralRecoverable {
         return Err(Error::InvalidRecoveryRequest {
-            status: contract.status,
+            status: contract.status.into(),
         });
     }
 
@@ -1714,9 +1721,9 @@ async fn put_report_btc_payment(
     .await
     .map_err(Error::database)?;
 
-    if contract.status != ContractStatus::PrincipalGiven {
+    if contract.status != model::ContractStatus::PrincipalGiven {
         return Err(Error::InvalidPaymentRequest {
-            status: contract.status,
+            status: contract.status.into(),
         });
     }
 
@@ -2104,7 +2111,7 @@ async fn map_to_api_contract(
         interest: total_interest,
         initial_ltv: contract.initial_ltv,
         loan_asset: new_offer.loan_asset(),
-        status: contract.status,
+        status: contract.status.into(),
         borrower_pk: contract.borrower_pk,
         borrower_derivation_path: contract.borrower_derivation_path,
         lender_pk: contract.lender_pk,
@@ -2193,7 +2200,8 @@ async fn map_timeline(
             let txid = match log.new_status {
                 // A contract should only ever transition to `CollateralSeen` and
                 // `CollateralConfirmed` once.
-                ContractStatus::CollateralSeen | ContractStatus::CollateralConfirmed => {
+                model::ContractStatus::CollateralSeen
+                | model::ContractStatus::CollateralConfirmed => {
                     // In both cases, we take the _first_ funding transaction.
                     //
                     // It could be the case that the contract is originally funded with more than
@@ -2206,46 +2214,45 @@ async fn map_timeline(
                         })
                     })
                 }
-                ContractStatus::PrincipalGiven => transactions.iter().find_map(|tx| {
+                model::ContractStatus::PrincipalGiven => transactions.iter().find_map(|tx| {
                     (tx.transaction_type == TransactionType::PrincipalGiven)
                         .then(|| tx.txid.clone())
                 }),
-                ContractStatus::ClosingByClaim
-                | ContractStatus::Closed
-                | ContractStatus::Defaulted => transactions.iter().find_map(|tx| {
+                model::ContractStatus::ClosingByClaim
+                | model::ContractStatus::Closed
+                | model::ContractStatus::Defaulted => transactions.iter().find_map(|tx| {
                     (tx.transaction_type == TransactionType::ClaimCollateral)
                         .then(|| tx.txid.clone())
                 }),
-                ContractStatus::ClosingByDefaulting | ContractStatus::ClosedByDefaulting => {
-                    transactions.iter().find_map(|tx| {
-                        (tx.transaction_type == TransactionType::Defaulted).then(|| tx.txid.clone())
-                    })
-                }
-                ContractStatus::ClosingByLiquidation | ContractStatus::ClosedByLiquidation => {
+                model::ContractStatus::ClosingByDefaulting
+                | model::ContractStatus::ClosedByDefaulting => transactions.iter().find_map(|tx| {
+                    (tx.transaction_type == TransactionType::Defaulted).then(|| tx.txid.clone())
+                }),
+                model::ContractStatus::ClosingByLiquidation
+                | model::ContractStatus::ClosedByLiquidation => {
                     transactions.iter().find_map(|tx| {
                         (tx.transaction_type == TransactionType::Liquidation)
                             .then(|| tx.txid.clone())
                     })
                 }
-                ContractStatus::ClosingByRecovery | ContractStatus::ClosedByRecovery => {
-                    transactions.iter().find_map(|tx| {
-                        (tx.transaction_type == TransactionType::ClaimCollateral)
-                            .then(|| tx.txid.clone())
-                    })
-                }
-                ContractStatus::Requested
-                | ContractStatus::Approved
-                | ContractStatus::RepaymentProvided
-                | ContractStatus::RepaymentConfirmed
-                | ContractStatus::Undercollateralized
-                | ContractStatus::Extended
-                | ContractStatus::Rejected
-                | ContractStatus::DisputeBorrowerStarted
-                | ContractStatus::DisputeLenderStarted
-                | ContractStatus::Cancelled
-                | ContractStatus::RequestExpired
-                | ContractStatus::ApprovalExpired
-                | ContractStatus::CollateralRecoverable => {
+                model::ContractStatus::ClosingByRecovery
+                | model::ContractStatus::ClosedByRecovery => transactions.iter().find_map(|tx| {
+                    (tx.transaction_type == TransactionType::ClaimCollateral)
+                        .then(|| tx.txid.clone())
+                }),
+                model::ContractStatus::Requested
+                | model::ContractStatus::Approved
+                | model::ContractStatus::RepaymentProvided
+                | model::ContractStatus::RepaymentConfirmed
+                | model::ContractStatus::Undercollateralized
+                | model::ContractStatus::Extended
+                | model::ContractStatus::Rejected
+                | model::ContractStatus::DisputeBorrowerStarted
+                | model::ContractStatus::DisputeLenderStarted
+                | model::ContractStatus::Cancelled
+                | model::ContractStatus::RequestExpired
+                | model::ContractStatus::ApprovalExpired
+                | model::ContractStatus::CollateralRecoverable => {
                     // There are no transactions associated with these events.
                     None
                 }
@@ -2254,7 +2261,7 @@ async fn map_timeline(
             TimelineEvent {
                 date: log.changed_at,
                 event: TimelineEventKind::ContractStatusChange {
-                    status: log.new_status,
+                    status: log.new_status.into(),
                 },
                 txid,
             }
@@ -2872,7 +2879,9 @@ impl From<approve_contract::Error> for Error {
             approve_contract::Error::MissingBorrower => Error::MissingBorrower,
             approve_contract::Error::TrackContract(e) => Error::track_contract(e),
             approve_contract::Error::InvalidApproveRequest { status } => {
-                Error::InvalidApproveRequest { status }
+                Error::InvalidApproveRequest {
+                    status: status.into(),
+                }
             }
             approve_contract::Error::MissingContractAddress => Error::MissingContractAddress,
             approve_contract::Error::MissingContract(contract_id) => {
@@ -2992,6 +3001,147 @@ impl From<BitcoinInvoice> for BitcoinRepaymentInvoiceResponse {
             address: invoice.address.into_unchecked(),
             expires_at: invoice.expires_at,
             status: invoice.status,
+        }
+    }
+}
+
+#[derive(Clone, Copy, Debug, Deserialize, Serialize, PartialEq, ToSchema, Sequence)]
+pub enum ContractStatus {
+    Requested,
+    Approved,
+    CollateralSeen,
+    CollateralConfirmed,
+    PrincipalGiven,
+    RepaymentProvided,
+    RepaymentConfirmed,
+    Undercollateralized,
+    Defaulted,
+    ClosingByClaim,
+    Closed,
+    Closing,
+    ClosingByLiquidation,
+    ClosedByLiquidation,
+    ClosingByDefaulting,
+    ClosedByDefaulting,
+    Extended,
+    Rejected,
+    DisputeBorrowerStarted,
+    DisputeLenderStarted,
+    Cancelled,
+    RequestExpired,
+    ApprovalExpired,
+    CollateralRecoverable,
+    ClosingByRecovery,
+    ClosedByRecovery,
+}
+
+impl From<ContractStatus> for model::ContractStatus {
+    fn from(value: ContractStatus) -> Self {
+        match value {
+            ContractStatus::Requested => model::ContractStatus::Requested,
+            ContractStatus::Approved => model::ContractStatus::Approved,
+            ContractStatus::CollateralSeen => model::ContractStatus::CollateralSeen,
+            ContractStatus::CollateralConfirmed => model::ContractStatus::CollateralConfirmed,
+            ContractStatus::PrincipalGiven => model::ContractStatus::PrincipalGiven,
+            ContractStatus::RepaymentProvided => model::ContractStatus::RepaymentProvided,
+            ContractStatus::RepaymentConfirmed => model::ContractStatus::RepaymentConfirmed,
+            ContractStatus::Undercollateralized => model::ContractStatus::Undercollateralized,
+            ContractStatus::Defaulted => model::ContractStatus::Defaulted,
+            ContractStatus::Closing => model::ContractStatus::ClosingByClaim,
+            ContractStatus::ClosingByClaim => model::ContractStatus::ClosingByClaim,
+            ContractStatus::Closed => model::ContractStatus::Closed,
+            ContractStatus::ClosingByLiquidation => model::ContractStatus::ClosingByLiquidation,
+            ContractStatus::ClosedByLiquidation => model::ContractStatus::ClosedByLiquidation,
+            ContractStatus::ClosingByDefaulting => model::ContractStatus::ClosingByDefaulting,
+            ContractStatus::ClosedByDefaulting => model::ContractStatus::ClosedByDefaulting,
+            ContractStatus::Extended => model::ContractStatus::Extended,
+            ContractStatus::Rejected => model::ContractStatus::Rejected,
+            ContractStatus::DisputeBorrowerStarted => model::ContractStatus::DisputeBorrowerStarted,
+            ContractStatus::DisputeLenderStarted => model::ContractStatus::DisputeLenderStarted,
+            ContractStatus::Cancelled => model::ContractStatus::Cancelled,
+            ContractStatus::RequestExpired => model::ContractStatus::RequestExpired,
+            ContractStatus::ApprovalExpired => model::ContractStatus::ApprovalExpired,
+            ContractStatus::CollateralRecoverable => model::ContractStatus::CollateralRecoverable,
+            ContractStatus::ClosingByRecovery => model::ContractStatus::ClosingByRecovery,
+            ContractStatus::ClosedByRecovery => model::ContractStatus::ClosedByRecovery,
+        }
+    }
+}
+
+impl From<model::ContractStatus> for ContractStatus {
+    fn from(value: model::ContractStatus) -> Self {
+        match value {
+            model::ContractStatus::Requested => ContractStatus::Requested,
+            model::ContractStatus::Approved => ContractStatus::Approved,
+            model::ContractStatus::CollateralSeen => ContractStatus::CollateralSeen,
+            model::ContractStatus::CollateralConfirmed => ContractStatus::CollateralConfirmed,
+            model::ContractStatus::PrincipalGiven => ContractStatus::PrincipalGiven,
+            model::ContractStatus::RepaymentProvided => ContractStatus::RepaymentProvided,
+            model::ContractStatus::RepaymentConfirmed => ContractStatus::RepaymentConfirmed,
+            model::ContractStatus::Undercollateralized => ContractStatus::Undercollateralized,
+            model::ContractStatus::Defaulted => ContractStatus::Defaulted,
+            model::ContractStatus::ClosingByClaim => ContractStatus::ClosingByClaim,
+            model::ContractStatus::Closed => ContractStatus::Closed,
+            model::ContractStatus::ClosingByLiquidation => ContractStatus::ClosingByLiquidation,
+            model::ContractStatus::ClosedByLiquidation => ContractStatus::ClosedByLiquidation,
+            model::ContractStatus::ClosingByDefaulting => ContractStatus::ClosingByDefaulting,
+            model::ContractStatus::ClosedByDefaulting => ContractStatus::ClosedByDefaulting,
+            model::ContractStatus::Extended => ContractStatus::Extended,
+            model::ContractStatus::Rejected => ContractStatus::Rejected,
+            model::ContractStatus::DisputeBorrowerStarted => ContractStatus::DisputeBorrowerStarted,
+            model::ContractStatus::DisputeLenderStarted => ContractStatus::DisputeLenderStarted,
+            model::ContractStatus::Cancelled => ContractStatus::Cancelled,
+            model::ContractStatus::RequestExpired => ContractStatus::RequestExpired,
+            model::ContractStatus::ApprovalExpired => ContractStatus::ApprovalExpired,
+            model::ContractStatus::CollateralRecoverable => ContractStatus::CollateralRecoverable,
+            model::ContractStatus::ClosingByRecovery => ContractStatus::ClosingByRecovery,
+            model::ContractStatus::ClosedByRecovery => ContractStatus::ClosedByRecovery,
+        }
+    }
+}
+
+impl FromStr for ContractStatus {
+    type Err = String;
+
+    fn from_str(s: &str) -> anyhow::Result<Self, Self::Err> {
+        match s.to_lowercase().as_str() {
+            "requested" => Ok(ContractStatus::Requested),
+            "approved" => Ok(ContractStatus::Approved),
+            "collateralseen" | "collateral_seen" => Ok(ContractStatus::CollateralSeen),
+            "collateralconfirmed" | "collateral_confirmed" => {
+                Ok(ContractStatus::CollateralConfirmed)
+            }
+            "principalgiven" | "principal_given" => Ok(ContractStatus::PrincipalGiven),
+            "repaymentprovided" | "repayment_provided" => Ok(ContractStatus::RepaymentProvided),
+            "repaymentconfirmed" | "repayment_confirmed" => Ok(ContractStatus::RepaymentConfirmed),
+            "undercollateralized" => Ok(ContractStatus::Undercollateralized),
+            "defaulted" => Ok(ContractStatus::Defaulted),
+            "closing" => Ok(ContractStatus::ClosingByClaim),
+            "closingbyclaim" => Ok(ContractStatus::ClosingByClaim),
+            "closed" => Ok(ContractStatus::Closed),
+            "closingbyliquidation" => Ok(ContractStatus::ClosingByLiquidation),
+            "closedbyliquidation" | "closed_by_liquidation" => {
+                Ok(ContractStatus::ClosedByLiquidation)
+            }
+            "closingbydefaulting" => Ok(ContractStatus::ClosingByDefaulting),
+            "closedbydefaulting" | "closed_by_defaulting" => Ok(ContractStatus::ClosedByDefaulting),
+            "extended" => Ok(ContractStatus::Extended),
+            "rejected" => Ok(ContractStatus::Rejected),
+            "disputeborrowerstarted" | "dispute_borrower_started" => {
+                Ok(ContractStatus::DisputeBorrowerStarted)
+            }
+            "disputelenderstarted" | "dispute_lender_started" => {
+                Ok(ContractStatus::DisputeLenderStarted)
+            }
+            "cancelled" => Ok(ContractStatus::Cancelled),
+            "requestexpired" | "request_expired" => Ok(ContractStatus::RequestExpired),
+            "approvalexpired" | "approval_expired" => Ok(ContractStatus::ApprovalExpired),
+            "collateralrecoverable" | "collateral_recoverable" => {
+                Ok(ContractStatus::CollateralRecoverable)
+            }
+            "closingbyrecovery" => Ok(ContractStatus::ClosingByRecovery),
+            "closedbyrecovery" | "closed_by_recovery" => Ok(ContractStatus::ClosedByRecovery),
+            _ => Err(format!("Invalid contract status: {s}")),
         }
     }
 }
