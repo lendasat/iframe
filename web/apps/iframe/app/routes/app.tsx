@@ -4,8 +4,8 @@ import type { Route } from "./+types/app";
 
 export function meta({}: Route.MetaArgs) {
   return [
-    { title: "LendaSat" },
-    { name: "description", content: "LendaSat lending platform" },
+    { title: "Lendasat" },
+    { name: "description", content: "Lendasat lending platform" },
   ];
 }
 
@@ -15,7 +15,7 @@ export default function App() {
   const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState<Tab>("loans");
   const [user, setUser] = useState<{ email: string; username: string } | null>(
-    null
+    null,
   );
 
   useEffect(() => {
@@ -38,7 +38,7 @@ export default function App() {
       <header className="bg-white shadow-sm">
         <div className="max-w-7xl mx-auto px-4 py-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center">
-            <h1 className="text-xl font-bold text-gray-900">LendaSat</h1>
+            <h1 className="text-xl font-bold text-gray-900">Lendasat</h1>
             <div className="text-sm text-gray-600">
               <span className="font-medium">{user.username}</span>
             </div>
