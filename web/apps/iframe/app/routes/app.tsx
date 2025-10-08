@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router";
 import type { Route } from "./+types/app";
+import { ContractsTab } from "~/components/ContractsTab";
 
 export function meta({}: Route.MetaArgs) {
   return [
@@ -9,11 +10,11 @@ export function meta({}: Route.MetaArgs) {
   ];
 }
 
-type Tab = "loans" | "offers" | "applications";
+type Tab = "contracts" | "offers" | "applications";
 
 export default function App() {
   const navigate = useNavigate();
-  const [activeTab, setActiveTab] = useState<Tab>("loans");
+  const [activeTab, setActiveTab] = useState<Tab>("contracts");
   const [user, setUser] = useState<{ email: string; username: string } | null>(
     null,
   );
@@ -48,18 +49,7 @@ export default function App() {
 
       {/* Main Content */}
       <main className="max-w-7xl mx-auto px-4 py-6 sm:px-6 lg:px-8">
-        {activeTab === "loans" && (
-          <div>
-            <h2 className="text-2xl font-bold text-gray-900 mb-4">
-              Personal Loans
-            </h2>
-            <div className="bg-white rounded-lg shadow p-6">
-              <p className="text-gray-600">
-                Your personal loans will appear here.
-              </p>
-            </div>
-          </div>
-        )}
+        {activeTab === "contracts" && <ContractsTab user={user} />}
 
         {activeTab === "offers" && (
           <div>
@@ -91,9 +81,9 @@ export default function App() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-around">
             <button
-              onClick={() => setActiveTab("loans")}
+              onClick={() => setActiveTab("contracts")}
               className={`flex-1 flex flex-col items-center py-3 px-2 text-sm font-medium transition-colors ${
-                activeTab === "loans"
+                activeTab === "contracts"
                   ? "text-indigo-600"
                   : "text-gray-500 hover:text-gray-700"
               }`}
@@ -111,7 +101,7 @@ export default function App() {
                   d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
                 />
               </svg>
-              <span>Loans</span>
+              <span>Contracts</span>
             </button>
 
             <button

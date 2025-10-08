@@ -1,5 +1,15 @@
-import type { MeResponse } from "./types";
-import { mapMeResponse } from "./types";
+import type {
+  MeResponse,
+  PaginatedContractsResponse,
+  ContractStatus,
+  SortField,
+  SortOrder,
+} from "./types";
+import {
+  mapMeResponse,
+  mapPaginatedContractsResponse,
+  mapSortField,
+} from "./types";
 import createClient, { Client } from "openapi-fetch";
 import { paths } from "./openapi/schema";
 import { v4 as uuidv4 } from "uuid";
@@ -73,6 +83,40 @@ export class ApiClient {
     }
 
     return mapMeResponse(data);
+  }
+
+  async contracts(params?: {
+    page?: number;
+    limit?: number;
+    status?: ContractStatus[];
+    sortBy?: SortField;
+    sortOrder?: SortOrder;
+  }): Promise<PaginatedContractsResponse> {
+    if (!this.api_key) {
+      throw new UnauthorizedError();
+    }
+
+    const { data, error } = await this.client.GET("/api/contracts", {
+      headers: { "x-api-key": this.api_key },
+      params: {
+        query: {
+          page: params?.page,
+          limit: params?.limit,
+          status: params?.status,
+          sort_by: params?.sortBy ? mapSortField(params.sortBy) : undefined,
+          sort_order: params?.sortOrder,
+        },
+      },
+    });
+    if (error) {
+      throw Error(error);
+    }
+
+    if (!data) {
+      throw Error("No data returned from API");
+    }
+
+    return mapPaginatedContractsResponse(data);
   }
 }
 
