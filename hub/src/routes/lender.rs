@@ -13,6 +13,7 @@ use axum::http::header::ACCESS_CONTROL_ALLOW_ORIGIN;
 use axum::http::header::AUTHORIZATION;
 use axum::http::header::CONTENT_TYPE;
 use axum::http::header::ORIGIN;
+use axum::http::HeaderName;
 use axum::http::HeaderValue;
 use axum::middleware;
 use reqwest::Method;
@@ -185,6 +186,8 @@ pub async fn spawn_lender_server(
                 ACCESS_CONTROL_ALLOW_HEADERS,
                 ACCESS_CONTROL_ALLOW_ORIGIN,
                 CONTENT_TYPE,
+                // needed for cross-origin requests with an api key
+                HeaderName::from_static("x-api-key"),
             ]);
 
         #[cfg(debug_assertions)]

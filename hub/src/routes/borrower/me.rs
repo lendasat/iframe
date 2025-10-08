@@ -3,9 +3,10 @@ use crate::model::Borrower;
 use crate::model::BorrowerLoanFeatureResponse;
 use crate::model::FilteredUser;
 use crate::model::MeResponse;
-use crate::model::PasswordAuth;
+use crate::routes::borrower::auth::jwt_or_api_auth;
 use crate::routes::borrower::ME_TAG;
 use crate::routes::AppState;
+use anyhow::Context;
 use axum::extract::FromRequest;
 use axum::extract::State;
 use axum::http::StatusCode;
@@ -25,7 +26,7 @@ pub(crate) fn router(app_state: Arc<AppState>) -> OpenApiRouter {
         .routes(routes!(get_me_handler))
         .route_layer(axum::middleware::from_fn_with_state(
             app_state.clone(),
-            super::auth::jwt_auth::auth,
+            jwt_or_api_auth::auth,
         ))
         .with_state(app_state)
 }
@@ -51,18 +52,26 @@ pub(crate) fn router(app_state: Arc<AppState>) -> OpenApiRouter {
 #[instrument(skip_all, fields(borrower_id = user.id), err(Debug, level = Level::DEBUG))]
 async fn get_me_handler(
     State(data): State<Arc<AppState>>,
-    Extension((user, password_auth_info)): Extension<(Borrower, PasswordAuth)>,
+    Extension(user): Extension<Borrower>,
 ) -> Result<AppJson<MeResponse>, Error> {
     let personal_telegram_token =
         db::telegram_bot::borrower::get_or_create_token_by_borrower_id(&data.db, user.id.as_str())
             .await
             .map_err(Error::database)?;
 
+    // TODO: this is clearly not a db error, nor should it be an error because all users have an
+    // email.
+    let email = user
+        .email
+        .clone()
+        .context("no email found for user")
+        .map_err(Error::database)?;
     let filtered_user = FilteredUser::new_user(
         &user,
         personal_telegram_token,
-        password_auth_info.verified,
-        password_auth_info.email,
+        // if we get that far, our user is always verified,
+        true,
+        email,
     );
 
     let features = db::borrower_features::load_borrower_features(&data.db, user.id.clone())
