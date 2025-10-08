@@ -260,6 +260,7 @@ export interface LoanOffer {
   lenderPk: string;
   loanAmountMax: number;
   loanAmountMin: number;
+  loanAsset: LoanAsset;
   loanPayout: LoanPayout;
   loanRepaymentAddress: string;
   minLtv: number;
@@ -279,6 +280,7 @@ export function mapLoanOffer(
     lenderPk: offer.lender_pk,
     loanAmountMax: offer.loan_amount_max,
     loanAmountMin: offer.loan_amount_min,
+    loanAsset: offer.loan_asset,
     loanPayout: offer.loan_payout,
     loanRepaymentAddress: offer.loan_repayment_address,
     minLtv: offer.min_ltv,
