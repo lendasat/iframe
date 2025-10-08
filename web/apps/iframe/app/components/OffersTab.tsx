@@ -1,5 +1,6 @@
 import { useAsync } from "react-use";
 import { useState, useMemo } from "react";
+import { Link } from "react-router";
 import { apiClient } from "@repo/api";
 import { LoadingOverlay } from "~/components/ui/spinner";
 
@@ -54,6 +55,14 @@ export function OffersTab({ user }: OffersTabProps) {
       return true;
     });
   }, [offersState.value, amountFilter, durationFilter, assetFilter]);
+
+  // Build URL for taking an offer with filter values
+  const buildTakeOfferUrl = (offerId: string) => {
+    const params = new URLSearchParams({ offerId });
+    if (amountFilter) params.set("amount", amountFilter);
+    if (durationFilter) params.set("duration", durationFilter);
+    return `/take-offer?${params.toString()}`;
+  };
 
   return (
     <div>
@@ -184,6 +193,12 @@ export function OffersTab({ user }: OffersTabProps) {
                   </div>
                 )}
               </div>
+              <Link
+                to={buildTakeOfferUrl(offer.id)}
+                className="mt-4 block w-full bg-indigo-600 hover:bg-indigo-700 text-white text-center font-medium py-2 px-4 rounded-md transition-colors"
+              >
+                Take Offer
+              </Link>
             </div>
           ))}
         </div>
