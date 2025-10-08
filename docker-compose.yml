@@ -7,7 +7,7 @@ services:
       - ./services/database/:/docker-entrypoint-initdb.d/
     restart: always
     ports:
-      - "5555:5432"
+      - "5559:5432"
     environment:
       POSTGRES_PASSWORD: supersecretpassword
       POSTGRES_USER: hub

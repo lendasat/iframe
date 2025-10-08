@@ -100,7 +100,7 @@ jobs:
           envkey_SEED_FILE: "./test-seed"
           envkey_FALLBACK_XPUB: "tpubD6NzVbkrYhZ4YRwqdJt3gfhyeAndFq8LBzR3H6FZRHsaceWk6RB4CBeEmWMfptREDEBZef6cKQ37ZFpkpX4dxtv48GjiHsZ8JDegfNzRz6G"
           envkey_HUB_FEE_DESCRIPTOR: "wpkh(tpubD6NzVbkrYhZ4YRwqdJt3gfhyeAndFq8LBzR3H6FZRHsaceWk6RB4CBeEmWMfptREDEBZef6cKQ37ZFpkpX4dxtv48GjiHsZ8JDegfNzRz6G)#2g9gvjz5"
-          envkey_DB_URL: "postgres://hub:supersecretpassword@localhost:5555/hub"
+          envkey_DB_URL: "postgres://hub:supersecretpassword@localhost:5559/hub"
           envkey_JWT_SECRET: "my_ultra_secure_secret"
           envkey_NETWORK: "regtest"
           envkey_MOON_API_KEY: "api-key"
