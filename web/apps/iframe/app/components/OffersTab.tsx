@@ -134,67 +134,50 @@ export function OffersTab({ user }: OffersTabProps) {
         </div>
       )}
       {filteredOffers && filteredOffers.length > 0 && (
-        <div className="space-y-4">
+        <div className="space-y-3">
           {filteredOffers.map((offer) => (
-            <div key={offer.id} className="bg-white rounded-lg shadow p-6">
-              <div className="flex justify-between items-start mb-4">
-                <div>
-                  <h3 className="text-lg font-semibold text-gray-900">
-                    {offer.name}
-                  </h3>
-                  <p className="text-sm text-gray-600">
-                    ID: {offer.id.substring(0, 8)}...
-                  </p>
-                </div>
-                <span
-                  className={`px-3 py-1 rounded-full text-sm font-medium ${
-                    offer.status === "Available"
-                      ? "bg-green-100 text-green-800"
-                      : offer.status === "Unavailable"
-                        ? "bg-yellow-100 text-yellow-800"
-                        : "bg-gray-100 text-gray-800"
-                  }`}
-                >
-                  {offer.status}
-                </span>
+            <div key={offer.id} className="bg-white rounded-lg shadow p-4">
+              <div className="mb-3">
+                <h3 className="text-base font-semibold text-gray-900">
+                  {offer.name}
+                </h3>
+                <p className="text-xs text-gray-500">
+                  {offer.id.substring(0, 8)}...
+                </p>
               </div>
-              <div className="grid grid-cols-2 gap-4 text-sm">
+              <div className="grid grid-cols-2 gap-3 text-sm">
                 <div>
-                  <p className="text-gray-600">Loan Amount</p>
+                  <p className="text-gray-500 text-xs">Amount</p>
                   <p className="font-medium">
                     {offer.loanAmountMin} - {offer.loanAmountMax}
                   </p>
                 </div>
                 <div>
-                  <p className="text-gray-600">Interest Rate</p>
+                  <p className="text-gray-500 text-xs">Interest Rate</p>
                   <p className="font-medium">
                     {(offer.interestRate * 100).toFixed(1)}%
                   </p>
                 </div>
                 <div>
-                  <p className="text-gray-600">Duration</p>
+                  <p className="text-gray-500 text-xs">Duration</p>
                   <p className="font-medium">
                     {offer.durationDaysMin} - {offer.durationDaysMax} days
                   </p>
                 </div>
                 <div>
-                  <p className="text-gray-600">Min LTV</p>
+                  <p className="text-gray-500 text-xs">Min LTV</p>
                   <p className="font-medium">
                     {(offer.minLtv * 100).toFixed(0)}%
                   </p>
                 </div>
-                <div>
-                  <p className="text-gray-600">Payout</p>
-                  <p className="font-medium">{offer.loanPayout}</p>
-                </div>
                 {offer.kycLink && (
                   <div>
-                    <p className="text-gray-600">KYC</p>
+                    <p className="text-gray-500 text-xs">KYC</p>
                     <a
                       href={offer.kycLink}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="text-indigo-600 hover:text-indigo-800 font-medium"
+                      className="text-indigo-600 hover:text-indigo-800 font-medium text-sm"
                     >
                       Required
                     </a>
