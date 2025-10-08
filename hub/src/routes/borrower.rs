@@ -310,6 +310,7 @@ pub async fn spawn_borrower_server(
             "http://localhost:4202".parse::<HeaderValue>()?,
             "http://localhost:4203".parse::<HeaderValue>()?,
             "http://localhost:4204".parse::<HeaderValue>()?,
+            "http://localhost:5173".parse::<HeaderValue>()?,
         ]);
 
         #[cfg(not(debug_assertions))]

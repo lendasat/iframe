@@ -1,0 +1,30 @@
+{
+  "name": "@repo/api",
+  "version": "0.0.0",
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts",
+    "./client": "./src/client.ts",
+    "./types": "./src/types.ts"
+  },
+  "license": "MIT",
+  "scripts": {
+    "lint": "eslint \"**/*.ts\"",
+    "typecheck": "tsc --noEmit",
+    "fetch": "npx openapi-typescript http://localhost:7337/api-docs/openapi.json -o ./src/openapi/schema.d.ts"
+  },
+  "devDependencies": {
+    "@repo/eslint-config": "workspace:*",
+    "@repo/typescript-config": "workspace:*",
+    "eslint": "^8.57.0",
+    "openapi-typescript": "^7.9.1",
+    "typescript": "^5.9.3"
+  },
+  "dependencies": {
+    "@types/debug": "^4.1.12",
+    "date-fns": "^4.1.0",
+    "debug": "^4.4.3",
+    "openapi-fetch": "^0.14.1",
+    "uuid": "^13.0.0"
+  }
+}

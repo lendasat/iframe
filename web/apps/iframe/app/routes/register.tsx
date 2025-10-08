@@ -1,7 +1,10 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router";
+import { useAsync } from "react-use";
 import type { Route } from "./+types/register";
 import { Button } from "~/components/ui/button";
+import { LoadingOverlay } from "~/components/ui/spinner";
+import { apiClient } from "@repo/api";
 
 export function meta({}: Route.MetaArgs) {
   return [
@@ -12,20 +15,57 @@ export function meta({}: Route.MetaArgs) {
 
 export default function Register() {
   const navigate = useNavigate();
-  const [email, setEmail] = useState("");
+  // TODO: remove sample
+  const [email, setEmail] = useState("test@test.com");
   const [username, setUsername] = useState(
     `Satoshi${Math.floor(Math.random() * 10000)}`,
   );
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState("");
 
-  const handleSubmit = (e: React.FormEvent) => {
+  // Check if user is already authenticated
+  const authCheck = useAsync(async () => {
+    try {
+      const me = await apiClient.me();
+      localStorage.setItem("user", JSON.stringify(me));
+      return me;
+    } catch (error) {
+      // User is not authenticated, which is expected on this page
+      return null;
+    }
+  }, []);
+
+  // Redirect to app if already authenticated
+  useEffect(() => {
+    if (authCheck.value && !authCheck.loading) {
+      navigate("/app");
+    }
+  }, [authCheck.value, authCheck.loading, navigate]);
+
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    setIsLoading(true);
+    setError("");
 
-    // Store user data in localStorage for now
-    localStorage.setItem("user", JSON.stringify({ email, username }));
-
-    // Navigate to the main app
-    navigate("/app");
+    // Call API to register user
+    try {
+      await apiClient.register(email, username, "asd", "asd");
+      const me = await apiClient.me();
+      // TODO: do not store the whole user object in local storage
+      localStorage.setItem("user", JSON.stringify(me));
+      navigate("/app");
+    } catch (error) {
+      console.error("Failed registering", error);
+      setError("Failed to register. Please try again.");
+    } finally {
+      setIsLoading(false);
+    }
   };
+
+  // Show loading overlay while checking authentication
+  if (authCheck.loading) {
+    return <LoadingOverlay message="Checking authentication..." />;
+  }
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gray-50 px-4">
@@ -79,9 +119,18 @@ export default function Register() {
             </div>
           </div>
 
+          {error && (
+            <div className="text-red-600 text-sm text-center">{error}</div>
+          )}
+
           <div>
-            <Button variant={"default"} type="submit">
-              Register
+            <Button
+              variant={"default"}
+              type="submit"
+              disabled={isLoading}
+              className="w-full"
+            >
+              {isLoading ? "Registering..." : "Register"}
             </Button>
           </div>
         </form>
