@@ -1,7 +1,7 @@
 import { useAsync } from "react-use";
 import { useState, useMemo } from "react";
 import { Link } from "react-router";
-import { apiClient } from "@repo/api";
+import { apiClient, isFiatAsset, formatLoanAsset } from "@repo/api";
 import { LoadingOverlay } from "~/components/ui/spinner";
 
 interface OffersTabProps {
@@ -31,6 +31,11 @@ export function OffersTab({ user }: OffersTabProps) {
     if (!offersState.value) return null;
 
     return offersState.value.filter((offer) => {
+      // Filter out fiat assets
+      if (isFiatAsset(offer.loanAsset)) {
+        return false;
+      }
+
       // Filter by amount
       if (amountFilter) {
         const amount = parseFloat(amountFilter);
@@ -123,7 +128,7 @@ export function OffersTab({ user }: OffersTabProps) {
               <option value="all">All Assets</option>
               {availableAssets.map((asset) => (
                 <option key={asset} value={asset}>
-                  {asset}
+                  {formatLoanAsset(asset)}
                 </option>
               ))}
             </select>

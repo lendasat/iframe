@@ -313,6 +313,58 @@ export type LoanAsset =
   | "Mxn"
   | "UsdtLiquid";
 
+// Helper functions for LoanAsset
+export function isFiatAsset(asset: LoanAsset): boolean {
+  return asset === "Usd" || asset === "Eur" || asset === "Chf" || asset === "Mxn";
+}
+
+export function isStableCoinAsset(asset: LoanAsset): boolean {
+  return (
+    asset === "UsdcPol" ||
+    asset === "UsdtPol" ||
+    asset === "UsdcEth" ||
+    asset === "UsdtEth" ||
+    asset === "UsdcStrk" ||
+    asset === "UsdtStrk" ||
+    asset === "UsdcSol" ||
+    asset === "UsdtSol" ||
+    asset === "UsdtLiquid"
+  );
+}
+
+export function formatLoanAsset(asset: LoanAsset): string {
+  switch (asset) {
+    case "UsdcPol":
+      return "USDC on Polygon";
+    case "UsdtPol":
+      return "USDT on Polygon";
+    case "UsdcEth":
+      return "USDC on Ethereum";
+    case "UsdtEth":
+      return "USDT on Ethereum";
+    case "UsdcStrk":
+      return "USDC on Starknet";
+    case "UsdtStrk":
+      return "USDT on Starknet";
+    case "UsdcSol":
+      return "USDC on Solana";
+    case "UsdtSol":
+      return "USDT on Solana";
+    case "UsdtLiquid":
+      return "USDT on Liquid";
+    case "Usd":
+      return "USD";
+    case "Eur":
+      return "EUR";
+    case "Chf":
+      return "CHF";
+    case "Mxn":
+      return "MXN";
+    default:
+      return asset;
+  }
+}
+
 export type LoanType =
   | "PayWithMoon"
   | "MoonCardInstant"
