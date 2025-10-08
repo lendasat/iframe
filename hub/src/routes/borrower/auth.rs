@@ -532,12 +532,8 @@ async fn post_totp_verify_mobile(
             .await
             .map_err(Error::database)?;
 
-    let filtered_user = FilteredUser::new_user(
-        &user,
-        personal_telegram_token,
-        true,
-        user.email.clone().unwrap_or_default(),
-    );
+    let filtered_user =
+        FilteredUser::new_user(&user, personal_telegram_token, true, user.email.clone());
 
     let wallet_backup = db::wallet_backups::find_by_borrower_id(&data.db, borrower_id)
         .await
@@ -869,7 +865,7 @@ async fn post_pake_verify_aux(
         &user,
         personal_telegram_token,
         password_auth_info.verified,
-        password_auth_info.email,
+        Some(password_auth_info.email),
     );
 
     let wallet_backup = db::wallet_backups::find_by_borrower_id(&data.db, borrower_id)
@@ -1064,12 +1060,8 @@ async fn post_totp_verify_login(
             .await
             .map_err(Error::database)?;
 
-    let filtered_user = FilteredUser::new_user(
-        &user,
-        personal_telegram_token,
-        true,
-        user.email.clone().unwrap_or_default(),
-    );
+    let filtered_user =
+        FilteredUser::new_user(&user, personal_telegram_token, true, user.email.clone());
 
     let wallet_backup = db::wallet_backups::find_by_borrower_id(&data.db, borrower_id)
         .await

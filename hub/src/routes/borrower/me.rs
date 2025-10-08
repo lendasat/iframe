@@ -6,7 +6,6 @@ use crate::model::MeResponse;
 use crate::routes::borrower::auth::jwt_or_api_auth;
 use crate::routes::borrower::ME_TAG;
 use crate::routes::AppState;
-use anyhow::Context;
 use axum::extract::FromRequest;
 use axum::extract::State;
 use axum::http::StatusCode;
@@ -59,13 +58,7 @@ async fn get_me_handler(
             .await
             .map_err(Error::database)?;
 
-    // TODO: this is clearly not a db error, nor should it be an error because all users have an
-    // email.
-    let email = user
-        .email
-        .clone()
-        .context("no email found for user")
-        .map_err(Error::database)?;
+    let email = user.email.clone();
     let filtered_user = FilteredUser::new_user(
         &user,
         personal_telegram_token,

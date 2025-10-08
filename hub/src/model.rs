@@ -1179,7 +1179,7 @@ pub struct BorrowerLoanFeatureResponse {
 pub struct FilteredUser {
     pub id: String,
     pub name: String,
-    pub email: String,
+    pub email: Option<String>,
     pub verified: bool,
     pub used_referral_code: Option<String>,
     pub personal_referral_codes: Vec<PersonalReferralCodeResponse>,
@@ -1236,7 +1236,7 @@ impl FilteredUser {
         user: &Borrower,
         personal_telegram_token: crate::db::telegram_bot::TelegramBotToken,
         verified: bool,
-        email: Email,
+        email: Option<Email>,
     ) -> Self {
         let created_at_utc = user.created_at;
         let updated_at_utc = user.updated_at;
