@@ -55,7 +55,7 @@ export class ApiClient {
     }
 
     const { data, error } = await this.client.GET("/api/users/me", {
-      headers: { api_key: this.api_key },
+      headers: { "x-api-key": this.api_key },
     });
     if (error) {
       throw Error(error);
