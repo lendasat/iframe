@@ -5,6 +5,7 @@ import type {
   SortField,
   SortOrder,
   LoanOffer,
+  LoanApplication,
   QueryParamLoanType,
   AssetTypeFilter,
   KycFilter,
@@ -14,6 +15,7 @@ import {
   mapPaginatedContractsResponse,
   mapSortField,
   mapLoanOffer,
+  mapLoanApplication,
 } from "./types";
 import createClient, { Client } from "openapi-fetch";
 import { paths } from "./openapi/schema";
@@ -164,6 +166,25 @@ export class ApiClient {
     }
 
     return data.map(mapLoanOffer);
+  }
+
+  async myApplications(): Promise<LoanApplication[]> {
+    if (!this.api_key) {
+      throw new UnauthorizedError();
+    }
+
+    const { data, error } = await this.client.GET("/api/loan-applications", {
+      headers: { "x-api-key": this.api_key },
+    });
+    if (error) {
+      throw Error(error);
+    }
+
+    if (!data) {
+      throw Error("No data returned from API");
+    }
+
+    return data.map(mapLoanApplication);
   }
 }
 

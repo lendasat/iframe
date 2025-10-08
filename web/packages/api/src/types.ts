@@ -286,3 +286,89 @@ export function mapLoanOffer(
     status: offer.status,
   };
 }
+
+// Loan Application types
+export type LoanApplicationStatus =
+  | "Available"
+  | "Unavailable"
+  | "Taken"
+  | "Deleted"
+  | "ApplicationExpired"
+  | "Cancelled";
+
+export type LoanAsset =
+  | "UsdcPol"
+  | "UsdtPol"
+  | "UsdcEth"
+  | "UsdtEth"
+  | "UsdcStrk"
+  | "UsdtStrk"
+  | "UsdcSol"
+  | "UsdtSol"
+  | "Usd"
+  | "Eur"
+  | "Chf"
+  | "Mxn"
+  | "UsdtLiquid";
+
+export type LoanType =
+  | "PayWithMoon"
+  | "MoonCardInstant"
+  | "StableCoin"
+  | "Fiat"
+  | "Bringin";
+
+export type RepaymentPlan =
+  | "bullet"
+  | "interest_only_weekly"
+  | "interest_only_monthly";
+
+export interface LoanApplication {
+  borrowerBtcAddress: string;
+  borrowerDerivationPath: string;
+  borrowerId: string;
+  borrowerLoanAddress?: string | null;
+  borrowerNpub: string;
+  borrowerPk: string;
+  clientContractId?: string | null;
+  createdAt: Date;
+  durationDaysMax: number;
+  durationDaysMin: number;
+  interestRate: number;
+  loanAmountMax: number;
+  loanAmountMin: number;
+  loanAsset: LoanAsset;
+  loanDealId: string;
+  loanType: LoanType;
+  ltv: number;
+  repaymentPlan: RepaymentPlan;
+  status: LoanApplicationStatus;
+  updatedAt: Date;
+}
+
+export function mapLoanApplication(
+  application: components["schemas"]["LoanApplication"],
+): LoanApplication {
+  return {
+    borrowerBtcAddress: application.borrower_btc_address,
+    borrowerDerivationPath: application.borrower_derivation_path,
+    borrowerId: application.borrower_id,
+    borrowerLoanAddress: application.borrower_loan_address,
+    borrowerNpub: application.borrower_npub,
+    borrowerPk: application.borrower_pk,
+    clientContractId: application.client_contract_id,
+    createdAt: parseISO(application.created_at),
+    durationDaysMax: application.duration_days_max,
+    durationDaysMin: application.duration_days_min,
+    interestRate: application.interest_rate,
+    loanAmountMax: application.loan_amount_max,
+    loanAmountMin: application.loan_amount_min,
+    loanAsset: application.loan_asset,
+    loanDealId: application.loan_deal_id,
+    loanType: application.loan_type,
+    ltv: application.ltv,
+    repaymentPlan: application.repayment_plan,
+    status: application.status,
+    updatedAt: parseISO(application.updated_at),
+  };
+}

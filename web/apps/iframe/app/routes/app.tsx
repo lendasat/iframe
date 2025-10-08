@@ -3,6 +3,7 @@ import { useNavigate } from "react-router";
 import type { Route } from "./+types/app";
 import { ContractsTab } from "~/components/ContractsTab";
 import { OffersTab } from "~/components/OffersTab";
+import { ApplicationsTab } from "~/components/ApplicationsTab";
 
 export function meta({}: Route.MetaArgs) {
   return [
@@ -54,18 +55,7 @@ export default function App() {
 
         {activeTab === "offers" && <OffersTab user={user} />}
 
-        {activeTab === "applications" && (
-          <div>
-            <h2 className="text-2xl font-bold text-gray-900 mb-4">
-              My Applications
-            </h2>
-            <div className="bg-white rounded-lg shadow p-6">
-              <p className="text-gray-600">
-                Your loan applications will appear here.
-              </p>
-            </div>
-          </div>
-        )}
+        {activeTab === "applications" && <ApplicationsTab user={user} />}
       </main>
 
       {/* Bottom Navigation */}

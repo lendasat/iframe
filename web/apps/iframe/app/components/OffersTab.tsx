@@ -15,7 +15,9 @@ export function OffersTab({ user }: OffersTabProps) {
 
   return (
     <div>
-      <h2 className="text-2xl font-bold text-gray-900 mb-4">Available Offers</h2>
+      <h2 className="text-2xl font-bold text-gray-900 mb-4">
+        Available Offers
+      </h2>
       {offersState.loading && <LoadingOverlay message="Loading offers..." />}
       {offersState.error && (
         <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded">
@@ -45,8 +47,8 @@ export function OffersTab({ user }: OffersTabProps) {
                     offer.status === "Available"
                       ? "bg-green-100 text-green-800"
                       : offer.status === "Unavailable"
-                      ? "bg-yellow-100 text-yellow-800"
-                      : "bg-gray-100 text-gray-800"
+                        ? "bg-yellow-100 text-yellow-800"
+                        : "bg-gray-100 text-gray-800"
                   }`}
                 >
                   {offer.status}
@@ -73,7 +75,9 @@ export function OffersTab({ user }: OffersTabProps) {
                 </div>
                 <div>
                   <p className="text-gray-600">Min LTV</p>
-                  <p className="font-medium">{(offer.minLtv * 100).toFixed(0)}%</p>
+                  <p className="font-medium">
+                    {(offer.minLtv * 100).toFixed(0)}%
+                  </p>
                 </div>
                 <div>
                   <p className="text-gray-600">Payout</p>
