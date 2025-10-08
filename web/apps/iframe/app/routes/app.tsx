@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { useNavigate } from "react-router";
 import type { Route } from "./+types/app";
 import { ContractsTab } from "~/components/ContractsTab";
+import { OffersTab } from "~/components/OffersTab";
 
 export function meta({}: Route.MetaArgs) {
   return [
@@ -51,16 +52,7 @@ export default function App() {
       <main className="max-w-7xl mx-auto px-4 py-6 sm:px-6 lg:px-8">
         {activeTab === "contracts" && <ContractsTab user={user} />}
 
-        {activeTab === "offers" && (
-          <div>
-            <h2 className="text-2xl font-bold text-gray-900 mb-4">Offers</h2>
-            <div className="bg-white rounded-lg shadow p-6">
-              <p className="text-gray-600">
-                Available offers and loan applications will appear here.
-              </p>
-            </div>
-          </div>
-        )}
+        {activeTab === "offers" && <OffersTab user={user} />}
 
         {activeTab === "applications" && (
           <div>

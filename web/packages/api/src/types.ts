@@ -243,3 +243,46 @@ export function mapPaginatedContractsResponse(
     totalPages: response.total_pages,
   };
 }
+
+// Loan Offer types
+export type LoanOfferStatus = "Available" | "Unavailable" | "Deleted";
+export type LoanPayout = "Direct" | "Indirect" | "MoonCardInstant";
+export type QueryParamLoanType = "Direct" | "Indirect" | "MoonCardInstant" | "All";
+export type AssetTypeFilter = "fiat" | "stable_coins" | "all";
+export type KycFilter = "no_kyc" | "with_kyc" | "all";
+
+export interface LoanOffer {
+  durationDaysMax: number;
+  durationDaysMin: number;
+  id: string;
+  interestRate: number;
+  kycLink?: string | null;
+  lenderPk: string;
+  loanAmountMax: number;
+  loanAmountMin: number;
+  loanPayout: LoanPayout;
+  loanRepaymentAddress: string;
+  minLtv: number;
+  name: string;
+  status: LoanOfferStatus;
+}
+
+export function mapLoanOffer(
+  offer: components["schemas"]["LoanOffer"],
+): LoanOffer {
+  return {
+    durationDaysMax: offer.duration_days_max,
+    durationDaysMin: offer.duration_days_min,
+    id: offer.id,
+    interestRate: offer.interest_rate,
+    kycLink: offer.kyc_link,
+    lenderPk: offer.lender_pk,
+    loanAmountMax: offer.loan_amount_max,
+    loanAmountMin: offer.loan_amount_min,
+    loanPayout: offer.loan_payout,
+    loanRepaymentAddress: offer.loan_repayment_address,
+    minLtv: offer.min_ltv,
+    name: offer.name,
+    status: offer.status,
+  };
+}

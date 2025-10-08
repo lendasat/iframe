@@ -4,11 +4,16 @@ import type {
   ContractStatus,
   SortField,
   SortOrder,
+  LoanOffer,
+  QueryParamLoanType,
+  AssetTypeFilter,
+  KycFilter,
 } from "./types";
 import {
   mapMeResponse,
   mapPaginatedContractsResponse,
   mapSortField,
+  mapLoanOffer,
 } from "./types";
 import createClient, { Client } from "openapi-fetch";
 import { paths } from "./openapi/schema";
@@ -117,6 +122,48 @@ export class ApiClient {
     }
 
     return mapPaginatedContractsResponse(data);
+  }
+
+  async offers(params?: {
+    loanType?: QueryParamLoanType;
+    assetType?: AssetTypeFilter;
+    loanAssets?: string;
+    kyc?: KycFilter;
+    minLoanAmount?: number;
+    maxLoanAmount?: number;
+    maxInterestRate?: number;
+    durationMin?: number;
+    durationMax?: number;
+  }): Promise<LoanOffer[]> {
+    if (!this.api_key) {
+      throw new UnauthorizedError();
+    }
+
+    const { data, error } = await this.client.GET("/api/offers", {
+      headers: { "x-api-key": this.api_key },
+      params: {
+        query: {
+          loan_type: params?.loanType,
+          asset_type: params?.assetType,
+          loan_assets: params?.loanAssets,
+          kyc: params?.kyc,
+          min_loan_amount: params?.minLoanAmount,
+          max_loan_amount: params?.maxLoanAmount,
+          max_interest_rate: params?.maxInterestRate,
+          duration_min: params?.durationMin,
+          duration_max: params?.durationMax,
+        },
+      },
+    });
+    if (error) {
+      throw Error(error);
+    }
+
+    if (!data) {
+      throw Error("No data returned from API");
+    }
+
+    return data.map(mapLoanOffer);
   }
 }
 
