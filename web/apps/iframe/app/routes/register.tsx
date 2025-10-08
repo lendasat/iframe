@@ -4,7 +4,7 @@ import { useAsync } from "react-use";
 import type { Route } from "./+types/register";
 import { Button } from "~/components/ui/button";
 import { LoadingOverlay } from "~/components/ui/spinner";
-import { apiClient } from "@repo/api";
+import { apiClient, UnauthorizedError } from "@repo/api";
 
 export function meta({}: Route.MetaArgs) {
   return [
@@ -56,7 +56,11 @@ export default function Register() {
       navigate("/app");
     } catch (error) {
       console.error("Failed registering", error);
-      setError("Failed to register. Please try again.");
+      if (error instanceof UnauthorizedError) {
+        setError("Authentication failed.");
+      } else {
+        setError("Failed to register. Please try again.");
+      }
     } finally {
       setIsLoading(false);
     }

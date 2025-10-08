@@ -7,6 +7,13 @@ import debug from "debug";
 
 const log = debug("api:client");
 
+export class UnauthorizedError extends Error {
+  constructor(message: string = "Unauthorized: No API key provided") {
+    super(message);
+    this.name = "UnauthorizedError";
+  }
+}
+
 export class ApiClient {
   private baseUrl: string;
   private client: Client<paths>;
@@ -51,7 +58,7 @@ export class ApiClient {
   }
   async me(): Promise<MeResponse> {
     if (!this.api_key) {
-      throw Error("No API key provided");
+      throw new UnauthorizedError();
     }
 
     const { data, error } = await this.client.GET("/api/users/me", {
