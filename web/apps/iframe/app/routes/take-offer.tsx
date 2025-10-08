@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { useNavigate, useSearchParams } from "react-router";
 import { useAsync } from "react-use";
 import type { Route } from "./+types/take-offer";
-import { apiClient } from "@repo/api";
+import { apiClient, formatLoanAsset } from "@repo/api";
 import { LoadingOverlay } from "~/components/ui/spinner";
 
 export function meta({}: Route.MetaArgs) {
@@ -123,7 +123,8 @@ export default function TakeOffer() {
             {/* Offer Details */}
             <div className="bg-white rounded-lg shadow p-6">
               <h2 className="text-lg font-semibold text-gray-900 mb-4">
-                {offerState.value.name}
+                {formatLoanAsset(offerState.value.loanAsset)} offer by{" "}
+                {offerState.value.lender.name}
               </h2>
               <div className="grid grid-cols-2 gap-4 text-sm">
                 <div>
@@ -156,7 +157,10 @@ export default function TakeOffer() {
             </div>
 
             {/* Application Form */}
-            <form onSubmit={handleSubmit} className="bg-white rounded-lg shadow p-6">
+            <form
+              onSubmit={handleSubmit}
+              className="bg-white rounded-lg shadow p-6"
+            >
               <h3 className="text-lg font-semibold text-gray-900 mb-4">
                 Loan Details
               </h3>

@@ -244,6 +244,29 @@ export function mapPaginatedContractsResponse(
   };
 }
 
+// Lender types
+export interface LenderStats {
+  id: string;
+  joinedAt: Date;
+  name: string;
+  successfulContracts: number;
+  timezone?: string | null;
+  vetted: boolean;
+}
+
+export function mapLenderStats(
+  lender: components["schemas"]["LenderStats"],
+): LenderStats {
+  return {
+    id: lender.id,
+    joinedAt: parseISO(lender.joined_at),
+    name: lender.name,
+    successfulContracts: lender.successful_contracts,
+    timezone: lender.timezone,
+    vetted: lender.vetted,
+  };
+}
+
 // Loan Offer types
 export type LoanOfferStatus = "Available" | "Unavailable" | "Deleted";
 export type LoanPayout = "Direct" | "Indirect" | "MoonCardInstant";
@@ -257,6 +280,7 @@ export interface LoanOffer {
   id: string;
   interestRate: number;
   kycLink?: string | null;
+  lender: LenderStats;
   lenderPk: string;
   loanAmountMax: number;
   loanAmountMin: number;
@@ -277,6 +301,7 @@ export function mapLoanOffer(
     id: offer.id,
     interestRate: offer.interest_rate,
     kycLink: offer.kyc_link,
+    lender: mapLenderStats(offer.lender),
     lenderPk: offer.lender_pk,
     loanAmountMax: offer.loan_amount_max,
     loanAmountMin: offer.loan_amount_min,
