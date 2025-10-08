@@ -238,3 +238,12 @@ firebase-debug.log
 
 
 **/.vscode
+
+# React Router generated files
+**/.react-router/
+
+# Node.js
+**/node_modules/
+**/dist/
+**/build/
+**/.turbo/

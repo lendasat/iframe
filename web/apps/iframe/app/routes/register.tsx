@@ -38,7 +38,7 @@ export default function Register() {
   // Redirect to app if already authenticated
   useEffect(() => {
     if (authCheck.value && !authCheck.loading) {
-      navigate("/app");
+      navigate("/app/contracts");
     }
   }, [authCheck.value, authCheck.loading, navigate]);
 

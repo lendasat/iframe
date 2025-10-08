@@ -63,10 +63,11 @@ export function OffersTab({ user }: OffersTabProps) {
 
   // Build URL for taking an offer with filter values
   const buildTakeOfferUrl = (offerId: string) => {
-    const params = new URLSearchParams({ offerId });
+    const params = new URLSearchParams();
     if (amountFilter) params.set("amount", amountFilter);
     if (durationFilter) params.set("duration", durationFilter);
-    return `/take-offer?${params.toString()}`;
+    const queryString = params.toString();
+    return `/app/offers/${offerId}${queryString ? `?${queryString}` : ""}`;
   };
 
   return (
