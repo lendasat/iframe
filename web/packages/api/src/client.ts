@@ -9,6 +9,7 @@ import type {
   QueryParamLoanType,
   AssetTypeFilter,
   KycFilter,
+  Contract,
 } from "./types";
 import {
   mapMeResponse,
@@ -16,6 +17,7 @@ import {
   mapSortField,
   mapLoanOffer,
   mapLoanApplication,
+  mapContract,
 } from "./types";
 import createClient, { Client } from "openapi-fetch";
 import { paths } from "./openapi/schema";
@@ -185,6 +187,102 @@ export class ApiClient {
     }
 
     return data.map(mapLoanApplication);
+  }
+
+  /**
+   * Request a new loan contract from a lender
+   *
+   * This method creates a contract request that will be forwarded to the lender.
+   * The borrower provides their Bitcoin address and public key, specifies the loan
+   * amount and duration, and references an existing loan offer.
+   *
+   * @param params - Contract request parameters
+   * @param params.borrowerBtcAddress - The Bitcoin address where the borrower will receive collateral back.
+   *                                     This should be a valid Bitcoin address (P2WPKH, P2PKH, etc.)
+   * @param params.borrowerDerivationPath - The BIP32 derivation path used to generate the borrower's PR.
+   *                                         Example: "m/84'/0'/0'/0/0" for first address of first account (BIP84/native segwit)
+   *                                         It's for you to remember what key you used.
+   * @param params.borrowerPk - The borrower's public key in hex format (compressed, 33 bytes = 66 hex chars).
+   *                            This will be used to construct the mulitisig escrow account
+   * @param params.durationDays - The desired loan duration in days. Must be within the lender's min/max duration range.
+   * @param params.loanAmount - The loan amount in the loan's asset (e.g., USD for stablecoin loans).
+   *                            Must be within the lender's min/max loan amount range.
+   * @param params.offerId - The UUID of the loan offer being requested.
+   * @param params.borrowerLoanAddress - Optional. The address where the borrower wants to receive the loan funds.
+   *                                     For certain integrations (e.g., Pay with Moon), this is defined by the integration.
+   *                                     For stablecoin loans, this would be an Ethereum/Polygon/etc. address.
+   * @param params.borrowerNpub - Optional. The borrower's Nostr public key (npub format) for Nostr-based notifications.
+   * @param params.clientContractId - Optional. A client-generated UUID to track this contract in your own system.
+   *                                  Useful for reconciliation and preventing duplicate requests.
+   *
+   * @returns A Promise that resolves to the created Contract with status "Requested"
+   *
+   * @throws {UnauthorizedError} If no API key is provided
+   * @throws {Error} If the API returns an error or no data
+   *
+   * @example
+   * ```typescript
+   * // Request a 30-day loan for 1000 USDC
+   * const contract = await apiClient.requestContract({
+   *   borrowerBtcAddress: 'bc1qxy2kgdygjrsqtzq2n0yrf2493p83kkfjhx0wlh',
+   *   borrowerDerivationPath: 'm/84\'/0\'/0\'/0/0',
+   *   borrowerPk: '0279be667ef9dcbbac55a06295ce870b07029bfcdb2dce28d959f2815b16f81798',
+   *   durationDays: 30,
+   *   loanAmount: 1000,
+   *   offerId: 'f47ac10b-58cc-4372-a567-0e02b2c3d479',
+   *   borrowerLoanAddress: '0x742d35Cc6634C0532925a3b844Bc9e7595f0bEb1', // Ethereum address for USDC
+   * });
+   *
+   * console.log('Contract created:', contract.id);
+   * console.log('Status:', contract.status); // "Requested"
+   * ```
+   *
+   * @remarks
+   * - The loan_type is hardcoded to "StableCoin" for now
+   * - After the contract is created with status "Requested", the lender must approve it
+   * - Once approved, the borrower must deposit Bitcoin collateral to the contract address
+   * - The contract includes details about collateral requirements, interest, and repayment terms
+   */
+  async requestContract(params: {
+    borrowerBtcAddress: string;
+    borrowerDerivationPath: string;
+    borrowerPk: string;
+    durationDays: number;
+    loanAmount: number;
+    offerId: string;
+    borrowerLoanAddress?: string | null;
+    borrowerNpub?: string | null;
+    clientContractId?: string | null;
+  }): Promise<Contract> {
+    if (!this.api_key) {
+      throw new UnauthorizedError();
+    }
+
+    const { data, error } = await this.client.POST("/api/contracts", {
+      headers: { "x-api-key": this.api_key },
+      body: {
+        borrower_btc_address: params.borrowerBtcAddress,
+        borrower_derivation_path: params.borrowerDerivationPath,
+        borrower_pk: params.borrowerPk,
+        duration_days: params.durationDays,
+        id: params.offerId,
+        loan_amount: params.loanAmount,
+        loan_type: "StableCoin",
+        borrower_loan_address: params.borrowerLoanAddress,
+        borrower_npub: params.borrowerNpub,
+        client_contract_id: params.clientContractId,
+      },
+    });
+
+    if (error) {
+      throw Error(JSON.stringify(error));
+    }
+
+    if (!data) {
+      throw Error("No data returned from API");
+    }
+
+    return mapContract(data);
   }
 }
 
