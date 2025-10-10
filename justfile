@@ -181,6 +181,11 @@ shop:
     cd frontend
     pnpm --filter="@frontend/shop-demo" dev
 
+iframe:
+    #!/usr/bin/env bash
+    cd web
+    pnpm --filter="iframe" dev
+
 ## ------------------------
 ## Build frontend functions
 ## ------------------------

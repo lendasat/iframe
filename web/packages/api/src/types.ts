@@ -1,6 +1,9 @@
 import type { components } from "./openapi/schema";
 import { parseISO } from "date-fns";
 
+export const ONE_YEAR = 360;
+export const ONE_MONTH = 30;
+
 // Referral Code types
 export interface PersonalReferralCode {
   active: boolean;
@@ -144,7 +147,14 @@ const sortFieldToSnakeCase = {
 
 export function mapSortField(
   field: SortField,
-): "created_at" | "loan_amount" | "expiry_date" | "interest_rate" | "status" | "collateral_sats" | "updated_at" {
+):
+  | "created_at"
+  | "loan_amount"
+  | "expiry_date"
+  | "interest_rate"
+  | "status"
+  | "collateral_sats"
+  | "updated_at" {
   return sortFieldToSnakeCase[field];
 }
 
@@ -270,9 +280,18 @@ export function mapLenderStats(
 // Loan Offer types
 export type LoanOfferStatus = "Available" | "Unavailable" | "Deleted";
 export type LoanPayout = "Direct" | "Indirect" | "MoonCardInstant";
-export type QueryParamLoanType = "Direct" | "Indirect" | "MoonCardInstant" | "All";
+export type QueryParamLoanType =
+  | "Direct"
+  | "Indirect"
+  | "MoonCardInstant"
+  | "All";
 export type AssetTypeFilter = "fiat" | "stable_coins" | "all";
 export type KycFilter = "no_kyc" | "with_kyc" | "all";
+
+export interface OriginationFee {
+  fee: number;
+  fromDay: number;
+}
 
 export interface LoanOffer {
   durationDaysMax: number;
@@ -289,7 +308,38 @@ export interface LoanOffer {
   loanRepaymentAddress: string;
   minLtv: number;
   name: string;
+  originationFee: OriginationFee[];
   status: LoanOfferStatus;
+}
+
+export function mapOriginationFee(
+  fee: components["schemas"]["OriginationFee"],
+): OriginationFee {
+  return {
+    fee: fee.fee,
+    fromDay: fee.from_day,
+  };
+}
+
+/**
+ * Get the applicable origination fee for a given number of days
+ * @param originationFees - Array of origination fees sorted by fromDay
+ * @param durationDays - The loan duration in days
+ * @returns The fee rate (e.g., 0.015 for 1.5%)
+ */
+export function getOriginationFeeForDuration(
+  originationFees: OriginationFee[],
+  durationDays: number,
+): number {
+  if (originationFees.length === 0) return 0;
+
+  // Sort fees by fromDay in descending order
+  const sortedFees = [...originationFees].sort((a, b) => b.fromDay - a.fromDay);
+
+  // Find the first fee where durationDays >= fromDay
+  const applicableFee = sortedFees.find((fee) => durationDays >= fee.fromDay);
+
+  return applicableFee?.fee ?? 0;
 }
 
 export function mapLoanOffer(
@@ -310,6 +360,7 @@ export function mapLoanOffer(
     loanRepaymentAddress: offer.loan_repayment_address,
     minLtv: offer.min_ltv,
     name: offer.name,
+    originationFee: offer.origination_fee.map(mapOriginationFee),
     status: offer.status,
   };
 }
@@ -340,7 +391,9 @@ export type LoanAsset =
 
 // Helper functions for LoanAsset
 export function isFiatAsset(asset: LoanAsset): boolean {
-  return asset === "Usd" || asset === "Eur" || asset === "Chf" || asset === "Mxn";
+  return (
+    asset === "Usd" || asset === "Eur" || asset === "Chf" || asset === "Mxn"
+  );
 }
 
 export function isStableCoinAsset(asset: LoanAsset): boolean {
@@ -450,4 +503,10 @@ export function mapLoanApplication(
     status: application.status,
     updatedAt: parseISO(application.updated_at),
   };
+}
+
+export enum Currency {
+  CHF = "CHF",
+  USD = "Usd",
+  EUR = "Eur",
 }

@@ -39,7 +39,10 @@ export function OffersTab({ user }: OffersTabProps) {
       // Filter by amount
       if (amountFilter) {
         const amount = parseFloat(amountFilter);
-        if (!isNaN(amount) && (amount < offer.loanAmountMin || amount > offer.loanAmountMax)) {
+        if (
+          !isNaN(amount) &&
+          (amount < offer.loanAmountMin || amount > offer.loanAmountMax)
+        ) {
           return false;
         }
       }
@@ -47,7 +50,10 @@ export function OffersTab({ user }: OffersTabProps) {
       // Filter by duration
       if (durationFilter) {
         const duration = parseInt(durationFilter);
-        if (!isNaN(duration) && (duration < offer.durationDaysMin || duration > offer.durationDaysMax)) {
+        if (
+          !isNaN(duration) &&
+          (duration < offer.durationDaysMin || duration > offer.durationDaysMax)
+        ) {
           return false;
         }
       }
@@ -154,7 +160,7 @@ export function OffersTab({ user }: OffersTabProps) {
             <div key={offer.id} className="bg-white rounded-lg shadow p-4">
               <div className="mb-3">
                 <h3 className="text-base font-semibold text-gray-900">
-                  {offer.name}
+                  {formatLoanAsset(offer.loanAsset)}
                 </h3>
                 <p className="text-xs text-gray-500">
                   {offer.id.substring(0, 8)}...

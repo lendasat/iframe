@@ -1,9 +1,22 @@
-import { useState } from "react";
-import { useNavigate, useSearchParams, useParams, useOutletContext } from "react-router";
+import { useState, useMemo, useEffect, useRef } from "react";
+import {
+  useNavigate,
+  useSearchParams,
+  useParams,
+  useOutletContext,
+} from "react-router";
 import { useAsync } from "react-use";
 import type { Route } from "../+types/app.offers.$offerId";
-import { apiClient, formatLoanAsset } from "@repo/api";
+import {
+  apiClient,
+  formatLoanAsset,
+  Currency,
+  getOriginationFeeForDuration,
+} from "@repo/api";
+import { usePriceForCurrency } from "@repo/api/price-context";
 import { LoadingOverlay } from "~/components/ui/spinner";
+import { Skeleton } from "~/components/ui/skeleton";
+import { calculateCollateralNeeded } from "@repo/api";
 
 export function meta({}: Route.MetaArgs) {
   return [
@@ -24,10 +37,8 @@ export default function TakeOffer() {
   const suggestedAmount = searchParams.get("amount");
   const suggestedDuration = searchParams.get("duration");
 
-  // Form state
-  const [amount, setAmount] = useState(suggestedAmount || "");
-  const [duration, setDuration] = useState(suggestedDuration || "");
-  const [collateralAmount, setCollateralAmount] = useState("");
+  // Get current BTC price from PriceProvider
+  const btcPrice = usePriceForCurrency(Currency.USD);
 
   // Fetch the specific offer
   const offerState = useAsync(async () => {
@@ -36,6 +47,93 @@ export default function TakeOffer() {
     return offers.find((offer) => offer.id === offerId);
   }, [offerId]);
 
+  // Calculate smart defaults using max values
+  const defaultAmount = offerState.value
+    ? offerState.value.loanAmountMax.toString()
+    : "";
+  const defaultDuration = offerState.value
+    ? offerState.value.durationDaysMax.toString()
+    : "";
+
+  // Form state with smart defaults
+  const [amount, setAmount] = useState(suggestedAmount || defaultAmount);
+  const [duration, setDuration] = useState(
+    suggestedDuration || defaultDuration,
+  );
+
+  // Track if defaults have been applied to avoid re-setting when user clears input
+  const defaultsAppliedRef = useRef(false);
+
+  // Update defaults when offer loads (only once)
+  useEffect(() => {
+    if (defaultsAppliedRef.current) return;
+
+    if (
+      defaultAmount &&
+      defaultDuration &&
+      !suggestedAmount &&
+      !suggestedDuration
+    ) {
+      setAmount(defaultAmount);
+      setDuration(defaultDuration);
+      defaultsAppliedRef.current = true;
+    }
+  }, [defaultAmount, defaultDuration, suggestedAmount, suggestedDuration]);
+
+  // Calculate loan conditions
+  const loanConditions = useMemo(() => {
+    if (!offerState.value || !amount || !duration) return null;
+
+    const loanAmount = parseFloat(amount);
+    const durationDays = parseInt(duration);
+
+    const offer = offerState.value;
+    const currentBtcPrice = btcPrice || 0;
+    const originationFee = getOriginationFeeForDuration(
+      offer.originationFee,
+      durationDays,
+    );
+
+    const collateralNeeded = calculateCollateralNeeded(
+      loanAmount,
+      offer.minLtv,
+      currentBtcPrice,
+      offer.interestRate,
+      durationDays,
+      originationFee,
+    );
+
+    // Calculate interest (simple interest for now)
+    const interestRate = offer.interestRate;
+    const actualInterestRate = collateralNeeded.actualInterestRate;
+    const totalActualInterest = collateralNeeded.totalInterestUsd;
+    const collateralValueUSD = collateralNeeded.collateralValueUsd;
+    const collateralValueSats = collateralNeeded.collateralSats;
+    const collateralValueBtc = collateralValueSats / 100_000_000;
+    const originationFeeBTC = collateralNeeded.originationFeeSats / 100_000_000;
+    const totalFundingBTC =
+      collateralNeeded.totalValueToDepositSats / 100_000_000;
+    const totalFundingUSD = collateralNeeded.totalValueToDepositUsd;
+    const originationFeeUSD = collateralNeeded.originationFeeUsd;
+
+    // Liquidation price (price at which LTV becomes critical)
+    const liquidationPrice = currentBtcPrice * offer.minLtv;
+
+    return {
+      liquidationPrice,
+      interestRatePerYear: interestRate * 100,
+      actualInterestRate: actualInterestRate * 100,
+      totalInterest: totalActualInterest,
+      collateralBTC: collateralValueBtc,
+      collateralUSD: collateralValueUSD,
+      originationFeeBTC,
+      originationFeeUSD,
+      totalFundingBTC,
+      totalFundingUSD,
+      ltvPercent: offer.minLtv * 100,
+    };
+  }, [offerState.value, amount, duration, btcPrice]);
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     // TODO: Implement the actual submission logic
@@ -43,7 +141,7 @@ export default function TakeOffer() {
       offerId,
       amount,
       duration,
-      collateralAmount,
+      loanConditions,
     });
   };
 
@@ -187,23 +285,190 @@ export default function TakeOffer() {
                 />
               </div>
 
-              <div>
-                <label
-                  htmlFor="collateral"
-                  className="block text-sm font-medium text-gray-700 mb-1"
-                >
-                  Collateral Amount (BTC) *
-                </label>
-                <input
-                  id="collateral"
-                  type="number"
-                  step="0.00000001"
-                  required
-                  value={collateralAmount}
-                  onChange={(e) => setCollateralAmount(e.target.value)}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500"
-                  placeholder="Enter collateral amount in BTC"
-                />
+              {/* Loan Conditions Summary - Always Visible */}
+              <div className="mt-6 p-4 bg-gray-50 rounded-lg border border-gray-200">
+                <h4 className="text-base font-semibold text-gray-900 mb-4">
+                  Summary
+                </h4>
+
+                <div className="space-y-3 text-sm">
+                  {/* Liquidation Price */}
+                  <div className="flex justify-between items-center pb-3 border-b border-gray-200">
+                    <div className="flex items-center gap-2">
+                      <span className="text-gray-700">Liquidation price</span>
+                      <button
+                        type="button"
+                        className="text-gray-400 hover:text-gray-600"
+                      >
+                        <svg
+                          className="w-4 h-4"
+                          fill="currentColor"
+                          viewBox="0 0 20 20"
+                        >
+                          <path
+                            fillRule="evenodd"
+                            d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z"
+                            clipRule="evenodd"
+                          />
+                        </svg>
+                      </button>
+                    </div>
+                    {loanConditions ? (
+                      <span className="font-medium text-gray-900">
+                        ${loanConditions.liquidationPrice.toLocaleString()}
+                      </span>
+                    ) : (
+                      <Skeleton className="h-5 w-24" />
+                    )}
+                  </div>
+
+                  {/* Interest */}
+                  <div className="flex justify-between items-center pb-3 border-b border-gray-200">
+                    <div className="flex items-center gap-2">
+                      <span className="text-gray-700">Interest</span>
+                      <button
+                        type="button"
+                        className="text-gray-400 hover:text-gray-600"
+                      >
+                        <svg
+                          className="w-4 h-4"
+                          fill="currentColor"
+                          viewBox="0 0 20 20"
+                        >
+                          <path
+                            fillRule="evenodd"
+                            d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z"
+                            clipRule="evenodd"
+                          />
+                        </svg>
+                      </button>
+                    </div>
+                    {loanConditions ? (
+                      <div className="text-right">
+                        <div className="font-medium text-gray-900">
+                          {loanConditions.interestRatePerYear.toFixed(2)}%
+                          <span className="text-xs text-gray-500 ml-1">
+                            ({loanConditions.actualInterestRate.toFixed(1)}%
+                            p.a.)
+                          </span>
+                        </div>
+                        <div className="text-xs text-gray-500">
+                          ≈ ${loanConditions.totalInterest.toFixed(1)} in total
+                        </div>
+                      </div>
+                    ) : (
+                      <div className="text-right space-y-1">
+                        <Skeleton className="h-5 w-32 ml-auto" />
+                        <Skeleton className="h-3 w-24 ml-auto" />
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Collateral */}
+                  <div className="flex justify-between items-center pb-3 border-b border-gray-200">
+                    <div className="flex items-center gap-2">
+                      <span className="text-gray-700">Collateral</span>
+                      {loanConditions ? (
+                        <span className="px-2 py-0.5 text-xs font-medium bg-gray-200 text-gray-700 rounded">
+                          {loanConditions.ltvPercent.toFixed(0)}% LTV
+                        </span>
+                      ) : (
+                        <Skeleton className="h-5 w-16" />
+                      )}
+                      <button
+                        type="button"
+                        className="text-gray-400 hover:text-gray-600"
+                      >
+                        <svg
+                          className="w-4 h-4"
+                          fill="currentColor"
+                          viewBox="0 0 20 20"
+                        >
+                          <path
+                            fillRule="evenodd"
+                            d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z"
+                            clipRule="evenodd"
+                          />
+                        </svg>
+                      </button>
+                    </div>
+                    {loanConditions ? (
+                      <div className="text-right">
+                        <div className="font-medium text-gray-900">
+                          {loanConditions.collateralBTC.toFixed(8)} BTC
+                        </div>
+                        <div className="text-xs text-gray-500">
+                          ≈ ${loanConditions.collateralUSD.toLocaleString()}
+                        </div>
+                      </div>
+                    ) : (
+                      <div className="text-right space-y-1">
+                        <Skeleton className="h-5 w-32 ml-auto" />
+                        <Skeleton className="h-3 w-24 ml-auto" />
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Origination Fee */}
+                  <div className="flex justify-between items-center pb-3 border-b border-gray-200">
+                    <span className="text-gray-700">Origination fee</span>
+                    {loanConditions ? (
+                      <div className="text-right">
+                        <div className="font-medium text-gray-900">
+                          {loanConditions.originationFeeBTC.toFixed(8)} BTC
+                        </div>
+                        <div className="text-xs text-gray-500">
+                          ≈ ${loanConditions.originationFeeUSD.toFixed(2)}
+                        </div>
+                      </div>
+                    ) : (
+                      <div className="text-right space-y-1">
+                        <Skeleton className="h-5 w-32 ml-auto" />
+                        <Skeleton className="h-3 w-24 ml-auto" />
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Total Funding Amount */}
+                  <div className="flex justify-between items-center">
+                    <div className="flex items-center gap-2">
+                      <span className="text-gray-700 font-medium">
+                        Total funding amount
+                      </span>
+                      <button
+                        type="button"
+                        className="text-gray-400 hover:text-gray-600"
+                      >
+                        <svg
+                          className="w-4 h-4"
+                          fill="currentColor"
+                          viewBox="0 0 20 20"
+                        >
+                          <path
+                            fillRule="evenodd"
+                            d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z"
+                            clipRule="evenodd"
+                          />
+                        </svg>
+                      </button>
+                    </div>
+                    {loanConditions ? (
+                      <div className="text-right">
+                        <div className="font-medium text-gray-900">
+                          {loanConditions.totalFundingBTC.toFixed(8)} BTC
+                        </div>
+                        <div className="text-xs text-gray-500">
+                          ≈ ${loanConditions.totalFundingUSD.toLocaleString()}
+                        </div>
+                      </div>
+                    ) : (
+                      <div className="text-right space-y-1">
+                        <Skeleton className="h-5 w-32 ml-auto" />
+                        <Skeleton className="h-3 w-24 ml-auto" />
+                      </div>
+                    )}
+                  </div>
+                </div>
               </div>
             </div>
 
@@ -219,7 +484,7 @@ export default function TakeOffer() {
                 type="submit"
                 className="flex-1 bg-indigo-600 hover:bg-indigo-700 text-white font-medium py-2 px-4 rounded-md transition-colors"
               >
-                Submit Application
+                Submit
               </button>
             </div>
           </form>
