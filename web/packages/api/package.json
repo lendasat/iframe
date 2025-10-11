@@ -6,7 +6,8 @@
     ".": "./src/index.ts",
     "./client": "./src/client.ts",
     "./types": "./src/types.ts",
-    "./price-context": "./src/price-context.tsx"
+    "./price-context": "./src/price-context.tsx",
+    "./utils": "./src/utils.tsx"
   },
   "license": "MIT",
   "scripts": {

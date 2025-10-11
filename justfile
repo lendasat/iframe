@@ -186,6 +186,11 @@ iframe:
     cd web
     pnpm --filter="iframe" dev
 
+sample-wallet:
+    #!/usr/bin/env bash
+    cd web
+    pnpm --filter="sample-wallet" dev
+
 ## ------------------------
 ## Build frontend functions
 ## ------------------------

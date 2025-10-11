@@ -17,6 +17,7 @@ import { usePriceForCurrency } from "@repo/api/price-context";
 import { LoadingOverlay } from "~/components/ui/spinner";
 import { Skeleton } from "~/components/ui/skeleton";
 import { calculateCollateralNeeded } from "@repo/api";
+import { useWalletInfo } from "~/hooks/useWallet";
 
 export function meta({}: Route.MetaArgs) {
   return [
@@ -32,6 +33,23 @@ export default function TakeOffer() {
   const { user } = useOutletContext<{
     user: { email: string; username: string };
   }>();
+
+  // Get wallet information from parent wallet
+  const {
+    publicKey,
+    derivationPath,
+    address,
+    npub,
+    loading: walletLoading,
+    error: walletError,
+  } = useWalletInfo();
+
+  console.log(`walletError ${walletError}`);
+  console.log(`walletLoading ${walletLoading}`);
+  console.log(`Pk ${publicKey}`);
+  console.log(`derivationPath ${derivationPath}`);
+  console.log(`address ${address}`);
+  console.log(`npub ${npub}`);
 
   // Get URL parameters for pre-filled values
   const suggestedAmount = searchParams.get("amount");
@@ -199,6 +217,18 @@ export default function TakeOffer() {
 
       {offerState.value && (
         <div className="space-y-6">
+          {/* Wallet Info Debug */}
+          {walletLoading && (
+            <div className="bg-blue-50 border border-blue-200 text-blue-700 px-4 py-3 rounded">
+              Loading wallet information...
+            </div>
+          )}
+          {walletError && (
+            <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded">
+              Wallet error: {walletError}
+            </div>
+          )}
+
           {/* Offer Details */}
           <div className="bg-white rounded-lg shadow p-6">
             <h2 className="text-lg font-semibold text-gray-900 mb-4">
