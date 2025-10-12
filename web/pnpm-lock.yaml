@@ -126,6 +126,9 @@ importers:
       tiny-secp256k1:
         specifier: ^2.2.4
         version: 2.2.4
+      uint8array-tools:
+        specifier: ^0.0.9
+        version: 0.0.9
     devDependencies:
       '@eslint/js':
         specifier: ^9.36.0

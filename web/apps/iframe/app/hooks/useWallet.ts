@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { LendasatClient } from "@lendasat/wallet-bridge";
+import { AddressType, LendasatClient, type LoanAsset } from "@lendasat/wallet-bridge";
 
 /**
  * React hook to interact with the parent wallet via the wallet bridge
@@ -82,7 +82,7 @@ export function useWalletInfo() {
         const [pk, path, addr, npubValue] = await Promise.allSettled([
           client.getPublicKey(),
           client.getDerivationPath(),
-          client.getAddress(),
+          client.getAddress(AddressType.BITCOIN),
           client.getNpub().catch(() => null), // npub might not be implemented yet
         ]);
 
@@ -105,7 +105,7 @@ export function useWalletInfo() {
         );
         if (errors.length > 0) {
           setError(
-            `Failed to fetch wallet info: ${errors.map((e) => e.status === "rejected" ? e.reason : "").join(", ")}`,
+            `Failed to fetch wallet info: ${errors.map((e) => (e.status === "rejected" ? e.reason : "")).join(", ")}`,
           );
         }
       } catch (err) {
@@ -126,5 +126,64 @@ export function useWalletInfo() {
     loading,
     error,
     client,
+  };
+}
+
+/**
+ * Helper hook to get a loan asset address for a specific asset
+ *
+ * Usage:
+ * ```typescript
+ * const { address, loading, error, refetch } = useLoanAssetAddress("UsdcPol");
+ *
+ * // Or lazy load
+ * const { address, loading, error, fetchAddress } = useLoanAssetAddress();
+ * const addr = await fetchAddress("UsdtEth");
+ * ```
+ */
+export function useLoanAssetAddress(loanAsset?: LoanAsset) {
+  const { client, isConnected } = useWallet();
+  const [address, setAddress] = useState<string | null>(null);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  const fetchAddress = async (asset: LoanAsset): Promise<string> => {
+    if (!client) {
+      throw new Error("Wallet client not initialized");
+    }
+
+    try {
+      setLoading(true);
+      setError(null);
+      const addr = await client.getAddress(AddressType.LOAN_ASSET, asset);
+      setAddress(addr);
+      return addr;
+    } catch (err) {
+      const errorMessage = err instanceof Error ? err.message : String(err);
+      setError(errorMessage);
+      throw err;
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Auto-fetch if loanAsset is provided
+  useEffect(() => {
+    if (!client || !isConnected || !loanAsset) {
+      return;
+    }
+
+    fetchAddress(loanAsset).catch((err) => {
+      console.error("Failed to fetch loan asset address:", err);
+    });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [client, isConnected, loanAsset]);
+
+  return {
+    address,
+    loading,
+    error,
+    fetchAddress,
+    refetch: loanAsset ? () => fetchAddress(loanAsset) : undefined,
   };
 }

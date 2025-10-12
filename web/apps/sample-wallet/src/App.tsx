@@ -3,8 +3,13 @@ import * as bitcoin from "bitcoinjs-lib";
 import { ECPairFactory } from "ecpair";
 import * as ecc from "tiny-secp256k1";
 import { Buffer } from "buffer";
-import { WalletProvider, AddressType, type LoanAsset } from "@lendasat/wallet-bridge";
+import {
+  WalletProvider,
+  AddressType,
+  type LoanAsset,
+} from "@lendasat/wallet-bridge";
 import "./App.css";
+import * as tools from "uint8array-tools";
 
 // Make Buffer available globally for bitcoinjs-lib
 // @ts-expect-error "this is needed for ios devices"
@@ -51,10 +56,10 @@ function App() {
       }
 
       setAddress(btcAddress);
-      setPublicKey(keyPair.publicKey.toString());
+      setPublicKey(tools.toHex(keyPair.publicKey));
       setKeyPair(keyPair);
       console.log("Address:", btcAddress);
-      console.log("Public Key:", keyPair.publicKey.toString());
+      console.log("Public Key:", tools.toHex(keyPair.publicKey));
     } catch (err) {
       setError(err instanceof Error ? err.message : "Invalid private key");
       setAddress("");
@@ -80,7 +85,7 @@ function App() {
         onGetPublicKey: () => {
           console.log(`Called on get pk`);
           if (!keyPair) throw new Error("No key pair loaded");
-          return keyPair.publicKey.toString();
+          return tools.toHex(keyPair.publicKey);
         },
         onGetDerivationPath: () => {
           console.log(`Called on get derivation path`);
@@ -89,7 +94,9 @@ function App() {
           return "m/84'/0'/0'/0/0";
         },
         onGetAddress: (addressType: AddressType, asset?: LoanAsset) => {
-          console.log(`Called on get address: type=${addressType}, asset=${asset}`);
+          console.log(
+            `Called on get address: type=${addressType}, asset=${asset}`,
+          );
 
           switch (addressType) {
             case AddressType.BITCOIN:
@@ -101,7 +108,8 @@ function App() {
               throw new Error("Ark addresses not yet implemented");
 
             case AddressType.LOAN_ASSET:
-              if (!asset) throw new Error("Asset must be specified for LOAN_ASSET type");
+              if (!asset)
+                throw new Error("Asset must be specified for LOAN_ASSET type");
 
               // Map loan assets to blockchain addresses
               // This would be derived from the wallet in a real implementation
@@ -130,9 +138,13 @@ function App() {
                 case "Chf":
                 case "Mxn":
                   // Fiat - no blockchain address needed
-                  throw new Error(`Fiat asset ${asset} does not have a blockchain address`);
+                  throw new Error(
+                    `Fiat asset ${asset} does not have a blockchain address`,
+                  );
                 default:
-                  throw new Error(`Loan asset address not implemented for asset: ${asset}`);
+                  throw new Error(
+                    `Loan asset address not implemented for asset: ${asset}`,
+                  );
               }
 
             default:

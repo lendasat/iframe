@@ -1,10 +1,5 @@
 import { useState, useMemo, useEffect, useRef } from "react";
-import {
-  useNavigate,
-  useSearchParams,
-  useParams,
-  useOutletContext,
-} from "react-router";
+import { useNavigate, useSearchParams, useParams } from "react-router";
 import { useAsync } from "react-use";
 import type { Route } from "../+types/app.offers.$offerId";
 import {
@@ -17,7 +12,7 @@ import { usePriceForCurrency } from "@repo/api/price-context";
 import { LoadingOverlay } from "~/components/ui/spinner";
 import { Skeleton } from "~/components/ui/skeleton";
 import { calculateCollateralNeeded } from "@repo/api";
-import { useWalletInfo } from "~/hooks/useWallet";
+import { useLoanAssetAddress, useWalletInfo } from "~/hooks/useWallet";
 
 export function meta({}: Route.MetaArgs) {
   return [
@@ -30,9 +25,6 @@ export default function TakeOffer() {
   const navigate = useNavigate();
   const { offerId } = useParams();
   const [searchParams] = useSearchParams();
-  const { user } = useOutletContext<{
-    user: { email: string; username: string };
-  }>();
 
   // Get wallet information from parent wallet
   const {
@@ -44,12 +36,14 @@ export default function TakeOffer() {
     error: walletError,
   } = useWalletInfo();
 
-  console.log(`walletError ${walletError}`);
-  console.log(`walletLoading ${walletLoading}`);
-  console.log(`Pk ${publicKey}`);
-  console.log(`derivationPath ${derivationPath}`);
-  console.log(`address ${address}`);
-  console.log(`npub ${npub}`);
+  console.log("Wallet Info:", {
+    walletError,
+    walletLoading,
+    publicKey,
+    derivationPath,
+    address,
+    npub,
+  });
 
   // Get URL parameters for pre-filled values
   const suggestedAmount = searchParams.get("amount");
@@ -65,6 +59,20 @@ export default function TakeOffer() {
     return offers.find((offer) => offer.id === offerId);
   }, [offerId]);
 
+  // Get loan asset address for the offer's loan asset
+  const {
+    address: loanAssetAddress,
+    loading: loanAssetLoading,
+    error: loanAssetError,
+  } = useLoanAssetAddress(offerState.value?.loanAsset);
+
+  console.log("Loan Asset Address:", {
+    loanAssetAddress,
+    loanAssetLoading,
+    loanAssetError,
+    loanAsset: offerState.value?.loanAsset,
+  });
+
   // Calculate smart defaults using max values
   const defaultAmount = offerState.value
     ? offerState.value.loanAmountMax.toString()
@@ -78,9 +86,11 @@ export default function TakeOffer() {
   const [duration, setDuration] = useState(
     suggestedDuration || defaultDuration,
   );
+  const [borrowerLoanAddress, setBorrowerLoanAddress] = useState<string>("");
 
   // Track if defaults have been applied to avoid re-setting when user clears input
   const defaultsAppliedRef = useRef(false);
+  const loanAddressPrefilledRef = useRef(false);
 
   // Update defaults when offer loads (only once)
   useEffect(() => {
@@ -97,6 +107,14 @@ export default function TakeOffer() {
       defaultsAppliedRef.current = true;
     }
   }, [defaultAmount, defaultDuration, suggestedAmount, suggestedDuration]);
+
+  // Pre-fill loan asset address from wallet when available
+  useEffect(() => {
+    if (loanAssetAddress && !loanAddressPrefilledRef.current) {
+      setBorrowerLoanAddress(loanAssetAddress);
+      loanAddressPrefilledRef.current = true;
+    }
+  }, [loanAssetAddress]);
 
   // Calculate loan conditions
   const loanConditions = useMemo(() => {
@@ -154,13 +172,36 @@ export default function TakeOffer() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    // TODO: Implement the actual submission logic
-    console.log("Taking offer with:", {
-      offerId,
-      amount,
-      duration,
-      loanConditions,
-    });
+    if (!offerId || !address || !derivationPath || !publicKey) {
+      // todo: show error
+      console.error(
+        `Something was null - offerId: ${offerId}, address: ${address}, derivationPath: ${derivationPath}, publicKey: ${publicKey}`,
+      );
+      return;
+    }
+
+    if (!borrowerLoanAddress) {
+      console.error("Borrower loan address is required");
+      return;
+    }
+
+    try {
+      const contract = await apiClient.requestContract({
+        borrowerLoanAddress: borrowerLoanAddress,
+        borrowerPk: publicKey,
+        durationDays: Number.parseInt(duration),
+        loanAmount: Number.parseFloat(amount),
+        offerId: offerId,
+        borrowerBtcAddress: address,
+        borrowerDerivationPath: derivationPath,
+      });
+
+      console.log("Contract requested successfully:", contract);
+      navigate("/app/contracts");
+    } catch (error) {
+      console.error("Failed to request contract:", error);
+      // TODO: Show error message to user
+    }
   };
 
   if (!offerId) {
@@ -226,6 +267,21 @@ export default function TakeOffer() {
           {walletError && (
             <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded">
               Wallet error: {walletError}
+            </div>
+          )}
+
+          {/* Loan Asset Address Status */}
+          {loanAssetLoading && (
+            <div className="bg-blue-50 border border-blue-200 text-blue-700 px-4 py-3 rounded">
+              Loading {formatLoanAsset(offerState.value.loanAsset)} address...
+            </div>
+          )}
+          {loanAssetError && (
+            <div className="bg-yellow-50 border border-yellow-200 text-yellow-700 px-4 py-3 rounded">
+              <div className="font-semibold">
+                Loan asset address not available
+              </div>
+              <div className="text-sm mt-1">{loanAssetError}</div>
             </div>
           )}
 
@@ -312,6 +368,40 @@ export default function TakeOffer() {
                   onChange={(e) => setDuration(e.target.value)}
                   className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500"
                   placeholder={`Enter duration (${offerState.value.durationDaysMin} - ${offerState.value.durationDaysMax} days)`}
+                />
+              </div>
+
+              <div>
+                <label
+                  htmlFor="borrowerLoanAddress"
+                  className="block text-sm font-medium text-gray-700 mb-1"
+                >
+                  {formatLoanAsset(offerState.value.loanAsset)} Address *
+                </label>
+                {loanAddressPrefilledRef.current && (
+                  <div className="mb-2 inline-flex items-center gap-1 px-2 py-1 bg-green-50 text-green-700 text-xs font-medium rounded border border-green-200">
+                    <svg
+                      className="w-3.5 h-3.5"
+                      fill="currentColor"
+                      viewBox="0 0 20 20"
+                    >
+                      <path
+                        fillRule="evenodd"
+                        d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z"
+                        clipRule="evenodd"
+                      />
+                    </svg>
+                    Pre-filled by wallet
+                  </div>
+                )}
+                <input
+                  id="borrowerLoanAddress"
+                  type="text"
+                  required
+                  value={borrowerLoanAddress}
+                  onChange={(e) => setBorrowerLoanAddress(e.target.value)}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500 font-mono text-sm"
+                  placeholder={`Enter your ${formatLoanAsset(offerState.value.loanAsset)} address`}
                 />
               </div>
 
