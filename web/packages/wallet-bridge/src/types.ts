@@ -2,6 +2,37 @@
  * Message types for communication between Lendasat iframe and parent wallet
  */
 
+/**
+ * Loan asset types supported by Lendasat
+ * Imported from @repo/api to maintain consistency
+ */
+export type LoanAsset =
+  | "UsdcPol"
+  | "UsdtPol"
+  | "UsdcEth"
+  | "UsdtEth"
+  | "UsdcStrk"
+  | "UsdtStrk"
+  | "UsdcSol"
+  | "UsdtSol"
+  | "Usd"
+  | "Eur"
+  | "Chf"
+  | "Mxn"
+  | "UsdtLiquid";
+
+/**
+ * Address types that can be requested from the wallet
+ */
+export enum AddressType {
+  /** Bitcoin address (P2WPKH, P2PKH, etc.) */
+  BITCOIN = "bitcoin",
+  /** Ark address */
+  ARK = "ark",
+  /** Loan asset address (depends on the loan asset - e.g., Ethereum for USDC) */
+  LOAN_ASSET = "loan_asset",
+}
+
 // Request messages sent from iframe to parent wallet
 export type WalletRequest =
   | GetPublicKeyRequest
@@ -23,6 +54,10 @@ export interface GetDerivationPathRequest {
 export interface GetAddressRequest {
   type: "GET_ADDRESS";
   id: string;
+  /** Type of address to retrieve */
+  addressType: AddressType;
+  /** Optional: Asset identifier for LOAN_ASSET type */
+  asset?: LoanAsset;
 }
 
 export interface GetNpubRequest {
@@ -63,8 +98,10 @@ export interface DerivationPathResponse {
 export interface AddressResponse {
   type: "ADDRESS_RESPONSE";
   id: string;
-  /** Bitcoin address (P2WPKH, P2PKH, etc.) */
+  /** The requested address */
   address: string;
+  /** The type of address returned */
+  addressType: AddressType;
 }
 
 export interface NpubResponse {

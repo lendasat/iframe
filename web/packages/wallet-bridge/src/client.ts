@@ -1,5 +1,5 @@
-import type { WalletRequest, WalletResponse, ErrorResponse } from "./types";
-import { isWalletResponse } from "./types";
+import type { WalletRequest, WalletResponse, ErrorResponse, LoanAsset } from "./types";
+import { isWalletResponse, AddressType } from "./types";
 
 /**
  * Client for Lendasat iframe to communicate with parent wallet
@@ -130,17 +130,22 @@ export class LendasatClient {
   }
 
   /**
-   * Get the Bitcoin address from the parent wallet
-   * @returns Bitcoin address (P2WPKH, P2PKH, etc.)
+   * Get an address from the parent wallet
+   * @param addressType - The type of address to retrieve (bitcoin, ark, or loan_asset)
+   * @param asset - Optional asset identifier for LOAN_ASSET type (e.g., "UsdcPol", "UsdtEth")
+   * @returns The requested address
    */
-  async getAddress(): Promise<string> {
+  async getAddress(addressType: AddressType = AddressType.BITCOIN, asset?: LoanAsset): Promise<string> {
     const response = await this.sendRequest<{
       type: "ADDRESS_RESPONSE";
       id: string;
       address: string;
+      addressType: AddressType;
     }>({
       type: "GET_ADDRESS",
       id: this.generateId(),
+      addressType,
+      asset,
     });
     return response.address;
   }

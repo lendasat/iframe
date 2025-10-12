@@ -46,4 +46,5 @@ export type {
   PsbtSignedResponse,
   ErrorResponse,
 } from "./types";
-export { isWalletRequest, isWalletResponse } from "./types";
+export { isWalletRequest, isWalletResponse, AddressType } from "./types";
+export type { LoanAsset } from "./types";

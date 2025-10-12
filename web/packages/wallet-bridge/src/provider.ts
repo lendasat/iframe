@@ -1,5 +1,5 @@
-import type { WalletRequest, WalletResponse } from "./types";
-import { isWalletRequest } from "./types";
+import type { WalletRequest, WalletResponse, LoanAsset } from "./types";
+import { isWalletRequest, AddressType } from "./types";
 
 /**
  * Handler functions that the parent wallet must implement
@@ -16,9 +16,12 @@ export interface WalletHandlers {
   onGetDerivationPath: () => string | Promise<string>;
 
   /**
-   * Return the Bitcoin address (P2WPKH, P2PKH, etc.)
+   * Return an address based on the requested type
+   * @param addressType - The type of address to retrieve (bitcoin, ark, or loan_asset)
+   * @param asset - Optional asset identifier for LOAN_ASSET type (e.g., "UsdcPol", "UsdtEth")
+   * @returns The requested address
    */
-  onGetAddress: () => string | Promise<string>;
+  onGetAddress: (addressType: AddressType, asset?: LoanAsset) => string | Promise<string>;
 
   /**
    * Return the borrower's Nostr public key in npub format
@@ -131,11 +134,15 @@ export class WalletProvider {
         }
 
         case "GET_ADDRESS": {
-          const address = await this.handlers.onGetAddress();
+          const address = await this.handlers.onGetAddress(
+            request.addressType,
+            request.asset,
+          );
           response = {
             type: "ADDRESS_RESPONSE",
             id: request.id,
             address,
+            addressType: request.addressType,
           };
           break;
         }

@@ -3,7 +3,7 @@ import * as bitcoin from "bitcoinjs-lib";
 import { ECPairFactory } from "ecpair";
 import * as ecc from "tiny-secp256k1";
 import { Buffer } from "buffer";
-import { WalletProvider } from "@lendasat/wallet-bridge";
+import { WalletProvider, AddressType, type LoanAsset } from "@lendasat/wallet-bridge";
 import "./App.css";
 
 // Make Buffer available globally for bitcoinjs-lib
@@ -88,10 +88,56 @@ function App() {
           // In a real wallet, this would come from the wallet's state
           return "m/84'/0'/0'/0/0";
         },
-        onGetAddress: () => {
-          console.log(`Called on get address`);
-          if (!address) throw new Error("No address loaded");
-          return address;
+        onGetAddress: (addressType: AddressType, asset?: LoanAsset) => {
+          console.log(`Called on get address: type=${addressType}, asset=${asset}`);
+
+          switch (addressType) {
+            case AddressType.BITCOIN:
+              if (!address) throw new Error("No Bitcoin address loaded");
+              return address;
+
+            case AddressType.ARK:
+              // TODO: Implement Ark address generation/retrieval
+              throw new Error("Ark addresses not yet implemented");
+
+            case AddressType.LOAN_ASSET:
+              if (!asset) throw new Error("Asset must be specified for LOAN_ASSET type");
+
+              // Map loan assets to blockchain addresses
+              // This would be derived from the wallet in a real implementation
+              switch (asset) {
+                case "UsdcPol":
+                case "UsdtPol":
+                  // Polygon address
+                  return "0x742d35Cc6634C0532925a3b844Bc9e7595f0bEb1";
+                case "UsdcEth":
+                case "UsdtEth":
+                  // Ethereum address
+                  return "0x742d35Cc6634C0532925a3b844Bc9e7595f0bEb1";
+                case "UsdcStrk":
+                case "UsdtStrk":
+                  // Starknet address
+                  return "0x742d35Cc6634C0532925a3b844Bc9e7595f0bEb1";
+                case "UsdcSol":
+                case "UsdtSol":
+                  // Solana address
+                  return "5eykt4UsFv8P8NJdTREpY1vzqKqZKvdp";
+                case "UsdtLiquid":
+                  // Liquid address
+                  return "VJLCfH2dcqfvJG7HfUdcz4K4YY7vYYx6WBsKn";
+                case "Usd":
+                case "Eur":
+                case "Chf":
+                case "Mxn":
+                  // Fiat - no blockchain address needed
+                  throw new Error(`Fiat asset ${asset} does not have a blockchain address`);
+                default:
+                  throw new Error(`Loan asset address not implemented for asset: ${asset}`);
+              }
+
+            default:
+              throw new Error(`Unknown address type: ${addressType}`);
+          }
         },
         onGetNpub: () => {
           console.log(`Called on get npub`);
