@@ -6,6 +6,7 @@ import { apiClient } from "@repo/api";
 import { LoadingOverlay } from "~/components/ui/spinner";
 import { Button } from "~/components/ui/button";
 import { QRCodeSVG } from "qrcode.react";
+import { useWallet } from "~/hooks/useWallet";
 
 export function meta({}: Route.MetaArgs) {
   return [
@@ -17,9 +18,13 @@ export function meta({}: Route.MetaArgs) {
 export default function FundContract() {
   const { contractId } = useParams();
   const navigate = useNavigate();
+  const { client, isConnected } = useWallet();
   const [copiedAddress, setCopiedAddress] = useState(false);
   const [copiedCollateralSats, setCopiedCollateralSats] = useState(false);
   const [copiedCollateralBtc, setCopiedCollateralBtc] = useState(false);
+  const [isFunding, setIsFunding] = useState(false);
+  const [fundingError, setFundingError] = useState<string | null>(null);
+  const [fundingSuccess, setFundingSuccess] = useState<string | null>(null);
 
   const copyToClipboard = async (
     text: string,
@@ -47,6 +52,37 @@ export default function FundContract() {
       } catch (fallbackErr) {
         console.error("Failed to copy:", err, fallbackErr);
       }
+    }
+  };
+
+  const handleFundWithWallet = async () => {
+    if (
+      !client ||
+      !contractState.value ||
+      !contractState.value.contractAddress
+    ) {
+      return;
+    }
+
+    try {
+      setIsFunding(true);
+      setFundingError(null);
+      setFundingSuccess(null);
+
+      const txid = await client.sendToAddress(
+        contractState.value.contractAddress,
+        contractState.value.initialCollateralSats,
+        "bitcoin",
+      );
+
+      setFundingSuccess(txid);
+      console.log("Transaction sent successfully:", txid);
+    } catch (err) {
+      const errorMessage = err instanceof Error ? err.message : String(err);
+      setFundingError(errorMessage);
+      console.error("Failed to fund contract:", err);
+    } finally {
+      setIsFunding(false);
     }
   };
 
@@ -386,6 +422,113 @@ export default function FundContract() {
               </div>
             </div>
           </div>
+
+          {/* Fund with Wallet */}
+          {isConnected && contractState.value.contractAddress && (
+            <div className="bg-white rounded-lg shadow p-6">
+              <h2 className="text-xl font-semibold text-gray-900 mb-4">
+                Fund with Wallet
+              </h2>
+              <p className="text-sm text-gray-600 mb-4">
+                Send the required collateral directly from your connected
+                wallet.
+              </p>
+
+              {fundingSuccess && (
+                <div className="bg-green-50 border border-green-200 rounded-lg p-4 mb-4">
+                  <div className="flex">
+                    <svg
+                      className="w-5 h-5 text-green-600 mr-2 flex-shrink-0"
+                      fill="currentColor"
+                      viewBox="0 0 20 20"
+                    >
+                      <path
+                        fillRule="evenodd"
+                        d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z"
+                        clipRule="evenodd"
+                      />
+                    </svg>
+                    <div className="flex-1">
+                      <h4 className="text-sm font-medium text-green-800">
+                        Transaction Sent Successfully!
+                      </h4>
+                      <p className="text-sm text-green-700 mt-1 break-all">
+                        Transaction ID: {fundingSuccess}
+                      </p>
+                      <a
+                        href={`https://mempool.space/tx/${fundingSuccess}`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-green-600 hover:text-green-800 text-sm font-medium inline-flex items-center mt-2"
+                      >
+                        View on Mempool →
+                      </a>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {fundingError && (
+                <div className="bg-red-50 border border-red-200 rounded-lg p-4 mb-4">
+                  <div className="flex">
+                    <svg
+                      className="w-5 h-5 text-red-600 mr-2 flex-shrink-0"
+                      fill="currentColor"
+                      viewBox="0 0 20 20"
+                    >
+                      <path
+                        fillRule="evenodd"
+                        d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z"
+                        clipRule="evenodd"
+                      />
+                    </svg>
+                    <div>
+                      <h4 className="text-sm font-medium text-red-800">
+                        Transaction Failed
+                      </h4>
+                      <p className="text-sm text-red-700 mt-1">
+                        {fundingError}
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              <Button
+                onClick={handleFundWithWallet}
+                disabled={isFunding || !contractState.value.contractAddress}
+                className="w-full"
+              >
+                {isFunding ? (
+                  <>
+                    <svg
+                      className="animate-spin -ml-1 mr-3 h-5 w-5 text-white"
+                      xmlns="http://www.w3.org/2000/svg"
+                      fill="none"
+                      viewBox="0 0 24 24"
+                    >
+                      <circle
+                        className="opacity-25"
+                        cx="12"
+                        cy="12"
+                        r="10"
+                        stroke="currentColor"
+                        strokeWidth="4"
+                      ></circle>
+                      <path
+                        className="opacity-75"
+                        fill="currentColor"
+                        d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                      ></path>
+                    </svg>
+                    Sending Transaction...
+                  </>
+                ) : (
+                  `Fund Contract (${contractState.value.initialCollateralSats.toLocaleString()} sats)`
+                )}
+              </Button>
+            </div>
+          )}
 
           {/* Action Buttons */}
           <div className="flex gap-3">

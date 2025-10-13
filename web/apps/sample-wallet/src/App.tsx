@@ -179,6 +179,21 @@ function App() {
           // TODO: Implement PSBT signing
           throw new Error("PSBT signing not yet implemented");
         },
+        onSendToAddress: async (address: string, amount: number, asset: "bitcoin" | LoanAsset) => {
+          console.log(`Called send to address: address=${address}, amount=${amount}, asset=${asset}`);
+
+          if (asset !== "bitcoin") {
+            throw new Error(`Sending ${asset} is not yet implemented`);
+          }
+
+          if (!keyPair) {
+            throw new Error("No key pair loaded");
+          }
+
+          // TODO: Implement actual Bitcoin transaction creation and broadcasting
+          // This is a placeholder that simulates the transaction
+          throw new Error("Bitcoin transaction sending not yet implemented. In a real wallet, this would create and broadcast a transaction.");
+        },
       },
       ["http://localhost:5173"],
     ); // Allow iframe origin

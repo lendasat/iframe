@@ -206,6 +206,28 @@ export class LendasatClient {
   }
 
   /**
+   * Send funds to an address
+   * @param address - Address to send to
+   * @param amount - Amount to send in satoshis (for Bitcoin) or smallest unit for other assets
+   * @param asset - Asset type - "bitcoin" for Bitcoin, or a LoanAsset type for other assets
+   * @returns Transaction ID (txid) of the broadcast transaction
+   */
+  async sendToAddress(address: string, amount: number, asset: "bitcoin" | LoanAsset = "bitcoin"): Promise<string> {
+    const response = await this.sendRequest<{
+      type: "SEND_TO_ADDRESS_RESPONSE";
+      id: string;
+      txid: string;
+    }>({
+      type: "SEND_TO_ADDRESS",
+      id: this.generateId(),
+      address,
+      amount,
+      asset,
+    });
+    return response.txid;
+  }
+
+  /**
    * Clean up event listeners
    */
   destroy(): void {

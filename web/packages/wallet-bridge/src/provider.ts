@@ -41,6 +41,15 @@ export interface WalletHandlers {
    * @returns Lendasat API key
    */
   onGetApiKey: () => string | Promise<string>;
+
+  /**
+   * Send funds to an address
+   * @param address - Address to send to
+   * @param amount - Amount to send in satoshis (for Bitcoin) or smallest unit for other assets
+   * @param asset - Asset type - "bitcoin" for Bitcoin, or a LoanAsset type for other assets
+   * @returns Transaction ID (txid) of the broadcast transaction
+   */
+  onSendToAddress: (address: string, amount: number, asset: "bitcoin" | LoanAsset) => string | Promise<string>;
 }
 
 /**
@@ -181,6 +190,20 @@ export class WalletProvider {
             type: "API_KEY_RESPONSE",
             id: request.id,
             apiKey,
+          };
+          break;
+        }
+
+        case "SEND_TO_ADDRESS": {
+          const txid = await this.handlers.onSendToAddress(
+            request.address,
+            request.amount,
+            request.asset,
+          );
+          response = {
+            type: "SEND_TO_ADDRESS_RESPONSE",
+            id: request.id,
+            txid,
           };
           break;
         }

@@ -40,7 +40,8 @@ export type WalletRequest =
   | GetAddressRequest
   | GetNpubRequest
   | SignPsbtRequest
-  | GetApiKeyRequest;
+  | GetApiKeyRequest
+  | SendToAddressRequest;
 
 export interface GetPublicKeyRequest {
   type: "GET_PUBLIC_KEY";
@@ -78,6 +79,17 @@ export interface GetApiKeyRequest {
   id: string;
 }
 
+export interface SendToAddressRequest {
+  type: "SEND_TO_ADDRESS";
+  id: string;
+  /** Address to send to */
+  address: string;
+  /** Amount to send in satoshis (for Bitcoin) or smallest unit for other assets */
+  amount: number;
+  /** Asset type - "bitcoin" for Bitcoin, or a LoanAsset type for other assets */
+  asset: "bitcoin" | LoanAsset;
+}
+
 // Response messages sent from parent wallet to iframe
 export type WalletResponse =
   | PublicKeyResponse
@@ -86,6 +98,7 @@ export type WalletResponse =
   | NpubResponse
   | PsbtSignedResponse
   | ApiKeyResponse
+  | SendToAddressResponse
   | ErrorResponse;
 
 export interface PublicKeyResponse {
@@ -132,6 +145,13 @@ export interface ApiKeyResponse {
   apiKey: string;
 }
 
+export interface SendToAddressResponse {
+  type: "SEND_TO_ADDRESS_RESPONSE";
+  id: string;
+  /** Transaction ID (txid) of the broadcast transaction */
+  txid: string;
+}
+
 export interface ErrorResponse {
   type: "ERROR";
   id: string;
@@ -151,7 +171,8 @@ export function isWalletRequest(message: unknown): message is WalletRequest {
     msg.type === "GET_ADDRESS" ||
     msg.type === "GET_NPUB" ||
     msg.type === "SIGN_PSBT" ||
-    msg.type === "GET_API_KEY"
+    msg.type === "GET_API_KEY" ||
+    msg.type === "SEND_TO_ADDRESS"
   );
 }
 
@@ -168,6 +189,7 @@ export function isWalletResponse(message: unknown): message is WalletResponse {
     msg.type === "NPUB_RESPONSE" ||
     msg.type === "PSBT_SIGNED" ||
     msg.type === "API_KEY_RESPONSE" ||
+    msg.type === "SEND_TO_ADDRESS_RESPONSE" ||
     msg.type === "ERROR"
   );
 }
