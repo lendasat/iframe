@@ -39,7 +39,8 @@ export type WalletRequest =
   | GetDerivationPathRequest
   | GetAddressRequest
   | GetNpubRequest
-  | SignPsbtRequest;
+  | SignPsbtRequest
+  | GetApiKeyRequest;
 
 export interface GetPublicKeyRequest {
   type: "GET_PUBLIC_KEY";

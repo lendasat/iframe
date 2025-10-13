@@ -7,6 +7,7 @@ import {
   ScrollRestoration,
 } from "react-router";
 import { PriceProvider } from "@repo/api/price-context";
+import { ApiProvider } from "./contexts/ApiContext";
 
 import type { Route } from "./+types/root";
 import "./app.css";
@@ -46,9 +47,11 @@ export default function App() {
   const baseUrl = import.meta.env.VITE_BORROWER_BASE_URL || "http://localhost:7337";
 
   return (
-    <PriceProvider url={baseUrl}>
-      <Outlet />
-    </PriceProvider>
+    <ApiProvider>
+      <PriceProvider url={baseUrl}>
+        <Outlet />
+      </PriceProvider>
+    </ApiProvider>
   );
 }
 

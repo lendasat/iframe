@@ -1,5 +1,9 @@
 import { useEffect, useRef, useState } from "react";
-import { AddressType, LendasatClient, type LoanAsset } from "@lendasat/lendasat-wallet-bridge";
+import {
+  AddressType,
+  LendasatClient,
+  type LoanAsset,
+} from "@lendasat/lendasat-wallet-bridge";
 
 /**
  * React hook to interact with the parent wallet via the wallet bridge
@@ -35,8 +39,7 @@ export function useWallet() {
     }
 
     // Create client
-    const client = new LendasatClient();
-    clientRef.current = client;
+    clientRef.current = new LendasatClient();
     setIsConnected(true);
 
     console.log("LendasatClient initialized");
