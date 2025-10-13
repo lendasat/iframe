@@ -305,35 +305,65 @@ export default function ContractDetails() {
               Transaction History
             </h3>
             <div className="space-y-3">
-              <div className="flex items-start py-3 border-b border-gray-100 last:border-0">
-                <div className="flex-shrink-0">
-                  <div className="flex items-center justify-center w-8 h-8 rounded-full bg-green-100">
-                    <svg
-                      className="w-5 h-5 text-green-600"
-                      fill="currentColor"
-                      viewBox="0 0 20 20"
+              {contractState.value.transactions.length > 0 ? (
+                contractState.value.transactions
+                  .sort((a, b) => b.timestamp.getTime() - a.timestamp.getTime())
+                  .map((tx) => (
+                    <div
+                      key={tx.id}
+                      className="flex items-start py-3 border-b border-gray-100 last:border-0"
                     >
-                      <path
-                        fillRule="evenodd"
-                        d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
-                        clipRule="evenodd"
-                      />
-                    </svg>
-                  </div>
+                      <div className="flex-shrink-0">
+                        <div className="flex items-center justify-center w-8 h-8 rounded-full bg-indigo-100">
+                          <svg
+                            className="w-5 h-5 text-indigo-600"
+                            fill="currentColor"
+                            viewBox="0 0 20 20"
+                          >
+                            <path
+                              fillRule="evenodd"
+                              d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-11a1 1 0 10-2 0v2H7a1 1 0 100 2h2v2a1 1 0 102 0v-2h2a1 1 0 100-2h-2V7z"
+                              clipRule="evenodd"
+                            />
+                          </svg>
+                        </div>
+                      </div>
+                      <div className="ml-3 flex-1">
+                        <div className="flex items-start justify-between">
+                          <div>
+                            <p className="text-sm font-medium text-gray-900">
+                              {tx.transactionType}
+                            </p>
+                            <p className="text-sm text-gray-500">
+                              {tx.timestamp.toLocaleString("en-US", {
+                                year: "numeric",
+                                month: "short",
+                                day: "numeric",
+                                hour: "2-digit",
+                                minute: "2-digit",
+                              })}
+                            </p>
+                          </div>
+                          <a
+                            href={`https://mempool.space/tx/${tx.txid}`}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="text-indigo-600 hover:text-indigo-800 text-sm font-medium whitespace-nowrap ml-4"
+                          >
+                            View TX →
+                          </a>
+                        </div>
+                        <p className="text-xs font-mono text-gray-500 mt-1 break-all">
+                          {tx.txid}
+                        </p>
+                      </div>
+                    </div>
+                  ))
+              ) : (
+                <div className="text-center py-4 text-sm text-gray-500">
+                  No transactions yet
                 </div>
-                <div className="ml-3 flex-1">
-                  <p className="text-sm font-medium text-gray-900">
-                    Contract Created
-                  </p>
-                  <p className="text-sm text-gray-500">
-                    Status: {contractState.value.status}
-                  </p>
-                </div>
-              </div>
-              {/* More transaction events would be added here */}
-              <div className="text-center py-4 text-sm text-gray-500">
-                No additional transactions yet
-              </div>
+              )}
             </div>
           </div>
 

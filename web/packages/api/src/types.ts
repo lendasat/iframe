@@ -95,6 +95,36 @@ export function mapMeResponse(
   };
 }
 
+// Transaction types
+export type TransactionType =
+  | "Funding"
+  | "Dispute"
+  | "PrincipalGiven"
+  | "InstallmentPaid"
+  | "Liquidation"
+  | "Defaulted"
+  | "ClaimCollateral";
+
+export interface LoanTransaction {
+  contractId: string;
+  id: number;
+  timestamp: Date;
+  transactionType: TransactionType;
+  txid: string;
+}
+
+export function mapLoanTransaction(
+  transaction: components["schemas"]["LoanTransaction"],
+): LoanTransaction {
+  return {
+    contractId: transaction.contract_id,
+    id: transaction.id,
+    timestamp: parseISO(transaction.timestamp),
+    transactionType: transaction.transaction_type,
+    txid: transaction.txid,
+  };
+}
+
 // Contract types
 export type ContractStatus =
   | "Requested"
@@ -192,6 +222,7 @@ export interface Contract {
   ltvThresholdMarginCall2: number;
   originationFeeSats: number;
   status: ContractStatus;
+  transactions: LoanTransaction[];
   updatedAt: Date;
 }
 
@@ -240,6 +271,7 @@ export function mapContract(
     ltvThresholdMarginCall2: contract.ltv_threshold_margin_call_2,
     originationFeeSats: contract.origination_fee_sats,
     status: contract.status,
+    transactions: contract.transactions.map(mapLoanTransaction),
     updatedAt: parseISO(contract.updated_at),
   };
 }
