@@ -1,5 +1,5 @@
 {
-  "name": "@lendasat/wallet-bridge",
+  "name": "@lendasat/lendasat-wallet-bridge",
   "version": "0.0.1",
   "type": "module",
   "main": "./src/index.ts",

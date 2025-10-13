@@ -20,7 +20,7 @@ importers:
 
   apps/iframe:
     dependencies:
-      '@lendasat/wallet-bridge':
+      '@lendasat/lendasat-wallet-bridge':
         specifier: workspace:*
         version: link:../../packages/wallet-bridge
       '@radix-ui/react-slot':
@@ -105,7 +105,7 @@ importers:
 
   apps/sample-wallet:
     dependencies:
-      '@lendasat/wallet-bridge':
+      '@lendasat/lendasat-wallet-bridge':
         specifier: workspace:*
         version: link:../../packages/wallet-bridge
       bitcoinjs-lib:

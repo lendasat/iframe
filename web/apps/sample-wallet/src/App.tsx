@@ -7,7 +7,7 @@ import {
   WalletProvider,
   AddressType,
   type LoanAsset,
-} from "@lendasat/wallet-bridge";
+} from "@lendasat/lendasat-wallet-bridge";
 import "./App.css";
 import * as tools from "uint8array-tools";
 
