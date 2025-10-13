@@ -8,6 +8,7 @@ import { usePriceForCurrency } from "@repo/api/price-context";
 import { CancelContractAction } from "~/components/contract-actions/CancelContractAction";
 import { FundContractAction } from "~/components/contract-actions/FundContractAction";
 import { RepayLoanAction } from "~/components/contract-actions/RepayLoanAction";
+import { WithdrawCollateralAction } from "~/components/contract-actions/WithdrawCollateralAction";
 
 export function meta({}: Route.MetaArgs) {
   return [
@@ -192,6 +193,11 @@ export default function ContractDetails() {
             {contractState.value.status === "PrincipalGiven" && (
               <div className="mt-4">
                 <RepayLoanAction contractId={contractState.value.id} />
+              </div>
+            )}
+            {contractState.value.status === "RepaymentConfirmed" && (
+              <div className="mt-4">
+                <WithdrawCollateralAction contractId={contractState.value.id} />
               </div>
             )}
           </div>

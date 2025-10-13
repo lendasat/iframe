@@ -174,13 +174,71 @@ function App() {
           // TODO: Implement Nostr npub conversion
           return null;
         },
-        onSignPsbt: (psbt: string) => {
-          console.log(`Called sign psbt ${psbt}`);
-          // TODO: Implement PSBT signing
-          throw new Error("PSBT signing not yet implemented");
+        onSignPsbt: (
+          psbt: string,
+          collateralDescriptor: string,
+          borrowerPk: string,
+        ) => {
+          console.log(
+            `Called sign psbt with descriptor: ${collateralDescriptor}`,
+          );
+          console.log(`Borrower PK: ${borrowerPk}`);
+          console.log(`PSBT: ${psbt}`);
+
+          if (!keyPair) {
+            throw new Error("No key pair loaded");
+          }
+
+          try {
+            // Parse the hex-encoded PSBT
+            const psbtObj = bitcoin.Psbt.fromHex(psbt, {
+              network: bitcoin.networks.bitcoin,
+            });
+
+            console.log(`PSBT has ${psbtObj.data.inputs.length} inputs`);
+
+            // Verify the borrower's public key matches our wallet
+            const ourPk = tools.toHex(keyPair.publicKey);
+            if (borrowerPk !== ourPk) {
+              console.warn(
+                `Warning: Borrower PK (${borrowerPk}) doesn't match wallet PK (${ourPk})`,
+              );
+            }
+
+            // Sign all inputs that this wallet can sign
+            // The PSBT should already have the necessary witness UTXOs and scripts
+            psbtObj.signAllInputs(keyPair);
+
+            console.log(`Signed all inputs`);
+
+            // Finalize all inputs (convert signatures to final scriptWitness/scriptSig)
+            psbtObj.finalizeAllInputs();
+
+            console.log(`Finalized all inputs`);
+
+            // Extract the fully signed transaction as hex
+            const signedTx = psbtObj.extractTransaction().toHex();
+
+            console.log(
+              `PSBT signed successfully. Transaction hex: ${signedTx.substring(0, 50)}...`,
+            );
+
+            return signedTx;
+          } catch (err) {
+            console.error("Failed to sign PSBT:", err);
+            throw new Error(
+              `Failed to sign PSBT: ${err instanceof Error ? err.message : String(err)}`,
+            );
+          }
         },
-        onSendToAddress: async (address: string, amount: number, asset: "bitcoin" | LoanAsset) => {
-          console.log(`Called send to address: address=${address}, amount=${amount}, asset=${asset}`);
+        onSendToAddress: async (
+          address: string,
+          amount: number,
+          asset: "bitcoin" | LoanAsset,
+        ) => {
+          console.log(
+            `Called send to address: address=${address}, amount=${amount}, asset=${asset}`,
+          );
 
           if (asset !== "bitcoin") {
             throw new Error(`Sending ${asset} is not yet implemented`);
@@ -192,7 +250,9 @@ function App() {
 
           // TODO: Implement actual Bitcoin transaction creation and broadcasting
           // This is a placeholder that simulates the transaction
-          throw new Error("Bitcoin transaction sending not yet implemented. In a real wallet, this would create and broadcast a transaction.");
+          throw new Error(
+            "Bitcoin transaction sending not yet implemented. In a real wallet, this would create and broadcast a transaction.",
+          );
         },
       },
       ["http://localhost:5173"],

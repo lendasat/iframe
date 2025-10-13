@@ -417,6 +417,151 @@ export class ApiClient {
       throw Error(JSON.stringify(error));
     }
   }
+
+  /**
+   * Get a PSBT (Partially Signed Bitcoin Transaction) to claim collateral from a contract
+   *
+   * This method creates a PSBT that spends the collateral from the contract address back to
+   * the borrower's Bitcoin address. After the loan is fully repaid and confirmed, the borrower
+   * can use this to reclaim their Bitcoin collateral from the multisig contract.
+   *
+   * The returned PSBT is a 2-of-3 multisig transaction that has already been signed by the
+   * lender. The borrower needs to add their signature to complete the transaction.
+   *
+   * @param contractId - The UUID of the contract to claim collateral from
+   * @param fee_rate - The fee rate in satoshis per vbyte (e.g., 10 for 10 sats/vbyte)
+   * @returns A Promise that resolves to an object containing:
+   *   - psbt: The partially signed transaction (already signed by lender)
+   *   - collateral_descriptor: The descriptor for the collateral script
+   *   - borrower_pk: The borrower's public key
+   *
+   * @throws {UnauthorizedError} If no API key is provided
+   * @throws {Error} If the API returns an error (e.g., contract not in correct status, invalid fee rate)
+   *
+   * @example
+   * ```typescript
+   * // Get a PSBT with a fee rate of 10 sats/vbyte
+   * const { psbt, collateral_descriptor, borrower_pk } = await apiClient.getClaimPsbt(
+   *   'f47ac10b-58cc-4372-a567-0e02b2c3d479',
+   *   10
+   * );
+   * console.log('PSBT:', psbt); // Hex-encoded PSBT with lender's signature
+   * console.log('Descriptor:', collateral_descriptor); // Collateral script descriptor
+   * console.log('Borrower PK:', borrower_pk); // Borrower's public key
+   * ```
+   *
+   * @remarks
+   * - The contract must be in "RepaymentConfirmed" status to claim collateral
+   * - The PSBT is a 2-of-3 multisig and already contains the lender's signature
+   * - The borrower must sign with their private key to add the second signature
+   * - After signing, use `broadcastClaimPsbt()` to broadcast the transaction
+   * - The fee rate affects how quickly the transaction will be confirmed
+   */
+  async getClaimPsbt(
+    contractId: string,
+    fee_rate: number,
+  ): Promise<{
+    psbt: string;
+    collateral_descriptor: string;
+    borrower_pk: string;
+  }> {
+    if (!this.api_key) {
+      throw new UnauthorizedError();
+    }
+
+    const { data, error } = await this.client.GET(
+      "/api/contracts/{id}/claim",
+      {
+        headers: { "x-api-key": this.api_key },
+        params: {
+          path: {
+            id: contractId,
+          },
+          query: {
+            fee_rate,
+          },
+        },
+      },
+    );
+
+    if (error) {
+      throw Error(JSON.stringify(error));
+    }
+
+    if (!data) {
+      throw Error("No data returned from API");
+    }
+
+    return {
+      psbt: data.psbt,
+      collateral_descriptor: data.collateral_descriptor,
+      borrower_pk: data.borrower_pk,
+    };
+  }
+
+  /**
+   * Broadcast a signed PSBT to claim collateral from a contract
+   *
+   * After obtaining a PSBT from `getClaimPsbt()` and signing it with the borrower's
+   * private key, this method broadcasts the signed transaction to the Bitcoin network
+   * to claim the collateral.
+   *
+   * @param contractId - The UUID of the contract being claimed
+   * @param signedTx - The signed transaction in hex format (fully signed PSBT extracted as raw transaction)
+   * @returns A Promise that resolves to an object containing the transaction ID
+   *
+   * @throws {UnauthorizedError} If no API key is provided
+   * @throws {Error} If the API returns an error (e.g., invalid signature, transaction already broadcast)
+   *
+   * @example
+   * ```typescript
+   * // After signing the PSBT
+   * const { txid } = await apiClient.broadcastClaimPsbt(
+   *   'f47ac10b-58cc-4372-a567-0e02b2c3d479',
+   *   'signed_transaction_hex...'
+   * );
+   * console.log('Transaction broadcast:', txid);
+   * ```
+   *
+   * @remarks
+   * - The transaction must be fully signed before broadcasting
+   * - Once broadcast, the transaction cannot be reversed
+   * - The collateral will be sent to the borrower's Bitcoin address specified in the contract
+   * - You can monitor the transaction status on the blockchain using the returned txid
+   */
+  async broadcastClaimPsbt(
+    contractId: string,
+    signedTx: string,
+  ): Promise<{ txid: string }> {
+    if (!this.api_key) {
+      throw new UnauthorizedError();
+    }
+
+    const { data, error } = await this.client.POST(
+      "/api/contracts/{id}/broadcast-claim",
+      {
+        headers: { "x-api-key": this.api_key },
+        params: {
+          path: {
+            id: contractId,
+          },
+        },
+        body: {
+          tx: signedTx,
+        },
+      },
+    );
+
+    if (error) {
+      throw Error(JSON.stringify(error));
+    }
+
+    if (!data) {
+      throw Error("No data returned from API");
+    }
+
+    return { txid: data.txid };
+  }
 }
 
 // Export a default instance without API key

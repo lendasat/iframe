@@ -173,10 +173,16 @@ export class LendasatClient {
 
   /**
    * Request the parent wallet to sign a PSBT
-   * @param psbt - Base64-encoded PSBT to sign
-   * @returns Base64-encoded signed PSBT
+   * @param psbt - Hex-encoded PSBT to sign
+   * @param collateralDescriptor - Collateral descriptor for the multisig script
+   * @param borrowerPk - Borrower's public key
+   * @returns Hex-encoded signed transaction
    */
-  async signPsbt(psbt: string): Promise<string> {
+  async signPsbt(
+    psbt: string,
+    collateralDescriptor: string,
+    borrowerPk: string,
+  ): Promise<string> {
     const response = await this.sendRequest<{
       type: "PSBT_SIGNED";
       id: string;
@@ -185,6 +191,8 @@ export class LendasatClient {
       type: "SIGN_PSBT",
       id: this.generateId(),
       psbt,
+      collateralDescriptor,
+      borrowerPk,
     });
     return response.signedPsbt;
   }

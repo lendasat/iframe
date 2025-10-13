@@ -70,8 +70,12 @@ export interface GetNpubRequest {
 export interface SignPsbtRequest {
   type: "SIGN_PSBT";
   id: string;
-  /** Base64-encoded PSBT to sign */
+  /** Hex-encoded PSBT to sign */
   psbt: string;
+  /** Collateral descriptor for the multisig script */
+  collateralDescriptor: string;
+  /** Borrower's public key */
+  borrowerPk: string;
 }
 
 export interface GetApiKeyRequest {

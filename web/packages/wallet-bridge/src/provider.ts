@@ -30,11 +30,17 @@ export interface WalletHandlers {
   onGetNpub: () => string | null | Promise<string | null>;
 
   /**
-   * Sign a PSBT and return the signed PSBT
-   * @param psbt - Base64-encoded PSBT to sign
-   * @returns Base64-encoded signed PSBT
+   * Sign a PSBT and return the signed transaction
+   * @param psbt - Hex-encoded PSBT to sign
+   * @param collateralDescriptor - Collateral descriptor for the multisig script
+   * @param borrowerPk - Borrower's public key
+   * @returns Hex-encoded signed transaction
    */
-  onSignPsbt: (psbt: string) => string | Promise<string>;
+  onSignPsbt: (
+    psbt: string,
+    collateralDescriptor: string,
+    borrowerPk: string,
+  ) => string | Promise<string>;
 
   /**
    * Return the Lendasat API key
@@ -175,7 +181,11 @@ export class WalletProvider {
         }
 
         case "SIGN_PSBT": {
-          const signedPsbt = await this.handlers.onSignPsbt(request.psbt);
+          const signedPsbt = await this.handlers.onSignPsbt(
+            request.psbt,
+            request.collateralDescriptor,
+            request.borrowerPk,
+          );
           response = {
             type: "PSBT_SIGNED",
             id: request.id,
