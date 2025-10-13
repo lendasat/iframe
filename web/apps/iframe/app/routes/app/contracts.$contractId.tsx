@@ -7,6 +7,7 @@ import { LoadingOverlay } from "~/components/ui/spinner";
 import { usePriceForCurrency } from "@repo/api/price-context";
 import { CancelContractAction } from "~/components/contract-actions/CancelContractAction";
 import { FundContractAction } from "~/components/contract-actions/FundContractAction";
+import { RepayLoanAction } from "~/components/contract-actions/RepayLoanAction";
 
 export function meta({}: Route.MetaArgs) {
   return [
@@ -186,6 +187,11 @@ export default function ContractDetails() {
                 <div className="flex-1">
                   <FundContractAction contractId={contractState.value.id} />
                 </div>
+              </div>
+            )}
+            {contractState.value.status === "PrincipalGiven" && (
+              <div className="mt-4">
+                <RepayLoanAction contractId={contractState.value.id} />
               </div>
             )}
           </div>

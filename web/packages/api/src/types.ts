@@ -125,6 +125,33 @@ export function mapLoanTransaction(
   };
 }
 
+// Installment types
+export type InstallmentStatus = "pending" | "paid" | "confirmed" | "late" | "cancelled";
+
+export interface Installment {
+  dueDate: Date;
+  id: string;
+  interest: number;
+  paidDate?: Date | null;
+  paymentId?: string | null;
+  principal: number;
+  status: InstallmentStatus;
+}
+
+export function mapInstallment(
+  installment: components["schemas"]["Installment"],
+): Installment {
+  return {
+    dueDate: parseISO(installment.due_date),
+    id: installment.id,
+    interest: installment.interest,
+    paidDate: installment.paid_date ? parseISO(installment.paid_date) : null,
+    paymentId: installment.payment_id,
+    principal: installment.principal,
+    status: installment.status,
+  };
+}
+
 // Contract types
 export type ContractStatus =
   | "Requested"
@@ -211,12 +238,15 @@ export interface Contract {
   id: string;
   initialCollateralSats: number;
   initialLtv: number;
+  installments: Installment[];
   interest: number;
   interestRate: number;
   lender: LenderStats;
   lenderPk: string;
   liquidationPrice: number;
   loanAmount: number;
+  loanAsset: LoanAsset;
+  loanRepaymentAddress?: string | null;
   ltvThresholdLiquidation: number;
   ltvThresholdMarginCall1: number;
   ltvThresholdMarginCall2: number;
@@ -260,12 +290,15 @@ export function mapContract(
     id: contract.id,
     initialCollateralSats: contract.initial_collateral_sats,
     initialLtv: contract.initial_ltv,
+    installments: contract.installments.map(mapInstallment),
     interest: contract.interest,
     interestRate: contract.interest_rate,
     lender: mapLenderStats(contract.lender),
     lenderPk: contract.lender_pk,
     liquidationPrice: contract.liquidation_price,
     loanAmount: contract.loan_amount,
+    loanAsset: contract.loan_asset,
+    loanRepaymentAddress: contract.loan_repayment_address,
     ltvThresholdLiquidation: contract.ltv_threshold_liquidation,
     ltvThresholdMarginCall1: contract.ltv_threshold_margin_call_1,
     ltvThresholdMarginCall2: contract.ltv_threshold_margin_call_2,

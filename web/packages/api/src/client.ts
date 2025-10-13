@@ -353,6 +353,70 @@ export class ApiClient {
       throw Error(JSON.stringify(error));
     }
   }
+
+  /**
+   * Mark a contract installment as repaid
+   *
+   * This method notifies the platform that a loan repayment has been made by providing
+   * the transaction ID. The lender will verify the transaction on the blockchain and
+   * update the contract status accordingly.
+   *
+   * @param id - The UUID of the contract being repaid
+   * @param txid - The transaction ID (txid) of the repayment transaction on the blockchain.
+   *               For Bitcoin: This is the Bitcoin transaction ID
+   *               For stablecoins: This is the transaction hash on the respective chain (Ethereum, Polygon, etc.)
+   * @param installment_id - The UUID of the specific installment being paid.
+   *                         For bullet repayment (full repayment at end), this is typically a single installment.
+   *                         For installment-based loans, this identifies which payment is being made.
+   * @returns A Promise that resolves when the repayment is recorded
+   *
+   * @throws {UnauthorizedError} If no API key is provided
+   * @throws {Error} If the API returns an error (e.g., invalid txid, installment already paid)
+   *
+   * @example
+   * ```typescript
+   * // Mark a contract as repaid after sending payment
+   * await apiClient.repaidContract(
+   *   'f47ac10b-58cc-4372-a567-0e02b2c3d479',  // contract ID
+   *   'a1b2c3d4e5f6...', // transaction ID from blockchain
+   *   'installment-uuid-here' // installment ID
+   * );
+   * ```
+   *
+   * @remarks
+   * - The transaction must be broadcast to the blockchain before calling this method
+   * - The lender will verify the transaction amount matches the expected installment amount
+   * - Once verified and confirmed, the contract status will update (e.g., to "RepaymentProvided" or "RepaymentConfirmed")
+   */
+  async repaidContract(
+    id: string,
+    txid: string,
+    installment_id: string,
+  ): Promise<void> {
+    if (!this.api_key) {
+      throw new UnauthorizedError();
+    }
+
+    const { error } = await this.client.PUT(
+      "/api/contracts/{id}/installment-paid",
+      {
+        headers: { "x-api-key": this.api_key },
+        params: {
+          path: {
+            id,
+          },
+        },
+        body: {
+          installment_id,
+          payment_id: txid,
+        },
+      },
+    );
+
+    if (error) {
+      throw Error(JSON.stringify(error));
+    }
+  }
 }
 
 // Export a default instance without API key
