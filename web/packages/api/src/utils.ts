@@ -132,3 +132,44 @@ export function calculateCollateralNeeded(
     totalValueToDepositUsd,
   };
 }
+
+/**
+ * Calculate the current loan-to-value ratio based on current BTC price
+ *
+ * @param loanAmountUsd - The original loan amount in USD (optional)
+ * @param collateralSats - The collateral amount in satoshis (optional)
+ * @param currentBtcPriceUsd - The current Bitcoin price in USD (optional)
+ * @returns The current LTV ratio as a decimal (e.g., 0.5 for 50% LTV), or undefined if any parameter is undefined or invalid
+ *
+ * @example
+ * // Original loan: $1000, collateral: 4000000 sats (0.04 BTC)
+ * // If BTC price drops from $50,000 to $40,000:
+ * const currentLtv = calculateCurrentLtv(1000, 4000000, 40000);
+ * // Returns: 0.625 (62.5% LTV) - loan became riskier
+ * // Collateral value: 0.04 BTC * $40,000 = $1,600
+ * // LTV: $1,000 / $1,600 = 0.625
+ */
+export function calculateCurrentLtv(
+  loanAmountUsd?: number,
+  collateralSats?: number,
+  currentBtcPriceUsd?: number,
+): number | undefined {
+  // Return undefined if any parameter is undefined or invalid
+  if (
+    loanAmountUsd === undefined ||
+    collateralSats === undefined ||
+    currentBtcPriceUsd === undefined ||
+    loanAmountUsd < 0 ||
+    collateralSats < 0 ||
+    currentBtcPriceUsd <= 0
+  ) {
+    return undefined;
+  }
+
+  // Convert collateral to BTC and then to USD
+  const collateralBtc = collateralSats / SATS_PER_BTC;
+  const collateralValueUsd = collateralBtc * currentBtcPriceUsd;
+
+  // LTV = Loan Value / Collateral Value
+  return loanAmountUsd / collateralValueUsd;
+}

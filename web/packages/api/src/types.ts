@@ -183,6 +183,7 @@ export interface Contract {
   initialLtv: number;
   interest: number;
   interestRate: number;
+  lender: LenderStats;
   lenderPk: string;
   liquidationPrice: number;
   loanAmount: number;
@@ -230,6 +231,7 @@ export function mapContract(
     initialLtv: contract.initial_ltv,
     interest: contract.interest,
     interestRate: contract.interest_rate,
+    lender: mapLenderStats(contract.lender),
     lenderPk: contract.lender_pk,
     liquidationPrice: contract.liquidation_price,
     loanAmount: contract.loan_amount,

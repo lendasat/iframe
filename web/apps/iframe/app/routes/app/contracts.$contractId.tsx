@@ -2,8 +2,9 @@ import { useParams, useNavigate } from "react-router";
 import { useAsync } from "react-use";
 import { useState } from "react";
 import type { Route } from "../+types/app.contracts.$contractId";
-import { apiClient } from "@repo/api";
+import { apiClient, calculateCurrentLtv, Currency } from "@repo/api";
 import { LoadingOverlay } from "~/components/ui/spinner";
+import { usePriceForCurrency } from "@repo/api/price-context";
 
 export function meta({}: Route.MetaArgs) {
   return [
@@ -16,6 +17,7 @@ export default function ContractDetails() {
   const { contractId } = useParams();
   const navigate = useNavigate();
   const [copied, setCopied] = useState(false);
+  const btcPrice = usePriceForCurrency(Currency.USD);
 
   // Fetch the specific contract
   const contractState = useAsync(async () => {
@@ -48,6 +50,12 @@ export default function ContractDetails() {
       </div>
     );
   }
+
+  const currentLtv = calculateCurrentLtv(
+    contractState.value?.loanAmount,
+    contractState.value?.collateralSats,
+    btcPrice,
+  );
 
   return (
     <div>
@@ -104,14 +112,16 @@ export default function ContractDetails() {
             <div className="flex justify-between items-start mb-4">
               <div className="flex-1">
                 <h2 className="text-xl font-semibold text-gray-900 mb-2">
-                  Contract {contractState.value.id.substring(0, 8)}...
+                  Contract
                 </h2>
                 <div className="flex items-center gap-2">
                   <p className="text-sm font-mono text-gray-600">
                     {contractState.value.id}
                   </p>
                   <button
-                    onClick={() => copyToClipboard(contractState.value.id)}
+                    onClick={() =>
+                      copyToClipboard(contractState.value?.id || "")
+                    }
                     className="text-gray-400 hover:text-gray-600 transition-colors"
                     title="Copy to clipboard"
                   >
@@ -180,7 +190,11 @@ export default function ContractDetails() {
               <div>
                 <p className="text-gray-600 mb-1">Loan Amount</p>
                 <p className="text-lg font-semibold text-gray-900">
-                  ${contractState.value.loanAmount.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                  $
+                  {contractState.value.loanAmount.toLocaleString("en-US", {
+                    minimumFractionDigits: 2,
+                    maximumFractionDigits: 2,
+                  })}
                 </p>
               </div>
               <div>
@@ -192,7 +206,16 @@ export default function ContractDetails() {
               <div>
                 <p className="text-gray-600 mb-1">Interest Amount</p>
                 <p className="text-lg font-semibold text-gray-900">
-                  ${((contractState.value.loanAmount * contractState.value.interestRate * contractState.value.durationDays) / 365).toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                  $
+                  {(
+                    (contractState.value.loanAmount *
+                      contractState.value.interestRate *
+                      contractState.value.durationDays) /
+                    365
+                  ).toLocaleString("en-US", {
+                    minimumFractionDigits: 2,
+                    maximumFractionDigits: 2,
+                  })}
                 </p>
               </div>
               <div>
@@ -207,9 +230,9 @@ export default function ContractDetails() {
                 <span className="text-gray-600">Expiry Date</span>
                 <span className="font-medium text-gray-900">
                   {contractState.value.expiry.toLocaleDateString("en-US", {
-                    year: 'numeric',
-                    month: 'long',
-                    day: 'numeric'
+                    year: "numeric",
+                    month: "long",
+                    day: "numeric",
                   })}
                 </span>
               </div>
@@ -228,13 +251,18 @@ export default function ContractDetails() {
                   {contractState.value.collateralSats.toLocaleString()} sats
                 </p>
                 <p className="text-xs text-gray-500">
-                  {(contractState.value.collateralSats / 100_000_000).toFixed(8)} BTC
+                  {(contractState.value.collateralSats / 100_000_000).toFixed(
+                    8,
+                  )}{" "}
+                  BTC
                 </p>
               </div>
               <div>
                 <p className="text-gray-600 mb-1">LTV</p>
                 <p className="text-lg font-semibold text-gray-900">
-                  {contractState.value.ltv ? `${(contractState.value.ltv * 100).toFixed(1)}%` : 'N/A'}
+                  {currentLtv && Number.isFinite(currentLtv)
+                    ? `${(currentLtv * 100).toFixed(1)}%`
+                    : "N/A"}
                 </p>
               </div>
             </div>
@@ -244,7 +272,7 @@ export default function ContractDetails() {
                   <p className="text-sm text-gray-600 mb-1">Contract Address</p>
                   <div className="flex items-center gap-2">
                     <p className="text-sm font-mono text-gray-900 break-all flex-1">
-                      {contractState.value.contractAddress || 'Not yet created'}
+                      {contractState.value.contractAddress || "Not yet created"}
                     </p>
                     {contractState.value.contractAddress && (
                       <a
@@ -309,7 +337,8 @@ export default function ContractDetails() {
               <div>
                 <p className="text-sm text-gray-600">Lender ID</p>
                 <p className="text-sm font-mono text-gray-900">
-                  {contractState.value.lenderId}
+                  {contractState.value.lender.name} -{" "}
+                  {contractState.value.lender.id}
                 </p>
               </div>
             </div>
