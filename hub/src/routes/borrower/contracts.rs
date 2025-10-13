@@ -1224,8 +1224,8 @@ tag = CONTRACTS_TAG,
 responses(
     (
     status = 200,
-    description = "Transaction ID of successfully posted transaction",
-    body = String
+    description = "Successfully broadcast claim transaction",
+    body = BroadcastClaimTxResponse
     )
 ),
 security(
@@ -1242,7 +1242,7 @@ async fn post_claim_tx(
     Extension(user): Extension<Borrower>,
     Path(contract_id): Path<String>,
     AppJson(body): AppJson<ClaimTx>,
-) -> Result<String, Error> {
+) -> Result<AppJson<BroadcastClaimTxResponse>, Error> {
     let belongs_to_borrower =
         db::contracts::check_if_contract_belongs_to_borrower(&data.db, &contract_id, &user.id)
             .await
@@ -1286,7 +1286,9 @@ async fn post_claim_tx(
         .await
         .map_err(Error::database)?;
 
-    Ok(claim_txid.to_string())
+    Ok(AppJson(BroadcastClaimTxResponse {
+        txid: claim_txid.to_string(),
+    }))
 }
 
 /// Broadcast recover-collateral transaction.
@@ -1304,7 +1306,7 @@ responses(
     (
     status = 200,
     description = "Transaction ID of successfully posted recovery transaction",
-    body = String
+    body = BroadcastRecoverTxResponse
     )
 ),
 security(
@@ -1319,7 +1321,7 @@ async fn post_recover_tx(
     Extension(user): Extension<Borrower>,
     Path(contract_id): Path<String>,
     AppJson(body): AppJson<RecoverTx>,
-) -> Result<String, Error> {
+) -> Result<AppJson<BroadcastRecoverTxResponse>, Error> {
     let contract = db::contracts::load_contract_by_contract_id_and_borrower_id(
         &data.db,
         &contract_id,
@@ -1371,7 +1373,9 @@ async fn post_recover_tx(
         .await
         .map_err(Error::database)?;
 
-    Ok(recovery_txid.to_string())
+    Ok(AppJson(BroadcastRecoverTxResponse {
+        txid: recovery_txid.to_string(),
+    }))
 }
 
 /// Post a request to extend the contract.
@@ -1930,8 +1934,20 @@ pub struct ClaimTx {
 }
 
 #[derive(Debug, Serialize, Deserialize, ToSchema)]
+pub struct BroadcastClaimTxResponse {
+    /// Transaction ID of the broadcast claim transaction
+    pub txid: String,
+}
+
+#[derive(Debug, Serialize, Deserialize, ToSchema)]
 pub struct RecoverTx {
     pub tx: String,
+}
+
+#[derive(Debug, Serialize, Deserialize, ToSchema)]
+pub struct BroadcastRecoverTxResponse {
+    /// Transaction ID of the broadcast recovery transaction
+    pub txid: String,
 }
 
 #[derive(Debug, Deserialize, Serialize, ToSchema)]

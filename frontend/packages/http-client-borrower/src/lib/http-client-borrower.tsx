@@ -822,11 +822,11 @@ export const createHttpClient = (
     tx: string,
   ): Promise<string> => {
     try {
-      const response: AxiosResponse<string> = await axiosClient.post(
+      const response: AxiosResponse<{ txid: string }> = await axiosClient.post(
         `/api/contracts/${contract_id}/broadcast-claim`,
         { tx: tx },
       );
-      return response.data;
+      return response.data.txid;
     } catch (error) {
       handleError(error, "posting claim psbt");
       throw error; // Satisfies the linter, though it won't actually be reached.
@@ -838,11 +838,11 @@ export const createHttpClient = (
     tx: string,
   ): Promise<string> => {
     try {
-      const response: AxiosResponse<string> = await axiosClient.post(
+      const response: AxiosResponse<{ txid: string }> = await axiosClient.post(
         `/api/contracts/${contract_id}/broadcast-recover`,
         { tx: tx },
       );
-      return response.data;
+      return response.data.txid;
     } catch (error) {
       handleError(error, "posting recovery transaction");
       throw error; // Satisfies the linter, though it won't actually be reached.
