@@ -557,7 +557,7 @@ export class ApiClient {
       throw Error("No data returned from API");
     }
 
-    return { txid: data };
+    return data;
   }
 }
 

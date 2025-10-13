@@ -666,26 +666,6 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/api/historical-prices": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /**
-         * Get historical Bitcoin prices
-         * @description Returns historical Bitcoin price data for the specified time range.
-         */
-        get: operations["get_historical_prices"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
     "/api/keys": {
         parameters: {
             query?: never;
@@ -1221,6 +1201,14 @@ export interface components {
             successful_contracts: number;
             timezone?: string | null;
         };
+        BroadcastClaimTxResponse: {
+            /** @description Transaction ID of the broadcast claim transaction */
+            txid: string;
+        };
+        BroadcastRecoverTxResponse: {
+            /** @description Transaction ID of the broadcast recovery transaction */
+            txid: string;
+        };
         Card: {
             /** Format: double */
             available_balance: number;
@@ -1398,129 +1386,8 @@ export interface components {
              */
             moon_card_id?: string | null;
         };
-        /**
-         * @description Contract status represents the current state of a loan contract.
-         *
-         *     ## Contract Status Variants:
-         *
-         *     **Requested** - The borrower has sent a contract request based on a loan offer.
-         *
-         *     If the lender accepts the contract request, transitions to Accepted.
-         *     If the lender rejects the contract request, transitions to Rejected.
-         *     If the request times out, transitions to RequestExpired.
-         *
-         *     **Approved** - The lender has accepted the contract request.
-         *
-         *     If the borrower funds the Bitcoin collateral contract, transitions to
-         *     CollateralSeen/CollateralConfirmed. If the borrower takes too long to fund the collateral
-         *     contract, transitions to ApprovalExpired.
-         *
-         *     **CollateralSeen** - The collateral contract has been seen on the blockchain.
-         *
-         *     If the collateral contract is confirmed on the blockchain, transitions to CollateralConfirmed.
-         *
-         *     **CollateralConfirmed** - The collateral contract has received enough confirmations on the
-         *     blockchain.
-         *
-         *     If the lender disburses the principal, transitions to PrincipalGiven.
-         *     If the lender fails to disburse the principal in a timely manner, the borrower may raise a
-         *     dispute, transitioning to DisputeBorrowerStarted.
-         *
-         *     **PrincipalGiven** - The lender has disbursed the principal to the borrower. The loan contract
-         *     is now open.
-         *
-         *     From this point onwards, the contract may be: repaid in full (according to the borrower),
-         *     transitioning to RepaymentProvided; not repaid in time, transitioning to Defaulted;
-         *     undercollateralized due to a substantial drop in the price of Bitcoin with respect to the
-         *     opening price, transitioning to Undercollateralized; extended before loan term, transitioning to
-         *     Extended.
-         *
-         *     **RepaymentProvided** - The borrower has repaid the entire outstanding balance to the lender:
-         *     principal plus interest.
-         *
-         *     If the lender confirms the repayment, the contract will transition to RepaymentConfirmed.
-         *     If the lender does not eventually confirm the repayment, either party may raise a dispute,
-         *     transitioning to either DisputeBorrowerStarted or DisputeLenderStarted.
-         *
-         *     **RepaymentConfirmed** - The lender has confirmed the repayment of the entire outstanding
-         *     balance: principal plus interest.
-         *
-         *     If the borrower claims the collateral, transitions to Closing.
-         *
-         *     **Undercollateralized** - The loan contract is not sufficiently collateralized according to the
-         *     required maximum LTV.
-         *
-         *     If the lender liquidates their share of the collateral, transitions to Closing.
-         *     In theory, the value of the collateral may reduce the LTV enough such that the contract may not
-         *     be considered undercollateralized anymore.
-         *     In practice, we do not support this at this stage: if the contract was ever considered
-         *     undercollateralized, the collateral will be liquidated by the lender.
-         *
-         *     **Defaulted** - The borrower failed to pay back the loan before loan term.
-         *
-         *     If the lender liquidates their share of the collateral, transitions to Closing.
-         *
-         *     **Closing** - The transaction spending the collateral contract outputs has been published on the
-         *     blockchain, but is not yet confirmed.
-         *
-         *     If the spend transaction is confirmed on the blockchain, transitions to Closed.
-         *
-         *     **Closed** - The transaction spending the collateral contract outputs has been published and
-         *     confirmed on the blockchain.
-         *
-         *     The loan contract is now closed. This status implies that the borrower paid back the loan.
-         *
-         *     **ClosedByLiquidation** - The transaction spending the collateral contract outputs has been
-         *     published and confirmed on the blockchain.
-         *
-         *     The loan contract is now closed. This status indicates that the loan contract was liquidated due
-         *     to undercollateralization.
-         *
-         *     **ClosedByDefaulting** - The transaction spending the collateral contract outputs has been
-         *     published and confirmed on the blockchain.
-         *
-         *     The loan contract is now closed. This status indicates that the loan contract was liquidated
-         *     because the borrower defaulted on a loan repayment.
-         *
-         *     **Extended** - The loan contract was extended before the loan term.
-         *
-         *     A new contract was created in place of this one, with status PrincipalGiven. This contract now
-         *     serves as historical data. The contracts are linked through the extends_contract and
-         *     extended_by_contract fields of the Contract schema.
-         *
-         *     **Rejected** - The contract request was rejected by the lender.
-         *
-         *     **DisputeBorrowerStarted** - A dispute has been started by the borrower.
-         *
-         *     Once the dispute is resolved, the contract will (in most cases) transition back to the status
-         *     before the dispute was raised.
-         *
-         *     **DisputeLenderStarted** - A dispute has been started by the lender.
-         *
-         *     Once the dispute is resolved, the contract will (in most cases) transition back to the status
-         *     before the dispute was raised.
-         *
-         *     **Cancelled** - The contract request has been cancelled by the borrower.
-         *
-         *     **RequestExpired** - The contract request has expired because the lender did not respond in
-         *     time.
-         *
-         *     **ApprovalExpired** - The approved contract has expired because the borrower did not
-         *     collateralize it in time.
-         *
-         *     **CollateralRecoverable** - The lender failed to disburse the principal in time after the
-         *     contract was collateralized.
-         *
-         *     The borrower is now able to recover their collateral.
-         *
-         *     **ClosedByRecovery** - The transaction spending the collateral contract outputs has been
-         *     published and confirmed on the blockchain.
-         *
-         *     The loan contract is now closed. This status indicates that the loan contract was closed due to
-         *     the lender never disbursing the principal.
-         * @enum {string}
-         */
-        ContractStatus: "Requested" | "Approved" | "CollateralSeen" | "CollateralConfirmed" | "PrincipalGiven" | "RepaymentProvided" | "RepaymentConfirmed" | "Undercollateralized" | "Defaulted" | "ClosingByClaim" | "Closed" | "ClosingByLiquidation" | "ClosedByLiquidation" | "ClosingByDefaulting" | "ClosedByDefaulting" | "Extended" | "Rejected" | "DisputeBorrowerStarted" | "DisputeLenderStarted" | "Cancelled" | "RequestExpired" | "ApprovalExpired" | "CollateralRecoverable" | "ClosingByRecovery" | "ClosedByRecovery";
+        /** @enum {string} */
+        ContractStatus: "Requested" | "Approved" | "CollateralSeen" | "CollateralConfirmed" | "PrincipalGiven" | "RepaymentProvided" | "RepaymentConfirmed" | "Undercollateralized" | "Defaulted" | "ClosingByClaim" | "Closed" | "Closing" | "ClosingByLiquidation" | "ClosedByLiquidation" | "ClosingByDefaulting" | "ClosedByDefaulting" | "Extended" | "Rejected" | "DisputeBorrowerStarted" | "DisputeLenderStarted" | "Cancelled" | "RequestExpired" | "ApprovalExpired" | "CollateralRecoverable" | "ClosingByRecovery" | "ClosedByRecovery";
         ContractsQuery: {
             /** Format: int32 */
             limit?: number;
@@ -1699,7 +1566,7 @@ export interface components {
         FilteredUser: {
             /** Format: date-time */
             created_at: string;
-            email: string;
+            email?: string | null;
             /** Format: double */
             first_time_discount_rate: number;
             id: string;
@@ -1726,16 +1593,6 @@ export interface components {
         };
         Health: {
             message: string;
-        };
-        HistoricalPrice: {
-            /** Format: double */
-            price: number;
-            /** Format: date-time */
-            timestamp: string;
-        };
-        HistoricalPricesResponse: {
-            prices: components["schemas"]["HistoricalPrice"][];
-            range: string;
         };
         /** @description Details needed for the lender to send fiat via an IBAN transfer to the borrower.
          *
@@ -2149,8 +2006,6 @@ export interface components {
             account_number: string;
             swift_or_bic: string;
         };
-        /** @enum {string} */
-        TimeRange: "1D" | "1W" | "1M" | "1Y" | "MAX";
         TimelineEvent: {
             /** Format: date-time */
             date: string;
@@ -2983,13 +2838,13 @@ export interface operations {
             };
         };
         responses: {
-            /** @description Transaction ID of successfully posted transaction */
+            /** @description Successfully broadcast claim transaction */
             200: {
                 headers: {
                     [name: string]: unknown;
                 };
                 content: {
-                    "text/plain": string;
+                    "application/json": components["schemas"]["BroadcastClaimTxResponse"];
                 };
             };
         };
@@ -3016,7 +2871,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "text/plain": string;
+                    "application/json": components["schemas"]["BroadcastRecoverTxResponse"];
                 };
             };
         };
@@ -3395,38 +3250,6 @@ export interface operations {
                 content: {
                     "application/json": components["schemas"]["Health"][];
                 };
-            };
-        };
-    };
-    get_historical_prices: {
-        parameters: {
-            query: {
-                /** @description Time range for historical data (1D, 1W, 1M, 1Y, MAX) */
-                range: components["schemas"]["TimeRange"];
-                /** @description Asset type (defaults to USD) */
-                asset?: components["schemas"]["LoanAsset"];
-            };
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Historical prices retrieved successfully */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HistoricalPricesResponse"];
-                };
-            };
-            /** @description Internal server error */
-            500: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
             };
         };
     };
