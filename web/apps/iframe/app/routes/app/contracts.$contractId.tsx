@@ -6,6 +6,7 @@ import { apiClient, calculateCurrentLtv, Currency } from "@repo/api";
 import { LoadingOverlay } from "~/components/ui/spinner";
 import { usePriceForCurrency } from "@repo/api/price-context";
 import { CancelContractAction } from "~/components/contract-actions/CancelContractAction";
+import { FundContractAction } from "~/components/contract-actions/FundContractAction";
 
 export function meta({}: Route.MetaArgs) {
   return [
@@ -171,11 +172,20 @@ export default function ContractDetails() {
               </span>
             </div>
 
-            {/* Action Button */}
-            {(contractState.value.status === "Requested" ||
-              contractState.value.status === "Approved") && (
+            {/* Action Buttons */}
+            {contractState.value.status === "Requested" && (
               <div className="mt-4">
                 <CancelContractAction contractId={contractState.value.id} />
+              </div>
+            )}
+            {contractState.value.status === "Approved" && (
+              <div className="mt-4 flex gap-3">
+                <div className="flex-1">
+                  <CancelContractAction contractId={contractState.value.id} />
+                </div>
+                <div className="flex-1">
+                  <FundContractAction contractId={contractState.value.id} />
+                </div>
               </div>
             )}
           </div>

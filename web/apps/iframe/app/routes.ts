@@ -6,6 +6,7 @@ export default [
     index("routes/app/index.tsx"),
     route("app/contracts", "routes/app/contracts.tsx"),
     route("app/contracts/:contractId", "routes/app/contracts.$contractId.tsx"),
+    route("app/contracts/:contractId/fund", "routes/app/contracts.$contractId.fund.tsx"),
     route("app/offers", "routes/app/offers.tsx"),
     route("app/offers/:offerId", "routes/app/offers.$offerId.tsx"),
     route("app/applications", "routes/app/applications.tsx"),
