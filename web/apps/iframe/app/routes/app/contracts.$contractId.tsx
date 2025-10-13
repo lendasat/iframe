@@ -5,6 +5,7 @@ import type { Route } from "../+types/app.contracts.$contractId";
 import { apiClient, calculateCurrentLtv, Currency } from "@repo/api";
 import { LoadingOverlay } from "~/components/ui/spinner";
 import { usePriceForCurrency } from "@repo/api/price-context";
+import { CancelContractAction } from "~/components/contract-actions/CancelContractAction";
 
 export function meta({}: Route.MetaArgs) {
   return [
@@ -170,15 +171,12 @@ export default function ContractDetails() {
               </span>
             </div>
 
-            {/* Action Button Placeholder */}
-            <div className="mt-4">
-              <button
-                disabled
-                className="w-full bg-gray-300 text-gray-500 font-medium py-2 px-4 rounded-md cursor-not-allowed"
-              >
-                Action (Coming Soon)
-              </button>
-            </div>
+            {/* Action Button */}
+            {contractState.value.status === "Requested" && (
+              <div className="mt-4">
+                <CancelContractAction contractId={contractState.value.id} />
+              </div>
+            )}
           </div>
 
           {/* Loan Details - Compact */}

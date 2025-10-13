@@ -317,6 +317,42 @@ export class ApiClient {
 
     return mapContract(data);
   }
+
+  /**
+   * Cancel a contract request
+   *
+   * This method cancels a contract that is in "Requested" status.
+   * Only contracts that haven't been approved by the lender can be cancelled.
+   *
+   * @param id - The UUID of the contract to cancel
+   * @returns A Promise that resolves when the contract is cancelled
+   *
+   * @throws {UnauthorizedError} If no API key is provided
+   * @throws {Error} If the API returns an error
+   *
+   * @example
+   * ```typescript
+   * await apiClient.cancelContract('f47ac10b-58cc-4372-a567-0e02b2c3d479');
+   * ```
+   */
+  async cancelContract(id: string): Promise<void> {
+    if (!this.api_key) {
+      throw new UnauthorizedError();
+    }
+
+    const { error } = await this.client.DELETE("/api/contracts/{id}", {
+      headers: { "x-api-key": this.api_key },
+      params: {
+        path: {
+          id,
+        },
+      },
+    });
+
+    if (error) {
+      throw Error(JSON.stringify(error));
+    }
+  }
 }
 
 // Export a default instance without API key

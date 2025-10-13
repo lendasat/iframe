@@ -38,12 +38,9 @@ function App() {
       }
 
       // Create key pair from private key
-      const keyPair = ECPair.fromPrivateKey(
-        Buffer.from(privateKeyHex, "hex"),
-        {
-          network: bitcoin.networks.bitcoin,
-        },
-      );
+      const keyPair = ECPair.fromPrivateKey(Buffer.from(privateKeyHex, "hex"), {
+        network: bitcoin.networks.bitcoin,
+      });
 
       // Derive P2WPKH (native segwit) address
       const { address: btcAddress } = bitcoin.payments.p2wpkh({
