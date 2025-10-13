@@ -89,7 +89,7 @@ export class WalletProvider {
         !this.allowedOrigins.includes(event.origin)
       ) {
         console.warn(
-          `Ignored message from unauthorized origin: ${event.origin}`,
+          `[WalletBridge Provider] Ignored message from unauthorized origin: ${event.origin}`,
         );
         return;
       }
@@ -105,6 +105,7 @@ export class WalletProvider {
         return;
       }
 
+      console.log("[WalletBridge Provider] Received request:", message.type, message);
       await this.handleRequest(message, event.source as Window);
     };
 
@@ -189,6 +190,7 @@ export class WalletProvider {
         }
       }
 
+      console.log("[WalletBridge Provider] Sending response:", response.type, response);
       source.postMessage(response, "*");
     } catch (error) {
       const errorResponse: WalletResponse = {
@@ -196,6 +198,8 @@ export class WalletProvider {
         id: request.id,
         error: error instanceof Error ? error.message : String(error),
       };
+      console.error("[WalletBridge Provider] Error handling request:", error);
+      console.log("[WalletBridge Provider] Sending error response:", errorResponse);
       source.postMessage(errorResponse, "*");
     }
   }

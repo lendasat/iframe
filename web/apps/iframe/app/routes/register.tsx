@@ -24,6 +24,7 @@ export default function Register() {
   const [error, setError] = useState("");
 
   // Check if user is already authenticated
+  // ApiProvider ensures API key is already set before this component renders
   const authCheck = useAsync(async () => {
     try {
       const me = await apiClient.me();

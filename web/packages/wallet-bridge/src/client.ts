@@ -43,8 +43,11 @@ export class LendasatClient {
         return;
       }
 
+      console.log("[WalletBridge Client] Received response:", message.type, message);
+
       const pending = this.pendingRequests.get(message.id);
       if (!pending) {
+        console.warn("[WalletBridge Client] No pending request found for ID:", message.id);
         return;
       }
 
@@ -58,6 +61,7 @@ export class LendasatClient {
     };
 
     window.addEventListener("message", this.messageHandler);
+    console.log("[WalletBridge Client] Message listener set up");
   }
 
   private sendRequest<T extends WalletResponse>(
@@ -89,6 +93,7 @@ export class LendasatClient {
         return;
       }
 
+      console.log("[WalletBridge Client] Sending request:", request.type, "to origin:", this.targetOrigin, request);
       window.parent.postMessage(request, this.targetOrigin);
     });
   }
