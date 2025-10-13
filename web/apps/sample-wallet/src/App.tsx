@@ -10,6 +10,7 @@ import {
 } from "@lendasat/lendasat-wallet-bridge";
 import "./App.css";
 import * as tools from "uint8array-tools";
+import { loadPrivateKey, savePrivateKey } from "./storage";
 
 // Make Buffer available globally for bitcoinjs-lib
 // @ts-expect-error "this is needed for ios devices"
@@ -18,9 +19,7 @@ window.Buffer = Buffer;
 const ECPair = ECPairFactory(ecc);
 
 function App() {
-  const [privateKey, setPrivateKey] = useState(
-    "0000000000000000000000000000000000000000000000000000000000000001",
-  );
+  const [privateKey, setPrivateKey] = useState(() => loadPrivateKey());
   const [address, setAddress] = useState<string>("");
   const [publicKey, setPublicKey] = useState<string>("");
   const [error, setError] = useState<string>("");
@@ -29,21 +28,22 @@ function App() {
   > | null>(null);
   const iframeRef = useRef<HTMLIFrameElement>(null);
   const providerRef = useRef<WalletProvider | null>(null);
+  const [isInitialized, setIsInitialized] = useState(false);
 
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    setError("");
-
+  const initializeWallet = (privateKeyHex: string) => {
     try {
       // Validate private key length
-      if (privateKey.length !== 64) {
+      if (privateKeyHex.length !== 64) {
         throw new Error("Private key must be 64 hex characters");
       }
 
       // Create key pair from private key
-      const keyPair = ECPair.fromPrivateKey(Buffer.from(privateKey, "hex"), {
-        network: bitcoin.networks.bitcoin,
-      });
+      const keyPair = ECPair.fromPrivateKey(
+        Buffer.from(privateKeyHex, "hex"),
+        {
+          network: bitcoin.networks.bitcoin,
+        },
+      );
 
       // Derive P2WPKH (native segwit) address
       const { address: btcAddress } = bitcoin.payments.p2wpkh({
@@ -58,15 +58,34 @@ function App() {
       setAddress(btcAddress);
       setPublicKey(tools.toHex(keyPair.publicKey));
       setKeyPair(keyPair);
+      setError("");
       console.log("Address:", btcAddress);
       console.log("Public Key:", tools.toHex(keyPair.publicKey));
+      return true;
     } catch (err) {
       setError(err instanceof Error ? err.message : "Invalid private key");
       setAddress("");
       setPublicKey("");
       setKeyPair(null);
+      return false;
     }
   };
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (initializeWallet(privateKey)) {
+      // Save to storage only if initialization was successful
+      savePrivateKey(privateKey);
+    }
+  };
+
+  // Auto-initialize wallet on mount
+  useEffect(() => {
+    if (!isInitialized) {
+      initializeWallet(privateKey);
+      setIsInitialized(true);
+    }
+  }, []);
 
   // Set up WalletProvider to handle iframe requests
   useEffect(() => {
