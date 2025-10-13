@@ -233,6 +233,7 @@ function App() {
           src="http://localhost:5173"
           title="Lendasat"
           className="lendasat-iframe"
+          allow="clipboard-write; clipboard-read"
         />
       </div>
     </div>

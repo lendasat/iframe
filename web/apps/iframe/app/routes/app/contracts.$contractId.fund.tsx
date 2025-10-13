@@ -1,9 +1,11 @@
 import { useParams, useNavigate } from "react-router";
 import { useAsync } from "react-use";
+import { useState } from "react";
 import type { Route } from "../+types/app.contracts.$contractId.fund";
 import { apiClient } from "@repo/api";
 import { LoadingOverlay } from "~/components/ui/spinner";
 import { Button } from "~/components/ui/button";
+import { QRCodeSVG } from "qrcode.react";
 
 export function meta({}: Route.MetaArgs) {
   return [
@@ -15,6 +17,38 @@ export function meta({}: Route.MetaArgs) {
 export default function FundContract() {
   const { contractId } = useParams();
   const navigate = useNavigate();
+  const [copiedAddress, setCopiedAddress] = useState(false);
+  const [copiedCollateralSats, setCopiedCollateralSats] = useState(false);
+  const [copiedCollateralBtc, setCopiedCollateralBtc] = useState(false);
+
+  const copyToClipboard = async (
+    text: string,
+    setter: (value: boolean) => void,
+  ) => {
+    try {
+      // Try modern clipboard API first
+      await navigator.clipboard.writeText(text);
+      setter(true);
+      setTimeout(() => setter(false), 2000);
+    } catch (err) {
+      // Fallback for browsers that don't support clipboard API or when permissions are denied
+      try {
+        // Create a temporary textarea element
+        const textarea = document.createElement("textarea");
+        textarea.value = text;
+        textarea.style.position = "fixed";
+        textarea.style.opacity = "0";
+        document.body.appendChild(textarea);
+        textarea.select();
+        document.execCommand("copy");
+        document.body.removeChild(textarea);
+        setter(true);
+        setTimeout(() => setter(false), 2000);
+      } catch (fallbackErr) {
+        console.error("Failed to copy:", err, fallbackErr);
+      }
+    }
+  };
 
   // Fetch the specific contract
   const contractState = useAsync(async () => {
@@ -103,39 +137,188 @@ export default function FundContract() {
                 </p>
               </div>
 
-              {/* Contract Address */}
+              {/* Contract Address with QR Code */}
               <div className="bg-gray-50 rounded-lg p-4">
-                <p className="text-sm text-gray-600 mb-2">Contract Address</p>
-                <p className="text-sm font-mono text-gray-900 break-all">
-                  {contractState.value.contractAddress ||
-                    "Contract address not yet available"}
-                </p>
-                {contractState.value.contractAddress && (
-                  <a
-                    href={`https://mempool.space/address/${contractState.value.contractAddress}`}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="text-indigo-600 hover:text-indigo-800 text-sm font-medium mt-2 inline-block"
-                  >
-                    View on Mempool →
-                  </a>
+                <p className="text-sm text-gray-600 mb-3">Contract Address</p>
+                {contractState.value.contractAddress ? (
+                  <>
+                    <div className="flex items-center gap-4">
+                      <div className="flex-shrink-0 bg-white p-2 rounded-lg">
+                        <QRCodeSVG
+                          value={contractState.value.contractAddress.toLowerCase()}
+                          size={120}
+                          level="M"
+                        />
+                      </div>
+                      <div className="flex-1">
+                        <div className="flex items-center gap-2 mb-2">
+                          <p className="text-sm font-mono text-gray-900 break-all flex-1">
+                            {contractState.value.contractAddress}
+                          </p>
+                          <button
+                            onClick={() =>
+                              copyToClipboard(
+                                contractState.value?.contractAddress || "",
+                                setCopiedAddress,
+                              )
+                            }
+                            className="text-gray-400 hover:text-gray-600 transition-colors flex-shrink-0"
+                            title="Copy address"
+                          >
+                            {copiedAddress ? (
+                              <svg
+                                className="w-5 h-5 text-green-600"
+                                fill="none"
+                                stroke="currentColor"
+                                viewBox="0 0 24 24"
+                              >
+                                <path
+                                  strokeLinecap="round"
+                                  strokeLinejoin="round"
+                                  strokeWidth={2}
+                                  d="M5 13l4 4L19 7"
+                                />
+                              </svg>
+                            ) : (
+                              <svg
+                                className="w-5 h-5"
+                                fill="none"
+                                stroke="currentColor"
+                                viewBox="0 0 24 24"
+                              >
+                                <path
+                                  strokeLinecap="round"
+                                  strokeLinejoin="round"
+                                  strokeWidth={2}
+                                  d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"
+                                />
+                              </svg>
+                            )}
+                          </button>
+                        </div>
+                        <a
+                          href={`https://mempool.space/address/${contractState.value.contractAddress}`}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="text-indigo-600 hover:text-indigo-800 text-sm font-medium"
+                        >
+                          View on Mempool →
+                        </a>
+                      </div>
+                    </div>
+                  </>
+                ) : (
+                  <p className="text-sm text-gray-500">
+                    Contract address not yet available
+                  </p>
                 )}
               </div>
 
               {/* Required Collateral Amount */}
               <div className="bg-gray-50 rounded-lg p-4">
-                <p className="text-sm text-gray-600 mb-2">
+                <p className="text-sm text-gray-600 mb-3">
                   Required Collateral Amount
                 </p>
-                <p className="text-lg font-semibold text-gray-900">
-                  {contractState.value.collateralSats.toLocaleString()} sats
-                </p>
-                <p className="text-sm text-gray-500">
-                  {(contractState.value.collateralSats / 100_000_000).toFixed(
-                    8,
-                  )}{" "}
-                  BTC
-                </p>
+                <div className="space-y-2">
+                  <div className="flex items-center justify-between">
+                    <p className="text-lg font-semibold text-gray-900">
+                      {contractState.value.initialCollateralSats.toLocaleString()}{" "}
+                      sats
+                    </p>
+                    <button
+                      onClick={() =>
+                        copyToClipboard(
+                          contractState.value?.initialCollateralSats.toString() ||
+                            "",
+                          setCopiedCollateralSats,
+                        )
+                      }
+                      className="text-gray-400 hover:text-gray-600 transition-colors"
+                      title="Copy sats amount"
+                    >
+                      {copiedCollateralSats ? (
+                        <svg
+                          className="w-5 h-5 text-green-600"
+                          fill="none"
+                          stroke="currentColor"
+                          viewBox="0 0 24 24"
+                        >
+                          <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            strokeWidth={2}
+                            d="M5 13l4 4L19 7"
+                          />
+                        </svg>
+                      ) : (
+                        <svg
+                          className="w-5 h-5"
+                          fill="none"
+                          stroke="currentColor"
+                          viewBox="0 0 24 24"
+                        >
+                          <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            strokeWidth={2}
+                            d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"
+                          />
+                        </svg>
+                      )}
+                    </button>
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <p className="text-sm text-gray-500">
+                      {(
+                        contractState.value.initialCollateralSats / 100_000_000
+                      ).toFixed(8)}{" "}
+                      BTC
+                    </p>
+                    <button
+                      onClick={() =>
+                        copyToClipboard(
+                          (
+                            contractState.value?.initialCollateralSats /
+                              100_000_000 || 0
+                          ).toFixed(8),
+                          setCopiedCollateralBtc,
+                        )
+                      }
+                      className="text-gray-400 hover:text-gray-600 transition-colors"
+                      title="Copy BTC amount"
+                    >
+                      {copiedCollateralBtc ? (
+                        <svg
+                          className="w-5 h-5 text-green-600"
+                          fill="none"
+                          stroke="currentColor"
+                          viewBox="0 0 24 24"
+                        >
+                          <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            strokeWidth={2}
+                            d="M5 13l4 4L19 7"
+                          />
+                        </svg>
+                      ) : (
+                        <svg
+                          className="w-5 h-5"
+                          fill="none"
+                          stroke="currentColor"
+                          viewBox="0 0 24 24"
+                        >
+                          <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            strokeWidth={2}
+                            d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"
+                          />
+                        </svg>
+                      )}
+                    </button>
+                  </div>
+                </div>
               </div>
 
               {/* Loan Details Summary */}
@@ -161,9 +344,15 @@ export default function FundContract() {
                     </span>
                   </div>
                   <div className="flex justify-between">
-                    <span className="text-blue-700">Interest Rate:</span>
+                    <span className="text-blue-700">Interest:</span>
                     <span className="font-medium text-blue-900">
-                      {(contractState.value.interestRate * 100).toFixed(2)}%
+                      $
+                      {contractState.value.interest.toLocaleString("en-US", {
+                        minimumFractionDigits: 2,
+                        maximumFractionDigits: 2,
+                      })}{" "}
+                      ({(contractState.value.interestRate * 100).toFixed(2)}%
+                      p.a.)
                     </span>
                   </div>
                 </div>
@@ -188,9 +377,9 @@ export default function FundContract() {
                       Important
                     </h4>
                     <p className="text-sm text-yellow-700 mt-1">
-                      Please ensure you send the exact collateral amount to the
-                      contract address. The loan will be disbursed once the
-                      collateral is confirmed on the blockchain.
+                      Please ensure you send at least the required collateral
+                      amount to the contract address. The lender will disburse
+                      once the collateral is confirmed on the blockchain.
                     </p>
                   </div>
                 </div>
