@@ -105,8 +105,8 @@ export interface DerivationPathResponse {
 export interface AddressResponse {
   type: "ADDRESS_RESPONSE";
   id: string;
-  /** The requested address */
-  address: string;
+  /** The requested address, or null if not supported */
+  address: string | null;
   /** The type of address returned */
   addressType: AddressType;
 }
@@ -114,8 +114,8 @@ export interface AddressResponse {
 export interface NpubResponse {
   type: "NPUB_RESPONSE";
   id: string;
-  /** Nostr public key in npub format */
-  npub: string;
+  /** Nostr public key in npub format, or null if not supported */
+  npub: string | null;
 }
 
 export interface PsbtSignedResponse {

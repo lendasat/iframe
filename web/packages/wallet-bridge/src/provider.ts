@@ -19,14 +19,15 @@ export interface WalletHandlers {
    * Return an address based on the requested type
    * @param addressType - The type of address to retrieve (bitcoin, ark, or loan_asset)
    * @param asset - Optional asset identifier for LOAN_ASSET type (e.g., "UsdcPol", "UsdtEth")
-   * @returns The requested address
+   * @returns The requested address, or null if the address type is not supported
    */
-  onGetAddress: (addressType: AddressType, asset?: LoanAsset) => string | Promise<string>;
+  onGetAddress: (addressType: AddressType, asset?: LoanAsset) => string | null | Promise<string | null>;
 
   /**
    * Return the borrower's Nostr public key in npub format
+   * @returns The npub, or null if not supported/available
    */
-  onGetNpub: () => string | Promise<string>;
+  onGetNpub: () => string | null | Promise<string | null>;
 
   /**
    * Sign a PSBT and return the signed PSBT

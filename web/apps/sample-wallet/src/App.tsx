@@ -124,16 +124,15 @@ function App() {
 
           switch (addressType) {
             case AddressType.BITCOIN:
-              if (!address) throw new Error("No Bitcoin address loaded");
+              if (!address) return null;
               return address;
 
             case AddressType.ARK:
               // TODO: Implement Ark address generation/retrieval
-              throw new Error("Ark addresses not yet implemented");
+              return null;
 
             case AddressType.LOAN_ASSET:
-              if (!asset)
-                throw new Error("Asset must be specified for LOAN_ASSET type");
+              if (!asset) return null;
 
               // Map loan assets to blockchain addresses
               // This would be derived from the wallet in a real implementation
@@ -162,23 +161,21 @@ function App() {
                 case "Chf":
                 case "Mxn":
                   // Fiat - no blockchain address needed
-                  throw new Error(
-                    `Fiat asset ${asset} does not have a blockchain address`,
-                  );
+                  return null;
                 default:
-                  throw new Error(
-                    `Loan asset address not implemented for asset: ${asset}`,
-                  );
+                  // Unknown asset type
+                  return null;
               }
 
             default:
+              // Unknown address type
               throw new Error(`Unknown address type: ${addressType}`);
           }
         },
         onGetNpub: () => {
           console.log(`Called on get npub`);
           // TODO: Implement Nostr npub conversion
-          throw new Error("Nostr npub not yet implemented");
+          return null;
         },
         onSignPsbt: (psbt: string) => {
           console.log(`Called sign psbt ${psbt}`);
