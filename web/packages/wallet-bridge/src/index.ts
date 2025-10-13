@@ -34,6 +34,9 @@ export { WalletProvider, type WalletHandlers } from "./provider";
 export type {
   WalletRequest,
   WalletResponse,
+  WalletCapabilities,
+  GetCapabilitiesRequest,
+  CapabilitiesResponse,
   GetPublicKeyRequest,
   GetDerivationPathRequest,
   GetAddressRequest,

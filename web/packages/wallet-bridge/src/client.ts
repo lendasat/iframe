@@ -1,4 +1,4 @@
-import type { WalletRequest, WalletResponse, ErrorResponse, LoanAsset } from "./types";
+import type { WalletRequest, WalletResponse, ErrorResponse, LoanAsset, WalletCapabilities } from "./types";
 import { isWalletResponse, AddressType } from "./types";
 
 /**
@@ -7,6 +7,7 @@ import { isWalletResponse, AddressType } from "./types";
  * Usage:
  * ```typescript
  * const client = new LendasatClient();
+ * const capabilities = await client.getCapabilities();
  * const publicKey = await client.getPublicKey();
  * const path = await client.getDerivationPath();
  * const npub = await client.getNpub();
@@ -20,6 +21,7 @@ export class LendasatClient {
   >;
   private targetOrigin: string;
   private messageHandler: ((event: MessageEvent) => void) | null = null;
+  private cachedCapabilities: WalletCapabilities | null = null;
 
   /**
    * @param targetOrigin - The origin of the parent wallet (default: "*" for development, should be specific in production)
@@ -100,6 +102,32 @@ export class LendasatClient {
 
   private generateId(): string {
     return `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+  }
+
+  /**
+   * Get the wallet's capabilities
+   * This should be called first to determine what features are available
+   * Results are cached after the first call
+   * @returns Wallet capabilities describing supported features
+   */
+  async getCapabilities(): Promise<WalletCapabilities> {
+    // Return cached capabilities if available
+    if (this.cachedCapabilities) {
+      return this.cachedCapabilities;
+    }
+
+    const response = await this.sendRequest<{
+      type: "CAPABILITIES_RESPONSE";
+      id: string;
+      capabilities: WalletCapabilities;
+    }>({
+      type: "GET_CAPABILITIES",
+      id: this.generateId(),
+    });
+
+    // Cache the capabilities
+    this.cachedCapabilities = response.capabilities;
+    return response.capabilities;
   }
 
   /**
@@ -244,5 +272,6 @@ export class LendasatClient {
       this.messageHandler = null;
     }
     this.pendingRequests.clear();
+    this.cachedCapabilities = null;
   }
 }

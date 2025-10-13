@@ -3,6 +3,7 @@ import {
   AddressType,
   LendasatClient,
   type LoanAsset,
+  type WalletCapabilities,
 } from "@lendasat/lendasat-wallet-bridge";
 
 /**
@@ -10,7 +11,12 @@ import {
  *
  * Usage:
  * ```typescript
- * const { client, isConnected } = useWallet();
+ * const { client, isConnected, capabilities } = useWallet();
+ *
+ * // Check capabilities
+ * if (capabilities?.bitcoin.signPsbt) {
+ *   // Show withdraw button
+ * }
  *
  * // Get wallet info
  * const publicKey = await client?.getPublicKey();
@@ -23,6 +29,10 @@ import {
  */
 export function useWallet() {
   const [isConnected, setIsConnected] = useState(false);
+  const [capabilities, setCapabilities] = useState<WalletCapabilities | null>(
+    null,
+  );
+  const [capabilitiesLoading, setCapabilitiesLoading] = useState(false);
   const clientRef = useRef<LendasatClient | null>(null);
 
   useEffect(() => {
@@ -44,6 +54,25 @@ export function useWallet() {
 
     console.log("LendasatClient initialized");
 
+    // Fetch capabilities
+    const fetchCapabilities = async () => {
+      if (!clientRef.current) return;
+
+      try {
+        setCapabilitiesLoading(true);
+        const caps = await clientRef.current.getCapabilities();
+        setCapabilities(caps);
+        console.log("Wallet capabilities loaded:", caps);
+      } catch (err) {
+        console.error("Failed to fetch wallet capabilities:", err);
+        // Don't set capabilities to null on error - keep it null to indicate unknown
+      } finally {
+        setCapabilitiesLoading(false);
+      }
+    };
+
+    fetchCapabilities();
+
     // Cleanup
     return () => {
       if (clientRef.current) {
@@ -51,12 +80,15 @@ export function useWallet() {
         clientRef.current = null;
       }
       setIsConnected(false);
+      setCapabilities(null);
     };
   }, []);
 
   return {
     client: clientRef.current,
     isConnected,
+    capabilities,
+    capabilitiesLoading,
   };
 }
 
@@ -64,7 +96,8 @@ export function useWallet() {
  * Helper hook to get wallet information on mount
  */
 export function useWalletInfo() {
-  const { client, isConnected } = useWallet();
+  const { client, isConnected, capabilities, capabilitiesLoading } =
+    useWallet();
   const [publicKey, setPublicKey] = useState<string | null>(null);
   const [derivationPath, setDerivationPath] = useState<string | null>(null);
   const [address, setAddress] = useState<string | null>(null);
@@ -86,7 +119,10 @@ export function useWalletInfo() {
           client.getPublicKey(),
           client.getDerivationPath(),
           client.getAddress(AddressType.BITCOIN),
-          client.getNpub().catch(() => null), // npub might not be implemented yet
+          // Only fetch npub if wallet supports it
+          capabilities?.nostr.hasNpub
+            ? client.getNpub()
+            : Promise.resolve(null),
         ]);
 
         if (pk.status === "fulfilled") {
@@ -119,7 +155,7 @@ export function useWalletInfo() {
     };
 
     fetchWalletInfo();
-  }, [client, isConnected]);
+  }, [client, isConnected, capabilities]);
 
   return {
     publicKey,
@@ -129,6 +165,8 @@ export function useWalletInfo() {
     loading,
     error,
     client,
+    capabilities,
+    capabilitiesLoading,
   };
 }
 
@@ -137,7 +175,11 @@ export function useWalletInfo() {
  *
  * Usage:
  * ```typescript
- * const { address, loading, error, refetch } = useLoanAssetAddress("UsdcPol");
+ * const { address, loading, error, supported, refetch } = useLoanAssetAddress("UsdcPol");
+ *
+ * if (!supported) {
+ *   return <div>Wallet doesn't support this asset</div>;
+ * }
  *
  * // Or lazy load
  * const { address, loading, error, fetchAddress } = useLoanAssetAddress();
@@ -145,20 +187,41 @@ export function useWalletInfo() {
  * ```
  */
 export function useLoanAssetAddress(loanAsset?: LoanAsset) {
-  const { client, isConnected } = useWallet();
+  const { client, isConnected, capabilities } = useWallet();
   const [address, setAddress] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  // Check if the asset is supported
+  const supported =
+    !loanAsset ||
+    !capabilities ||
+    (capabilities.loanAssets.canReceive &&
+      capabilities.loanAssets.supportedAssets.includes(loanAsset));
 
   const fetchAddress = async (asset: LoanAsset): Promise<string> => {
     if (!client) {
       throw new Error("Wallet client not initialized");
     }
 
+    // Check if asset is supported
+    if (
+      capabilities &&
+      (!capabilities.loanAssets.canReceive ||
+        !capabilities.loanAssets.supportedAssets.includes(asset))
+    ) {
+      throw new Error(
+        `Wallet does not support ${asset}. Supported assets: ${capabilities.loanAssets.supportedAssets.join(", ")}`,
+      );
+    }
+
     try {
       setLoading(true);
       setError(null);
       const addr = await client.getAddress(AddressType.LOAN_ASSET, asset);
+      if (!addr) {
+        throw new Error(`Wallet returned no address for ${asset}`);
+      }
       setAddress(addr);
       return addr;
     } catch (err) {
@@ -170,9 +233,9 @@ export function useLoanAssetAddress(loanAsset?: LoanAsset) {
     }
   };
 
-  // Auto-fetch if loanAsset is provided
+  // Auto-fetch if loanAsset is provided and supported
   useEffect(() => {
-    if (!client || !isConnected || !loanAsset) {
+    if (!client || !isConnected || !loanAsset || !supported) {
       return;
     }
 
@@ -180,13 +243,51 @@ export function useLoanAssetAddress(loanAsset?: LoanAsset) {
       console.error("Failed to fetch loan asset address:", err);
     });
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [client, isConnected, loanAsset]);
+  }, [client, isConnected, loanAsset, supported]);
 
   return {
     address,
     loading,
     error,
+    supported,
     fetchAddress,
     refetch: loanAsset ? () => fetchAddress(loanAsset) : undefined,
   };
+}
+
+/**
+ * Helper function to check if a specific loan asset is supported by the wallet
+ */
+export function isAssetSupported(
+  capabilities: WalletCapabilities | null,
+  asset: LoanAsset,
+): boolean {
+  if (!capabilities) return false;
+  return capabilities.loanAssets.supportedAssets.includes(asset);
+}
+
+/**
+ * Helper function to check if wallet can receive a specific loan asset
+ */
+export function canReceiveLoanAsset(
+  capabilities: WalletCapabilities | null,
+  asset: LoanAsset,
+): boolean {
+  return (
+    isAssetSupported(capabilities, asset) &&
+    capabilities?.loanAssets.canReceive === true
+  );
+}
+
+/**
+ * Helper function to check if wallet can send a specific loan asset
+ */
+export function canSendLoanAsset(
+  capabilities: WalletCapabilities | null,
+  asset: LoanAsset,
+): boolean {
+  return (
+    isAssetSupported(capabilities, asset) &&
+    capabilities?.loanAssets.canSend === true
+  );
 }

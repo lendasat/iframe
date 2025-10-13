@@ -1,10 +1,21 @@
-import type { WalletRequest, WalletResponse, LoanAsset } from "./types";
+import type {
+  WalletRequest,
+  WalletResponse,
+  LoanAsset,
+  WalletCapabilities,
+} from "./types";
 import { isWalletRequest, AddressType } from "./types";
 
 /**
  * Handler functions that the parent wallet must implement
  */
 export interface WalletHandlers {
+  /**
+   * Declare the wallet's capabilities
+   * This is used by the iframe to determine which features are available
+   */
+  capabilities: WalletCapabilities;
+
   /**
    * Return the borrower's public key in hex format (compressed, 33 bytes = 66 hex chars)
    */
@@ -21,13 +32,16 @@ export interface WalletHandlers {
    * @param asset - Optional asset identifier for LOAN_ASSET type (e.g., "UsdcPol", "UsdtEth")
    * @returns The requested address, or null if the address type is not supported
    */
-  onGetAddress: (addressType: AddressType, asset?: LoanAsset) => string | null | Promise<string | null>;
+  onGetAddress: (
+    addressType: AddressType,
+    asset?: LoanAsset,
+  ) => Promise<string | null>;
 
   /**
    * Return the borrower's Nostr public key in npub format
    * @returns The npub, or null if not supported/available
    */
-  onGetNpub: () => string | null | Promise<string | null>;
+  onGetNpub: () => Promise<string | null>;
 
   /**
    * Sign a PSBT and return the signed transaction
@@ -40,13 +54,13 @@ export interface WalletHandlers {
     psbt: string,
     collateralDescriptor: string,
     borrowerPk: string,
-  ) => string | Promise<string>;
+  ) => Promise<string>;
 
   /**
    * Return the Lendasat API key
    * @returns Lendasat API key
    */
-  onGetApiKey: () => string | Promise<string>;
+  onGetApiKey: () => Promise<string>;
 
   /**
    * Send funds to an address
@@ -55,7 +69,11 @@ export interface WalletHandlers {
    * @param asset - Asset type - "bitcoin" for Bitcoin, or a LoanAsset type for other assets
    * @returns Transaction ID (txid) of the broadcast transaction
    */
-  onSendToAddress: (address: string, amount: number, asset: "bitcoin" | LoanAsset) => string | Promise<string>;
+  onSendToAddress: (
+    address: string,
+    amount: number,
+    asset: "bitcoin" | LoanAsset,
+  ) => Promise<string>;
 }
 
 /**
@@ -121,7 +139,11 @@ export class WalletProvider {
         return;
       }
 
-      console.log("[WalletBridge Provider] Received request:", message.type, message);
+      console.log(
+        "[WalletBridge Provider] Received request:",
+        message.type,
+        message,
+      );
       await this.handleRequest(message, event.source as Window);
     };
 
@@ -136,6 +158,15 @@ export class WalletProvider {
       let response: WalletResponse;
 
       switch (request.type) {
+        case "GET_CAPABILITIES": {
+          response = {
+            type: "CAPABILITIES_RESPONSE",
+            id: request.id,
+            capabilities: this.handlers.capabilities,
+          };
+          break;
+        }
+
         case "GET_PUBLIC_KEY": {
           const publicKey = await this.handlers.onGetPublicKey();
           response = {
@@ -224,7 +255,11 @@ export class WalletProvider {
         }
       }
 
-      console.log("[WalletBridge Provider] Sending response:", response.type, response);
+      console.log(
+        "[WalletBridge Provider] Sending response:",
+        response.type,
+        response,
+      );
       source.postMessage(response, "*");
     } catch (error) {
       const errorResponse: WalletResponse = {
@@ -233,7 +268,10 @@ export class WalletProvider {
         error: error instanceof Error ? error.message : String(error),
       };
       console.error("[WalletBridge Provider] Error handling request:", error);
-      console.log("[WalletBridge Provider] Sending error response:", errorResponse);
+      console.log(
+        "[WalletBridge Provider] Sending error response:",
+        errorResponse,
+      );
       source.postMessage(errorResponse, "*");
     }
   }

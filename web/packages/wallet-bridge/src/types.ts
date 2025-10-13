@@ -33,8 +33,44 @@ export enum AddressType {
   LOAN_ASSET = "loan_asset",
 }
 
+/**
+ * Wallet capabilities - describes what features the wallet supports
+ * This allows the iframe to adapt its UI based on wallet capabilities
+ */
+export interface WalletCapabilities {
+  /** Bitcoin operations */
+  bitcoin: {
+    /** Can sign PSBTs for collateral withdrawal */
+    signPsbt: boolean;
+    /** Can send Bitcoin transactions */
+    sendBitcoin: boolean;
+  };
+  /** Supported loan assets for receiving/sending payments */
+  loanAssets: {
+    /** List of loan assets the wallet can handle (e.g., ["UsdcPol", "UsdtEth"]) */
+    supportedAssets: LoanAsset[];
+    /** Can provide addresses for receiving loan payments */
+    canReceive: boolean;
+    /** Can send loan repayment transactions */
+    canSend: boolean;
+  };
+  /** Nostr support */
+  nostr: {
+    /** Has a Nostr public key (npub) available */
+    hasNpub: boolean;
+  };
+  /** Ark support */
+  ark: {
+    /** Can send on Ark */
+    canSend: boolean;
+    /** Can receive on Ark */
+    canReceive: boolean;
+  };
+}
+
 // Request messages sent from iframe to parent wallet
 export type WalletRequest =
+  | GetCapabilitiesRequest
   | GetPublicKeyRequest
   | GetDerivationPathRequest
   | GetAddressRequest
@@ -42,6 +78,11 @@ export type WalletRequest =
   | SignPsbtRequest
   | GetApiKeyRequest
   | SendToAddressRequest;
+
+export interface GetCapabilitiesRequest {
+  type: "GET_CAPABILITIES";
+  id: string;
+}
 
 export interface GetPublicKeyRequest {
   type: "GET_PUBLIC_KEY";
@@ -96,6 +137,7 @@ export interface SendToAddressRequest {
 
 // Response messages sent from parent wallet to iframe
 export type WalletResponse =
+  | CapabilitiesResponse
   | PublicKeyResponse
   | DerivationPathResponse
   | AddressResponse
@@ -104,6 +146,13 @@ export type WalletResponse =
   | ApiKeyResponse
   | SendToAddressResponse
   | ErrorResponse;
+
+export interface CapabilitiesResponse {
+  type: "CAPABILITIES_RESPONSE";
+  id: string;
+  /** The wallet's capabilities */
+  capabilities: WalletCapabilities;
+}
 
 export interface PublicKeyResponse {
   type: "PUBLIC_KEY_RESPONSE";
@@ -170,6 +219,7 @@ export function isWalletRequest(message: unknown): message is WalletRequest {
 
   const msg = message as { type?: string };
   return (
+    msg.type === "GET_CAPABILITIES" ||
     msg.type === "GET_PUBLIC_KEY" ||
     msg.type === "GET_DERIVATION_PATH" ||
     msg.type === "GET_ADDRESS" ||
@@ -187,6 +237,7 @@ export function isWalletResponse(message: unknown): message is WalletResponse {
 
   const msg = message as { type?: string };
   return (
+    msg.type === "CAPABILITIES_RESPONSE" ||
     msg.type === "PUBLIC_KEY_RESPONSE" ||
     msg.type === "DERIVATION_PATH_RESPONSE" ||
     msg.type === "ADDRESS_RESPONSE" ||

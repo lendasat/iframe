@@ -98,6 +98,25 @@ function App() {
     // Create new provider with handlers
     const provider = new WalletProvider(
       {
+        // Declare wallet capabilities
+        capabilities: {
+          bitcoin: {
+            signPsbt: true,
+            sendBitcoin: false, // Not yet implemented
+          },
+          loanAssets: {
+            supportedAssets: [],
+            canReceive: false, // Not implemented
+            canSend: false, // Not yet implemented
+          },
+          nostr: {
+            hasNpub: false, // Not implemented
+          },
+          ark: {
+            canSend: false,
+            canReceive: false,
+          },
+        },
         onGetPublicKey: () => {
           console.log(`Called on get pk`);
           if (!keyPair) throw new Error("No key pair loaded");

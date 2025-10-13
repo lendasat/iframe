@@ -67,6 +67,26 @@ import { WalletProvider, AddressType } from '@lendasat/lendasat-wallet-bridge';
 // Create provider with handler functions
 const provider = new WalletProvider(
   {
+    // Declare wallet capabilities (required)
+    capabilities: {
+      bitcoin: {
+        signPsbt: true,
+        sendBitcoin: false,
+      },
+      loanAssets: {
+        supportedAssets: ['UsdcPol', 'UsdtEth'],
+        canReceive: true,
+        canSend: false,
+      },
+      nostr: {
+        hasNpub: false,
+      },
+      ark: {
+        canSend: false,
+        canReceive: false,
+      },
+    },
+
     // Return the borrower's public key (hex-encoded, compressed 33 bytes)
     onGetPublicKey: () => {
       return keyPair.publicKey.toString('hex');
@@ -124,6 +144,25 @@ provider.listen(iframeElement);
 // provider.destroy();
 ```
 
+## Wallet Capabilities
+
+The bridge includes a capabilities discovery system that allows the iframe to query what features the wallet supports. This enables better UX by hiding/disabling unavailable features.
+
+```typescript
+// In iframe
+const capabilities = await client.getCapabilities();
+
+if (capabilities.bitcoin.signPsbt) {
+  // Show withdraw button
+}
+
+if (capabilities.loanAssets.supportedAssets.includes('UsdcPol')) {
+  // Can accept USDC on Polygon
+}
+```
+
+Capabilities are cached after the first request for performance.
+
 ## API Reference
 
 ### LendasatClient
@@ -132,6 +171,7 @@ Client for the Lendasat iframe to communicate with parent wallet.
 
 #### Methods
 
+- `getCapabilities(): Promise<WalletCapabilities>` - Get wallet capabilities (cached)
 - `getPublicKey(): Promise<string>` - Get the borrower's public key (hex-encoded, compressed)
 - `getDerivationPath(): Promise<string>` - Get the BIP32 derivation path
 - `getApiKey(): Promise<string>` - Get the Lendasat API key
