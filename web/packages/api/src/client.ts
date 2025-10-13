@@ -284,6 +284,31 @@ export class ApiClient {
 
     return mapContract(data);
   }
+
+  async contractDetails(id: string): Promise<Contract> {
+    if (!this.api_key) {
+      throw new UnauthorizedError();
+    }
+
+    const { data, error } = await this.client.GET("/api/contracts/{id}", {
+      headers: { "x-api-key": this.api_key },
+      params: {
+        path: {
+          id,
+        },
+      },
+    });
+
+    if (error) {
+      throw Error(JSON.stringify(error));
+    }
+
+    if (!data) {
+      throw Error("No data returned from API");
+    }
+
+    return mapContract(data);
+  }
 }
 
 // Export a default instance
