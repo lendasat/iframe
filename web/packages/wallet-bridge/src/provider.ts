@@ -34,6 +34,12 @@ export interface WalletHandlers {
    * @returns Base64-encoded signed PSBT
    */
   onSignPsbt: (psbt: string) => string | Promise<string>;
+
+  /**
+   * Return the Lendasat API key
+   * @returns Lendasat API key
+   */
+  onGetApiKey: () => string | Promise<string>;
 }
 
 /**
@@ -163,6 +169,16 @@ export class WalletProvider {
             type: "PSBT_SIGNED",
             id: request.id,
             signedPsbt,
+          };
+          break;
+        }
+
+        case "GET_API_KEY": {
+          const apiKey = await this.handlers.onGetApiKey();
+          response = {
+            type: "API_KEY_RESPONSE",
+            id: request.id,
+            apiKey,
           };
           break;
         }

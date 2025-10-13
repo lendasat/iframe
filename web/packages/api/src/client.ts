@@ -44,6 +44,14 @@ export class ApiClient {
     this.api_key = api_key;
   }
 
+  /**
+   * Set the API key for authenticated requests
+   * @param apiKey - The Lendasat API key
+   */
+  setApiKey(apiKey: string): void {
+    this.api_key = apiKey;
+  }
+
   // Applications API
 
   async register(
@@ -311,9 +319,6 @@ export class ApiClient {
   }
 }
 
-// Export a default instance
-export const apiClient = new ApiClient(
-  "http://localhost:7337",
-  // TODO: do not hardcode this
-  "lndst_sk_dee619e34a7e_NI2TUiMmYF9TcBavaFhUW0rZ63QOIsoldG1w0YdFMpR",
-);
+// Export a default instance without API key
+// API key should be set via setApiKey() method after retrieving from wallet bridge
+export const apiClient = new ApiClient("http://localhost:7337");

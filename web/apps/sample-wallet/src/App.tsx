@@ -93,6 +93,11 @@ function App() {
           // In a real wallet, this would come from the wallet's state
           return "m/84'/0'/0'/0/0";
         },
+        onGetApiKey: () => {
+          console.log(`Called on get API key`);
+          // TODO: In a real wallet, this would be retrieved from secure storage
+          return "lndst_sk_dee619e34a7e_NI2TUiMmYF9TcBavaFhUW0rZ63QOIsoldG1w0YdFMpR";
+        },
         onGetAddress: (addressType: AddressType, asset?: LoanAsset) => {
           console.log(
             `Called on get address: type=${addressType}, asset=${asset}`,

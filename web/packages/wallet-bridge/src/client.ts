@@ -185,6 +185,22 @@ export class LendasatClient {
   }
 
   /**
+   * Get the Lendasat API key from the parent wallet
+   * @returns Lendasat API key
+   */
+  async getApiKey(): Promise<string> {
+    const response = await this.sendRequest<{
+      type: "API_KEY_RESPONSE";
+      id: string;
+      apiKey: string;
+    }>({
+      type: "GET_API_KEY",
+      id: this.generateId(),
+    });
+    return response.apiKey;
+  }
+
+  /**
    * Clean up event listeners
    */
   destroy(): void {

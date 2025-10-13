@@ -72,6 +72,11 @@ export interface SignPsbtRequest {
   psbt: string;
 }
 
+export interface GetApiKeyRequest {
+  type: "GET_API_KEY";
+  id: string;
+}
+
 // Response messages sent from parent wallet to iframe
 export type WalletResponse =
   | PublicKeyResponse
@@ -79,6 +84,7 @@ export type WalletResponse =
   | AddressResponse
   | NpubResponse
   | PsbtSignedResponse
+  | ApiKeyResponse
   | ErrorResponse;
 
 export interface PublicKeyResponse {
@@ -118,6 +124,13 @@ export interface PsbtSignedResponse {
   signedPsbt: string;
 }
 
+export interface ApiKeyResponse {
+  type: "API_KEY_RESPONSE";
+  id: string;
+  /** Lendasat API key */
+  apiKey: string;
+}
+
 export interface ErrorResponse {
   type: "ERROR";
   id: string;
@@ -136,7 +149,8 @@ export function isWalletRequest(message: unknown): message is WalletRequest {
     msg.type === "GET_DERIVATION_PATH" ||
     msg.type === "GET_ADDRESS" ||
     msg.type === "GET_NPUB" ||
-    msg.type === "SIGN_PSBT"
+    msg.type === "SIGN_PSBT" ||
+    msg.type === "GET_API_KEY"
   );
 }
 
@@ -152,6 +166,7 @@ export function isWalletResponse(message: unknown): message is WalletResponse {
     msg.type === "ADDRESS_RESPONSE" ||
     msg.type === "NPUB_RESPONSE" ||
     msg.type === "PSBT_SIGNED" ||
+    msg.type === "API_KEY_RESPONSE" ||
     msg.type === "ERROR"
   );
 }
