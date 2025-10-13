@@ -93,7 +93,7 @@ export default function RepayLoan() {
 
       setRepaymentSuccess(txid);
       console.log("Repayment transaction sent successfully:", txid);
-      navigate(`/contracts/${contractId}`);
+      navigate(`/app/contracts/${contractId}`);
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : String(err);
       setRepaymentError(errorMessage);
@@ -132,7 +132,7 @@ export default function RepayLoan() {
       setSubmitSuccess(true);
       setTxidInput("");
       console.log("Repayment recorded successfully");
-      navigate(`/contracts/${contractId}`);
+      navigate(`/app/contracts/${contractId}`);
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : String(err);
       setSubmitError(errorMessage);
