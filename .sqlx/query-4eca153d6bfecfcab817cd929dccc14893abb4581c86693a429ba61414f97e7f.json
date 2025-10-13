@@ -1,0 +1,72 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "\n        WITH inserted_borrower AS (\n            INSERT INTO borrowers (id, name, email)\n            VALUES ($1, $2, $3)\n            RETURNING *\n        )\n        SELECT\n            b.*,\n            rb.referral_code as used_referral_code,\n            rcb.first_time_discount_rate_referee\n        FROM inserted_borrower b\n        LEFT JOIN referred_borrowers rb ON rb.referred_borrower_id = b.id\n        LEFT JOIN referral_codes_borrowers rcb ON rcb.code = rb.referral_code\n        ",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "id",
+        "type_info": "Bpchar"
+      },
+      {
+        "ordinal": 1,
+        "name": "name",
+        "type_info": "Varchar"
+      },
+      {
+        "ordinal": 2,
+        "name": "email",
+        "type_info": "Varchar"
+      },
+      {
+        "ordinal": 3,
+        "name": "created_at",
+        "type_info": "Timestamptz"
+      },
+      {
+        "ordinal": 4,
+        "name": "updated_at",
+        "type_info": "Timestamptz"
+      },
+      {
+        "ordinal": 5,
+        "name": "timezone",
+        "type_info": "Varchar"
+      },
+      {
+        "ordinal": 6,
+        "name": "locale",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 7,
+        "name": "used_referral_code",
+        "type_info": "Varchar"
+      },
+      {
+        "ordinal": 8,
+        "name": "first_time_discount_rate_referee",
+        "type_info": "Numeric"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Bpchar",
+        "Varchar",
+        "Varchar"
+      ]
+    },
+    "nullable": [
+      false,
+      false,
+      true,
+      false,
+      false,
+      true,
+      true,
+      true,
+      true
+    ]
+  },
+  "hash": "4eca153d6bfecfcab817cd929dccc14893abb4581c86693a429ba61414f97e7f"
+}

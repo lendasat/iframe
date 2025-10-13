@@ -1,0 +1,40 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "\n        SELECT borrower_id, pubkey, email, verified\n        FROM borrowers_pubkey_auth\n        WHERE borrower_id = $1\n        ",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "borrower_id",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 1,
+        "name": "pubkey",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 2,
+        "name": "email",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 3,
+        "name": "verified",
+        "type_info": "Bool"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Text"
+      ]
+    },
+    "nullable": [
+      false,
+      false,
+      false,
+      false
+    ]
+  },
+  "hash": "bded803c4eeb56653b6bf81bfa9c8594476c7fc04a15ad5da7591cb9a4b2ebf3"
+}

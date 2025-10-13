@@ -11,6 +11,7 @@ use crate::db::borrowers::verify_user;
 use crate::db::waitlist::WaitlistRole;
 use crate::db::wallet_backups::NewBorrowerWalletBackup;
 use crate::geo_location;
+use crate::model::empty_string_is_none;
 use crate::model::Borrower;
 use crate::model::BorrowerLoanFeature;
 use crate::model::FilteredUser;
@@ -29,6 +30,7 @@ use crate::routes::borrower::AUTH_TAG;
 use crate::routes::user_connection_details_middleware;
 use crate::routes::user_connection_details_middleware::UserConnectionDetails;
 use crate::routes::AppState;
+use crate::routes::PubkeyChallengeData;
 use crate::totp::create_totp_borrower;
 use crate::totp::TOTP_TMP_ID_PREFIX;
 use crate::utils::is_valid_email;
@@ -47,6 +49,10 @@ use axum::Extension;
 use axum::Json;
 use axum_extra::extract::cookie::Cookie;
 use axum_extra::extract::cookie::SameSite;
+use bitcoin::secp256k1::ecdsa::Signature;
+use bitcoin::secp256k1::Message as Secp256k1Message;
+use bitcoin::secp256k1::PublicKey as Secp256k1PublicKey;
+use bitcoin::secp256k1::Secp256k1;
 use jsonwebtoken::decode;
 use jsonwebtoken::encode;
 use jsonwebtoken::DecodingKey;
@@ -58,9 +64,11 @@ use rand::RngCore;
 use serde::Deserialize;
 use serde::Serialize;
 use serde_json::json;
+use sha2::Digest;
 use sha2::Sha256;
 use srp::groups::G_2048;
 use srp::server::SrpServer;
+use std::str::FromStr;
 use std::sync::Arc;
 use time::OffsetDateTime;
 use totp_rs::Secret;
@@ -90,6 +98,10 @@ const MOBILE_JWT_EXPIRY_HOURS: time::Duration = time::Duration::days(7);
 const PASSWORD_TOKEN_EXPIRES_IN_MINUTES: i64 = 10;
 const PASSWORD_RESET_TOKEN_LENGTH: usize = 20;
 
+/// Expiry time of a pubkey challenge.
+const CHALLENGE_EXPIRY_MINUTES: i64 = 5;
+const CHALLENGE_LENGTH: usize = 32;
+
 pub(crate) fn router(app_state: Arc<AppState>) -> OpenApiRouter {
     // Routes without authentication
     let public_routes = OpenApiRouter::new()
@@ -104,7 +116,10 @@ pub(crate) fn router(app_state: Arc<AppState>) -> OpenApiRouter {
         .routes(routes!(forgot_password_handler))
         .routes(routes!(reset_password_handler))
         .routes(routes!(reset_legacy_password_handler))
-        .routes(routes!(post_add_to_waitlist));
+        .routes(routes!(post_add_to_waitlist))
+        .routes(routes!(post_pubkey_challenge))
+        .routes(routes!(post_pubkey_register))
+        .routes(routes!(post_pubkey_verify));
 
     // Routes requiring JWT authentication
     let jwt_routes = OpenApiRouter::new()
@@ -1467,6 +1482,369 @@ async fn post_add_to_waitlist(
     Ok(Json(()))
 }
 
+/// Request a challenge for pubkey authentication.
+#[utoipa::path(
+    post,
+    path = "/pubkey-challenge",
+    tag = AUTH_TAG,
+    request_body = PubkeyChallengeRequest,
+    responses(
+        (
+            status = 200,
+            description = "Challenge generated successfully",
+            body = PubkeyChallengeResponse
+        ),
+        (
+            status = 400,
+            description = "Invalid public key format"
+        )
+    )
+)]
+#[instrument(skip_all, err(Debug))]
+async fn post_pubkey_challenge(
+    State(data): State<Arc<AppState>>,
+    AppJson(body): AppJson<PubkeyChallengeRequest>,
+) -> Result<AppJson<PubkeyChallengeResponse>, Error> {
+    // Validate pubkey format
+    let _pubkey = Secp256k1PublicKey::from_str(&body.pubkey).map_err(|_| Error::InvalidPubkey)?;
+
+    // Generate random challenge
+    let challenge = generate_random_string(CHALLENGE_LENGTH);
+
+    let mut pubkey_challenges = data.pubkey_challenges.lock().await;
+    pubkey_challenges.insert(
+        body.pubkey.clone(),
+        PubkeyChallengeData {
+            challenge: challenge.clone(),
+            created_at: OffsetDateTime::now_utc(),
+        },
+    );
+
+    Ok(AppJson(PubkeyChallengeResponse { challenge }))
+}
+
+/// Register a new user with pubkey authentication.
+#[utoipa::path(
+    post,
+    path = "/pubkey-register",
+    tag = AUTH_TAG,
+    request_body = RegisterPubkeyUserSchema,
+    responses(
+        (
+            status = 200,
+            description = "User registered successfully",
+            body = RegisterPubkeyResponse
+        ),
+        (
+            status = 400,
+            description = "Invalid email or pubkey"
+        ),
+        (
+            status = 409,
+            description = "Email or pubkey already registered"
+        )
+    )
+)]
+#[instrument(skip_all, err(Debug))]
+async fn post_pubkey_register(
+    State(data): State<Arc<AppState>>,
+    AppJson(body): AppJson<RegisterPubkeyUserSchema>,
+) -> Result<AppJson<RegisterPubkeyResponse>, Error> {
+    // Validate email
+    if !is_valid_email(&body.email) {
+        return Err(Error::InvalidEmail);
+    }
+
+    // Validate pubkey format
+    let _pubkey = Secp256k1PublicKey::from_str(&body.pubkey).map_err(|_| Error::InvalidPubkey)?;
+
+    // Check if email already exists across all auth methods
+    let email_exists = db::borrowers_pubkey_auth::email_exists_anywhere(&data.db, &body.email)
+        .await
+        .map_err(Error::database)?;
+
+    if email_exists {
+        return Err(Error::UserExists);
+    }
+
+    // Check if pubkey already exists
+    let pubkey_exists = db::borrowers_pubkey_auth::pubkey_exists(&data.db, &body.pubkey)
+        .await
+        .map_err(Error::database)?;
+
+    if pubkey_exists {
+        return Err(Error::PubkeyExists);
+    }
+
+    // Check referral code if provided
+    let referral_code_valid = match &body.invite_code {
+        None => {
+            if data.config.borrower_invite_code_required {
+                return Err(Error::InviteCodeRequired);
+            } else {
+                true
+            }
+        }
+        Some(code) => db::borrowers_referral_code::is_referral_code_valid(&data.db, code.as_str())
+            .await
+            .map_err(Error::database)?,
+    };
+
+    if !referral_code_valid {
+        return Err(Error::InvalidReferralCode {
+            referral_code: body.invite_code.unwrap_or_default(),
+        });
+    }
+
+    let mut db_tx = data.db.begin().await.map_err(Error::database)?;
+
+    // Create borrower entry
+    let borrower = db::borrowers::register_pubkey_auth_user(&mut db_tx, &body.name, &body.email)
+        .await
+        .map_err(Error::database)?;
+
+    let borrower_id = &borrower.id;
+
+    // Insert pubkey auth
+    db::borrowers_pubkey_auth::insert_pubkey_auth(
+        &mut db_tx,
+        borrower_id,
+        &body.pubkey,
+        &body.email,
+    )
+    .await
+    .map_err(Error::database)?;
+
+    // Handle referral code
+    if let Some(referral_code) = body.invite_code {
+        db::borrowers_referral_code::insert_referred_borrower(
+            &mut *db_tx,
+            referral_code.as_str(),
+            borrower_id.as_str(),
+        )
+        .await
+        .map_err(Error::database)?;
+    }
+
+    db_tx.commit().await.map_err(Error::database)?;
+
+    // Create referral code for new user
+    if let Err(err) =
+        db::borrowers_referral_code::create_referral_code(&data.db, None, borrower_id.as_str())
+            .await
+    {
+        tracing::error!(
+            user_id = borrower_id,
+            "Failed inserting referral code for new user {err}"
+        );
+    }
+
+    Ok(AppJson(RegisterPubkeyResponse {
+        user_id: borrower.id,
+    }))
+}
+
+/// Verify pubkey signature and authenticate user.
+#[utoipa::path(
+    post,
+    path = "/pubkey-verify",
+    tag = AUTH_TAG,
+    request_body = PubkeyVerifyRequest,
+    responses(
+        (
+            status = 200,
+            description = "Authentication successful",
+            body = PubkeyVerifyResponse
+        ),
+        (
+            status = 400,
+            description = "Invalid signature or challenge"
+        ),
+        (
+            status = 401,
+            description = "Authentication failed"
+        )
+    )
+)]
+#[instrument(skip_all, fields(borrower_id), err(Debug))]
+async fn post_pubkey_verify(
+    State(data): State<Arc<AppState>>,
+    Extension(connection_details): Extension<UserConnectionDetails>,
+    AppJson(body): AppJson<PubkeyVerifyRequest>,
+) -> Result<impl IntoResponse, Error> {
+    // Get the stored challenge
+    let challenge_data = {
+        let mut pubkey_challenges = data.pubkey_challenges.lock().await;
+        let challenge_data = pubkey_challenges
+            .remove(&body.pubkey)
+            .ok_or(Error::NoChallengeFound)?;
+
+        // Check if challenge has expired
+        let now = OffsetDateTime::now_utc();
+        let expiry_time =
+            challenge_data.created_at + time::Duration::minutes(CHALLENGE_EXPIRY_MINUTES);
+        if now > expiry_time {
+            return Err(Error::ChallengeExpired);
+        }
+
+        challenge_data
+    };
+
+    // Verify that the provided challenge matches
+    if challenge_data.challenge != body.challenge {
+        return Err(Error::InvalidChallenge);
+    }
+
+    // Parse pubkey
+    let pubkey = Secp256k1PublicKey::from_str(&body.pubkey).map_err(|_| Error::InvalidPubkey)?;
+
+    // Parse signature
+    let signature = Signature::from_str(&body.signature).map_err(|_| Error::InvalidSignature)?;
+
+    // Create message hash from challenge
+    let message =
+        Secp256k1Message::from_digest_slice(Sha256::digest(body.challenge.as_bytes()).as_slice())
+            .map_err(|_| Error::InvalidChallenge)?;
+
+    // Verify signature
+    let secp = Secp256k1::verification_only();
+    secp.verify_ecdsa(&message, &signature, &pubkey)
+        .map_err(|_| Error::SignatureVerificationFailed)?;
+
+    // Get user from database
+    let pubkey_auth = db::borrowers_pubkey_auth::get_by_pubkey(&data.db, &body.pubkey)
+        .await
+        .map_err(Error::database)?
+        .ok_or(Error::PubkeyNotRegistered)?;
+
+    let user = get_user_by_id(&data.db, &pubkey_auth.borrower_id)
+        .await
+        .map_err(Error::database)?
+        .ok_or(Error::EmailOrPasswordInvalid)?;
+
+    let borrower_id = &user.id;
+    tracing::Span::current().record("borrower_id", borrower_id);
+
+    // Create JWT token
+    let now = OffsetDateTime::now_utc();
+    let iat = now.unix_timestamp();
+    let exp = (now + BROWSER_JWT_EXPIRY_HOURS).unix_timestamp();
+    let claims = TokenClaims {
+        user_id: borrower_id.clone(),
+        exp,
+        iat,
+    };
+
+    let token = encode(
+        &Header::default(),
+        &claims,
+        &EncodingKey::from_secret(data.config.jwt_secret.as_ref()),
+    )
+    .map_err(Error::AuthSessionDecode)?;
+
+    let cookie = Cookie::build(("token", token.to_owned()))
+        .path("/")
+        .max_age(BROWSER_COOKIE_EXPIRY_HOURS)
+        .same_site(SameSite::Lax)
+        .http_only(true);
+
+    // Load features
+    let features = db::borrower_features::load_borrower_features(&data.db, borrower_id.clone())
+        .await
+        .map_err(Error::database)?;
+
+    let features = features
+        .iter()
+        .filter_map(|f| {
+            if f.is_enabled {
+                Some(BorrowerLoanFeature {
+                    id: f.id.clone(),
+                    name: f.name.clone(),
+                    description: f.description.clone(),
+                    is_enabled: f.is_enabled,
+                })
+            } else {
+                None
+            }
+        })
+        .collect::<Vec<_>>();
+
+    if features.is_empty() {
+        return Err(Error::NoFeaturesEnabled {
+            borrower_id: borrower_id.clone(),
+        });
+    }
+
+    let personal_telegram_token =
+        db::telegram_bot::borrower::get_or_create_token_by_borrower_id(&data.db, borrower_id)
+            .await
+            .map_err(Error::database)?;
+
+    let filtered_user = FilteredUser::new_user(
+        &user,
+        personal_telegram_token,
+        pubkey_auth.verified,
+        Some(pubkey_auth.email),
+    );
+
+    // Log login activity
+    let user_agent = connection_details
+        .user_agent
+        .unwrap_or("unknown".to_string());
+    let ip_address = connection_details.ip.unwrap_or("unknown".to_string());
+
+    let location = geo_location::get_geo_info(ip_address.as_str()).await.ok();
+
+    if let Err(err) = db::user_logins::insert_borrower_login_activity(
+        &data.db,
+        borrower_id,
+        Some(ip_address.clone()),
+        location
+            .as_ref()
+            .map(|l| l.country.clone())
+            .unwrap_or_default(),
+        location
+            .as_ref()
+            .map(|l| l.city.clone())
+            .unwrap_or_default(),
+        user_agent.as_str(),
+    )
+    .await
+    {
+        tracing::warn!(
+            borrower_id = borrower_id,
+            "Failed to track login activity {err:#}"
+        )
+    }
+
+    data.notifications
+        .send_login_information_borrower(
+            user,
+            ip_address.as_str(),
+            OffsetDateTime::now_utc(),
+            location.map(|l| l.to_string()),
+            user_agent.as_str(),
+        )
+        .await;
+
+    let response = Response::builder()
+        .status(StatusCode::OK)
+        .header(header::SET_COOKIE.as_str(), cookie.to_string().as_str())
+        .header(header::CONTENT_TYPE.as_str(), "application/json")
+        .body(
+            json!(PubkeyVerifyResponse {
+                token,
+                enabled_features: features,
+                user: filtered_user,
+            })
+            .to_string(),
+        )
+        .context("PubkeyVerifyResponse")
+        .map_err(Error::BuildResponse)?;
+
+    Ok(response)
+}
+
 /// Refresh user authentication token.
 #[utoipa::path(
     post,
@@ -1639,6 +2017,50 @@ struct WaitlistBody {
     email: String,
 }
 
+/// Request body for pubkey challenge generation.
+#[derive(Debug, Deserialize, ToSchema)]
+struct PubkeyChallengeRequest {
+    pubkey: String,
+}
+
+/// Response containing a challenge for the client to sign.
+#[derive(Debug, Serialize, ToSchema)]
+struct PubkeyChallengeResponse {
+    challenge: String,
+}
+
+/// Request body for pubkey-based registration.
+#[derive(Debug, Deserialize, ToSchema)]
+struct RegisterPubkeyUserSchema {
+    name: String,
+    email: String,
+    pubkey: String,
+    #[serde(deserialize_with = "empty_string_is_none")]
+    invite_code: Option<String>,
+}
+
+/// Response after successful pubkey registration.
+#[derive(Debug, Serialize, ToSchema)]
+struct RegisterPubkeyResponse {
+    user_id: String,
+}
+
+/// Request body for pubkey-based authentication.
+#[derive(Debug, Deserialize, ToSchema)]
+struct PubkeyVerifyRequest {
+    pubkey: String,
+    challenge: String,
+    signature: String,
+}
+
+/// Response after successful pubkey authentication.
+#[derive(Debug, Serialize, ToSchema)]
+struct PubkeyVerifyResponse {
+    token: String,
+    enabled_features: Vec<BorrowerLoanFeature>,
+    user: FilteredUser,
+}
+
 // Create our own JSON extractor by wrapping `axum::Json`. This makes it easy to override the
 // rejection and provide our own which formats errors to match our application.
 //
@@ -1722,6 +2144,22 @@ enum Error {
     TokenCreation(#[allow(dead_code)] String),
     /// Invalid TOTP session token
     InvalidTotpSession,
+    /// Invalid public key format
+    InvalidPubkey,
+    /// Public key already registered
+    PubkeyExists,
+    /// Public key not registered
+    PubkeyNotRegistered,
+    /// No challenge found for this public key
+    NoChallengeFound,
+    /// Challenge has expired
+    ChallengeExpired,
+    /// Challenge does not match
+    InvalidChallenge,
+    /// Invalid signature format
+    InvalidSignature,
+    /// Signature verification failed
+    SignatureVerificationFailed,
 }
 
 impl Error {
@@ -1827,6 +2265,38 @@ impl IntoResponse for Error {
             Error::InvalidTotpSession => {
                 (StatusCode::BAD_REQUEST, "Invalid credentials.".to_owned())
             }
+            Error::InvalidPubkey => (
+                StatusCode::BAD_REQUEST,
+                "Invalid public key format".to_owned(),
+            ),
+            Error::PubkeyExists => (
+                StatusCode::CONFLICT,
+                "Public key already registered".to_owned(),
+            ),
+            Error::PubkeyNotRegistered => (
+                StatusCode::UNAUTHORIZED,
+                "Public key not registered".to_owned(),
+            ),
+            Error::NoChallengeFound => (
+                StatusCode::BAD_REQUEST,
+                "No challenge found. Please request a new challenge.".to_owned(),
+            ),
+            Error::ChallengeExpired => (
+                StatusCode::BAD_REQUEST,
+                "Challenge has expired. Please request a new challenge.".to_owned(),
+            ),
+            Error::InvalidChallenge => (
+                StatusCode::BAD_REQUEST,
+                "Invalid challenge provided".to_owned(),
+            ),
+            Error::InvalidSignature => (
+                StatusCode::BAD_REQUEST,
+                "Invalid signature format".to_owned(),
+            ),
+            Error::SignatureVerificationFailed => (
+                StatusCode::UNAUTHORIZED,
+                "Signature verification failed".to_owned(),
+            ),
         };
 
         (status, AppJson(ErrorResponse { message })).into_response()

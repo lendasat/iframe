@@ -209,6 +209,7 @@ async fn main() -> Result<()> {
     let app_state = Arc::new(AppState {
         db: db.clone(),
         pake_protocols: Arc::new(Mutex::new(HashMap::default())),
+        pubkey_challenges: Arc::new(Default::default()),
         wallet: wallet.clone(),
         config: config.clone(),
         btsieve: btsieve_addr,

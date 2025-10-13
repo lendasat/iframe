@@ -14,6 +14,7 @@ pub mod api_keys;
 pub mod bitcoin_repayment;
 pub mod borrower_features;
 pub mod borrowers;
+pub mod borrowers_pubkey_auth;
 pub mod borrowers_referral_code;
 pub mod bringin;
 pub mod contract_collateral_transactions;

@@ -47,6 +47,59 @@ fn new_model_borrower(
     }
 }
 
+/// Insert a new, pubkey-authenticated [`Borrower`].
+///
+/// Fails if a user with the provided email or pubkey already exists in the database table.
+pub async fn register_pubkey_auth_user(
+    db_tx: &mut sqlx::Transaction<'_, Postgres>,
+    name: &str,
+    email: &str,
+) -> Result<model::Borrower> {
+    let id = uuid::Uuid::new_v4().to_string();
+    let email = email.to_ascii_lowercase();
+    let email = email.trim();
+
+    let row = sqlx::query!(
+        r#"
+        WITH inserted_borrower AS (
+            INSERT INTO borrowers (id, name, email)
+            VALUES ($1, $2, $3)
+            RETURNING *
+        )
+        SELECT
+            b.*,
+            rb.referral_code as used_referral_code,
+            rcb.first_time_discount_rate_referee
+        FROM inserted_borrower b
+        LEFT JOIN referred_borrowers rb ON rb.referred_borrower_id = b.id
+        LEFT JOIN referral_codes_borrowers rcb ON rcb.code = rb.referral_code
+        "#,
+        id,
+        name,
+        email,
+    )
+    .fetch_one(&mut **db_tx)
+    .await?;
+
+    let borrower = Borrower {
+        id,
+        name: row.name,
+        email: row.email,
+        used_referral_code: row.used_referral_code,
+        first_time_discount_rate_referee: row.first_time_discount_rate_referee,
+        timezone: row.timezone,
+        locale: row.locale,
+        totp_enabled: false, // it's a new user, so it will be disabled
+        created_at: row.created_at,
+        updated_at: row.updated_at,
+    };
+
+    // Next, we enhance the borrower model with a personal code.
+    let borrower = enhance_with_personal_code(&mut **db_tx, borrower).await?;
+
+    Ok(borrower)
+}
+
 /// Insert a new, password-authenticated [`Borrower`].
 ///
 /// Fails if a user with the provided email already exists in the database table.

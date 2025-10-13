@@ -1,0 +1,17 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "\n        INSERT INTO borrowers_pubkey_auth (borrower_id, pubkey, email, verified)\n        VALUES ($1, $2, $3, $4)\n        ",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Text",
+        "Text",
+        "Text",
+        "Bool"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "4e3fa85388b9089c6436f82e0baa89ddeb55c46d6e3ceb97b815a488eee23b6c"
+}

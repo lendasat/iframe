@@ -1058,7 +1058,7 @@ impl From<db::ContractEmails> for ContractEmails {
     }
 }
 
-fn empty_string_is_none<'de, D>(deserializer: D) -> Result<Option<String>, D::Error>
+pub fn empty_string_is_none<'de, D>(deserializer: D) -> Result<Option<String>, D::Error>
 where
     D: Deserializer<'de>,
 {

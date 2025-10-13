@@ -30,6 +30,7 @@ pub struct ErrorResponse {
 pub struct AppState {
     pub db: Pool<Postgres>,
     pub pake_protocols: Arc<Mutex<HashMap<model::Email, PakeServerData>>>,
+    pub pubkey_challenges: Arc<Mutex<HashMap<String, PubkeyChallengeData>>>,
     pub wallet: Arc<Wallet>,
     pub config: Config,
     pub price_feed_ws_connections: Arc<Mutex<Vec<mpsc::UnboundedSender<Message>>>>,
@@ -37,4 +38,11 @@ pub struct AppState {
     pub sideshift: Arc<sideshift::Shifter>,
     pub notifications: Arc<Notifications>,
     pub btsieve: xtra::Address<btsieve::Actor>,
+}
+
+/// Data stored server-side for each pubkey challenge.
+#[derive(Debug, Clone)]
+pub struct PubkeyChallengeData {
+    pub challenge: String,
+    pub created_at: time::OffsetDateTime,
 }
