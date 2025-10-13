@@ -172,7 +172,8 @@ export default function ContractDetails() {
             </div>
 
             {/* Action Button */}
-            {contractState.value.status === "Requested" && (
+            {(contractState.value.status === "Requested" ||
+              contractState.value.status === "Approved") && (
               <div className="mt-4">
                 <CancelContractAction contractId={contractState.value.id} />
               </div>
