@@ -469,20 +469,17 @@ export class ApiClient {
       throw new UnauthorizedError();
     }
 
-    const { data, error } = await this.client.GET(
-      "/api/contracts/{id}/claim",
-      {
-        headers: { "x-api-key": this.api_key },
-        params: {
-          path: {
-            id: contractId,
-          },
-          query: {
-            fee_rate,
-          },
+    const { data, error } = await this.client.GET("/api/contracts/{id}/claim", {
+      headers: { "x-api-key": this.api_key },
+      params: {
+        path: {
+          id: contractId,
+        },
+        query: {
+          fee_rate,
         },
       },
-    );
+    });
 
     if (error) {
       throw Error(JSON.stringify(error));
@@ -560,7 +557,7 @@ export class ApiClient {
       throw Error("No data returned from API");
     }
 
-    return { txid: data.txid };
+    return { txid: data };
   }
 }
 
