@@ -315,7 +315,7 @@ function App() {
           }
         },
       },
-      ["http://localhost:5173"],
+      [import.meta.env.VITE_IFRAME_URL],
     ); // Allow iframe origin
 
     provider.listen(iframeRef.current);
@@ -365,7 +365,7 @@ function App() {
         </div>
         <iframe
           ref={iframeRef}
-          src="http://localhost:5173"
+          src={import.meta.env.VITE_IFRAME_URL}
           title="Lendasat"
           className="lendasat-iframe"
           allow="clipboard-write; clipboard-read"

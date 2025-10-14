@@ -44,7 +44,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
 }
 
 export default function App() {
-  const baseUrl = import.meta.env.VITE_BORROWER_BASE_URL || "http://localhost:7337";
+  const baseUrl = import.meta.env.VITE_BORROWER_BASE_URL;
 
   return (
     <ApiProvider>

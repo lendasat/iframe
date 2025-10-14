@@ -598,4 +598,4 @@ export class ApiClient {
 
 // Export a default instance without API key
 // API key should be set via setApiKey() method after retrieving from wallet bridge
-export const apiClient = new ApiClient("http://localhost:7337");
+export const apiClient = new ApiClient(import.meta.env.VITE_BORROWER_BASE_URL);
