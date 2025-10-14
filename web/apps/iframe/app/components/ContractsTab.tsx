@@ -58,12 +58,18 @@ export function ContractsTab({ user }: ContractsTabProps) {
                 <div>
                   <p className="text-gray-600">Loan Amount</p>
                   <p className="font-medium">
-                    ${contract.loanAmount.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                    $
+                    {contract.loanAmount.toLocaleString("en-US", {
+                      minimumFractionDigits: 2,
+                      maximumFractionDigits: 2,
+                    })}
                   </p>
                 </div>
                 <div>
                   <p className="text-gray-600">Collateral</p>
-                  <p className="font-medium">{contract.collateralSats.toLocaleString()} sats</p>
+                  <p className="font-medium">
+                    {contract.collateralSats.toLocaleString()} sats
+                  </p>
                 </div>
                 <div>
                   <p className="text-gray-600">Interest Rate</p>

@@ -64,8 +64,8 @@ export function ApiProvider({ children }: { children: React.ReactNode }) {
           const response = await apiClient.login({ pubkey, challenge, signature });
           console.log("Login successful!");
 
-          // Set the JWT token as API key
-          apiClient.setApiKey(response.token);
+          // Set the JWT token for authenticated requests
+          apiClient.setToken(response.token);
 
           // Store user info
           localStorage.setItem("user", JSON.stringify(response.user));

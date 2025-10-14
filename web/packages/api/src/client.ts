@@ -38,6 +38,7 @@ export class ApiClient {
   private baseUrl: string;
   private client: Client<paths>;
   private api_key?: string;
+  private jwt_token?: string;
 
   constructor(baseUrl: string = "/api", api_key?: string) {
     this.baseUrl = baseUrl;
@@ -53,15 +54,35 @@ export class ApiClient {
     this.api_key = apiKey;
   }
 
+  /**
+   * Set the JWT token for authenticated requests
+   * This token will be sent as a Bearer token in the Authorization header
+   * @param token - The JWT token received from login
+   */
+  setToken(token: string): void {
+    this.jwt_token = token;
+  }
+
+  /**
+   * Get authentication headers for API requests
+   * Prioritizes JWT token over API key
+   * @returns Headers object with authentication
+   */
+  private getAuthHeaders(): Record<string, string> {
+    if (this.jwt_token) {
+      return { Authorization: `Bearer ${this.jwt_token}` };
+    }
+    if (this.api_key) {
+      return { "x-api-key": this.api_key };
+    }
+    return {};
+  }
+
   // Applications API
 
   async me(): Promise<MeResponse> {
-    if (!this.api_key) {
-      throw new UnauthorizedError();
-    }
-
     const { data, error } = await this.client.GET("/api/users/me", {
-      headers: { "x-api-key": this.api_key },
+      headers: this.getAuthHeaders(),
     });
     if (error) {
       throw Error(error);
@@ -81,12 +102,8 @@ export class ApiClient {
     sortBy?: SortField;
     sortOrder?: SortOrder;
   }): Promise<PaginatedContractsResponse> {
-    if (!this.api_key) {
-      throw new UnauthorizedError();
-    }
-
     const { data, error } = await this.client.GET("/api/contracts", {
-      headers: { "x-api-key": this.api_key },
+      headers: this.getAuthHeaders(),
       params: {
         query: {
           page: params?.page,
@@ -119,12 +136,8 @@ export class ApiClient {
     durationMin?: number;
     durationMax?: number;
   }): Promise<LoanOffer[]> {
-    if (!this.api_key) {
-      throw new UnauthorizedError();
-    }
-
     const { data, error } = await this.client.GET("/api/offers", {
-      headers: { "x-api-key": this.api_key },
+      headers: this.getAuthHeaders(),
       params: {
         query: {
           loan_type: params?.loanType,
@@ -151,12 +164,8 @@ export class ApiClient {
   }
 
   async myApplications(): Promise<LoanApplication[]> {
-    if (!this.api_key) {
-      throw new UnauthorizedError();
-    }
-
     const { data, error } = await this.client.GET("/api/loan-applications", {
-      headers: { "x-api-key": this.api_key },
+      headers: this.getAuthHeaders(),
     });
     if (error) {
       throw Error(error);
@@ -234,12 +243,8 @@ export class ApiClient {
     borrowerNpub?: string | null;
     clientContractId?: string | null;
   }): Promise<Contract> {
-    if (!this.api_key) {
-      throw new UnauthorizedError();
-    }
-
     const { data, error } = await this.client.POST("/api/contracts", {
-      headers: { "x-api-key": this.api_key },
+      headers: this.getAuthHeaders(),
       body: {
         borrower_btc_address: params.borrowerBtcAddress,
         borrower_derivation_path: params.borrowerDerivationPath,
@@ -266,12 +271,8 @@ export class ApiClient {
   }
 
   async contractDetails(id: string): Promise<Contract> {
-    if (!this.api_key) {
-      throw new UnauthorizedError();
-    }
-
     const { data, error } = await this.client.GET("/api/contracts/{id}", {
-      headers: { "x-api-key": this.api_key },
+      headers: this.getAuthHeaders(),
       params: {
         path: {
           id,
@@ -308,12 +309,8 @@ export class ApiClient {
    * ```
    */
   async cancelContract(id: string): Promise<void> {
-    if (!this.api_key) {
-      throw new UnauthorizedError();
-    }
-
     const { error } = await this.client.DELETE("/api/contracts/{id}", {
-      headers: { "x-api-key": this.api_key },
+      headers: this.getAuthHeaders(),
       params: {
         path: {
           id,
@@ -365,14 +362,10 @@ export class ApiClient {
     txid: string,
     installment_id: string,
   ): Promise<void> {
-    if (!this.api_key) {
-      throw new UnauthorizedError();
-    }
-
     const { error } = await this.client.PUT(
       "/api/contracts/{id}/installment-paid",
       {
-        headers: { "x-api-key": this.api_key },
+        headers: this.getAuthHeaders(),
         params: {
           path: {
             id,
@@ -437,12 +430,8 @@ export class ApiClient {
     collateral_descriptor: string;
     borrower_pk: string;
   }> {
-    if (!this.api_key) {
-      throw new UnauthorizedError();
-    }
-
     const { data, error } = await this.client.GET("/api/contracts/{id}/claim", {
-      headers: { "x-api-key": this.api_key },
+      headers: this.getAuthHeaders(),
       params: {
         path: {
           id: contractId,
@@ -502,14 +491,10 @@ export class ApiClient {
     contractId: string,
     signedTx: string,
   ): Promise<{ txid: string }> {
-    if (!this.api_key) {
-      throw new UnauthorizedError();
-    }
-
     const { data, error } = await this.client.POST(
       "/api/contracts/{id}/broadcast-claim",
       {
-        headers: { "x-api-key": this.api_key },
+        headers: this.getAuthHeaders(),
         params: {
           path: {
             id: contractId,
