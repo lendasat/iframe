@@ -38,15 +38,6 @@ export default function TakeOffer() {
     error: walletError,
   } = useWalletInfo();
 
-  console.log("Wallet Info:", {
-    walletError,
-    walletLoading,
-    publicKey,
-    derivationPath,
-    address,
-    npub,
-  });
-
   // Get URL parameters for pre-filled values
   const suggestedAmount = searchParams.get("amount");
   const suggestedDuration = searchParams.get("duration");
@@ -67,13 +58,6 @@ export default function TakeOffer() {
     loading: loanAssetLoading,
     error: loanAssetError,
   } = useLoanAssetAddress(offerState.value?.loanAsset);
-
-  console.log("Loan Asset Address:", {
-    loanAssetAddress,
-    loanAssetLoading,
-    loanAssetError,
-    loanAsset: offerState.value?.loanAsset,
-  });
 
   // Calculate smart defaults using max values
   const defaultAmount = offerState.value

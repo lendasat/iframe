@@ -48,7 +48,6 @@ export function ApiProvider({ children }: { children: React.ReactNode }) {
 
         // Get public key from wallet
         const pubkey = await client.getPublicKey();
-        console.log(`Public key: ${pubkey}`);
 
         // 1. Try to login using challenge-response
         try {
