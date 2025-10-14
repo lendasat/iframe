@@ -32,7 +32,7 @@ export function useWallet() {
   const [capabilities, setCapabilities] = useState<WalletCapabilities | null>(
     null,
   );
-  const [capabilitiesLoading, setCapabilitiesLoading] = useState(false);
+  // const [capabilitiesLoading, setCapabilitiesLoading] = useState(false);
   const clientRef = useRef<LendasatClient | null>(null);
 
   useEffect(() => {
@@ -55,23 +55,23 @@ export function useWallet() {
     console.log("LendasatClient initialized");
 
     // Fetch capabilities
-    const fetchCapabilities = async () => {
-      if (!clientRef.current) return;
+    // const fetchCapabilities = async () => {
+    //   if (!clientRef.current) return;
+    //
+    //   try {
+    //     setCapabilitiesLoading(true);
+    //     const caps = await clientRef.current.getCapabilities();
+    //     setCapabilities(caps);
+    //     console.log("Wallet capabilities loaded:", caps);
+    //   } catch (err) {
+    //     console.error("Failed to fetch wallet capabilities:", err);
+    //     // Don't set capabilities to null on error - keep it null to indicate unknown
+    //   } finally {
+    //     setCapabilitiesLoading(false);
+    //   }
+    // };
 
-      try {
-        setCapabilitiesLoading(true);
-        const caps = await clientRef.current.getCapabilities();
-        setCapabilities(caps);
-        console.log("Wallet capabilities loaded:", caps);
-      } catch (err) {
-        console.error("Failed to fetch wallet capabilities:", err);
-        // Don't set capabilities to null on error - keep it null to indicate unknown
-      } finally {
-        setCapabilitiesLoading(false);
-      }
-    };
-
-    fetchCapabilities();
+    // fetchCapabilities();
 
     // Cleanup
     return () => {
@@ -88,7 +88,7 @@ export function useWallet() {
     client: clientRef.current,
     isConnected,
     capabilities,
-    capabilitiesLoading,
+    // capabilitiesLoading,
   };
 }
 
@@ -96,8 +96,7 @@ export function useWallet() {
  * Helper hook to get wallet information on mount
  */
 export function useWalletInfo() {
-  const { client, isConnected, capabilities, capabilitiesLoading } =
-    useWallet();
+  const { client, isConnected } = useWallet();
   const [publicKey, setPublicKey] = useState<string | null>(null);
   const [derivationPath, setDerivationPath] = useState<string | null>(null);
   const [address, setAddress] = useState<string | null>(null);
@@ -120,9 +119,8 @@ export function useWalletInfo() {
           client.getDerivationPath(),
           client.getAddress(AddressType.BITCOIN),
           // Only fetch npub if wallet supports it
-          capabilities?.nostr.hasNpub
-            ? client.getNpub()
-            : Promise.resolve(null),
+          // TODO: use capabilities for this
+          Promise.resolve(null),
         ]);
 
         if (pk.status === "fulfilled") {
@@ -155,7 +153,7 @@ export function useWalletInfo() {
     };
 
     fetchWalletInfo();
-  }, [client, isConnected, capabilities]);
+  }, [client, isConnected]);
 
   return {
     publicKey,
@@ -165,8 +163,6 @@ export function useWalletInfo() {
     loading,
     error,
     client,
-    capabilities,
-    capabilitiesLoading,
   };
 }
 

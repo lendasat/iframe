@@ -11,6 +11,7 @@
   },
   "dependencies": {
     "@lendasat/lendasat-wallet-bridge": "workspace:*",
+    "bip66": "^2.0.0",
     "bitcoinjs-lib": "^7.0.0",
     "buffer": "^6.0.3",
     "ecpair": "^3.0.0",

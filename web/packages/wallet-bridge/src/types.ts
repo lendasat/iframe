@@ -76,8 +76,8 @@ export type WalletRequest =
   | GetAddressRequest
   | GetNpubRequest
   | SignPsbtRequest
-  | GetApiKeyRequest
-  | SendToAddressRequest;
+  | SendToAddressRequest
+  | SignMessageRequest;
 
 export interface GetCapabilitiesRequest {
   type: "GET_CAPABILITIES";
@@ -119,11 +119,6 @@ export interface SignPsbtRequest {
   borrowerPk: string;
 }
 
-export interface GetApiKeyRequest {
-  type: "GET_API_KEY";
-  id: string;
-}
-
 export interface SendToAddressRequest {
   type: "SEND_TO_ADDRESS";
   id: string;
@@ -135,6 +130,13 @@ export interface SendToAddressRequest {
   asset: "bitcoin" | LoanAsset;
 }
 
+export interface SignMessageRequest {
+  type: "SIGN_MESSAGE";
+  id: string;
+  /** Message to sign (will be hashed with SHA256 before signing) */
+  message: string;
+}
+
 // Response messages sent from parent wallet to iframe
 export type WalletResponse =
   | CapabilitiesResponse
@@ -143,8 +145,8 @@ export type WalletResponse =
   | AddressResponse
   | NpubResponse
   | PsbtSignedResponse
-  | ApiKeyResponse
   | SendToAddressResponse
+  | SignedMessageResponse
   | ErrorResponse;
 
 export interface CapabilitiesResponse {
@@ -191,18 +193,18 @@ export interface PsbtSignedResponse {
   signedPsbt: string;
 }
 
-export interface ApiKeyResponse {
-  type: "API_KEY_RESPONSE";
-  id: string;
-  /** Lendasat API key */
-  apiKey: string;
-}
-
 export interface SendToAddressResponse {
   type: "SEND_TO_ADDRESS_RESPONSE";
   id: string;
   /** Transaction ID (txid) of the broadcast transaction */
   txid: string;
+}
+
+export interface SignedMessageResponse {
+  type: "SIGNED_MESSAGE";
+  id: string;
+  /** Hex-encoded ECDSA signature */
+  signature: string;
 }
 
 export interface ErrorResponse {
@@ -225,8 +227,8 @@ export function isWalletRequest(message: unknown): message is WalletRequest {
     msg.type === "GET_ADDRESS" ||
     msg.type === "GET_NPUB" ||
     msg.type === "SIGN_PSBT" ||
-    msg.type === "GET_API_KEY" ||
-    msg.type === "SEND_TO_ADDRESS"
+    msg.type === "SEND_TO_ADDRESS" ||
+    msg.type === "SIGN_MESSAGE"
   );
 }
 
@@ -243,8 +245,8 @@ export function isWalletResponse(message: unknown): message is WalletResponse {
     msg.type === "ADDRESS_RESPONSE" ||
     msg.type === "NPUB_RESPONSE" ||
     msg.type === "PSBT_SIGNED" ||
-    msg.type === "API_KEY_RESPONSE" ||
     msg.type === "SEND_TO_ADDRESS_RESPONSE" ||
+    msg.type === "SIGNED_MESSAGE" ||
     msg.type === "ERROR"
   );
 }

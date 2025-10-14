@@ -43,6 +43,13 @@ export interface MeResponse {
   user: User;
 }
 
+// Pubkey Verify Response type
+export interface PubkeyVerifyResponse {
+  token: string;
+  enabledFeatures: LoanFeature[];
+  user: User;
+}
+
 // Mapper functions to convert schema types to our custom types
 export function mapPersonalReferralCode(
   code: components["schemas"]["PersonalReferralCodeResponse"],
@@ -90,6 +97,16 @@ export function mapMeResponse(
   response: components["schemas"]["MeResponse"],
 ): MeResponse {
   return {
+    enabledFeatures: response.enabled_features.map(mapLoanFeature),
+    user: mapUser(response.user),
+  };
+}
+
+export function mapPubkeyVerifyResponse(
+  response: components["schemas"]["PubkeyVerifyResponse"],
+): PubkeyVerifyResponse {
+  return {
+    token: response.token,
     enabledFeatures: response.enabled_features.map(mapLoanFeature),
     user: mapUser(response.user),
   };

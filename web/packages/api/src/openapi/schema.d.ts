@@ -123,6 +123,57 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/auth/pubkey-challenge": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Request a challenge for pubkey authentication. */
+        post: operations["post_pubkey_challenge"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/auth/pubkey-register": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Register a new user with pubkey authentication. */
+        post: operations["post_pubkey_register"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/auth/pubkey-verify": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Verify pubkey signature and authenticate user. */
+        post: operations["post_pubkey_verify"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/auth/refresh-token": {
         parameters: {
             query?: never;
@@ -1955,10 +2006,41 @@ export interface components {
             /** Format: int64 */
             fee_rate: number;
         };
+        /** @description Request body for pubkey challenge generation. */
+        PubkeyChallengeRequest: {
+            pubkey: string;
+        };
+        /** @description Response containing a challenge for the client to sign. */
+        PubkeyChallengeResponse: {
+            challenge: string;
+        };
+        /** @description Request body for pubkey-based authentication. */
+        PubkeyVerifyRequest: {
+            challenge: string;
+            pubkey: string;
+            signature: string;
+        };
+        /** @description Response after successful pubkey authentication. */
+        PubkeyVerifyResponse: {
+            enabled_features: components["schemas"]["BorrowerLoanFeature"][];
+            token: string;
+            user: components["schemas"]["FilteredUser"];
+        };
         /** @enum {string} */
         QueryParamLoanType: "Direct" | "Indirect" | "MoonCardInstant" | "All";
         RecoverTx: {
             tx: string;
+        };
+        /** @description Response after successful pubkey registration. */
+        RegisterPubkeyResponse: {
+            user_id: string;
+        };
+        /** @description Request body for pubkey-based registration. */
+        RegisterPubkeyUserSchema: {
+            email: string;
+            invite_code?: string | null;
+            name: string;
+            pubkey: string;
         };
         RegisterUserSchema: {
             /** @description Used as the user's unique identifier. */
@@ -2334,6 +2416,113 @@ export interface operations {
             };
             /** @description Invalid credentials or authentication failed */
             400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    post_pubkey_challenge: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PubkeyChallengeRequest"];
+            };
+        };
+        responses: {
+            /** @description Challenge generated successfully */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PubkeyChallengeResponse"];
+                };
+            };
+            /** @description Invalid public key format */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    post_pubkey_register: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["RegisterPubkeyUserSchema"];
+            };
+        };
+        responses: {
+            /** @description User registered successfully */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RegisterPubkeyResponse"];
+                };
+            };
+            /** @description Invalid email or pubkey */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Email or pubkey already registered */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    post_pubkey_verify: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PubkeyVerifyRequest"];
+            };
+        };
+        responses: {
+            /** @description Authentication successful */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PubkeyVerifyResponse"];
+                };
+            };
+            /** @description Invalid signature or challenge */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Authentication failed */
+            401: {
                 headers: {
                     [name: string]: unknown;
                 };

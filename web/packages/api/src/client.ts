@@ -10,6 +10,7 @@ import type {
   AssetTypeFilter,
   KycFilter,
   Contract,
+  PubkeyVerifyResponse,
 } from "./types";
 import {
   mapMeResponse,
@@ -18,10 +19,10 @@ import {
   mapLoanOffer,
   mapLoanApplication,
   mapContract,
+  mapPubkeyVerifyResponse,
 } from "./types";
 import createClient, { Client } from "openapi-fetch";
 import { paths } from "./openapi/schema";
-import { v4 as uuidv4 } from "uuid";
 import debug from "debug";
 
 const log = debug("api:client");
@@ -54,35 +55,6 @@ export class ApiClient {
 
   // Applications API
 
-  async register(
-    email: string,
-    username: string,
-    api_key: string,
-    referral_code: string,
-  ): Promise<void> {
-    const id = uuidv4();
-    const timezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
-
-    const { data, error } = await this.client.POST(
-      "/api/create-api-account/byok",
-      {
-        body: {
-          api_key,
-          email,
-          name: username,
-          timezone,
-          referral_code,
-        },
-      },
-    );
-    if (error) {
-      throw Error(error);
-    }
-    this.api_key = api_key;
-    log("api key created:", { id: data.id });
-
-    return;
-  }
   async me(): Promise<MeResponse> {
     if (!this.api_key) {
       throw new UnauthorizedError();
@@ -558,6 +530,84 @@ export class ApiClient {
     }
 
     return data;
+  }
+
+  async getRegisterChallenge(pubkey: string): Promise<{ challenge: string }> {
+    const { data, error } = await this.client.POST(
+      "/api/auth/pubkey-challenge",
+      {
+        body: {
+          pubkey,
+        },
+      },
+    );
+
+    if (error) {
+      throw Error(JSON.stringify(error));
+    }
+
+    if (!data) {
+      throw Error("No data returned from API");
+    }
+
+    return {
+      challenge: data.challenge,
+    };
+  }
+
+  async register(params: {
+    name: string;
+    email: string;
+    pubkey: string;
+    inviteCode?: string | null;
+  }): Promise<{ userId: string }> {
+    const { data, error } = await this.client.POST(
+      "/api/auth/pubkey-register",
+      {
+        body: {
+          pubkey: params.pubkey,
+          email: params.email,
+          name: params.name,
+          invite_code: params.inviteCode ? params.inviteCode : "",
+        },
+      },
+    );
+
+    if (error) {
+      throw Error(JSON.stringify(error));
+    }
+
+    if (!data) {
+      throw Error("No data returned from API");
+    }
+
+    return {
+      userId: data.user_id,
+    };
+  }
+
+  async login(params: {
+    pubkey: string;
+    challenge: string;
+    signature: string;
+  }): Promise<PubkeyVerifyResponse> {
+    const { data, error } = await this.client.POST("/api/auth/pubkey-verify", {
+      body: {
+        pubkey: params.pubkey,
+        challenge: params.challenge,
+        signature: params.signature,
+      },
+    });
+
+    if (error) {
+      throw Error(JSON.stringify(error));
+    }
+
+    if (!data) {
+      throw Error("No data returned from API");
+    }
+
+    return mapPubkeyVerifyResponse(data);
   }
 }
 

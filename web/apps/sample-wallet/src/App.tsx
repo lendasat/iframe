@@ -11,6 +11,7 @@ import {
 import "./App.css";
 import * as tools from "uint8array-tools";
 import { loadPrivateKey, savePrivateKey } from "./storage";
+import { encode as derEncode } from "bip66";
 
 // Make Buffer available globally for bitcoinjs-lib
 // @ts-expect-error "this is needed for ios devices"
@@ -128,12 +129,7 @@ function App() {
           // In a real wallet, this would come from the wallet's state
           return "m/84'/0'/0'/0/0";
         },
-        onGetApiKey: () => {
-          console.log(`Called on get API key`);
-          // TODO: In a real wallet, this would be retrieved from secure storage
-          return "lndst_sk_dee619e34a7e_NI2TUiMmYF9TcBavaFhUW0rZ63QOIsoldG1w0YdFMpR";
-        },
-        onGetAddress: (addressType: AddressType, asset?: LoanAsset) => {
+        onGetAddress: async (addressType: AddressType, asset?: LoanAsset) => {
           console.log(
             `Called on get address: type=${addressType}, asset=${asset}`,
           );
@@ -188,12 +184,12 @@ function App() {
               throw new Error(`Unknown address type: ${addressType}`);
           }
         },
-        onGetNpub: () => {
+        onGetNpub: async () => {
           console.log(`Called on get npub`);
           // TODO: Implement Nostr npub conversion
           return null;
         },
-        onSignPsbt: (
+        onSignPsbt: async (
           psbt: string,
           collateralDescriptor: string,
           borrowerPk: string,
@@ -272,6 +268,46 @@ function App() {
           throw new Error(
             "Bitcoin transaction sending not yet implemented. In a real wallet, this would create and broadcast a transaction.",
           );
+        },
+        onSignMessage: async (message: string) => {
+          console.log(`Called sign message: ${message}`);
+
+          if (!keyPair) {
+            throw new Error("No key pair loaded");
+          }
+
+          try {
+            // Hash the message with SHA256 using Web Crypto API
+            const encoder = new TextEncoder();
+            const messageBytes = encoder.encode(message);
+            const hashBuffer = await crypto.subtle.digest(
+              "SHA-256",
+              messageBytes,
+            );
+            const messageHash = Buffer.from(hashBuffer);
+
+            // Sign the hash with the private key using ECDSA (produces raw 64-byte signature)
+            const rawSignature = keyPair.sign(messageHash);
+
+            const derSignatureOnly = derEncode(
+              rawSignature.slice(0, 32), // r value
+              rawSignature.slice(32, 64), // s value
+            );
+
+            // Return the DER-encoded signature as hex string
+            const signatureHex = tools.toHex(derSignatureOnly);
+
+            console.log(
+              `Message signed successfully. DER signature: ${signatureHex}`,
+            );
+
+            return signatureHex;
+          } catch (err) {
+            console.error("Failed to sign message:", err);
+            throw new Error(
+              `Failed to sign message: ${err instanceof Error ? err.message : String(err)}`,
+            );
+          }
         },
       },
       ["http://localhost:5173"],

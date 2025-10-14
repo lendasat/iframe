@@ -111,6 +111,9 @@ importers:
       '@lendasat/lendasat-wallet-bridge':
         specifier: workspace:*
         version: link:../../packages/wallet-bridge
+      bip66:
+        specifier: ^2.0.0
+        version: 2.0.0
       bitcoinjs-lib:
         specifier: ^7.0.0
         version: 7.0.0(typescript@5.9.3)
@@ -2817,6 +2820,10 @@ packages:
     dependencies:
       uint8array-tools: 0.0.9
       varuint-bitcoin: 2.0.0
+    dev: false
+
+  /bip66@2.0.0:
+    resolution: {integrity: sha512-kBG+hSpgvZBrkIm9dt5T1Hd/7xGCPEX2npoxAWZfsK1FvjgaxySEh2WizjyIstWXriKo9K9uJ4u0OnsyLDUPXQ==}
     dev: false
 
   /bitcoinjs-lib@7.0.0(typescript@5.9.3):

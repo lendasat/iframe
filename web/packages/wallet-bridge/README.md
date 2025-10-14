@@ -23,38 +23,38 @@ This library provides a secure, type-safe communication layer between the Lendas
 Use `LendasatClient` to request wallet operations from the parent window:
 
 ```typescript
-import { LendasatClient } from '@lendasat/lendasat-wallet-bridge';
+import { LendasatClient } from "@lendasat/lendasat-wallet-bridge";
 
 // Create a client instance
 const client = new LendasatClient();
 
 // Request borrower's public key
 const publicKey = await client.getPublicKey();
-console.log('Public Key:', publicKey);
+console.log("Public Key:", publicKey);
 
 // Get derivation path
 const path = await client.getDerivationPath();
-console.log('Derivation Path:', path);
+console.log("Derivation Path:", path);
 
 // Get API key
 const apiKey = await client.getApiKey();
-console.log('API Key:', apiKey);
+console.log("API Key:", apiKey);
 
 // Get Bitcoin address
-const btcAddress = await client.getAddress('bitcoin');
-console.log('Bitcoin Address:', btcAddress);
+const btcAddress = await client.getAddress("bitcoin");
+console.log("Bitcoin Address:", btcAddress);
 
 // Get loan asset address (e.g., USDC on Polygon)
-const usdcAddress = await client.getAddress('loan_asset', 'UsdcPol');
-console.log('USDC Address:', usdcAddress);
+const usdcAddress = await client.getAddress("loan_asset", "UsdcPol");
+console.log("USDC Address:", usdcAddress);
 
 // Get Nostr public key (npub format)
 const npub = await client.getNpub();
-console.log('Nostr npub:', npub);
+console.log("Nostr npub:", npub);
 
 // Sign a PSBT
 const signedPsbt = await client.signPsbt(psbtBase64);
-console.log('Signed PSBT:', signedPsbt);
+console.log("Signed PSBT:", signedPsbt);
 ```
 
 ### For Parent Wallet
@@ -62,7 +62,7 @@ console.log('Signed PSBT:', signedPsbt);
 Use `WalletProvider` to handle requests from the Lendasat iframe:
 
 ```typescript
-import { WalletProvider, AddressType } from '@lendasat/lendasat-wallet-bridge';
+import { AddressType, WalletProvider } from "@lendasat/lendasat-wallet-bridge";
 
 // Create provider with handler functions
 const provider = new WalletProvider(
@@ -74,7 +74,7 @@ const provider = new WalletProvider(
         sendBitcoin: false,
       },
       loanAssets: {
-        supportedAssets: ['UsdcPol', 'UsdtEth'],
+        supportedAssets: ["UsdcPol", "UsdtEth"],
         canReceive: true,
         canSend: false,
       },
@@ -89,7 +89,7 @@ const provider = new WalletProvider(
 
     // Return the borrower's public key (hex-encoded, compressed 33 bytes)
     onGetPublicKey: () => {
-      return keyPair.publicKey.toString('hex');
+      return keyPair.publicKey.toString("hex");
     },
 
     // Return the BIP32 derivation path
@@ -111,7 +111,7 @@ const provider = new WalletProvider(
           return arkAddress;
         case AddressType.LOAN_ASSET:
           // Return address for specific loan asset
-          if (asset === 'UsdcPol') {
+          if (asset === "UsdcPol") {
             return polygonAddress;
           }
           // ... handle other assets
@@ -134,7 +134,7 @@ const provider = new WalletProvider(
       return psbt.toBase64();
     },
   },
-  ['http://localhost:5173'] // Allowed iframe origins
+  ["http://localhost:5173"], // Allowed iframe origins
 );
 
 // Start listening to iframe messages
@@ -156,7 +156,7 @@ if (capabilities.bitcoin.signPsbt) {
   // Show withdraw button
 }
 
-if (capabilities.loanAssets.supportedAssets.includes('UsdcPol')) {
+if (capabilities.loanAssets.supportedAssets.includes("UsdcPol")) {
   // Can accept USDC on Polygon
 }
 ```
@@ -212,6 +212,7 @@ enum AddressType {
 #### LoanAsset
 
 Supported loan assets:
+
 - `"UsdcPol"` - USDC on Polygon
 - `"UsdtPol"` - USDT on Polygon
 - `"UsdcEth"` - USDC on Ethereum

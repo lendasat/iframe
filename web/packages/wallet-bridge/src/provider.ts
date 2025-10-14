@@ -57,12 +57,6 @@ export interface WalletHandlers {
   ) => Promise<string>;
 
   /**
-   * Return the Lendasat API key
-   * @returns Lendasat API key
-   */
-  onGetApiKey: () => Promise<string>;
-
-  /**
    * Send funds to an address
    * @param address - Address to send to
    * @param amount - Amount to send in satoshis (for Bitcoin) or smallest unit for other assets
@@ -74,6 +68,14 @@ export interface WalletHandlers {
     amount: number,
     asset: "bitcoin" | LoanAsset,
   ) => Promise<string>;
+
+  /**
+   * Sign a message with the wallet's private key
+   * The message will be hashed with SHA256 before signing
+   * @param message - Message string to sign
+   * @returns Hex-encoded ECDSA signature
+   */
+  onSignMessage: (message: string) => Promise<string>;
 }
 
 /**
@@ -225,16 +227,6 @@ export class WalletProvider {
           break;
         }
 
-        case "GET_API_KEY": {
-          const apiKey = await this.handlers.onGetApiKey();
-          response = {
-            type: "API_KEY_RESPONSE",
-            id: request.id,
-            apiKey,
-          };
-          break;
-        }
-
         case "SEND_TO_ADDRESS": {
           const txid = await this.handlers.onSendToAddress(
             request.address,
@@ -245,6 +237,16 @@ export class WalletProvider {
             type: "SEND_TO_ADDRESS_RESPONSE",
             id: request.id,
             txid,
+          };
+          break;
+        }
+
+        case "SIGN_MESSAGE": {
+          const signature = await this.handlers.onSignMessage(request.message);
+          response = {
+            type: "SIGNED_MESSAGE",
+            id: request.id,
+            signature,
           };
           break;
         }

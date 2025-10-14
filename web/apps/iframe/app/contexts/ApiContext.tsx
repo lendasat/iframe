@@ -2,17 +2,21 @@ import { createContext, useContext, useEffect, useState, useRef } from "react";
 import { apiClient } from "@repo/api";
 import { useWallet } from "~/hooks/useWallet";
 import { LoadingOverlay } from "~/components/ui/spinner";
+import { useNavigate } from "react-router";
 
 interface ApiContextType {
   isReady: boolean;
   error: string | null;
+  needsRegistration: boolean;
 }
 
 const ApiContext = createContext<ApiContextType | undefined>(undefined);
 
 export function ApiProvider({ children }: { children: React.ReactNode }) {
   const { client, isConnected } = useWallet();
+  const navigate = useNavigate();
   const [isReady, setIsReady] = useState(false);
+  const [needsRegistration, setNeedsRegistration] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const initAttemptedRef = useRef(false);
 
@@ -25,7 +29,10 @@ export function ApiProvider({ children }: { children: React.ReactNode }) {
     }
 
     if (!client || !isConnected) {
-      console.log("Waiting for wallet bridge connection...", { client: !!client, isConnected });
+      console.log("Waiting for wallet bridge connection...", {
+        client: !!client,
+        isConnected,
+      });
       return;
     }
 
@@ -35,31 +42,53 @@ export function ApiProvider({ children }: { children: React.ReactNode }) {
     }
     initAttemptedRef.current = true;
 
-    const initApiKey = async () => {
+    const initAuth = async () => {
       try {
-        console.log("Fetching API key from wallet bridge...");
+        console.log("Starting challenge-response authentication...");
 
-        // Add a timeout to prevent hanging forever
-        const timeoutPromise = new Promise((_, reject) => {
-          setTimeout(() => reject(new Error("API key fetch timed out after 10 seconds")), 10000);
-        });
+        // Get public key from wallet
+        const pubkey = await client.getPublicKey();
+        console.log(`Public key: ${pubkey}`);
 
-        const apiKeyPromise = client.getApiKey();
-        const apiKey = await Promise.race([apiKeyPromise, timeoutPromise]) as string;
+        // 1. Try to login using challenge-response
+        try {
+          // Get challenge from server
+          const { challenge } = await apiClient.getRegisterChallenge(pubkey);
+          console.log(`Challenge received: ${challenge}`);
 
-        console.log(`API Key received: ${apiKey.substring(0, 20)}...`);
-        apiClient.setApiKey(apiKey);
-        setIsReady(true);
-        console.log("API client ready with authenticated key");
+          // Sign the challenge using the wallet
+          const signature = await client.signMessage(challenge);
+          console.log(`Challenge signed: ${signature.substring(0, 20)}...`);
+
+          // Verify signature and get JWT token
+          const response = await apiClient.login({ pubkey, challenge, signature });
+          console.log("Login successful!");
+
+          // Set the JWT token as API key
+          apiClient.setApiKey(response.token);
+
+          // Store user info
+          localStorage.setItem("user", JSON.stringify(response.user));
+
+          setIsReady(true);
+          console.log("API client ready with authenticated session");
+        } catch (loginError) {
+          console.log("Login failed, user needs to register:", loginError);
+
+          // 2. If login fails, redirect to registration
+          setNeedsRegistration(true);
+          setIsReady(true); // Still set ready so app can render register page
+          navigate("/");
+        }
       } catch (err) {
         const errorMessage = err instanceof Error ? err.message : String(err);
-        setError(`Failed to initialize wallet bridge: ${errorMessage}`);
-        console.error("Failed to initialize API key:", errorMessage);
+        setError(`Failed to authenticate: ${errorMessage}`);
+        console.error("Failed to authenticate:", errorMessage);
       }
     };
 
-    initApiKey();
-  }, [client, isConnected]);
+    initAuth();
+  }, [client, isConnected, navigate]);
 
   // Show error page if initialization failed
   if (error) {
@@ -85,11 +114,10 @@ export function ApiProvider({ children }: { children: React.ReactNode }) {
             <h3 className="text-lg font-medium text-gray-900 mb-2">
               Wallet Bridge Error
             </h3>
-            <p className="text-sm text-gray-500 mb-4">
-              {error}
-            </p>
+            <p className="text-sm text-gray-500 mb-4">{error}</p>
             <p className="text-xs text-gray-400">
-              Please ensure this iframe is properly embedded in a compatible wallet application.
+              Please ensure this iframe is properly embedded in a compatible
+              wallet application.
             </p>
           </div>
         </div>
@@ -103,7 +131,7 @@ export function ApiProvider({ children }: { children: React.ReactNode }) {
   }
 
   return (
-    <ApiContext.Provider value={{ isReady, error }}>
+    <ApiContext.Provider value={{ isReady, error, needsRegistration }}>
       {children}
     </ApiContext.Provider>
   );

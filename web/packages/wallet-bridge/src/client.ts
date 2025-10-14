@@ -1,4 +1,10 @@
-import type { WalletRequest, WalletResponse, ErrorResponse, LoanAsset, WalletCapabilities } from "./types";
+import type {
+  WalletRequest,
+  WalletResponse,
+  ErrorResponse,
+  LoanAsset,
+  WalletCapabilities,
+} from "./types";
 import { isWalletResponse, AddressType } from "./types";
 
 /**
@@ -45,11 +51,18 @@ export class LendasatClient {
         return;
       }
 
-      console.log("[WalletBridge Client] Received response:", message.type, message);
+      console.log(
+        "[WalletBridge Client] Received response:",
+        message.type,
+        message,
+      );
 
       const pending = this.pendingRequests.get(message.id);
       if (!pending) {
-        console.warn("[WalletBridge Client] No pending request found for ID:", message.id);
+        console.warn(
+          "[WalletBridge Client] No pending request found for ID:",
+          message.id,
+        );
         return;
       }
 
@@ -95,7 +108,13 @@ export class LendasatClient {
         return;
       }
 
-      console.log("[WalletBridge Client] Sending request:", request.type, "to origin:", this.targetOrigin, request);
+      console.log(
+        "[WalletBridge Client] Sending request:",
+        request.type,
+        "to origin:",
+        this.targetOrigin,
+        request,
+      );
       window.parent.postMessage(request, this.targetOrigin);
     });
   }
@@ -168,7 +187,10 @@ export class LendasatClient {
    * @param asset - Optional asset identifier for LOAN_ASSET type (e.g., "UsdcPol", "UsdtEth")
    * @returns The requested address
    */
-  async getAddress(addressType: AddressType = AddressType.BITCOIN, asset?: LoanAsset): Promise<string> {
+  async getAddress(
+    addressType: AddressType = AddressType.BITCOIN,
+    asset?: LoanAsset,
+  ): Promise<string> {
     const response = await this.sendRequest<{
       type: "ADDRESS_RESPONSE";
       id: string;
@@ -226,29 +248,17 @@ export class LendasatClient {
   }
 
   /**
-   * Get the Lendasat API key from the parent wallet
-   * @returns Lendasat API key
-   */
-  async getApiKey(): Promise<string> {
-    const response = await this.sendRequest<{
-      type: "API_KEY_RESPONSE";
-      id: string;
-      apiKey: string;
-    }>({
-      type: "GET_API_KEY",
-      id: this.generateId(),
-    });
-    return response.apiKey;
-  }
-
-  /**
    * Send funds to an address
    * @param address - Address to send to
    * @param amount - Amount to send in satoshis (for Bitcoin) or smallest unit for other assets
    * @param asset - Asset type - "bitcoin" for Bitcoin, or a LoanAsset type for other assets
    * @returns Transaction ID (txid) of the broadcast transaction
    */
-  async sendToAddress(address: string, amount: number, asset: "bitcoin" | LoanAsset = "bitcoin"): Promise<string> {
+  async sendToAddress(
+    address: string,
+    amount: number,
+    asset: "bitcoin" | LoanAsset = "bitcoin",
+  ): Promise<string> {
     const response = await this.sendRequest<{
       type: "SEND_TO_ADDRESS_RESPONSE";
       id: string;
@@ -261,6 +271,25 @@ export class LendasatClient {
       asset,
     });
     return response.txid;
+  }
+
+  /**
+   * Sign a message with the wallet's private key
+   * The message will be hashed with SHA256 before signing with ECDSA
+   * @param message - Message string to sign
+   * @returns Hex-encoded ECDSA signature
+   */
+  async signMessage(message: string): Promise<string> {
+    const response = await this.sendRequest<{
+      type: "SIGNED_MESSAGE";
+      id: string;
+      signature: string;
+    }>({
+      type: "SIGN_MESSAGE",
+      id: this.generateId(),
+      message,
+    });
+    return response.signature;
   }
 
   /**

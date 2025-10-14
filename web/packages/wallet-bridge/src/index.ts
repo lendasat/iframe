@@ -12,6 +12,7 @@
  * const path = await client.getDerivationPath();
  * const npub = await client.getNpub();
  * const signed = await client.signPsbt(psbtBase64);
+ * const signature = await client.signMessage('challenge-string');
  * ```
  *
  * ## For parent wallet:
@@ -23,6 +24,7 @@
  *   onGetDerivationPath: () => "m/84'/0'/0'/0/0",
  *   onGetNpub: () => convertToNpub(keyPair.publicKey),
  *   onSignPsbt: (psbt) => signPsbtWithKey(psbt, keyPair),
+ *   onSignMessage: (message) => signMessageWithKey(message, keyPair),
  * });
  *
  * provider.listen(iframeRef.current);
@@ -42,11 +44,13 @@ export type {
   GetAddressRequest,
   GetNpubRequest,
   SignPsbtRequest,
+  SignMessageRequest,
   PublicKeyResponse,
   DerivationPathResponse,
   AddressResponse,
   NpubResponse,
   PsbtSignedResponse,
+  SignedMessageResponse,
   ErrorResponse,
 } from "./types";
 export { isWalletRequest, isWalletResponse, AddressType } from "./types";
