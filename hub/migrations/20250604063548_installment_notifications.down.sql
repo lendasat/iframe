@@ -1,1 +1,0 @@
-DROP TABLE IF EXISTS lender_installment_update_notifications;

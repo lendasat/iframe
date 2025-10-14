@@ -1,9 +1,0 @@
-{
-  "name": "http-client-borrower",
-  "$schema": "../node_modules/nx/schemas/project-schema.json",
-  "sourceRoot": "http-client-borrower/src",
-  "projectType": "library",
-  "tags": [],
-  "// targets": "to see all targets run: nx show project http-client-borrower --web",
-  "targets": {}
-}

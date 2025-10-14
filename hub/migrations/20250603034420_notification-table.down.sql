@@ -1,2 +1,0 @@
-drop table if exists lender_contract_update_notifications;
-drop table if exists lender_contract_chat_message_notifications;
