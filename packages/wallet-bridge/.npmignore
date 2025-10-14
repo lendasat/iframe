@@ -1,0 +1,32 @@
+# Source files
+src/
+*.ts
+!*.d.ts
+
+# Config files
+tsconfig.json
+tsup.config.ts
+.eslintrc*
+.prettierrc*
+
+# Development
+node_modules/
+.turbo/
+*.log
+*.tsbuildinfo
+
+# Tests
+__tests__/
+*.test.ts
+*.spec.ts
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# CI/CD
+.github/
+.gitlab-ci.yml
