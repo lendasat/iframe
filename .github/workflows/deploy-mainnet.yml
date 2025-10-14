@@ -42,14 +42,14 @@ jobs:
         run: pnpm build
 
       - name: Deploy iframe
-        uses: cloudflare/wrangler-action@v4
+        uses: cloudflare/wrangler-action@v3
         with:
           packageManager: pnpm
           apiToken: ${{ secrets.CLOUDFLARE_SIGNET_TOKEN}}
           command: pages deploy apps/iframe/build/client --project-name=lendasat-signet-iframe
 
       - name: Deploy sample-wallet
-        uses: cloudflare/wrangler-action@v4
+        uses: cloudflare/wrangler-action@v3
         with:
           packageManager: pnpm
           apiToken: ${{ secrets.CLOUDFLARE_SIGNET_TOKEN}}
