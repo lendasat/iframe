@@ -9,6 +9,9 @@ on:
 jobs:
   deploy-frontend:
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      deployments: write
     env:
       NODE_OPTIONS: "--max_old_space_size=4096"
 
