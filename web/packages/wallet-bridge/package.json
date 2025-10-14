@@ -1,6 +1,6 @@
 {
   "name": "@lendasat/lendasat-wallet-bridge",
-  "version": "0.0.4",
+  "version": "0.0.5",
   "description": "Type-safe communication bridge between Lendasat iframe and parent wallet applications",
   "type": "module",
   "main": "./dist/index.js",

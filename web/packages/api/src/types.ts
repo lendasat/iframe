@@ -23,7 +23,7 @@ export interface LoanFeature {
 // User types
 export interface User {
   createdAt: Date;
-  email: string;
+  email: string | null | undefined;
   firstTimeDiscountRate: number;
   id: string;
   locale?: string | null;
@@ -143,7 +143,12 @@ export function mapLoanTransaction(
 }
 
 // Installment types
-export type InstallmentStatus = "pending" | "paid" | "confirmed" | "late" | "cancelled";
+export type InstallmentStatus =
+  | "pending"
+  | "paid"
+  | "confirmed"
+  | "late"
+  | "cancelled";
 
 export interface Installment {
   dueDate: Date;
@@ -182,6 +187,7 @@ export type ContractStatus =
   | "Defaulted"
   | "ClosingByClaim"
   | "Closed"
+  | "Closing"
   | "ClosingByLiquidation"
   | "ClosedByLiquidation"
   | "ClosingByDefaulting"
