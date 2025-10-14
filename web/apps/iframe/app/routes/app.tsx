@@ -32,7 +32,7 @@ export default function AppLayout() {
         <div className="max-w-7xl mx-auto px-4 py-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center">
             <div className="text-sm text-gray-600">
-              Welcome <span className="font-medium">{user.name}</span>
+              Welcome, <span className="font-bold">{user.name}</span>
             </div>
           </div>
         </div>
