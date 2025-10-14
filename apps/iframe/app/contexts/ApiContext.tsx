@@ -61,7 +61,11 @@ export function ApiProvider({ children }: { children: React.ReactNode }) {
           console.log(`Challenge signed: ${signature.substring(0, 20)}...`);
 
           // Verify signature and get JWT token
-          const response = await apiClient.login({ pubkey, challenge, signature });
+          const response = await apiClient.login({
+            pubkey,
+            challenge,
+            signature,
+          });
           console.log("Login successful!");
 
           // Set the JWT token for authenticated requests

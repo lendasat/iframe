@@ -14,9 +14,7 @@ const sizeMap = {
 };
 
 export function Spinner({ className, size = "md" }: SpinnerProps) {
-  return (
-    <Loader2 className={cn("animate-spin", sizeMap[size], className)} />
-  );
+  return <Loader2 className={cn("animate-spin", sizeMap[size], className)} />;
 }
 
 interface LoadingOverlayProps {

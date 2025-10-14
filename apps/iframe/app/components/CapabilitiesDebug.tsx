@@ -135,9 +135,7 @@ export function CapabilitiesDebug() {
             <li className="flex items-center gap-2">
               <span
                 className={
-                  capabilities.nostr.hasNpub
-                    ? "text-green-600"
-                    : "text-red-600"
+                  capabilities.nostr.hasNpub ? "text-green-600" : "text-red-600"
                 }
               >
                 {capabilities.nostr.hasNpub ? "✓" : "✗"}
@@ -166,9 +164,7 @@ export function CapabilitiesDebug() {
             <li className="flex items-center gap-2">
               <span
                 className={
-                  capabilities.ark.canSend
-                    ? "text-green-600"
-                    : "text-red-600"
+                  capabilities.ark.canSend ? "text-green-600" : "text-red-600"
                 }
               >
                 {capabilities.ark.canSend ? "✓" : "✗"}

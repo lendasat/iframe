@@ -84,11 +84,13 @@ The iframe app uses **secp256k1 pubkey challenge-response authentication**:
 Create `.env` files in each app:
 
 **`apps/iframe/.env`**:
+
 ```env
 VITE_BORROWER_BASE_URL=http://localhost:7337
 ```
 
 **`apps/sample-wallet/.env`**:
+
 ```env
 VITE_IFRAME_URL=http://localhost:5173
 ```
@@ -98,16 +100,19 @@ VITE_IFRAME_URL=http://localhost:5173
 Each package and app is 100% [TypeScript](https://www.typescriptlang.org/).
 
 Build all packages:
+
 ```sh
 pnpm build
 ```
 
 Run tests:
+
 ```sh
 pnpm test
 ```
 
 Lint:
+
 ```sh
 pnpm lint
 ```

@@ -15,9 +15,7 @@ export function ApplicationsTab({ user }: ApplicationsTabProps) {
 
   return (
     <div>
-      <h2 className="text-2xl font-bold text-gray-900 mb-4">
-        My Applications
-      </h2>
+      <h2 className="text-2xl font-bold text-gray-900 mb-4">My Applications</h2>
       {applicationsState.loading && (
         <LoadingOverlay message="Loading applications..." />
       )}
@@ -52,12 +50,12 @@ export function ApplicationsTab({ user }: ApplicationsTabProps) {
                     application.status === "Available"
                       ? "bg-green-100 text-green-800"
                       : application.status === "Unavailable"
-                      ? "bg-yellow-100 text-yellow-800"
-                      : application.status === "Taken"
-                      ? "bg-blue-100 text-blue-800"
-                      : application.status === "Deleted"
-                      ? "bg-red-100 text-red-800"
-                      : "bg-gray-100 text-gray-800"
+                        ? "bg-yellow-100 text-yellow-800"
+                        : application.status === "Taken"
+                          ? "bg-blue-100 text-blue-800"
+                          : application.status === "Deleted"
+                            ? "bg-red-100 text-red-800"
+                            : "bg-gray-100 text-gray-800"
                   }`}
                 >
                   {application.status}
@@ -80,8 +78,8 @@ export function ApplicationsTab({ user }: ApplicationsTabProps) {
                 <div>
                   <p className="text-gray-600">Duration</p>
                   <p className="font-medium">
-                    {application.durationDaysMin} - {application.durationDaysMax}{" "}
-                    days
+                    {application.durationDaysMin} -{" "}
+                    {application.durationDaysMax} days
                   </p>
                 </div>
                 <div>
