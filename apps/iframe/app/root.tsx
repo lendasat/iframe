@@ -45,6 +45,9 @@ export function Layout({ children }: { children: React.ReactNode }) {
 
 export default function App() {
   const baseUrl = import.meta.env.VITE_BORROWER_BASE_URL;
+  const iframeUrl = import.meta.env.envkey_VITE_IFRAME_URL;
+  console.log(`Base URL ${baseUrl}`);
+  console.log(`Iframe URL ${iframeUrl}`);
 
   return (
     <ApiProvider>
