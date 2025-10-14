@@ -8,9 +8,23 @@ import {
 } from "react-router";
 import { PriceProvider } from "@repo/api/price-context";
 import { ApiProvider } from "./contexts/ApiContext";
+import "@rainbow-me/rainbowkit/styles.css";
+import { getDefaultConfig, RainbowKitProvider } from "@rainbow-me/rainbowkit";
+import { WagmiProvider } from "wagmi";
+import { mainnet, polygon } from "wagmi/chains";
+import { QueryClientProvider, QueryClient } from "@tanstack/react-query";
 
 import type { Route } from "./+types/root";
 import "./app.css";
+
+const config = getDefaultConfig({
+  appName: "Lendasat",
+  projectId: "a15c535db177c184c98bdbdc5ff12590",
+  chains: [mainnet, polygon],
+  ssr: true,
+});
+
+const queryClient = new QueryClient();
 
 export const links: Route.LinksFunction = () => [
   { rel: "preconnect", href: "https://fonts.googleapis.com" },
@@ -50,11 +64,17 @@ export default function App() {
   console.log(`Iframe URL ${iframeUrl}`);
 
   return (
-    <ApiProvider>
-      <PriceProvider url={baseUrl}>
-        <Outlet />
-      </PriceProvider>
-    </ApiProvider>
+    <WagmiProvider config={config}>
+      <QueryClientProvider client={queryClient}>
+        <RainbowKitProvider>
+          <ApiProvider>
+            <PriceProvider url={baseUrl}>
+              <Outlet />
+            </PriceProvider>
+          </ApiProvider>
+        </RainbowKitProvider>
+      </QueryClientProvider>
+    </WagmiProvider>
   );
 }
 

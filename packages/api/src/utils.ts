@@ -1,4 +1,4 @@
-import { ONE_YEAR } from "./types";
+import { LoanAsset, ONE_YEAR } from "./types";
 
 const SATS_PER_BTC = 100_000_000;
 
@@ -172,4 +172,30 @@ export function calculateCurrentLtv(
 
   // LTV = Loan Value / Collateral Value
   return loanAmountUsd / collateralValueUsd;
+}
+
+export class LoanAssetHelper {
+  static toChain(loanAsset: LoanAsset) {
+    switch (loanAsset) {
+      case "UsdcPol":
+      case "UsdtPol":
+        return "Polygon";
+      case "UsdcEth":
+      case "UsdtEth":
+        return "Ethereum";
+      case "UsdcStrk":
+      case "UsdtStrk":
+        return "Starknet";
+      case "UsdcSol":
+      case "UsdtSol":
+        return "Solana";
+      case "Usd":
+      case "Eur":
+      case "Chf":
+      case "Mxn":
+        return "Fiat";
+      case "UsdtLiquid":
+        return "Liquid";
+    }
+  }
 }

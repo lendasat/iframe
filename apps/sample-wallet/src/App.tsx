@@ -113,8 +113,8 @@ function App() {
             hasNpub: false, // Not implemented
           },
           ark: {
-            canSend: false,
-            canReceive: false,
+            canSend: true,
+            canReceive: true,
           },
         },
         onGetPublicKey: () => {

@@ -13,6 +13,8 @@ import { LoadingOverlay } from "~/components/ui/spinner";
 import { Skeleton } from "~/components/ui/skeleton";
 import { calculateCollateralNeeded } from "@repo/api";
 import { useLoanAssetAddress, useWalletInfo } from "~/hooks/useWallet";
+import { Input } from "~/components/ui/input";
+import { LoanAddressInputField } from "~/components/loan-address-input-field-shadcn";
 
 export function meta({}: Route.MetaArgs) {
   return [
@@ -338,7 +340,7 @@ export default function TakeOffer() {
                 >
                   Loan Amount *
                 </label>
-                <input
+                <Input
                   id="amount"
                   type="number"
                   required
@@ -346,7 +348,6 @@ export default function TakeOffer() {
                   max={offerState.value.loanAmountMax}
                   value={amount}
                   onChange={(e) => setAmount(e.target.value)}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500"
                   placeholder={`Enter amount (${offerState.value.loanAmountMin} - ${offerState.value.loanAmountMax})`}
                 />
               </div>
@@ -358,7 +359,7 @@ export default function TakeOffer() {
                 >
                   Duration (days) *
                 </label>
-                <input
+                <Input
                   id="duration"
                   type="number"
                   required
@@ -366,7 +367,6 @@ export default function TakeOffer() {
                   max={offerState.value.durationDaysMax}
                   value={duration}
                   onChange={(e) => setDuration(e.target.value)}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500"
                   placeholder={`Enter duration (${offerState.value.durationDaysMin} - ${offerState.value.durationDaysMax} days)`}
                 />
               </div>
@@ -394,14 +394,11 @@ export default function TakeOffer() {
                     Pre-filled by wallet
                   </div>
                 )}
-                <input
-                  id="borrowerLoanAddress"
-                  type="text"
-                  required
-                  value={borrowerLoanAddress}
-                  onChange={(e) => setBorrowerLoanAddress(e.target.value)}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500 font-mono text-sm"
-                  placeholder={`Enter your ${formatLoanAsset(offerState.value.loanAsset)} address`}
+                <LoanAddressInputField
+                  loanAddress={borrowerLoanAddress}
+                  setLoanAddress={setBorrowerLoanAddress}
+                  loanAsset={offerState.value.loanAsset}
+                  hideButton={borrowerLoanAddress.length != 0}
                 />
               </div>
 
