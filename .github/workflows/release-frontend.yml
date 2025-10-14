@@ -31,7 +31,6 @@ jobs:
 
       - name: Install web deps
         run: |
-          cd web
           pnpm install
 
       - name: Set Git Variables
@@ -48,13 +47,12 @@ jobs:
           envkey_VITE_IFRAME_URL: "https://iframe.lendasat.com"
 
       - name: Build web apps
-        run: just build-web
+        run: pnpm build
 
       - name: Deploy iframe
         uses: cloudflare/wrangler-action@v3
         with:
           packageManager: pnpm
-          workingDirectory: 'web'
           apiToken: ${{ secrets.CLOUDFLARE_SIGNET_TOKEN}}
           command: pages deploy apps/iframe/build/client --project-name=lendasat-signet-iframe
 
@@ -62,7 +60,6 @@ jobs:
         uses: cloudflare/wrangler-action@v3
         with:
           packageManager: pnpm
-          workingDirectory: 'web'
           apiToken: ${{ secrets.CLOUDFLARE_SIGNET_TOKEN}}
           command: pages deploy apps/sample-wallet/dist/ --project-name=lendasat-signet-sample-wallet
 
