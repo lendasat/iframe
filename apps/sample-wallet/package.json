@@ -35,7 +35,6 @@
     "typescript-eslint": "^8.45.0",
     "vite": "^7.1.7",
     "vite-plugin-top-level-await": "^1.6.0",
-    "vite-plugin-wasm": "^3.5.0",
-    "wrangler": "^4.42.2"
+    "vite-plugin-wasm": "^3.5.0"
   }
 }
