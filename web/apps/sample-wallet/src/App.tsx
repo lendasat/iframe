@@ -11,7 +11,6 @@ import {
 import "./App.css";
 import * as tools from "uint8array-tools";
 import { loadPrivateKey, savePrivateKey } from "./storage";
-import { encode as derEncode } from "bip66";
 
 // Make Buffer available globally for bitcoinjs-lib
 // @ts-expect-error "this is needed for ios devices"
@@ -289,10 +288,16 @@ function App() {
             // Sign the hash with the private key using ECDSA (produces raw 64-byte signature)
             const rawSignature = keyPair.sign(messageHash);
 
-            const derSignatureOnly = derEncode(
-              rawSignature.slice(0, 32), // r value
-              rawSignature.slice(32, 64), // s value
+            // Convert to DER format using bitcoinjs-lib's built-in function
+            // This handles all edge cases including R/S padding for negative values
+            // The 0x01 is a dummy sighash type that we'll remove after
+            const derSignature = bitcoin.script.signature.encode(
+              rawSignature,
+              0x01,
             );
+
+            // Remove the sighash byte (last byte) since we only want the DER signature
+            const derSignatureOnly = derSignature.slice(0, -1);
 
             // Return the DER-encoded signature as hex string
             const signatureHex = tools.toHex(derSignatureOnly);
