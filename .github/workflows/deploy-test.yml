@@ -1,4 +1,4 @@
-name: "Deploy hub binary to test VM"
+name: "Deploy signet"
 
 on:
   push:
