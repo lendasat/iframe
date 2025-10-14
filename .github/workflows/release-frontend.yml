@@ -1,0 +1,69 @@
+name: "Deploy hub binary to test VM"
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+jobs:
+  deploy-frontend:
+    runs-on: ubuntu-latest
+    env:
+      NODE_OPTIONS: "--max_old_space_size=4096"
+
+    steps:
+      - name: Check out commit
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Set up rust toolchain
+        run: rustup show
+
+      - uses: Swatinem/rust-cache@v2
+
+      - uses: extractions/setup-just@v1
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10
+
+      - name: Install web deps
+        run: |
+          cd web
+          pnpm install
+
+      - name: Set Git Variables
+        id: git-vars
+        run: |
+          echo "GIT_COMMIT_HASH=$(git rev-parse --short HEAD)" >> $GITHUB_ENV
+          GIT_TAG=$(git describe --tags --abbrev=0 2>/dev/null || echo "v0.0.0")
+          echo "GIT_TAG=$GIT_TAG" >> $GITHUB_ENV
+
+      - name: Make .env file for Vite build
+        uses: SpicyPizza/create-envfile@v2.0
+        with:
+          envkey_VITE_BORROWER_BASE_URL: "https://apiborrow.lendasat.com"
+          envkey_VITE_IFRAME_URL: "https://iframe.lendasat.com"
+
+      - name: Build web apps
+        run: just build-web
+
+      - name: Deploy iframe
+        uses: cloudflare/wrangler-action@v3
+        with:
+          packageManager: pnpm
+          workingDirectory: 'web'
+          apiToken: ${{ secrets.CLOUDFLARE_SIGNET_TOKEN}}
+          command: pages deploy apps/iframe/build/client --project-name=lendasat-signet-iframe
+
+      - name: Deploy sample-wallet
+        uses: cloudflare/wrangler-action@v3
+        with:
+          packageManager: pnpm
+          workingDirectory: 'web'
+          apiToken: ${{ secrets.CLOUDFLARE_SIGNET_TOKEN}}
+          command: pages deploy apps/sample-wallet/dist/ --project-name=lendasat-signet-sample-wallet
+
+        # TODO: publish new version of the bridge to npm

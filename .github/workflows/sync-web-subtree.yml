@@ -1,0 +1,35 @@
+name: Sync Web Subtree
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - 'web/**'
+
+jobs:
+  sync-subtree:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0  # Full history needed for subtree
+
+      - name: Configure Git
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+
+      - name: Set up SSH key
+        uses: webfactory/ssh-agent@v0.9.0
+        with:
+          ssh-private-key: ${{ secrets.LENDASAT_GITHUB_ACTION_TOKEN }}
+
+      - name: Add web repo remote
+        run: |
+          git remote add web-repo git@github.com:lendasat/iframe.git
+
+      - name: Push to web repository
+        run: |
+          git subtree push --prefix=web web-repo main
