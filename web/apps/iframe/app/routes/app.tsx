@@ -4,7 +4,7 @@ import { useNavigate, useLocation, Link, Outlet } from "react-router";
 export default function AppLayout() {
   const navigate = useNavigate();
   const location = useLocation();
-  const [user, setUser] = useState<{ email: string; username: string } | null>(
+  const [user, setUser] = useState<{ email: string; name: string } | null>(
     null,
   );
 
@@ -32,7 +32,7 @@ export default function AppLayout() {
         <div className="max-w-7xl mx-auto px-4 py-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center">
             <div className="text-sm text-gray-600">
-              Welcome <span className="font-medium">{user.username}</span>
+              Welcome <span className="font-medium">{user.name}</span>
             </div>
           </div>
         </div>

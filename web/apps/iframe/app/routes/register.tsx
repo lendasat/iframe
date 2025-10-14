@@ -31,7 +31,8 @@ export default function Register() {
   const authCheck = useAsync(async () => {
     try {
       const me = await apiClient.me();
-      localStorage.setItem("user", JSON.stringify(me));
+
+      localStorage.setItem("user", JSON.stringify(me.user));
       return me;
     } catch (error) {
       // User is not authenticated, which is expected on this page
