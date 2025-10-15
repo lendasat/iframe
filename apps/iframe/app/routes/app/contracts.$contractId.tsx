@@ -148,9 +148,7 @@ export default function ContractDetails() {
                     {displayContract.id}
                   </p>
                   <button
-                    onClick={() =>
-                      copyToClipboard(displayContract?.id || "")
-                    }
+                    onClick={() => copyToClipboard(displayContract?.id || "")}
                     className="text-gray-400 hover:text-gray-600 transition-colors"
                     title="Copy to clipboard"
                   >
@@ -297,9 +295,7 @@ export default function ContractDetails() {
                   {displayContract.collateralSats.toLocaleString()} sats
                 </p>
                 <p className="text-xs text-gray-500">
-                  {(displayContract.collateralSats / 100_000_000).toFixed(
-                    8,
-                  )}{" "}
+                  {(displayContract.collateralSats / 100_000_000).toFixed(8)}{" "}
                   BTC
                 </p>
               </div>
@@ -413,8 +409,7 @@ export default function ContractDetails() {
               <div>
                 <p className="text-sm text-gray-600">Lender ID</p>
                 <p className="text-sm font-mono text-gray-900">
-                  {displayContract.lender.name} -{" "}
-                  {displayContract.lender.id}
+                  {displayContract.lender.name} - {displayContract.lender.id}
                 </p>
               </div>
             </div>

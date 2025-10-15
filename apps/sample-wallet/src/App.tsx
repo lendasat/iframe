@@ -212,19 +212,11 @@ function App() {
 
             console.log(`Signed all inputs`);
 
-            // Finalize all inputs (convert signatures to final scriptWitness/scriptSig)
-            psbtObj.finalizeAllInputs();
+            const signedPsbt = psbtObj.toHex();
 
-            console.log(`Finalized all inputs`);
+            console.log(`PSBT signed successfully. Psbt hex: ${signedPsbt}`);
 
-            // Extract the fully signed transaction as hex
-            const signedTx = psbtObj.extractTransaction().toHex();
-
-            console.log(
-              `PSBT signed successfully. Transaction hex: ${signedTx.substring(0, 50)}...`,
-            );
-
-            return signedTx;
+            return signedPsbt;
           } catch (err) {
             console.error("Failed to sign PSBT:", err);
             throw new Error(

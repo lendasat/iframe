@@ -52,7 +52,10 @@ export const clearPrivateKey = (): void => {
 
 export const saveCapabilities = (capabilities: WalletCapabilities): void => {
   try {
-    localStorage.setItem(CAPABILITIES_STORAGE_KEY, JSON.stringify(capabilities));
+    localStorage.setItem(
+      CAPABILITIES_STORAGE_KEY,
+      JSON.stringify(capabilities),
+    );
   } catch (error) {
     console.error("Failed to save capabilities to storage:", error);
   }

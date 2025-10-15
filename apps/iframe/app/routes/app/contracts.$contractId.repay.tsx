@@ -179,9 +179,7 @@ export default function RepayLoan() {
     capabilities &&
     capabilities.loanAssets.canSend &&
     displayContract &&
-    capabilities.loanAssets.supportedAssets.includes(
-      displayContract.loanAsset,
-    );
+    capabilities.loanAssets.supportedAssets.includes(displayContract.loanAsset);
 
   // Auto-select external wallet tab if connected wallet doesn't support the asset
   useEffect(() => {
@@ -299,8 +297,7 @@ export default function RepayLoan() {
                             onClick={() =>
                               copyToClipboard(
                                 displayContract?.loanRepaymentAddress ||
-                                  displayContract
-                                    ?.btcLoanRepaymentAddress ||
+                                  displayContract?.btcLoanRepaymentAddress ||
                                   "",
                                 setCopiedAddress,
                               )
@@ -379,8 +376,7 @@ export default function RepayLoan() {
                     <button
                       onClick={() =>
                         copyToClipboard(
-                          displayContract?.balanceOutstanding.toFixed(2) ||
-                            "",
+                          displayContract?.balanceOutstanding.toFixed(2) || "",
                           setCopiedAmountSats,
                         )
                       }
@@ -433,8 +429,7 @@ export default function RepayLoan() {
                     <button
                       onClick={() =>
                         copyToClipboard(
-                          displayContract?.balanceOutstanding.toFixed(2) ||
-                            "",
+                          displayContract?.balanceOutstanding.toFixed(2) || "",
                           setCopiedAmountBtc,
                         )
                       }

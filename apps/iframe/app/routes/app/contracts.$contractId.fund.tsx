@@ -58,11 +58,7 @@ export default function FundContract() {
   };
 
   const handleFundWithWallet = async () => {
-    if (
-      !client ||
-      !displayContract ||
-      !displayContract.contractAddress
-    ) {
+    if (!client || !displayContract || !displayContract.contractAddress) {
       return;
     }
 
@@ -413,8 +409,7 @@ export default function FundContract() {
                         minimumFractionDigits: 2,
                         maximumFractionDigits: 2,
                       })}{" "}
-                      ({(displayContract.interestRate * 100).toFixed(2)}%
-                      p.a.)
+                      ({(displayContract.interestRate * 100).toFixed(2)}% p.a.)
                     </span>
                   </div>
                 </div>

@@ -458,7 +458,7 @@ export class ApiClient {
   }
 
   /**
-   * Broadcast a signed PSBT to claim collateral from a contract
+   * Broadcast a signed TX to claim collateral from a contract
    *
    * After obtaining a PSBT from `getClaimPsbt()` and signing it with the borrower's
    * private key, this method broadcasts the signed transaction to the Bitcoin network
@@ -487,7 +487,7 @@ export class ApiClient {
    * - The collateral will be sent to the borrower's Bitcoin address specified in the contract
    * - You can monitor the transaction status on the blockchain using the returned txid
    */
-  async broadcastClaimPsbt(
+  async broadcastClaimTx(
     contractId: string,
     signedTx: string,
   ): Promise<{ txid: string }> {

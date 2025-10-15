@@ -226,7 +226,7 @@ export class LendasatClient {
    * @param psbt - Hex-encoded PSBT to sign
    * @param collateralDescriptor - Collateral descriptor for the multisig script
    * @param borrowerPk - Borrower's public key
-   * @returns Hex-encoded signed transaction
+   * @returns Hex-encoded signed psbt
    */
   async signPsbt(
     psbt: string,

@@ -5,8 +5,8 @@ import type { Route } from "../+types/app.contracts.$contractId.withdraw";
 import { apiClient } from "@repo/api";
 import { LoadingOverlay } from "~/components/ui/spinner";
 import { Button } from "~/components/ui/button";
-import { QRCodeSVG } from "qrcode.react";
 import { useWallet } from "~/hooks/useWallet";
+import * as bitcoin from "bitcoinjs-lib";
 
 export function meta({}: Route.MetaArgs) {
   return [
@@ -19,27 +19,12 @@ export default function WithdrawCollateral() {
   const { contractId } = useParams();
   const navigate = useNavigate();
   const { client, isConnected } = useWallet();
-  const [copiedAddress, setCopiedAddress] = useState(false);
-  const [copiedAmountSats, setCopiedAmountSats] = useState(false);
-  const [copiedAmountBtc, setCopiedAmountBtc] = useState(false);
   const [isWithdrawing, setIsWithdrawing] = useState(false);
   const [withdrawError, setWithdrawError] = useState<string | null>(null);
   const [withdrawSuccess, setWithdrawSuccess] = useState<string | null>(null);
   const [feeRate, setFeeRate] = useState<string>("1");
   const [contract, setContract] = useState<any>(null);
-
-  const copyToClipboard = async (
-    text: string,
-    setter: (value: boolean) => void,
-  ) => {
-    try {
-      await navigator.clipboard.writeText(text);
-      setter(true);
-      setTimeout(() => setter(false), 2000);
-    } catch (err) {
-      console.error("Failed to copy:", err);
-    }
-  };
+  const [disableWithdrawButton, setDisableWithdrawButton] = useState(false);
 
   const handleWithdrawWithWallet = async () => {
     if (!client || !displayContract) {
@@ -56,6 +41,7 @@ export default function WithdrawCollateral() {
       setIsWithdrawing(true);
       setWithdrawError(null);
       setWithdrawSuccess(null);
+      setDisableWithdrawButton(false);
 
       // Step 1: Get the PSBT from the API
       console.log("Getting claim PSBT with fee rate:", feeRateNum);
@@ -75,14 +61,18 @@ export default function WithdrawCollateral() {
         borrower_pk,
       );
 
+      const psbtObj = bitcoin.Psbt.fromHex(signedPsbt);
+      const finalizedPsbt = psbtObj.finalizeAllInputs();
+
       // Step 3: Broadcast the signed transaction
       console.log("Broadcasting signed transaction...");
-      const { txid } = await apiClient.broadcastClaimPsbt(
+      const { txid } = await apiClient.broadcastClaimTx(
         displayContract.id,
-        signedPsbt,
+        finalizedPsbt.extractTransaction().toHex(),
       );
 
       setWithdrawSuccess(txid);
+      setDisableWithdrawButton(true);
       console.log("Collateral withdrawal successful:", txid);
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : String(err);
@@ -328,6 +318,7 @@ export default function WithdrawCollateral() {
                 <Button
                   onClick={handleWithdrawWithWallet}
                   disabled={
+                    disableWithdrawButton ||
                     isWithdrawing ||
                     !displayContract.contractAddress ||
                     !feeRate ||
@@ -380,6 +371,7 @@ export default function WithdrawCollateral() {
               onClick={() => navigate("/app/contracts")}
               variant="default"
               className="flex-1"
+              disabled={!disableWithdrawButton}
             >
               Done
             </Button>
