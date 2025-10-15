@@ -23,6 +23,10 @@ export default [
       "app/contracts/:contractId/withdraw",
       "routes/app/contracts.$contractId.withdraw.tsx",
     ),
+    route(
+      "app/contracts/:contractId/recover",
+      "routes/app/contracts.$contractId.recover.tsx",
+    ),
     route("app/offers", "routes/app/offers.tsx"),
     route("app/offers/:offerId", "routes/app/offers.$offerId.tsx"),
     route("app/applications", "routes/app/applications.tsx"),

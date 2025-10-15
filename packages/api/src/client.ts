@@ -458,6 +458,84 @@ export class ApiClient {
   }
 
   /**
+   * Get a PSBT (Partially Signed Bitcoin Transaction) to recover collateral from an expired contract
+   *
+   * This method creates a PSBT that allows the borrower to recover their collateral when the
+   * contract has expired and the collateral recovery timelock has passed. This is used when
+   * the loan was not repaid in time and the contract is in "CollateralRecoverable" status.
+   *
+   * Unlike `getClaimPsbt()` (used after successful repayment), this method is for recovering
+   * collateral after the contract timelock expires, allowing the borrower to reclaim their
+   * Bitcoin even if the loan wasn't repaid.
+   *
+   * @param contractId - The UUID of the contract to recover collateral from
+   * @param fee_rate - The fee rate in satoshis per vbyte (e.g., 10 for 10 sats/vbyte)
+   * @returns A Promise that resolves to an object containing:
+   *   - psbt: The partially signed transaction (recovery path, no lender signature needed)
+   *   - collateral_descriptor: The descriptor for the collateral script
+   *   - borrower_pk: The borrower's public key
+   *
+   * @throws {UnauthorizedError} If no API key is provided
+   * @throws {Error} If the API returns an error (e.g., contract not in "CollateralRecoverable" status, timelock not expired, invalid fee rate)
+   *
+   * @example
+   * ```typescript
+   * // Get a recovery PSBT with a fee rate of 10 sats/vbyte
+   * const { psbt, collateral_descriptor, borrower_pk } = await apiClient.getRecoverPsbt(
+   *   'f47ac10b-58cc-4372-a567-0e02b2c3d479',
+   *   10
+   * );
+   * console.log('PSBT:', psbt); // Hex-encoded PSBT for timelock recovery
+   * console.log('Descriptor:', collateral_descriptor); // Collateral script descriptor
+   * console.log('Borrower PK:', borrower_pk); // Borrower's public key
+   * ```
+   *
+   * @remarks
+   * - The contract must be in "CollateralRecoverable" status (timelock expired)
+   * - This uses the timelock recovery path of the contract, not the cooperative path
+   * - Only the borrower's signature is needed (no lender signature required)
+   * - After signing, use `broadcastRecoverTx()` to broadcast the transaction
+   * - The fee rate affects how quickly the transaction will be confirmed
+   */
+  async getRecoverPsbt(
+    contractId: string,
+    fee_rate: number,
+  ): Promise<{
+    psbt: string;
+    collateral_descriptor: string;
+    borrower_pk: string;
+  }> {
+    const { data, error } = await this.client.GET(
+      "/api/contracts/{id}/recover",
+      {
+        headers: this.getAuthHeaders(),
+        params: {
+          path: {
+            id: contractId,
+          },
+          query: {
+            fee_rate,
+          },
+        },
+      },
+    );
+
+    if (error) {
+      throw Error(JSON.stringify(error));
+    }
+
+    if (!data) {
+      throw Error("No data returned from API");
+    }
+
+    return {
+      psbt: data.psbt,
+      collateral_descriptor: data.collateral_descriptor,
+      borrower_pk: data.borrower_pk,
+    };
+  }
+
+  /**
    * Broadcast a signed TX to claim collateral from a contract
    *
    * After obtaining a PSBT from `getClaimPsbt()` and signing it with the borrower's
@@ -493,6 +571,71 @@ export class ApiClient {
   ): Promise<{ txid: string }> {
     const { data, error } = await this.client.POST(
       "/api/contracts/{id}/broadcast-claim",
+      {
+        headers: this.getAuthHeaders(),
+        params: {
+          path: {
+            id: contractId,
+          },
+        },
+        body: {
+          tx: signedTx,
+        },
+      },
+    );
+
+    if (error) {
+      throw Error(JSON.stringify(error));
+    }
+
+    if (!data) {
+      throw Error("No data returned from API");
+    }
+
+    return data;
+  }
+
+  /**
+   * Broadcast a signed transaction to recover collateral from an expired contract
+   *
+   * After obtaining a PSBT from `getRecoverPsbt()` and signing it with the borrower's
+   * private key, this method broadcasts the signed transaction to the Bitcoin network
+   * to recover the collateral after the contract timelock has expired.
+   *
+   * This is used when the contract is in "CollateralRecoverable" status and the borrower
+   * wants to reclaim their Bitcoin collateral after the recovery timelock period.
+   *
+   * @param contractId - The UUID of the contract being recovered
+   * @param signedTx - The signed transaction in hex format (fully signed PSBT extracted as raw transaction)
+   * @returns A Promise that resolves to an object containing the transaction ID
+   *
+   * @throws {UnauthorizedError} If no API key is provided
+   * @throws {Error} If the API returns an error (e.g., invalid signature, timelock not expired, transaction already broadcast)
+   *
+   * @example
+   * ```typescript
+   * // After signing the recovery PSBT
+   * const { txid } = await apiClient.broadcastRecoverTx(
+   *   'f47ac10b-58cc-4372-a567-0e02b2c3d479',
+   *   'signed_transaction_hex...'
+   * );
+   * console.log('Recovery transaction broadcast:', txid);
+   * ```
+   *
+   * @remarks
+   * - The transaction must be fully signed before broadcasting
+   * - The contract must be in "CollateralRecoverable" status
+   * - Once broadcast, the transaction cannot be reversed
+   * - The collateral will be sent to the borrower's Bitcoin address specified in the contract
+   * - You can monitor the transaction status on the blockchain using the returned txid
+   * - This uses the timelock recovery path, not the cooperative claim path
+   */
+  async broadcastRecoverTx(
+    contractId: string,
+    signedTx: string,
+  ): Promise<{ txid: string }> {
+    const { data, error } = await this.client.POST(
+      "/api/contracts/{id}/broadcast-recover",
       {
         headers: this.getAuthHeaders(),
         params: {

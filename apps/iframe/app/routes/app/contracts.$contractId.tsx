@@ -9,6 +9,7 @@ import { CancelContractAction } from "~/components/contract-actions/CancelContra
 import { FundContractAction } from "~/components/contract-actions/FundContractAction";
 import { RepayLoanAction } from "~/components/contract-actions/RepayLoanAction";
 import { WithdrawCollateralAction } from "~/components/contract-actions/WithdrawCollateralAction";
+import { RecoverCollateralAction } from "~/components/contract-actions/RecoverCollateralAction";
 
 export function meta({}: Route.MetaArgs) {
   return [
@@ -221,6 +222,11 @@ export default function ContractDetails() {
             {displayContract.status === "RepaymentConfirmed" && (
               <div className="mt-4">
                 <WithdrawCollateralAction contractId={displayContract.id} />
+              </div>
+            )}
+            {displayContract.status === "CollateralRecoverable" && (
+              <div className="mt-4">
+                <RecoverCollateralAction contractId={displayContract.id} />
               </div>
             )}
           </div>
