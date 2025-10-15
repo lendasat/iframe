@@ -107,8 +107,8 @@ function App() {
               sendBitcoin: false, // Not yet implemented
             },
             loanAssets: {
-              supportedAssets: [],
-              canReceive: false, // Not implemented
+              supportedAssets: ["UsdcPol"],
+              canReceive: true, // Not implemented
               canSend: false, // Not yet implemented
             },
             nostr: {
@@ -157,19 +157,11 @@ function App() {
                   return "0x742d35Cc6634C0532925a3b844Bc9e7595f0bEb1";
                 case "UsdcEth":
                 case "UsdtEth":
-                  // Ethereum address
-                  return "0x742d35Cc6634C0532925a3b844Bc9e7595f0bEb1";
                 case "UsdcStrk":
                 case "UsdtStrk":
-                  // Starknet address
-                  return "0x742d35Cc6634C0532925a3b844Bc9e7595f0bEb1";
                 case "UsdcSol":
                 case "UsdtSol":
-                  // Solana address
-                  return "5eykt4UsFv8P8NJdTREpY1vzqKqZKvdp";
                 case "UsdtLiquid":
-                  // Liquid address
-                  return "VJLCfH2dcqfvJG7HfUdcz4K4YY7vYYx6WBsKn";
                 case "Usd":
                 case "Eur":
                 case "Chf":
