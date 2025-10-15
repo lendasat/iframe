@@ -35,8 +35,8 @@ function App() {
   const iframeRef = useRef<HTMLIFrameElement>(null);
   const providerRef = useRef<WalletProvider | null>(null);
   const [isInitialized, setIsInitialized] = useState(false);
-  const [capabilities, setCapabilities] = useState<WalletCapabilities>(
-    () => loadCapabilities()
+  const [capabilities, setCapabilities] = useState<WalletCapabilities>(() =>
+    loadCapabilities(),
   );
 
   const initializeWallet = (privateKeyHex: string) => {
@@ -322,7 +322,7 @@ function App() {
   const handleCapabilityChange = (
     category: keyof WalletCapabilities,
     key: string,
-    value: boolean
+    value: boolean,
   ) => {
     setCapabilities((prev) => {
       const updated = {
@@ -395,26 +395,12 @@ function App() {
               <label className="capability-checkbox">
                 <input
                   type="checkbox"
-                  checked={capabilities.bitcoin.signPsbt}
-                  onChange={(e) =>
-                    handleCapabilityChange(
-                      "bitcoin",
-                      "signPsbt",
-                      e.target.checked
-                    )
-                  }
-                />
-                <span>Can sign PSBTs</span>
-              </label>
-              <label className="capability-checkbox">
-                <input
-                  type="checkbox"
                   checked={capabilities.bitcoin.sendBitcoin}
                   onChange={(e) =>
                     handleCapabilityChange(
                       "bitcoin",
                       "sendBitcoin",
-                      e.target.checked
+                      e.target.checked,
                     )
                   }
                 />
@@ -432,7 +418,7 @@ function App() {
                     handleCapabilityChange(
                       "loanAssets",
                       "canReceive",
-                      e.target.checked
+                      e.target.checked,
                     )
                   }
                 />
@@ -446,7 +432,7 @@ function App() {
                     handleCapabilityChange(
                       "loanAssets",
                       "canSend",
-                      e.target.checked
+                      e.target.checked,
                     )
                   }
                 />
@@ -477,7 +463,7 @@ function App() {
                       <input
                         type="checkbox"
                         checked={capabilities.loanAssets.supportedAssets.includes(
-                          asset
+                          asset,
                         )}
                         onChange={() => handleLoanAssetToggle(asset)}
                       />
@@ -495,11 +481,7 @@ function App() {
                   type="checkbox"
                   checked={capabilities.nostr.hasNpub}
                   onChange={(e) =>
-                    handleCapabilityChange(
-                      "nostr",
-                      "hasNpub",
-                      e.target.checked
-                    )
+                    handleCapabilityChange("nostr", "hasNpub", e.target.checked)
                   }
                 />
                 <span>Has Nostr public key (npub)</span>
@@ -526,7 +508,7 @@ function App() {
                     handleCapabilityChange(
                       "ark",
                       "canReceive",
-                      e.target.checked
+                      e.target.checked,
                     )
                   }
                 />

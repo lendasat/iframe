@@ -62,7 +62,15 @@ export const loadCapabilities = (): WalletCapabilities => {
   try {
     const stored = localStorage.getItem(CAPABILITIES_STORAGE_KEY);
     if (stored) {
-      return JSON.parse(stored);
+      const parsed = JSON.parse(stored);
+      // Always ensure signPsbt is true (required capability)
+      return {
+        ...parsed,
+        bitcoin: {
+          ...parsed.bitcoin,
+          signPsbt: true,
+        },
+      };
     }
     return DEFAULT_CAPABILITIES;
   } catch (error) {
