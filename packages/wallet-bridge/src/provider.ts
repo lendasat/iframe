@@ -13,8 +13,9 @@ export interface WalletHandlers {
   /**
    * Declare the wallet's capabilities
    * This is used by the iframe to determine which features are available
+   * Returns capabilities object (can be sync or async)
    */
-  capabilities: WalletCapabilities;
+  capabilities: () => WalletCapabilities | Promise<WalletCapabilities>;
 
   /**
    * Return the borrower's public key in hex format (compressed, 33 bytes = 66 hex chars)
@@ -84,6 +85,12 @@ export interface WalletHandlers {
  * Usage:
  * ```typescript
  * const provider = new WalletProvider({
+ *   capabilities: () => ({
+ *     bitcoin: { signPsbt: true, sendBitcoin: false },
+ *     loanAssets: { supportedAssets: [], canReceive: false, canSend: false },
+ *     nostr: { hasNpub: false },
+ *     ark: { canSend: true, canReceive: true },
+ *   }),
  *   onGetPublicKey: () => keyPair.publicKey.toString('hex'),
  *   onGetDerivationPath: () => "m/84'/0'/0'/0/0",
  *   onGetNpub: () => convertToNpub(keyPair.publicKey),
@@ -161,10 +168,11 @@ export class WalletProvider {
 
       switch (request.type) {
         case "GET_CAPABILITIES": {
+          const capabilities = await this.handlers.capabilities();
           response = {
             type: "CAPABILITIES_RESPONSE",
             id: request.id,
-            capabilities: this.handlers.capabilities,
+            capabilities,
           };
           break;
         }

@@ -32,7 +32,7 @@ export function useWallet() {
   const [capabilities, setCapabilities] = useState<WalletCapabilities | null>(
     null,
   );
-  // const [capabilitiesLoading, setCapabilitiesLoading] = useState(false);
+  const [capabilitiesLoading, setCapabilitiesLoading] = useState(false);
   const clientRef = useRef<LendasatClient | null>(null);
 
   useEffect(() => {
@@ -55,23 +55,23 @@ export function useWallet() {
     console.log("LendasatClient initialized");
 
     // Fetch capabilities
-    // const fetchCapabilities = async () => {
-    //   if (!clientRef.current) return;
-    //
-    //   try {
-    //     setCapabilitiesLoading(true);
-    //     const caps = await clientRef.current.getCapabilities();
-    //     setCapabilities(caps);
-    //     console.log("Wallet capabilities loaded:", caps);
-    //   } catch (err) {
-    //     console.error("Failed to fetch wallet capabilities:", err);
-    //     // Don't set capabilities to null on error - keep it null to indicate unknown
-    //   } finally {
-    //     setCapabilitiesLoading(false);
-    //   }
-    // };
+    const fetchCapabilities = async () => {
+      if (!clientRef.current) return;
 
-    // fetchCapabilities();
+      try {
+        setCapabilitiesLoading(true);
+        const caps = await clientRef.current.getCapabilities();
+        setCapabilities(caps);
+        console.log("-------- Wallet capabilities loaded:", caps);
+      } catch (err) {
+        console.error("Failed to fetch wallet capabilities:", err);
+        // Don't set capabilities to null on error - keep it null to indicate unknown
+      } finally {
+        setCapabilitiesLoading(false);
+      }
+    };
+
+    fetchCapabilities();
 
     // Cleanup
     return () => {
@@ -88,7 +88,7 @@ export function useWallet() {
     client: clientRef.current,
     isConnected,
     capabilities,
-    // capabilitiesLoading,
+    capabilitiesLoading,
   };
 }
 

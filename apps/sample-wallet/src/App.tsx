@@ -98,24 +98,27 @@ function App() {
     // Create new provider with handlers
     const provider = new WalletProvider(
       {
-        // Declare wallet capabilities
-        capabilities: {
-          bitcoin: {
-            signPsbt: true,
-            sendBitcoin: false, // Not yet implemented
-          },
-          loanAssets: {
-            supportedAssets: [],
-            canReceive: false, // Not implemented
-            canSend: false, // Not yet implemented
-          },
-          nostr: {
-            hasNpub: false, // Not implemented
-          },
-          ark: {
-            canSend: true,
-            canReceive: true,
-          },
+        // Declare wallet capabilities as a function
+        capabilities: () => {
+          console.log("[Sample Wallet] Capabilities function called");
+          return {
+            bitcoin: {
+              signPsbt: true,
+              sendBitcoin: false, // Not yet implemented
+            },
+            loanAssets: {
+              supportedAssets: [],
+              canReceive: false, // Not implemented
+              canSend: false, // Not yet implemented
+            },
+            nostr: {
+              hasNpub: false, // Not implemented
+            },
+            ark: {
+              canSend: true,
+              canReceive: true,
+            },
+          };
         },
         onGetPublicKey: () => {
           console.log(`Called on get pk`);
