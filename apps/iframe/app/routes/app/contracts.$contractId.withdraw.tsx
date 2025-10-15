@@ -1,6 +1,6 @@
 import { useParams, useNavigate } from "react-router";
-import { useAsync } from "react-use";
-import { useState } from "react";
+import { useAsyncRetry } from "react-use";
+import { useState, useEffect } from "react";
 import type { Route } from "../+types/app.contracts.$contractId.withdraw";
 import { apiClient } from "@repo/api";
 import { LoadingOverlay } from "~/components/ui/spinner";
@@ -26,6 +26,7 @@ export default function WithdrawCollateral() {
   const [withdrawError, setWithdrawError] = useState<string | null>(null);
   const [withdrawSuccess, setWithdrawSuccess] = useState<string | null>(null);
   const [feeRate, setFeeRate] = useState<string>("1");
+  const [contract, setContract] = useState<any>(null);
 
   const copyToClipboard = async (
     text: string,
@@ -41,7 +42,7 @@ export default function WithdrawCollateral() {
   };
 
   const handleWithdrawWithWallet = async () => {
-    if (!client || !contractState.value) {
+    if (!client || !displayContract) {
       return;
     }
 
@@ -59,7 +60,7 @@ export default function WithdrawCollateral() {
       // Step 1: Get the PSBT from the API
       console.log("Getting claim PSBT with fee rate:", feeRateNum);
       const { psbt, collateral_descriptor, borrower_pk } =
-        await apiClient.getClaimPsbt(contractState.value.id, feeRateNum);
+        await apiClient.getClaimPsbt(displayContract.id, feeRateNum);
 
       console.log("Received PSBT details:", {
         collateral_descriptor,
@@ -77,7 +78,7 @@ export default function WithdrawCollateral() {
       // Step 3: Broadcast the signed transaction
       console.log("Broadcasting signed transaction...");
       const { txid } = await apiClient.broadcastClaimPsbt(
-        contractState.value.id,
+        displayContract.id,
         signedPsbt,
       );
 
@@ -92,11 +93,35 @@ export default function WithdrawCollateral() {
     }
   };
 
-  // Fetch the specific contract
-  const contractState = useAsync(async () => {
+  // Initial fetch
+  const contractState = useAsyncRetry(async () => {
     if (!contractId) return null;
-    return await apiClient.contractDetails(contractId);
+    const result = await apiClient.contractDetails(contractId);
+    setContract(result);
+    return result;
   }, [contractId]);
+
+  // Poll for updates every 3 seconds, only update if status changed
+  useEffect(() => {
+    if (!contractId || !contract) return;
+
+    const interval = setInterval(async () => {
+      try {
+        const updated = await apiClient.contractDetails(contractId);
+        // Only update state if status has changed
+        if (updated && updated.status !== contract.status) {
+          setContract(updated);
+        }
+      } catch (err) {
+        console.error("Failed to poll contract updates:", err);
+      }
+    }, 3000);
+
+    return () => clearInterval(interval);
+  }, [contractId, contract]);
+
+  // Use local contract state for rendering
+  const displayContract = contract || contractState.value;
 
   if (!contractId) {
     return (
@@ -153,7 +178,7 @@ export default function WithdrawCollateral() {
         </div>
       )}
 
-      {contractState.value === null && !contractState.loading && (
+      {displayContract === null && !contractState.loading && (
         <div className="bg-white rounded-lg shadow p-6">
           <p className="text-gray-600">Contract not found.</p>
           <Button
@@ -166,7 +191,7 @@ export default function WithdrawCollateral() {
         </div>
       )}
 
-      {contractState.value && (
+      {displayContract && (
         <div className="space-y-6">
           {/* Withdrawal Instructions */}
           <div className="bg-white rounded-lg shadow p-6">
@@ -187,7 +212,7 @@ export default function WithdrawCollateral() {
                   Your funds will be returned to:
                 </p>
                 <p className="text-sm font-mono text-gray-900 break-all">
-                  {contractState.value.borrowerBtcAddress}
+                  {displayContract.borrowerBtcAddress}
                 </p>
               </div>
             </div>
@@ -206,7 +231,7 @@ export default function WithdrawCollateral() {
                   your collateral from the contract address.
                 </p>
               </div>
-            ) : !contractState.value.contractAddress ? (
+            ) : !displayContract.contractAddress ? (
               <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
                 <p className="text-sm text-yellow-700">
                   No contract address available.
@@ -304,7 +329,7 @@ export default function WithdrawCollateral() {
                   onClick={handleWithdrawWithWallet}
                   disabled={
                     isWithdrawing ||
-                    !contractState.value.contractAddress ||
+                    !displayContract.contractAddress ||
                     !feeRate ||
                     parseFloat(feeRate) <= 0
                   }
@@ -335,7 +360,7 @@ export default function WithdrawCollateral() {
                       Withdrawing Collateral...
                     </>
                   ) : (
-                    `Withdraw ${contractState.value.collateralSats.toLocaleString()} sats`
+                    `Withdraw ${displayContract.collateralSats.toLocaleString()} sats`
                   )}
                 </Button>
               </>

@@ -1,5 +1,5 @@
 import { useParams, useNavigate } from "react-router";
-import { useAsync } from "react-use";
+import { useAsyncRetry } from "react-use";
 import { useState, useEffect } from "react";
 import type { Route } from "../+types/app.contracts.$contractId.repay";
 import { apiClient, formatLoanAsset, isFiatAsset } from "@repo/api";
@@ -33,6 +33,7 @@ export default function RepayLoan() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
   const [submitSuccess, setSubmitSuccess] = useState(false);
+  const [contract, setContract] = useState<any>(null);
 
   const copyToClipboard = async (
     text: string,
@@ -48,13 +49,13 @@ export default function RepayLoan() {
   };
 
   const handleRepayWithWallet = async () => {
-    if (!client || !contractState.value) {
+    if (!client || !displayContract) {
       return;
     }
 
     const repaymentAddress =
-      contractState.value.loanRepaymentAddress ||
-      contractState.value.btcLoanRepaymentAddress;
+      displayContract.loanRepaymentAddress ||
+      displayContract.btcLoanRepaymentAddress;
 
     if (!repaymentAddress) {
       setRepaymentError("No repayment address available");
@@ -62,7 +63,7 @@ export default function RepayLoan() {
     }
 
     // Find the next pending installment
-    const pendingInstallment = contractState.value.installments
+    const pendingInstallment = displayContract.installments
       .filter((inst) => inst.status === "pending")
       .sort((a, b) => a.dueDate.getTime() - b.dueDate.getTime())[0];
 
@@ -81,13 +82,13 @@ export default function RepayLoan() {
       // For now, we'll use balanceOutstanding as-is since it's already in the correct unit
       const txid = await client.sendToAddress(
         repaymentAddress,
-        contractState.value.balanceOutstanding,
-        contractState.value.loanAsset,
+        displayContract.balanceOutstanding,
+        displayContract.loanAsset,
       );
 
       // Mark the installment as paid
       await apiClient.repaidContract(
-        contractState.value.id,
+        displayContract.id,
         txid,
         pendingInstallment.id,
       );
@@ -105,12 +106,12 @@ export default function RepayLoan() {
   };
 
   const handleSubmitExternalRepayment = async () => {
-    if (!contractState.value || !txidInput.trim()) {
+    if (!displayContract || !txidInput.trim()) {
       return;
     }
 
     // Find the next pending installment
-    const pendingInstallment = contractState.value.installments
+    const pendingInstallment = displayContract.installments
       .filter((inst) => inst.status === "pending")
       .sort((a, b) => a.dueDate.getTime() - b.dueDate.getTime())[0];
 
@@ -125,7 +126,7 @@ export default function RepayLoan() {
       setSubmitSuccess(false);
 
       await apiClient.repaidContract(
-        contractState.value.id,
+        displayContract.id,
         txidInput.trim(),
         pendingInstallment.id,
       );
@@ -143,27 +144,51 @@ export default function RepayLoan() {
     }
   };
 
-  // Fetch the specific contract
-  const contractState = useAsync(async () => {
+  // Initial fetch
+  const contractState = useAsyncRetry(async () => {
     if (!contractId) return null;
-    return await apiClient.contractDetails(contractId);
+    const result = await apiClient.contractDetails(contractId);
+    setContract(result);
+    return result;
   }, [contractId]);
+
+  // Poll for updates every 3 seconds, only update if status changed
+  useEffect(() => {
+    if (!contractId || !contract) return;
+
+    const interval = setInterval(async () => {
+      try {
+        const updated = await apiClient.contractDetails(contractId);
+        // Only update state if status has changed
+        if (updated && updated.status !== contract.status) {
+          setContract(updated);
+        }
+      } catch (err) {
+        console.error("Failed to poll contract updates:", err);
+      }
+    }, 3000);
+
+    return () => clearInterval(interval);
+  }, [contractId, contract]);
+
+  // Use local contract state for rendering
+  const displayContract = contract || contractState.value;
 
   // Check if wallet supports sending this loan asset
   const canSendLoanAsset =
     capabilities &&
     capabilities.loanAssets.canSend &&
-    contractState.value &&
+    displayContract &&
     capabilities.loanAssets.supportedAssets.includes(
-      contractState.value.loanAsset,
+      displayContract.loanAsset,
     );
 
   // Auto-select external wallet tab if connected wallet doesn't support the asset
   useEffect(() => {
-    if (isConnected && !canSendLoanAsset && contractState.value) {
+    if (isConnected && !canSendLoanAsset && displayContract) {
       setActiveTab("external");
     }
-  }, [isConnected, canSendLoanAsset, contractState.value]);
+  }, [isConnected, canSendLoanAsset, displayContract]);
 
   if (!contractId) {
     return (
@@ -218,7 +243,7 @@ export default function RepayLoan() {
         </div>
       )}
 
-      {contractState.value === null && !contractState.loading && (
+      {displayContract === null && !contractState.loading && (
         <div className="bg-white rounded-lg shadow p-6">
           <p className="text-gray-600">Contract not found.</p>
           <Button
@@ -231,7 +256,7 @@ export default function RepayLoan() {
         </div>
       )}
 
-      {contractState.value && (
+      {displayContract && (
         <div className="space-y-6">
           {/* Repayment Instructions */}
           <div className="bg-white rounded-lg shadow p-6">
@@ -249,15 +274,15 @@ export default function RepayLoan() {
               {/* Repayment Address with QR Code */}
               <div className="bg-gray-50 rounded-lg p-4">
                 <p className="text-sm text-gray-600 mb-3">Repayment Address</p>
-                {contractState.value.loanRepaymentAddress ||
-                contractState.value.btcLoanRepaymentAddress ? (
+                {displayContract.loanRepaymentAddress ||
+                displayContract.btcLoanRepaymentAddress ? (
                   <>
                     <div className="flex items-center gap-4">
                       <div className="flex-shrink-0 bg-white p-2 rounded-lg">
                         <QRCodeSVG
                           value={(
-                            contractState.value.loanRepaymentAddress ||
-                            contractState.value.btcLoanRepaymentAddress ||
+                            displayContract.loanRepaymentAddress ||
+                            displayContract.btcLoanRepaymentAddress ||
                             ""
                           ).toLowerCase()}
                           size={120}
@@ -267,14 +292,14 @@ export default function RepayLoan() {
                       <div className="flex-1">
                         <div className="flex items-center gap-2 mb-2">
                           <p className="text-sm font-mono text-gray-900 break-all flex-1">
-                            {contractState.value.loanRepaymentAddress ||
-                              contractState.value.btcLoanRepaymentAddress}
+                            {displayContract.loanRepaymentAddress ||
+                              displayContract.btcLoanRepaymentAddress}
                           </p>
                           <button
                             onClick={() =>
                               copyToClipboard(
-                                contractState.value?.loanRepaymentAddress ||
-                                  contractState.value
+                                displayContract?.loanRepaymentAddress ||
+                                  displayContract
                                     ?.btcLoanRepaymentAddress ||
                                   "",
                                 setCopiedAddress,
@@ -314,9 +339,9 @@ export default function RepayLoan() {
                             )}
                           </button>
                         </div>
-                        {contractState.value.btcLoanRepaymentAddress && (
+                        {displayContract.btcLoanRepaymentAddress && (
                           <a
-                            href={`https://mempool.space/address/${contractState.value.btcLoanRepaymentAddress}`}
+                            href={`https://mempool.space/address/${displayContract.btcLoanRepaymentAddress}`}
                             target="_blank"
                             rel="noopener noreferrer"
                             className="text-indigo-600 hover:text-indigo-800 text-sm font-medium"
@@ -343,7 +368,7 @@ export default function RepayLoan() {
                   <div className="flex items-center justify-between">
                     <p className="text-lg font-semibold text-gray-900">
                       $
-                      {contractState.value.balanceOutstanding.toLocaleString(
+                      {displayContract.balanceOutstanding.toLocaleString(
                         "en-US",
                         {
                           minimumFractionDigits: 2,
@@ -354,7 +379,7 @@ export default function RepayLoan() {
                     <button
                       onClick={() =>
                         copyToClipboard(
-                          contractState.value?.balanceOutstanding.toFixed(2) ||
+                          displayContract?.balanceOutstanding.toFixed(2) ||
                             "",
                           setCopiedAmountSats,
                         )
@@ -396,19 +421,19 @@ export default function RepayLoan() {
                   <div className="flex items-center justify-between">
                     <p className="text-sm text-gray-500">
                       ≈{" "}
-                      {contractState.value.balanceOutstanding.toLocaleString(
+                      {displayContract.balanceOutstanding.toLocaleString(
                         "en-US",
                         {
                           minimumFractionDigits: 2,
                           maximumFractionDigits: 2,
                         },
                       )}{" "}
-                      {formatLoanAsset(contractState.value.loanAsset)}
+                      {formatLoanAsset(displayContract.loanAsset)}
                     </p>
                     <button
                       onClick={() =>
                         copyToClipboard(
-                          contractState.value?.balanceOutstanding.toFixed(2) ||
+                          displayContract?.balanceOutstanding.toFixed(2) ||
                             "",
                           setCopiedAmountBtc,
                         )
@@ -542,8 +567,8 @@ export default function RepayLoan() {
                           </h4>
                           <p className="text-sm text-yellow-700 mt-1">
                             Your connected wallet does not support sending{" "}
-                            {contractState.value &&
-                              formatLoanAsset(contractState.value.loanAsset)}
+                            {displayContract &&
+                              formatLoanAsset(displayContract.loanAsset)}
                             . Please use the External Wallet option to submit
                             your repayment transaction ID.
                           </p>
@@ -551,8 +576,8 @@ export default function RepayLoan() {
                       </div>
                     </div>
                   ) : !(
-                      contractState.value.loanRepaymentAddress ||
-                      contractState.value.btcLoanRepaymentAddress
+                      displayContract.loanRepaymentAddress ||
+                      displayContract.btcLoanRepaymentAddress
                     ) ? (
                     <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
                       <p className="text-sm text-yellow-700">
@@ -630,8 +655,8 @@ export default function RepayLoan() {
                         disabled={
                           isRepaying ||
                           !(
-                            contractState.value.loanRepaymentAddress ||
-                            contractState.value.btcLoanRepaymentAddress
+                            displayContract.loanRepaymentAddress ||
+                            displayContract.btcLoanRepaymentAddress
                           )
                         }
                         className="w-full"
@@ -661,7 +686,7 @@ export default function RepayLoan() {
                             Sending Repayment...
                           </>
                         ) : (
-                          `Repay Loan ($${contractState.value.balanceOutstanding.toFixed(2)})`
+                          `Repay Loan ($${displayContract.balanceOutstanding.toFixed(2)})`
                         )}
                       </Button>
                     </>
