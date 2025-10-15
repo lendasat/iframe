@@ -1,6 +1,5 @@
 import { useAsync } from "react-use";
 import { useNavigate } from "react-router";
-import { useEffect } from "react";
 import { apiClient, type Contract, type ContractStatus } from "@repo/api";
 import { LoadingOverlay } from "~/components/ui/spinner";
 
@@ -69,13 +68,6 @@ export function ContractsTab({ user }: ContractsTabProps) {
     if (!user) return null;
     return await apiClient.contracts();
   }, [user]);
-
-  // Redirect to offers tab if no contracts exist
-  useEffect(() => {
-    if (contractsState.value && contractsState.value.data.length === 0) {
-      navigate("/app/offers");
-    }
-  }, [contractsState.value, navigate]);
 
   return (
     <div>

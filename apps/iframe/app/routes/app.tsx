@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { useNavigate, useLocation, Link, Outlet } from "react-router";
+import { apiClient } from "@repo/api";
 
 export default function AppLayout() {
   const navigate = useNavigate();
@@ -7,6 +8,7 @@ export default function AppLayout() {
   const [user, setUser] = useState<{ email: string; name: string } | null>(
     null,
   );
+  const [hasCheckedContracts, setHasCheckedContracts] = useState(false);
 
   // Determine active tab from current path
   const activeTab = location.pathname.split("/")[2] || "contracts";
@@ -20,6 +22,33 @@ export default function AppLayout() {
     }
     setUser(JSON.parse(storedUser));
   }, [navigate]);
+
+  // On initial load, redirect to offers if user has no contracts
+  useEffect(() => {
+    if (!user || hasCheckedContracts) return;
+
+    const checkContracts = async () => {
+      try {
+        const contracts = await apiClient.contracts();
+        // Only redirect to offers if:
+        // 1. User is on /app or /app/contracts (initial load)
+        // 2. User has no contracts
+        if (
+          (location.pathname === "/app" ||
+            location.pathname === "/app/contracts") &&
+          contracts.data.length === 0
+        ) {
+          navigate("/app/offers", { replace: true });
+        }
+      } catch (error) {
+        console.error("Failed to check contracts:", error);
+      } finally {
+        setHasCheckedContracts(true);
+      }
+    };
+
+    checkContracts();
+  }, [user, hasCheckedContracts, location.pathname, navigate]);
 
   if (!user) {
     return null;
