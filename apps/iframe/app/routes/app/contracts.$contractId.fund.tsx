@@ -18,7 +18,7 @@ export function meta({}: Route.MetaArgs) {
 export default function FundContract() {
   const { contractId } = useParams();
   const navigate = useNavigate();
-  const { client, isConnected } = useWallet();
+  const { client, isConnected, capabilities, capabilitiesLoading } = useWallet();
   const [copiedAddress, setCopiedAddress] = useState(false);
   const [copiedCollateralSats, setCopiedCollateralSats] = useState(false);
   const [copiedCollateralBtc, setCopiedCollateralBtc] = useState(false);
@@ -424,7 +424,9 @@ export default function FundContract() {
           </div>
 
           {/* Fund with Wallet */}
-          {isConnected && contractState.value.contractAddress && (
+          {isConnected &&
+            contractState.value.contractAddress &&
+            capabilities?.bitcoin.sendBitcoin && (
             <div className="bg-white rounded-lg shadow p-6">
               <h2 className="text-xl font-semibold text-gray-900 mb-4">
                 Fund with Wallet
