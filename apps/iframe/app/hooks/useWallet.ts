@@ -96,7 +96,7 @@ export function useWallet() {
  * Helper hook to get wallet information on mount
  */
 export function useWalletInfo() {
-  const { client, isConnected } = useWallet();
+  const { client, isConnected, capabilities } = useWallet();
   const [publicKey, setPublicKey] = useState<string | null>(null);
   const [derivationPath, setDerivationPath] = useState<string | null>(null);
   const [address, setAddress] = useState<string | null>(null);
@@ -110,17 +110,21 @@ export function useWalletInfo() {
     }
 
     const fetchWalletInfo = async () => {
+      if (!capabilities) {
+        return;
+      }
+
       try {
         setLoading(true);
         setError(null);
+
+        const fetchNpub = capabilities?.nostr.hasNpub || false;
 
         const [pk, path, addr, npubValue] = await Promise.allSettled([
           client.getPublicKey(),
           client.getDerivationPath(),
           client.getAddress(AddressType.BITCOIN),
-          // Only fetch npub if wallet supports it
-          // TODO: use capabilities for this
-          Promise.resolve(null),
+          fetchNpub ? client.getNpub() : Promise.resolve(null),
         ]);
 
         if (pk.status === "fulfilled") {
@@ -142,7 +146,7 @@ export function useWalletInfo() {
         );
         if (errors.length > 0) {
           setError(
-            `Failed to fetch wallet info: ${errors.map((e) => (e.status === "rejected" ? e.reason : "")).join(", ")}`,
+            `Failed to fetch wallet info: ${JSON.stringify(errors)} ${errors.map((e) => (e.status === "rejected" ? e.reason : "")).join(", ")}`,
           );
         }
       } catch (err) {
@@ -153,7 +157,7 @@ export function useWalletInfo() {
     };
 
     fetchWalletInfo();
-  }, [client, isConnected]);
+  }, [client, isConnected, capabilities]);
 
   return {
     publicKey,
@@ -195,20 +199,21 @@ export function useLoanAssetAddress(loanAsset?: LoanAsset) {
     (capabilities.loanAssets.canReceive &&
       capabilities.loanAssets.supportedAssets.includes(loanAsset));
 
-  const fetchAddress = async (asset: LoanAsset): Promise<string> => {
+  const fetchAddress = async (asset: LoanAsset): Promise<string | null> => {
     if (!client) {
       throw new Error("Wallet client not initialized");
     }
 
     // Check if asset is supported
+    if (!capabilities) {
+      return null;
+    }
+
     if (
-      capabilities &&
-      (!capabilities.loanAssets.canReceive ||
-        !capabilities.loanAssets.supportedAssets.includes(asset))
+      !capabilities.loanAssets.canReceive ||
+      !capabilities.loanAssets.supportedAssets.includes(asset)
     ) {
-      throw new Error(
-        `Wallet does not support ${asset}. Supported assets: ${capabilities.loanAssets.supportedAssets.join(", ")}`,
-      );
+      return null;
     }
 
     try {
