@@ -55,6 +55,11 @@ function sortContracts(contracts: Contract[]): Contract[] {
   });
 }
 
+// Check if a contract is closed
+function isContractClosed(status: ContractStatus): boolean {
+  return getStatusPriority(status) === 3;
+}
+
 export function ContractsTab({ user }: ContractsTabProps) {
   const navigate = useNavigate();
 
@@ -81,17 +86,17 @@ export function ContractsTab({ user }: ContractsTabProps) {
         </div>
       )}
       {contractsState.value && contractsState.value.data.length > 0 && (
-        <div className="space-y-4">
+        <div className="space-y-3">
           {sortContracts(contractsState.value.data).map((contract) => (
-            <div key={contract.id} className="bg-white rounded-lg shadow p-6">
-              <div className="flex justify-between items-start mb-4">
+            <div key={contract.id} className="bg-white rounded-lg shadow p-4">
+              <div className="flex justify-between items-start mb-3">
                 <div>
-                  <h3 className="text-lg font-semibold text-gray-900">
+                  <h3 className="text-base font-semibold text-gray-900">
                     Contract {contract.id.substring(0, 8)}...
                   </h3>
                 </div>
                 <span
-                  className={`px-3 py-1 rounded-full text-sm font-medium ${
+                  className={`px-2 py-0.5 rounded-full text-xs font-medium ${
                     contract.status === "PrincipalGiven"
                       ? "bg-green-100 text-green-800"
                       : contract.status === "Requested"
@@ -102,10 +107,16 @@ export function ContractsTab({ user }: ContractsTabProps) {
                   {contract.status}
                 </span>
               </div>
-              <div className="grid grid-cols-2 md:grid-cols-3 gap-4 text-sm mb-4">
+              <div
+                className={`grid gap-3 text-sm mb-3 ${
+                  isContractClosed(contract.status)
+                    ? "grid-cols-2 md:grid-cols-3"
+                    : "grid-cols-2 md:grid-cols-4"
+                }`}
+              >
                 <div>
-                  <p className="text-gray-600">Loan Amount</p>
-                  <p className="font-medium">
+                  <p className="text-gray-500 text-xs mb-0.5">Loan Amount</p>
+                  <p className="font-medium text-gray-900">
                     $
                     {contract.loanAmount.toLocaleString("en-US", {
                       minimumFractionDigits: 2,
@@ -114,32 +125,34 @@ export function ContractsTab({ user }: ContractsTabProps) {
                   </p>
                 </div>
                 <div>
-                  <p className="text-gray-600">Collateral</p>
-                  <p className="font-medium">
-                    {contract.collateralSats.toLocaleString()} sats
-                  </p>
-                </div>
-                <div>
-                  <p className="text-gray-600">Interest Rate</p>
-                  <p className="font-medium">
+                  <p className="text-gray-500 text-xs mb-0.5">Interest Rate</p>
+                  <p className="font-medium text-gray-900">
                     {(contract.interestRate * 100).toFixed(1)}%
                   </p>
                 </div>
+                {!isContractClosed(contract.status) && (
+                  <div>
+                    <p className="text-gray-500 text-xs mb-0.5">Collateral</p>
+                    <p className="font-medium text-gray-900">
+                      {contract.collateralSats.toLocaleString()} sats
+                    </p>
+                  </div>
+                )}
                 <div>
-                  <p className="text-gray-600">Duration</p>
-                  <p className="font-medium">{contract.durationDays} days</p>
-                </div>
-                <div>
-                  <p className="text-gray-600">Expiry</p>
-                  <p className="font-medium">
-                    {contract.expiry.toLocaleDateString()}
+                  <p className="text-gray-500 text-xs mb-0.5">
+                    {isContractClosed(contract.status) ? "Closed" : "Expiry"}
+                  </p>
+                  <p className="font-medium text-gray-900">
+                    {isContractClosed(contract.status)
+                      ? contract.updatedAt.toLocaleDateString()
+                      : contract.expiry.toLocaleDateString()}
                   </p>
                 </div>
               </div>
               <div className="flex justify-end">
                 <button
                   onClick={() => navigate(`/app/contracts/${contract.id}`)}
-                  className="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white font-medium rounded-md transition-colors"
+                  className="px-3 py-1.5 bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-medium rounded-md transition-colors"
                 >
                   Details
                 </button>
