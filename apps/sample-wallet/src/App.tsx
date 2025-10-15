@@ -7,10 +7,16 @@ import {
   WalletProvider,
   AddressType,
   type LoanAsset,
+  type WalletCapabilities,
 } from "@lendasat/lendasat-wallet-bridge";
 import "./App.css";
 import * as tools from "uint8array-tools";
-import { loadPrivateKey, savePrivateKey } from "./storage";
+import {
+  loadPrivateKey,
+  savePrivateKey,
+  loadCapabilities,
+  saveCapabilities,
+} from "./storage";
 
 // Make Buffer available globally for bitcoinjs-lib
 // @ts-expect-error "this is needed for ios devices"
@@ -29,6 +35,9 @@ function App() {
   const iframeRef = useRef<HTMLIFrameElement>(null);
   const providerRef = useRef<WalletProvider | null>(null);
   const [isInitialized, setIsInitialized] = useState(false);
+  const [capabilities, setCapabilities] = useState<WalletCapabilities>(
+    () => loadCapabilities()
+  );
 
   const initializeWallet = (privateKeyHex: string) => {
     try {
@@ -101,24 +110,7 @@ function App() {
         // Declare wallet capabilities as a function
         capabilities: () => {
           console.log("[Sample Wallet] Capabilities function called");
-          return {
-            bitcoin: {
-              signPsbt: true,
-              sendBitcoin: false, // Not yet implemented
-            },
-            loanAssets: {
-              supportedAssets: ["UsdcPol"],
-              canReceive: true, // Not implemented
-              canSend: false, // Not yet implemented
-            },
-            nostr: {
-              hasNpub: false, // Not implemented
-            },
-            ark: {
-              canSend: true,
-              canReceive: true,
-            },
-          };
+          return capabilities;
         },
         onGetPublicKey: () => {
           console.log(`Called on get pk`);
@@ -325,7 +317,43 @@ function App() {
         providerRef.current = null;
       }
     };
-  }, [keyPair, address]);
+  }, [keyPair, address, capabilities]);
+
+  const handleCapabilityChange = (
+    category: keyof WalletCapabilities,
+    key: string,
+    value: boolean
+  ) => {
+    setCapabilities((prev) => {
+      const updated = {
+        ...prev,
+        [category]: {
+          ...prev[category],
+          [key]: value,
+        },
+      };
+      saveCapabilities(updated);
+      return updated;
+    });
+  };
+
+  const handleLoanAssetToggle = (asset: LoanAsset) => {
+    setCapabilities((prev) => {
+      const supportedAssets = prev.loanAssets.supportedAssets.includes(asset)
+        ? prev.loanAssets.supportedAssets.filter((a) => a !== asset)
+        : [...prev.loanAssets.supportedAssets, asset];
+
+      const updated = {
+        ...prev,
+        loanAssets: {
+          ...prev.loanAssets,
+          supportedAssets,
+        },
+      };
+      saveCapabilities(updated);
+      return updated;
+    });
+  };
 
   return (
     <div className="app">
@@ -357,6 +385,155 @@ function App() {
               </div>
             )}
           </form>
+
+          {/* Capabilities Configuration */}
+          <div className="capabilities-config">
+            <h2>Wallet Capabilities</h2>
+
+            <div className="capability-section">
+              <h3>Bitcoin</h3>
+              <label className="capability-checkbox">
+                <input
+                  type="checkbox"
+                  checked={capabilities.bitcoin.signPsbt}
+                  onChange={(e) =>
+                    handleCapabilityChange(
+                      "bitcoin",
+                      "signPsbt",
+                      e.target.checked
+                    )
+                  }
+                />
+                <span>Can sign PSBTs</span>
+              </label>
+              <label className="capability-checkbox">
+                <input
+                  type="checkbox"
+                  checked={capabilities.bitcoin.sendBitcoin}
+                  onChange={(e) =>
+                    handleCapabilityChange(
+                      "bitcoin",
+                      "sendBitcoin",
+                      e.target.checked
+                    )
+                  }
+                />
+                <span>Can send Bitcoin</span>
+              </label>
+            </div>
+
+            <div className="capability-section">
+              <h3>Loan Assets</h3>
+              <label className="capability-checkbox">
+                <input
+                  type="checkbox"
+                  checked={capabilities.loanAssets.canReceive}
+                  onChange={(e) =>
+                    handleCapabilityChange(
+                      "loanAssets",
+                      "canReceive",
+                      e.target.checked
+                    )
+                  }
+                />
+                <span>Can receive loan assets</span>
+              </label>
+              <label className="capability-checkbox">
+                <input
+                  type="checkbox"
+                  checked={capabilities.loanAssets.canSend}
+                  onChange={(e) =>
+                    handleCapabilityChange(
+                      "loanAssets",
+                      "canSend",
+                      e.target.checked
+                    )
+                  }
+                />
+                <span>Can send loan assets</span>
+              </label>
+
+              <div className="supported-assets">
+                <h4>Supported Assets</h4>
+                <div className="asset-grid">
+                  {(
+                    [
+                      "UsdcPol",
+                      "UsdtPol",
+                      "UsdcEth",
+                      "UsdtEth",
+                      "UsdcStrk",
+                      "UsdtStrk",
+                      "UsdcSol",
+                      "UsdtSol",
+                      "UsdtLiquid",
+                      "Usd",
+                      "Eur",
+                      "Chf",
+                      "Mxn",
+                    ] as LoanAsset[]
+                  ).map((asset) => (
+                    <label key={asset} className="asset-checkbox">
+                      <input
+                        type="checkbox"
+                        checked={capabilities.loanAssets.supportedAssets.includes(
+                          asset
+                        )}
+                        onChange={() => handleLoanAssetToggle(asset)}
+                      />
+                      <span>{asset}</span>
+                    </label>
+                  ))}
+                </div>
+              </div>
+            </div>
+
+            <div className="capability-section">
+              <h3>Nostr</h3>
+              <label className="capability-checkbox">
+                <input
+                  type="checkbox"
+                  checked={capabilities.nostr.hasNpub}
+                  onChange={(e) =>
+                    handleCapabilityChange(
+                      "nostr",
+                      "hasNpub",
+                      e.target.checked
+                    )
+                  }
+                />
+                <span>Has Nostr public key (npub)</span>
+              </label>
+            </div>
+
+            <div className="capability-section">
+              <h3>Ark</h3>
+              <label className="capability-checkbox">
+                <input
+                  type="checkbox"
+                  checked={capabilities.ark.canSend}
+                  onChange={(e) =>
+                    handleCapabilityChange("ark", "canSend", e.target.checked)
+                  }
+                />
+                <span>Can send on Ark</span>
+              </label>
+              <label className="capability-checkbox">
+                <input
+                  type="checkbox"
+                  checked={capabilities.ark.canReceive}
+                  onChange={(e) =>
+                    handleCapabilityChange(
+                      "ark",
+                      "canReceive",
+                      e.target.checked
+                    )
+                  }
+                />
+                <span>Can receive on Ark</span>
+              </label>
+            </div>
+          </div>
         </div>
         <iframe
           ref={iframeRef}
