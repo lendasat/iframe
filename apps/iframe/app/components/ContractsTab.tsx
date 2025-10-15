@@ -1,10 +1,58 @@
 import { useAsync } from "react-use";
 import { useNavigate } from "react-router";
-import { apiClient } from "@repo/api";
+import { apiClient, type Contract, type ContractStatus } from "@repo/api";
 import { LoadingOverlay } from "~/components/ui/spinner";
 
 interface ContractsTabProps {
   user: { email: string; username: string } | null;
+}
+
+// Helper function to get sorting priority for contract statuses
+function getStatusPriority(status: ContractStatus): number {
+  // Requested contracts (highest priority)
+  switch (status) {
+    case "Requested":
+    case "Approved":
+    case "RepaymentConfirmed":
+    case "CollateralRecoverable":
+      return 1;
+    case "CollateralSeen":
+    case "CollateralConfirmed":
+    case "PrincipalGiven":
+    case "RepaymentProvided":
+    case "Undercollateralized":
+    case "DisputeBorrowerStarted":
+    case "DisputeLenderStarted":
+      return 2;
+    case "ClosingByClaim":
+    case "Defaulted":
+    case "Closed":
+    case "Closing":
+    case "ClosingByLiquidation":
+    case "ClosedByLiquidation":
+    case "ClosingByDefaulting":
+    case "ClosedByDefaulting":
+    case "Extended":
+    case "Rejected":
+    case "Cancelled":
+    case "RequestExpired":
+    case "ApprovalExpired":
+    case "ClosingByRecovery":
+    case "ClosedByRecovery":
+      return 3;
+  }
+}
+
+// Sort contracts by status priority, then by creation date
+function sortContracts(contracts: Contract[]): Contract[] {
+  return [...contracts].sort((a, b) => {
+    const priorityDiff =
+      getStatusPriority(a.status) - getStatusPriority(b.status);
+    if (priorityDiff !== 0) return priorityDiff;
+
+    // Within same priority group, sort by creation date (newest first)
+    return b.createdAt.getTime() - a.createdAt.getTime();
+  });
 }
 
 export function ContractsTab({ user }: ContractsTabProps) {
@@ -34,7 +82,7 @@ export function ContractsTab({ user }: ContractsTabProps) {
       )}
       {contractsState.value && contractsState.value.data.length > 0 && (
         <div className="space-y-4">
-          {contractsState.value.data.map((contract) => (
+          {sortContracts(contractsState.value.data).map((contract) => (
             <div key={contract.id} className="bg-white rounded-lg shadow p-6">
               <div className="flex justify-between items-start mb-4">
                 <div>
