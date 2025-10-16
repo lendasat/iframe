@@ -538,6 +538,17 @@ export function formatLoanAsset(asset: LoanAsset): string {
   }
 }
 
+export function formatCollateralAsset(asset: CollateralAsset): string {
+  switch (asset) {
+    case "BitcoinBtc":
+      return "Bitcoin";
+    case "ArkadeBtc":
+      return "Arkade";
+    default:
+      return asset;
+  }
+}
+
 export type LoanType =
   | "PayWithMoon"
   | "MoonCardInstant"

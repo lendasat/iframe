@@ -5,6 +5,7 @@ import type { Route } from "../+types/app.offers.$offerId";
 import {
   apiClient,
   formatLoanAsset,
+  formatCollateralAsset,
   Currency,
   getOriginationFeeForDuration,
 } from "@repo/api";
@@ -19,6 +20,7 @@ import {
 } from "~/hooks/useWallet";
 import { Input } from "~/components/ui/input";
 import { LoanAddressInputField } from "~/components/loan-address-input-field-shadcn";
+import { Badge } from "~/components/ui/badge";
 
 export function meta({}: Route.MetaArgs) {
   return [
@@ -313,10 +315,15 @@ export default function TakeOffer() {
 
           {/* Offer Details */}
           <div className="bg-white rounded-lg shadow p-6">
-            <h2 className="text-lg font-semibold text-gray-900 mb-4">
-              {formatLoanAsset(offerState.value.loanAsset)} offer by{" "}
-              {offerState.value.lender.name}
-            </h2>
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="text-lg font-semibold text-gray-900">
+                {formatLoanAsset(offerState.value.loanAsset)} offer by{" "}
+                {offerState.value.lender.name}
+              </h2>
+              <Badge variant="secondary">
+                Collateral on {formatCollateralAsset(offerState.value.collateralAsset)}
+              </Badge>
+            </div>
             <div className="grid grid-cols-2 gap-4 text-sm">
               <div>
                 <p className="text-gray-500">Amount Range</p>

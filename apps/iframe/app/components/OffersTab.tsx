@@ -1,8 +1,14 @@
 import { useAsync } from "react-use";
 import { useState, useMemo } from "react";
 import { Link } from "react-router";
-import { apiClient, isFiatAsset, formatLoanAsset } from "@repo/api";
+import {
+  apiClient,
+  isFiatAsset,
+  formatLoanAsset,
+  formatCollateralAsset,
+} from "@repo/api";
 import { LoadingOverlay } from "~/components/ui/spinner";
+import { Badge } from "~/components/ui/badge";
 
 interface OffersTabProps {
   user: { email: string; username: string } | null;
@@ -159,9 +165,14 @@ export function OffersTab({ user }: OffersTabProps) {
           {filteredOffers.map((offer) => (
             <div key={offer.id} className="bg-white rounded-lg shadow p-4">
               <div className="mb-3">
-                <h3 className="text-base font-semibold text-gray-900">
-                  {formatLoanAsset(offer.loanAsset)}
-                </h3>
+                <div className="flex items-center justify-between">
+                  <h3 className="text-base font-semibold text-gray-900">
+                    {formatLoanAsset(offer.loanAsset)}
+                  </h3>
+                  <Badge variant="secondary">
+                    Collateral on {formatCollateralAsset(offer.collateralAsset)}
+                  </Badge>
+                </div>
                 <p className="text-xs text-gray-500">
                   {offer.id.substring(0, 8)}...
                 </p>
