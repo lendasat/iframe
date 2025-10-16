@@ -49,13 +49,15 @@ jobs:
         with:
           packageManager: pnpm
           apiToken: ${{ secrets.CLOUDFLARE_PAGES_TOKEN}}
-          command: pages deploy apps/iframe/build/client --project-name=lendasat-signet-iframe
+          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          command: pages deploy apps/iframe/build/client --project-name=lendasat-iframe
 
       - name: Deploy sample-wallet
         uses: cloudflare/wrangler-action@v3
         with:
           packageManager: pnpm
           apiToken: ${{ secrets.CLOUDFLARE_PAGES_TOKEN}}
-          command: pages deploy apps/sample-wallet/dist/ --project-name=lendasat-signet-sample-wallet
+          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          command: pages deploy apps/sample-wallet/dist/ --project-name=lendasat-sample-wallet
 
         # TODO: publish new version of the bridge to npm
