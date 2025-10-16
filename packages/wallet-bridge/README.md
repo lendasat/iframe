@@ -243,6 +243,61 @@ MIT
 
 Contributions are welcome! Please open an issue or submit a pull request.
 
+## Publishing
+
+This package is published to npm as `@lendasat/lendasat-wallet-bridge`.
+
+### Prerequisites
+
+1. Ensure you have npm publish access to the `@lendasat` organization
+2. Make sure you're logged in to npm: `npm login`
+3. Update the version in `package.json` following [semantic versioning](https://semver.org/)
+
+### Publishing Steps
+
+From the root of the monorepo:
+
+```bash
+# Navigate to the package directory
+cd web/packages/wallet-bridge
+
+# Build the package
+pnpm build
+
+# Publish to npm
+npm publish --access public
+```
+
+Or use the workspace command from the monorepo root:
+
+```bash
+# Build the package
+pnpm --filter @lendasat/lendasat-wallet-bridge build
+
+# Publish the package
+pnpm --filter @lendasat/lendasat-wallet-bridge publish --access public
+```
+
+### Version Management
+
+Follow semantic versioning:
+- **Patch** (1.0.x): Bug fixes and minor changes
+- **Minor** (1.x.0): New features that are backward compatible
+- **Major** (x.0.0): Breaking changes
+
+Update the version before publishing:
+
+```bash
+# Bump patch version (1.0.0 -> 1.0.1)
+npm version patch
+
+# Bump minor version (1.0.0 -> 1.1.0)
+npm version minor
+
+# Bump major version (1.0.0 -> 2.0.0)
+npm version major
+```
+
 ## Support
 
 For issues and questions, please visit [GitHub Issues](https://github.com/lendasat/lendasat/issues).
