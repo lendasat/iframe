@@ -277,6 +277,7 @@ export interface Contract {
   status: ContractStatus;
   transactions: LoanTransaction[];
   updatedAt: Date;
+  collateralAsset: CollateralAsset;
 }
 
 export interface PaginatedContractsResponse {
@@ -329,6 +330,7 @@ export function mapContract(
     status: contract.status,
     transactions: contract.transactions.map(mapLoanTransaction),
     updatedAt: parseISO(contract.updated_at),
+    collateralAsset: contract.collateral_asset,
   };
 }
 
@@ -377,6 +379,7 @@ export type QueryParamLoanType =
   | "All";
 export type AssetTypeFilter = "fiat" | "stable_coins" | "all";
 export type KycFilter = "no_kyc" | "with_kyc" | "all";
+export type CollateralAsset = "BitcoinBtc" | "ArkadeBtc";
 
 export interface OriginationFee {
   fee: number;
@@ -400,6 +403,7 @@ export interface LoanOffer {
   name: string;
   originationFee: OriginationFee[];
   status: LoanOfferStatus;
+  collateralAsset: CollateralAsset;
 }
 
 export function mapOriginationFee(
@@ -452,6 +456,7 @@ export function mapLoanOffer(
     name: offer.name,
     originationFee: offer.origination_fee.map(mapOriginationFee),
     status: offer.status,
+    collateralAsset: offer.collateral_asset,
   };
 }
 

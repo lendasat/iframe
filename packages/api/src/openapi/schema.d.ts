@@ -319,23 +319,6 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
-  "/api/auth/waitlist": {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    get?: never;
-    put?: never;
-    /** Add user to the waitlist. */
-    post: operations["post_add_to_waitlist"];
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
   "/api/bringin/api-key": {
     parameters: {
       query?: never;
@@ -460,6 +443,23 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
+  "/api/contracts/{id}/broadcast-claim-ark": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /** Broadcast Ark claim-collateral transactions. */
+    post: operations["post_claim_ark_tx"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
   "/api/contracts/{id}/broadcast-recover": {
     parameters: {
       query?: never;
@@ -511,6 +511,27 @@ export interface paths {
      *     borrower has repaid the loan.
      */
     get: operations["get_claim_collateral_psbt"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/contracts/{id}/claim-ark": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * Get Ark claim-collateral transactions, to be completed with your own signatures.
+     * @description The collateral can be claimed when the Lendasat server and the lender have confirmed that the
+     *     borrower has repaid the loan.
+     */
+    get: operations["get_claim_ark_collateral_txs"];
     put?: never;
     post?: never;
     delete?: never;
@@ -709,6 +730,26 @@ export interface paths {
     };
     /** Shows if server is up and running. */
     get: operations["health_checker_handler"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/historical-prices": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * Get historical Bitcoin prices
+     * @description Returns historical Bitcoin price data for the specified time range.
+     */
+    get: operations["get_historical_prices"];
     put?: never;
     post?: never;
     delete?: never;
@@ -1287,9 +1328,15 @@ export interface components {
           /** @enum {string} */
           type: "DeclineData";
         };
+    ClaimArkTx: {
+      ark_psbt: string;
+      checkpoint_psbts: string[];
+    };
     ClaimTx: {
       tx: string;
     };
+    /** @enum {string} */
+    CollateralAsset: "BitcoinBtc" | "ArkadeBtc";
     Contract: {
       /**
        * Format: double
@@ -1312,6 +1359,7 @@ export interface components {
       can_extend: boolean;
       /** Format: uuid */
       client_contract_id?: string | null;
+      collateral_asset: components["schemas"]["CollateralAsset"];
       /**
        * Format: int64
        * @description The amount of sats accounted for the contract. Note: this value is `[origination_fee_sats]`
@@ -1689,6 +1737,16 @@ export interface components {
     Health: {
       message: string;
     };
+    HistoricalPrice: {
+      /** Format: double */
+      price: number;
+      /** Format: date-time */
+      timestamp: string;
+    };
+    HistoricalPricesResponse: {
+      prices: components["schemas"]["HistoricalPrice"][];
+      range: string;
+    };
     /** @description Details needed for the lender to send fiat via an IBAN transfer to the borrower.
      *
      *     All fields are _encrypted_ so that the hub can't learn anything. */
@@ -1813,6 +1871,7 @@ export interface components {
       | "Mxn"
       | "UsdtLiquid";
     LoanOffer: {
+      collateral_asset: components["schemas"]["CollateralAsset"];
       /** Format: int32 */
       duration_days_max: number;
       /** Format: int32 */
@@ -2163,6 +2222,12 @@ export interface components {
       | "updated_at";
     /** @enum {string} */
     SortOrder: "asc" | "desc";
+    SpendArkCollateralTxs: {
+      ark_psbt: string;
+      borrower_pk: string;
+      checkpoint_psbts: string[];
+      derivation_path?: string | null;
+    };
     SpendCollateralPsbt: {
       borrower_pk: string;
       collateral_descriptor: string;
@@ -2176,6 +2241,8 @@ export interface components {
       account_number: string;
       swift_or_bic: string;
     };
+    /** @enum {string} */
+    TimeRange: "1D" | "1W" | "1M" | "1Y" | "MAX";
     TimelineEvent: {
       /** Format: date-time */
       date: string;
@@ -2315,9 +2382,6 @@ export interface components {
     Version: {
       commit_hash: string;
       tag: string;
-    };
-    WaitlistBody: {
-      email: string;
     };
     WalletBackupData: {
       mnemonic_ciphertext: string;
@@ -2876,35 +2940,6 @@ export interface operations {
       };
     };
   };
-  post_add_to_waitlist: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    requestBody: {
-      content: {
-        "application/json": components["schemas"]["WaitlistBody"];
-      };
-    };
-    responses: {
-      /** @description Successfully added to waitlist */
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-      /** @description Email already in waitlist */
-      409: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-    };
-  };
   has_api_key: {
     parameters: {
       query?: never;
@@ -3142,6 +3177,33 @@ export interface operations {
       };
     };
   };
+  post_claim_ark_tx: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        /** @description Contract ID */
+        id: string;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["ClaimArkTx"];
+      };
+    };
+    responses: {
+      /** @description Successfully broadcast Ark claim transactions */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["BroadcastClaimTxResponse"];
+        };
+      };
+    };
+  };
   post_recover_tx: {
     parameters: {
       query?: never;
@@ -3229,6 +3291,29 @@ export interface operations {
         };
         content: {
           "application/json": components["schemas"]["SpendCollateralPsbt"];
+        };
+      };
+    };
+  };
+  get_claim_ark_collateral_txs: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        /** @description Contract ID */
+        id: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Ok if successful */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["SpendArkCollateralTxs"];
         };
       };
     };
@@ -3543,6 +3628,38 @@ export interface operations {
         content: {
           "application/json": components["schemas"]["Health"][];
         };
+      };
+    };
+  };
+  get_historical_prices: {
+    parameters: {
+      query: {
+        /** @description Time range for historical data (1D, 1W, 1M, 1Y, MAX) */
+        range: components["schemas"]["TimeRange"];
+        /** @description Asset type (defaults to USD) */
+        asset?: components["schemas"]["LoanAsset"];
+      };
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Historical prices retrieved successfully */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["HistoricalPricesResponse"];
+        };
+      };
+      /** @description Internal server error */
+      500: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
       };
     };
   };

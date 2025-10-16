@@ -12,7 +12,11 @@ import { usePriceForCurrency } from "@repo/api/price-context";
 import { LoadingOverlay } from "~/components/ui/spinner";
 import { Skeleton } from "~/components/ui/skeleton";
 import { calculateCollateralNeeded } from "@repo/api";
-import { useLoanAssetAddress, useWalletInfo } from "~/hooks/useWallet";
+import {
+  useCollateralAddress,
+  useLoanAssetAddress,
+  useWalletInfo,
+} from "~/hooks/useWallet";
 import { Input } from "~/components/ui/input";
 import { LoanAddressInputField } from "~/components/loan-address-input-field-shadcn";
 
@@ -32,7 +36,6 @@ export default function TakeOffer() {
   const {
     publicKey,
     derivationPath,
-    address,
     npub,
     loading: walletLoading,
     error: walletError,
@@ -58,6 +61,15 @@ export default function TakeOffer() {
     loading: loanAssetLoading,
     error: loanAssetError,
   } = useLoanAssetAddress(offerState.value?.loanAsset);
+
+  const collateralAsset = offerState?.value?.collateralAsset;
+
+  const {
+    address: collateralAssetAddress,
+    loading: collateralAssetLoading,
+    error: collateralAssetError,
+    supported: collateralAssetSupported,
+  } = useCollateralAddress(collateralAsset);
 
   // Calculate smart defaults using max values
   const defaultAmount = offerState.value
@@ -158,10 +170,10 @@ export default function TakeOffer() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!offerId || !address || !derivationPath || !publicKey) {
+    if (!offerId || !collateralAssetAddress || !derivationPath || !publicKey) {
       // todo: show error
       console.error(
-        `Something was null - offerId: ${offerId}, address: ${address}, derivationPath: ${derivationPath}, publicKey: ${publicKey}`,
+        `Something was null - offerId: ${offerId}, address: ${collateralAssetAddress}, derivationPath: ${derivationPath}, publicKey: ${publicKey}`,
       );
       return;
     }
@@ -178,8 +190,9 @@ export default function TakeOffer() {
         durationDays: Number.parseInt(duration),
         loanAmount: Number.parseFloat(amount),
         offerId: offerId,
-        borrowerBtcAddress: address,
+        borrowerBtcAddress: collateralAssetAddress,
         borrowerDerivationPath: derivationPath,
+        borrowerNpub: npub,
       });
 
       console.log("Contract requested successfully:", contract);
@@ -270,6 +283,33 @@ export default function TakeOffer() {
               <div className="text-sm mt-1">{loanAssetError}</div>
             </div>
           )}
+
+          {/* Collateral Asset Address Status */}
+          {collateralAssetLoading && (
+            <div className="bg-blue-50 border border-blue-200 text-blue-700 px-4 py-3 rounded">
+              Loading collateral address for {collateralAsset}...
+            </div>
+          )}
+          {collateralAssetError && (
+            <div className="bg-yellow-50 border border-yellow-200 text-yellow-700 px-4 py-3 rounded">
+              <div className="font-semibold">
+                Collateral address not available
+              </div>
+              <div className="text-sm mt-1">{collateralAssetError}</div>
+            </div>
+          )}
+          {collateralAsset &&
+            !collateralAssetSupported &&
+            !collateralAssetLoading && (
+              <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded">
+                <div className="font-semibold">
+                  Collateral type not supported
+                </div>
+                <div className="text-sm mt-1">
+                  Your wallet does not support {collateralAsset} as collateral.
+                </div>
+              </div>
+            )}
 
           {/* Offer Details */}
           <div className="bg-white rounded-lg shadow p-6">
@@ -583,7 +623,16 @@ export default function TakeOffer() {
               </button>
               <button
                 type="submit"
-                className="flex-1 bg-indigo-600 hover:bg-indigo-700 text-white font-medium py-2 px-4 rounded-md transition-colors"
+                disabled={
+                  walletLoading ||
+                  loanAssetLoading ||
+                  collateralAssetLoading ||
+                  !collateralAssetAddress ||
+                  !collateralAssetSupported ||
+                  !publicKey ||
+                  !derivationPath
+                }
+                className="flex-1 bg-indigo-600 hover:bg-indigo-700 text-white font-medium py-2 px-4 rounded-md transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 Submit
               </button>

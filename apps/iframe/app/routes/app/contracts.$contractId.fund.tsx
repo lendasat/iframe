@@ -519,7 +519,11 @@ export default function FundContract() {
 
                 <Button
                   onClick={handleFundWithWallet}
-                  disabled={isFunding || !displayContract.contractAddress}
+                  disabled={
+                    isFunding ||
+                    !displayContract.contractAddress ||
+                    fundingSuccess !== null
+                  }
                   className="w-full"
                 >
                   {isFunding ? (
@@ -566,6 +570,7 @@ export default function FundContract() {
               onClick={() => navigate("/app/contracts")}
               variant="default"
               className="flex-1"
+              disabled={fundingSuccess === null}
             >
               Done
             </Button>

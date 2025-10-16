@@ -2,7 +2,7 @@ import { useParams, useNavigate } from "react-router";
 import { useAsyncRetry } from "react-use";
 import { useState, useEffect } from "react";
 import type { Route } from "../+types/app.contracts.$contractId.withdraw";
-import { apiClient } from "@repo/api";
+import { apiClient, type Contract } from "@repo/api";
 import { LoadingOverlay } from "~/components/ui/spinner";
 import { Button } from "~/components/ui/button";
 import { useWallet } from "~/hooks/useWallet";
@@ -23,7 +23,7 @@ export default function WithdrawCollateral() {
   const [withdrawError, setWithdrawError] = useState<string | null>(null);
   const [withdrawSuccess, setWithdrawSuccess] = useState<string | null>(null);
   const [feeRate, setFeeRate] = useState<string>("1");
-  const [contract, setContract] = useState<any>(null);
+  const [contract, setContract] = useState<Contract | null>(null);
   const [disableWithdrawButton, setDisableWithdrawButton] = useState(false);
 
   const handleWithdrawWithWallet = async () => {
@@ -43,37 +43,81 @@ export default function WithdrawCollateral() {
       setWithdrawSuccess(null);
       setDisableWithdrawButton(false);
 
-      // Step 1: Get the PSBT from the API
-      console.log("Getting claim PSBT with fee rate:", feeRateNum);
-      const { psbt, collateral_descriptor, borrower_pk } =
-        await apiClient.getClaimPsbt(displayContract.id, feeRateNum);
+      if (contract?.collateralAsset === "ArkadeBtc") {
+        // Step 1: Get the PSBT from the API
+        console.log("Getting claim PSBT with fee rate:", feeRateNum);
+        const { ark_psbt, checkpoint_psbts } = await apiClient.getClaimArkPsbt(
+          displayContract.id,
+        );
 
-      console.log("Received PSBT details:", {
-        collateral_descriptor,
-        borrower_pk,
-      });
+        console.log("Received PSBT details:", {
+          ark_psbt,
+          checkpoint_psbts,
+        });
 
-      // Step 2: Sign the PSBT using the wallet bridge
-      console.log("Signing PSBT with wallet...");
-      const signedPsbt = await client.signPsbt(
-        psbt,
-        collateral_descriptor,
-        borrower_pk,
-      );
+        console.log(`unSigned psbt - ${ark_psbt}`);
+        for (let i = 0; i < checkpoint_psbts.length; i++) {
+          console.log(`unSigned psbt cp ${i} - ${checkpoint_psbts[i]}`);
+        }
 
-      const psbtObj = bitcoin.Psbt.fromHex(signedPsbt);
-      const finalizedPsbt = psbtObj.finalizeAllInputs();
+        // Step 2: Sign the PSBT using the wallet bridge
+        console.log("Signing PSBT with wallet...");
+        const signedArkPsbt = await client.signPsbt(ark_psbt, "", "");
+        const cpPsbtsSigned: string[] = [];
+        for (let i = 0; i < checkpoint_psbts.length; i++) {
+          const cp_psbt = checkpoint_psbts[i];
+          const cpPsbtSigned = await client.signPsbt(cp_psbt, "", "");
+          cpPsbtsSigned.push(cpPsbtSigned);
+        }
 
-      // Step 3: Broadcast the signed transaction
-      console.log("Broadcasting signed transaction...");
-      const { txid } = await apiClient.broadcastClaimTx(
-        displayContract.id,
-        finalizedPsbt.extractTransaction().toHex(),
-      );
+        console.log(`Signed psbt - ${signedArkPsbt}`);
+        for (let i = 0; i < cpPsbtsSigned.length; i++) {
+          console.log(`Signed psbt cp ${i} - ${cpPsbtsSigned[i]}`);
+        }
 
-      setWithdrawSuccess(txid);
-      setDisableWithdrawButton(true);
-      console.log("Collateral withdrawal successful:", txid);
+        // Step 3: Broadcast the signed transaction
+        console.log("Broadcasting signed transaction...");
+        const { txid } = await apiClient.broadcastClaimArkTx(
+          displayContract.id,
+          signedArkPsbt,
+          cpPsbtsSigned,
+        );
+        setWithdrawSuccess(txid);
+        setDisableWithdrawButton(true);
+        console.log("Collateral withdrawal successful:", txid);
+      } else {
+        // Step 1: Get the PSBT from the API
+        console.log("Getting claim PSBT with fee rate:", feeRateNum);
+        const { psbt, collateral_descriptor, borrower_pk } =
+          await apiClient.getClaimPsbt(displayContract.id, feeRateNum);
+
+        console.log("Received PSBT details:", {
+          collateral_descriptor,
+          borrower_pk,
+        });
+
+        // Step 2: Sign the PSBT using the wallet bridge
+        console.log("Signing PSBT with wallet...");
+        const signedPsbt = await client.signPsbt(
+          psbt,
+          collateral_descriptor,
+          borrower_pk,
+        );
+
+        const psbtObj = bitcoin.Psbt.fromHex(signedPsbt);
+        const finalizedPsbt = psbtObj.finalizeAllInputs();
+
+        // Step 3: Broadcast the signed transaction
+        console.log("Broadcasting signed transaction...");
+        const { txid } = await apiClient.broadcastClaimTx(
+          displayContract.id,
+          finalizedPsbt.extractTransaction().toHex(),
+        );
+
+        setWithdrawSuccess(txid);
+        setDisableWithdrawButton(true);
+        console.log("Collateral withdrawal successful:", txid);
+      }
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : String(err);
       setWithdrawError(errorMessage);

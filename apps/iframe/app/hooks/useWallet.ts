@@ -5,6 +5,7 @@ import {
   type LoanAsset,
   type WalletCapabilities,
 } from "@lendasat/lendasat-wallet-bridge";
+import type { CollateralAsset } from "@repo/api";
 
 /**
  * React hook to interact with the parent wallet via the wallet bridge
@@ -123,7 +124,7 @@ export function useWalletInfo() {
         const [pk, path, addr, npubValue] = await Promise.allSettled([
           client.getPublicKey(),
           client.getDerivationPath(),
-          client.getAddress(AddressType.BITCOIN),
+          client.getAddress(AddressType.ARK),
           fetchNpub ? client.getNpub() : Promise.resolve(null),
         ]);
 
@@ -257,6 +258,107 @@ export function useLoanAssetAddress(loanAsset?: LoanAsset) {
 }
 
 /**
+ * Helper hook to get a collateral address for a specific collateral asset type
+ *
+ * Usage:
+ * ```typescript
+ * const { address, loading, error, supported, refetch } = useCollateralAddress("ArkadeBtc");
+ *
+ * if (!supported) {
+ *   return <div>Wallet doesn't support this collateral type</div>;
+ * }
+ *
+ * // Or lazy load
+ * const { address, loading, error, fetchAddress } = useCollateralAddress();
+ * const addr = await fetchAddress("BitcoinBtc");
+ * ```
+ */
+export function useCollateralAddress(collateralAsset?: CollateralAsset) {
+  const { client, isConnected, capabilities } = useWallet();
+  const [address, setAddress] = useState<string | null>(null);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  // Map collateral asset to address type
+  const getAddressType = (asset: CollateralAsset): AddressType => {
+    switch (asset) {
+      case "BitcoinBtc":
+        return AddressType.BITCOIN;
+      case "ArkadeBtc":
+        return AddressType.ARK;
+      default:
+        throw new Error(`Unknown collateral asset: ${asset}`);
+    }
+  };
+
+  // Check if the collateral asset is supported
+  const supported =
+    !collateralAsset ||
+    !capabilities ||
+    collateralAsset === "BitcoinBtc" ||
+    (collateralAsset === "ArkadeBtc" && capabilities.ark.canReceive);
+
+  const fetchAddress = async (
+    asset: CollateralAsset,
+  ): Promise<string | null> => {
+    if (!client) {
+      throw new Error("Wallet client not initialized");
+    }
+
+    // Check if asset is supported
+    if (!capabilities) {
+      return null;
+    }
+
+    if (
+      asset === "ArkadeBtc" &&
+      (!capabilities.ark || !capabilities.ark.canReceive)
+    ) {
+      return null;
+    }
+
+    try {
+      setLoading(true);
+      setError(null);
+      const addressType = getAddressType(asset);
+      const addr = await client.getAddress(addressType);
+      if (!addr) {
+        throw new Error(`Wallet returned no address for ${asset}`);
+      }
+      setAddress(addr);
+      return addr;
+    } catch (err) {
+      const errorMessage = err instanceof Error ? err.message : String(err);
+      setError(errorMessage);
+      throw err;
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Auto-fetch if collateralAsset is provided and supported
+  useEffect(() => {
+    if (!client || !isConnected || !collateralAsset || !supported) {
+      return;
+    }
+
+    fetchAddress(collateralAsset).catch((err) => {
+      console.error("Failed to fetch collateral address:", err);
+    });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [client, isConnected, collateralAsset, supported]);
+
+  return {
+    address,
+    loading,
+    error,
+    supported,
+    fetchAddress,
+    refetch: collateralAsset ? () => fetchAddress(collateralAsset) : undefined,
+  };
+}
+
+/**
  * Helper function to check if a specific loan asset is supported by the wallet
  */
 export function isAssetSupported(
@@ -291,4 +393,35 @@ export function canSendLoanAsset(
     isAssetSupported(capabilities, asset) &&
     capabilities?.loanAssets.canSend === true
   );
+}
+
+/**
+ * Helper function to check if a specific collateral asset is supported by the wallet
+ */
+export function isCollateralAssetSupported(
+  capabilities: WalletCapabilities | null,
+  asset: CollateralAsset,
+): boolean {
+  if (!capabilities) return false;
+
+  switch (asset) {
+    case "BitcoinBtc":
+      // Bitcoin is always supported
+      return true;
+    case "ArkadeBtc":
+      // Ark support depends on capabilities
+      return capabilities.ark?.canReceive === true;
+    default:
+      return false;
+  }
+}
+
+/**
+ * Helper function to check if wallet can receive a specific collateral asset
+ */
+export function canReceiveCollateral(
+  capabilities: WalletCapabilities | null,
+  asset: CollateralAsset,
+): boolean {
+  return isCollateralAssetSupported(capabilities, asset);
 }

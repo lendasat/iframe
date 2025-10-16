@@ -536,6 +536,72 @@ export class ApiClient {
   }
 
   /**
+   * Get Ark PSBTs to claim collateral from an Ark-based contract
+   *
+   * This method creates PSBTs for claiming collateral from a contract that uses Ark
+   * (a layer 2 Bitcoin protocol) for collateral management. Unlike regular Bitcoin
+   * contracts, Ark contracts require both an Ark PSBT and checkpoint PSBTs to claim
+   * the collateral.
+   *
+   * The returned PSBTs are partially signed and need to be signed by the borrower
+   * before broadcasting.
+   *
+   * @param contractId - The UUID of the Ark contract to claim collateral from
+   * @returns A Promise that resolves to an object containing:
+   *   - ark_psbt: The Ark PSBT for claiming the collateral
+   *   - checkpoint_psbts: Array of checkpoint PSBTs required for the Ark claim
+   *
+   * @throws {UnauthorizedError} If no API key is provided
+   * @throws {Error} If the API returns an error (e.g., contract not in correct status, not an Ark contract)
+   *
+   * @example
+   * ```typescript
+   * // Get Ark PSBTs for claiming collateral
+   * const { ark_psbt, checkpoint_psbts } = await apiClient.getClaimArkPsbt(
+   *   'f47ac10b-58cc-4372-a567-0e02b2c3d479'
+   * );
+   * console.log('Ark PSBT:', ark_psbt);
+   * console.log('Checkpoint PSBTs:', checkpoint_psbts); // Array of checkpoint PSBTs
+   * ```
+   *
+   * @remarks
+   * - This method only works for contracts with collateral_asset set to ArkadeBtc
+   * - The contract must be in "RepaymentConfirmed" status to claim collateral
+   * - Both the ark_psbt and checkpoint_psbts need to be signed by the borrower
+   * - After signing, use `broadcastClaimArkTx()` to broadcast the transactions
+   * - Ark provides better privacy and efficiency compared to regular Bitcoin transactions
+   */
+  async getClaimArkPsbt(contractId: string): Promise<{
+    ark_psbt: string;
+    checkpoint_psbts: string[];
+  }> {
+    const { data, error } = await this.client.GET(
+      "/api/contracts/{id}/claim-ark",
+      {
+        headers: this.getAuthHeaders(),
+        params: {
+          path: {
+            id: contractId,
+          },
+        },
+      },
+    );
+
+    if (error) {
+      throw Error(JSON.stringify(error));
+    }
+
+    if (!data) {
+      throw Error("No data returned from API");
+    }
+
+    return {
+      ark_psbt: data.ark_psbt,
+      checkpoint_psbts: data.checkpoint_psbts,
+    };
+  }
+
+  /**
    * Broadcast a signed TX to claim collateral from a contract
    *
    * After obtaining a PSBT from `getClaimPsbt()` and signing it with the borrower's
@@ -580,6 +646,76 @@ export class ApiClient {
         },
         body: {
           tx: signedTx,
+        },
+      },
+    );
+
+    if (error) {
+      throw Error(JSON.stringify(error));
+    }
+
+    if (!data) {
+      throw Error("No data returned from API");
+    }
+
+    return data;
+  }
+
+  /**
+   * Broadcast signed Ark transactions to claim collateral from an Ark-based contract
+   *
+   * After obtaining PSBTs from `getClaimArkPsbt()` and signing them with the borrower's
+   * private key, this method broadcasts the signed Ark transaction and checkpoint transactions
+   * to the Bitcoin network to claim the collateral from an Ark contract.
+   *
+   * This is the Ark-specific version of `broadcastClaimTx()` and handles the additional
+   * complexity of Ark's layer 2 protocol, which requires both the main Ark PSBT and
+   * checkpoint PSBTs to be broadcast together.
+   *
+   * @param contractId - The UUID of the Ark contract being claimed
+   * @param ark_psbt - The signed Ark PSBT in hex or base64 format
+   * @param checkpoint_psbts - Array of signed checkpoint PSBTs in hex or base64 format
+   * @returns A Promise that resolves to an object containing the transaction ID
+   *
+   * @throws {UnauthorizedError} If no API key is provided
+   * @throws {Error} If the API returns an error (e.g., invalid signatures, PSBTs not fully signed, transaction already broadcast)
+   *
+   * @example
+   * ```typescript
+   * // After signing the Ark PSBT and checkpoint PSBTs
+   * const { txid } = await apiClient.broadcastClaimArkTx(
+   *   'f47ac10b-58cc-4372-a567-0e02b2c3d479',
+   *   'signed_ark_psbt_hex...',
+   *   ['signed_checkpoint_1...', 'signed_checkpoint_2...']
+   * );
+   * console.log('Ark claim transaction broadcast:', txid);
+   * ```
+   *
+   * @remarks
+   * - All PSBTs (ark_psbt and checkpoint_psbts) must be fully signed before broadcasting
+   * - This method only works for contracts with collateral_asset set to ArkadeBtc
+   * - Once broadcast, the transactions cannot be reversed
+   * - The collateral will be sent to the borrower's Bitcoin address via the Ark protocol
+   * - You can monitor the transaction status on the blockchain using the returned txid
+   * - Ark transactions provide better privacy than regular Bitcoin transactions
+   */
+  async broadcastClaimArkTx(
+    contractId: string,
+    ark_psbt: string,
+    checkpoint_psbts: string[],
+  ): Promise<{ txid: string }> {
+    const { data, error } = await this.client.POST(
+      "/api/contracts/{id}/broadcast-claim-ark",
+      {
+        headers: this.getAuthHeaders(),
+        params: {
+          path: {
+            id: contractId,
+          },
+        },
+        body: {
+          ark_psbt,
+          checkpoint_psbts,
         },
       },
     );
