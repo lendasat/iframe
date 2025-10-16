@@ -30,6 +30,7 @@ export function LoanAddressInputField({
   disabled = false,
 }: LoanAddressInputFieldProps) {
   const [manualInput, setManualInput] = useState(true);
+  const [showValidationError, setShowValidationError] = useState(false);
 
   const loanAssetChain = LoanAssetHelper.toChain(loanAsset);
 
@@ -44,6 +45,7 @@ export function LoanAddressInputField({
       setHideButton(false);
     }
     setLoanAddress(e.target.value);
+    setShowValidationError(false);
   }
 
   const onAddressFetched = (address: string) => {
@@ -52,6 +54,12 @@ export function LoanAddressInputField({
       setHideButton(true);
     }
     setManualInput(false);
+    setShowValidationError(false);
+  };
+
+  const handleInvalid = (e: React.FormEvent<HTMLInputElement>) => {
+    e.preventDefault();
+    setShowValidationError(true);
   };
 
   // WalletConnect extension only supports Ethereum and Ethereum-L2s... No Starknet
@@ -77,8 +85,11 @@ export function LoanAddressInputField({
           type="text"
           value={loanAddress}
           onChange={onInputChange}
+          onInvalid={handleInvalid}
           disabled={disabled}
           data-1p-ignore
+          required
+          aria-invalid={showValidationError}
         />
 
         {!isStarknet && !isSolana && !isLiquid && !hideButton && (
@@ -152,6 +163,12 @@ export function LoanAddressInputField({
           </div>
         )}
       </div>
+
+      {showValidationError && (
+        <p className="text-sm text-red-600 mt-1">
+          Please enter a valid address for {loanAssetChain}
+        </p>
+      )}
     </div>
   );
 }
