@@ -281,6 +281,7 @@ pnpm --filter @lendasat/lendasat-wallet-bridge publish --access public
 ### Version Management
 
 Follow semantic versioning:
+
 - **Patch** (1.0.x): Bug fixes and minor changes
 - **Minor** (1.x.0): New features that are backward compatible
 - **Major** (x.0.0): Breaking changes
