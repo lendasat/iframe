@@ -1,4 +1,4 @@
-name: "Deploy signet"
+name: Deploy signet
 
 on:
   push:
