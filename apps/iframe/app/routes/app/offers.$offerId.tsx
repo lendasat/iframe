@@ -53,7 +53,7 @@ export default function TakeOffer() {
   // Fetch the specific offer
   const offerState = useAsync(async () => {
     if (!offerId) return null;
-    const offers = await apiClient.offers();
+    const offers = await apiClient.offers({ collateral_asset_type: "Any" });
     return offers.find((offer) => offer.id === offerId);
   }, [offerId]);
 
@@ -321,7 +321,8 @@ export default function TakeOffer() {
                 {offerState.value.lender.name}
               </h2>
               <Badge variant="secondary">
-                Collateral on {formatCollateralAsset(offerState.value.collateralAsset)}
+                Collateral on{" "}
+                {formatCollateralAsset(offerState.value.collateralAsset)}
               </Badge>
             </div>
             <div className="grid grid-cols-2 gap-4 text-sm">

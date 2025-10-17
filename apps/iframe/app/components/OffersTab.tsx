@@ -22,7 +22,7 @@ export function OffersTab({ user }: OffersTabProps) {
   // Fetch offers
   const offersState = useAsync(async () => {
     if (!user) return null;
-    return await apiClient.offers();
+    return await apiClient.offers({ collateral_asset_type: "Any" });
   }, [user]);
 
   // Get unique loan assets for dropdown

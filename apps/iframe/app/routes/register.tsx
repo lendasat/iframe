@@ -18,7 +18,7 @@ export default function Register() {
   const navigate = useNavigate();
   const { client } = useWallet();
   // TODO: remove sample
-  const [email, setEmail] = useState("test@test.com");
+  const [email, setEmail] = useState("");
   const [username, setUsername] = useState(
     `Satoshi${Math.floor(Math.random() * 10000)}`,
   );

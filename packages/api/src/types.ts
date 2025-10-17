@@ -378,6 +378,7 @@ export type QueryParamLoanType =
   | "MoonCardInstant"
   | "All";
 export type AssetTypeFilter = "fiat" | "stable_coins" | "all";
+export type CollateralAssetTypeFilter = "Any" | "Bitcoin" | "Arkade";
 export type KycFilter = "no_kyc" | "with_kyc" | "all";
 export type CollateralAsset = "BitcoinBtc" | "ArkadeBtc";
 

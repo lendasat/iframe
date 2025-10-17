@@ -20,7 +20,7 @@
     "@repo/typescript-config": "workspace:*",
     "@types/react": "^19.2.2",
     "eslint": "^8.57.0",
-    "openapi-typescript": "^7.9.1",
+    "openapi-typescript": "^7.10.1",
     "typescript": "^5.9.3"
   },
   "peerDependencies": {

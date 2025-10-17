@@ -1,4 +1,4 @@
-import type {
+import {
   MeResponse,
   PaginatedContractsResponse,
   ContractStatus,
@@ -11,6 +11,7 @@ import type {
   KycFilter,
   Contract,
   PubkeyVerifyResponse,
+  CollateralAssetTypeFilter,
 } from "./types";
 import {
   mapMeResponse,
@@ -135,6 +136,7 @@ export class ApiClient {
     maxInterestRate?: number;
     durationMin?: number;
     durationMax?: number;
+    collateral_asset_type: CollateralAssetTypeFilter;
   }): Promise<LoanOffer[]> {
     const { data, error } = await this.client.GET("/api/offers", {
       headers: this.getAuthHeaders(),
@@ -149,6 +151,7 @@ export class ApiClient {
           max_interest_rate: params?.maxInterestRate,
           duration_min: params?.durationMin,
           duration_max: params?.durationMax,
+          collateral_asset_type: params?.collateral_asset_type,
         },
       },
     });
