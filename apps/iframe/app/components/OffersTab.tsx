@@ -18,6 +18,8 @@ export function OffersTab({ user }: OffersTabProps) {
   const [amountFilter, setAmountFilter] = useState<string>("");
   const [durationFilter, setDurationFilter] = useState<string>("");
   const [assetFilter, setAssetFilter] = useState<string>("all");
+  const [collateralAssetFilter, setCollateralAssetFilter] =
+    useState<string>("all");
 
   // Fetch offers
   const offersState = useAsync(async () => {
@@ -29,6 +31,15 @@ export function OffersTab({ user }: OffersTabProps) {
   const availableAssets = useMemo(() => {
     if (!offersState.value) return [];
     const assets = new Set(offersState.value.map((offer) => offer.loanAsset));
+    return Array.from(assets).sort();
+  }, [offersState.value]);
+
+  // Get unique collateral assets for dropdown
+  const availableCollateralAssets = useMemo(() => {
+    if (!offersState.value) return [];
+    const assets = new Set(
+      offersState.value.map((offer) => offer.collateralAsset),
+    );
     return Array.from(assets).sort();
   }, [offersState.value]);
 
@@ -69,9 +80,23 @@ export function OffersTab({ user }: OffersTabProps) {
         return false;
       }
 
+      // Filter by collateral asset
+      if (
+        collateralAssetFilter !== "all" &&
+        offer.collateralAsset !== collateralAssetFilter
+      ) {
+        return false;
+      }
+
       return true;
     });
-  }, [offersState.value, amountFilter, durationFilter, assetFilter]);
+  }, [
+    offersState.value,
+    amountFilter,
+    durationFilter,
+    assetFilter,
+    collateralAssetFilter,
+  ]);
 
   // Build URL for taking an offer with filter values
   const buildTakeOfferUrl = (offerId: string) => {
@@ -90,7 +115,7 @@ export function OffersTab({ user }: OffersTabProps) {
 
       {/* Filters */}
       <div className="bg-white rounded-lg shadow p-4 mb-4">
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
           <div>
             <label
               htmlFor="amount-filter"
@@ -142,6 +167,28 @@ export function OffersTab({ user }: OffersTabProps) {
               {availableAssets.map((asset) => (
                 <option key={asset} value={asset}>
                   {formatLoanAsset(asset)}
+                </option>
+              ))}
+            </select>
+          </div>
+
+          <div>
+            <label
+              htmlFor="collateral-asset-filter"
+              className="block text-sm font-medium text-gray-700 mb-1"
+            >
+              Collateral Asset
+            </label>
+            <select
+              id="collateral-asset-filter"
+              value={collateralAssetFilter}
+              onChange={(e) => setCollateralAssetFilter(e.target.value)}
+              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+            >
+              <option value="all">All Assets</option>
+              {availableCollateralAssets.map((asset) => (
+                <option key={asset} value={asset}>
+                  {formatCollateralAsset(asset)}
                 </option>
               ))}
             </select>
