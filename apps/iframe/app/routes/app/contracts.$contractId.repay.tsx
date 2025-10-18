@@ -7,6 +7,7 @@ import { LoadingOverlay } from "~/components/ui/spinner";
 import { Button } from "~/components/ui/button";
 import { QRCodeSVG } from "qrcode.react";
 import { useWallet } from "~/hooks/useWallet";
+import { Tabs, TabsList, TabsTrigger, TabsContent } from "~/components/ui/tabs";
 
 export function meta({}: Route.MetaArgs) {
   return [
@@ -26,7 +27,7 @@ export default function RepayLoan() {
   const [isRepaying, setIsRepaying] = useState(false);
   const [repaymentError, setRepaymentError] = useState<string | null>(null);
   const [repaymentSuccess, setRepaymentSuccess] = useState<string | null>(null);
-  const [activeTab, setActiveTab] = useState<"connected" | "external">(
+  const [defaultTab, setDefaultTab] = useState<"connected" | "external">(
     "connected",
   );
   const [txidInput, setTxidInput] = useState("");
@@ -184,7 +185,7 @@ export default function RepayLoan() {
   // Auto-select external wallet tab if connected wallet doesn't support the asset
   useEffect(() => {
     if (isConnected && !canSendLoanAsset && displayContract) {
-      setActiveTab("external");
+      setDefaultTab("external");
     }
   }, [isConnected, canSendLoanAsset, displayContract]);
 
@@ -501,37 +502,15 @@ export default function RepayLoan() {
           </div>
 
           {/* Repayment Options */}
-          <div className="bg-white rounded-lg shadow">
-            {/* Tabs */}
-            <div className="border-b border-gray-200">
-              <nav className="flex -mb-px">
-                <Button
-                  onClick={() => setActiveTab("connected")}
-                  className={`flex-1 py-4 px-6 text-center border-b-2 font-medium text-sm ${
-                    activeTab === "connected"
-                      ? "border-indigo-500 text-indigo-600"
-                      : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300"
-                  }`}
-                >
-                  Connected Wallet
-                </Button>
-                <Button
-                  onClick={() => setActiveTab("external")}
-                  className={`flex-1 py-4 px-6 text-center border-b-2 font-medium text-sm ${
-                    activeTab === "external"
-                      ? "border-indigo-500 text-indigo-600"
-                      : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300"
-                  }`}
-                >
-                  External Wallet
-                </Button>
-              </nav>
-            </div>
+          <div className="bg-white rounded-lg shadow p-6">
+            <Tabs defaultValue={defaultTab} className="w-full">
+              <TabsList className="grid w-full grid-cols-2">
+                <TabsTrigger value="connected">Connected Wallet</TabsTrigger>
+                <TabsTrigger value="external">External Wallet</TabsTrigger>
+              </TabsList>
 
-            {/* Tab Content */}
-            <div className="p-6">
               {/* Connected Wallet Tab */}
-              {activeTab === "connected" && (
+              <TabsContent value="connected" className="mt-6">
                 <div>
                   <h2 className="text-xl font-semibold text-gray-900 mb-4">
                     Repay with Connected Wallet
@@ -688,10 +667,10 @@ export default function RepayLoan() {
                     </>
                   )}
                 </div>
-              )}
+              </TabsContent>
 
               {/* External Wallet Tab */}
-              {activeTab === "external" && (
+              <TabsContent value="external" className="mt-6">
                 <div>
                   <h2 className="text-xl font-semibold text-gray-900 mb-4">
                     Submit External Repayment
@@ -809,8 +788,8 @@ export default function RepayLoan() {
                     </Button>
                   </div>
                 </div>
-              )}
-            </div>
+              </TabsContent>
+            </Tabs>
           </div>
 
           {/* Action Buttons */}
