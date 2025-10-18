@@ -209,7 +209,7 @@ export default function RepayLoan() {
     <div>
       {/* Header with back button */}
       <div className="mb-6">
-        <button
+        <Button
           onClick={() => navigate(`/app/contracts/${contractId}`)}
           className="flex items-center text-gray-600 hover:text-gray-900 mb-4"
         >
@@ -227,7 +227,7 @@ export default function RepayLoan() {
             />
           </svg>
           Back to Contract Details
-        </button>
+        </Button>
         <h1 className="text-2xl font-bold text-gray-900">Repay Loan</h1>
       </div>
 
@@ -293,7 +293,7 @@ export default function RepayLoan() {
                             {displayContract.loanRepaymentAddress ||
                               displayContract.btcLoanRepaymentAddress}
                           </p>
-                          <button
+                          <Button
                             onClick={() =>
                               copyToClipboard(
                                 displayContract?.loanRepaymentAddress ||
@@ -334,7 +334,7 @@ export default function RepayLoan() {
                                 />
                               </svg>
                             )}
-                          </button>
+                          </Button>
                         </div>
                         {displayContract.btcLoanRepaymentAddress && (
                           <a
@@ -373,7 +373,7 @@ export default function RepayLoan() {
                         },
                       )}
                     </p>
-                    <button
+                    <Button
                       onClick={() =>
                         copyToClipboard(
                           displayContract?.balanceOutstanding.toFixed(2) || "",
@@ -412,7 +412,7 @@ export default function RepayLoan() {
                           />
                         </svg>
                       )}
-                    </button>
+                    </Button>
                   </div>
                   <div className="flex items-center justify-between">
                     <p className="text-sm text-gray-500">
@@ -426,7 +426,7 @@ export default function RepayLoan() {
                       )}{" "}
                       {formatLoanAsset(displayContract.loanAsset)}
                     </p>
-                    <button
+                    <Button
                       onClick={() =>
                         copyToClipboard(
                           displayContract?.balanceOutstanding.toFixed(2) || "",
@@ -465,7 +465,7 @@ export default function RepayLoan() {
                           />
                         </svg>
                       )}
-                    </button>
+                    </Button>
                   </div>
                 </div>
               </div>
@@ -504,7 +504,7 @@ export default function RepayLoan() {
             {/* Tabs */}
             <div className="border-b border-gray-200">
               <nav className="flex -mb-px">
-                <button
+                <Button
                   onClick={() => setActiveTab("connected")}
                   className={`flex-1 py-4 px-6 text-center border-b-2 font-medium text-sm ${
                     activeTab === "connected"
@@ -513,8 +513,8 @@ export default function RepayLoan() {
                   }`}
                 >
                   Connected Wallet
-                </button>
-                <button
+                </Button>
+                <Button
                   onClick={() => setActiveTab("external")}
                   className={`flex-1 py-4 px-6 text-center border-b-2 font-medium text-sm ${
                     activeTab === "external"
@@ -523,7 +523,7 @@ export default function RepayLoan() {
                   }`}
                 >
                   External Wallet
-                </button>
+                </Button>
               </nav>
             </div>
 

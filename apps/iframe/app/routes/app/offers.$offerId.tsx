@@ -215,12 +215,12 @@ export default function TakeOffer() {
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div className="bg-white rounded-lg shadow p-6">
           <p className="text-red-600">Invalid offer ID</p>
-          <button
+          <Button
             onClick={() => navigate("/app/offers")}
             className="mt-4 text-indigo-600 hover:text-indigo-800"
           >
             Back to Offers
-          </button>
+          </Button>
         </div>
       </div>
     );
@@ -230,7 +230,7 @@ export default function TakeOffer() {
     <div>
       {/* Header with back button */}
       <div className="mb-6">
-        <button
+        <Button
           onClick={() => navigate("/app/offers")}
           className="flex items-center text-gray-600 hover:text-gray-900 mb-4"
         >
@@ -248,7 +248,7 @@ export default function TakeOffer() {
             />
           </svg>
           Back to Offers
-        </button>
+        </Button>
         <h1 className="text-2xl font-bold text-gray-900">Take Offer</h1>
       </div>
 
@@ -450,7 +450,7 @@ export default function TakeOffer() {
                   <div className="flex justify-between items-center pb-3 border-b border-gray-200">
                     <div className="flex items-center gap-2">
                       <span className="text-gray-700">Liquidation price</span>
-                      <button
+                      <Button
                         type="button"
                         className="text-gray-400 hover:text-gray-600"
                       >
@@ -465,7 +465,7 @@ export default function TakeOffer() {
                             clipRule="evenodd"
                           />
                         </svg>
-                      </button>
+                      </Button>
                     </div>
                     {loanConditions ? (
                       <span className="font-medium text-gray-900">
@@ -480,7 +480,7 @@ export default function TakeOffer() {
                   <div className="flex justify-between items-center pb-3 border-b border-gray-200">
                     <div className="flex items-center gap-2">
                       <span className="text-gray-700">Interest</span>
-                      <button
+                      <Button
                         type="button"
                         className="text-gray-400 hover:text-gray-600"
                       >
@@ -495,7 +495,7 @@ export default function TakeOffer() {
                             clipRule="evenodd"
                           />
                         </svg>
-                      </button>
+                      </Button>
                     </div>
                     {loanConditions ? (
                       <div className="text-right">
@@ -529,7 +529,7 @@ export default function TakeOffer() {
                       ) : (
                         <Skeleton className="h-5 w-16" />
                       )}
-                      <button
+                      <Button
                         type="button"
                         className="text-gray-400 hover:text-gray-600"
                       >
@@ -544,7 +544,7 @@ export default function TakeOffer() {
                             clipRule="evenodd"
                           />
                         </svg>
-                      </button>
+                      </Button>
                     </div>
                     {loanConditions ? (
                       <div className="text-right">
@@ -589,7 +589,7 @@ export default function TakeOffer() {
                       <span className="text-gray-700 font-medium">
                         Total funding amount
                       </span>
-                      <button
+                      <Button
                         type="button"
                         className="text-gray-400 hover:text-gray-600"
                       >
@@ -604,7 +604,7 @@ export default function TakeOffer() {
                             clipRule="evenodd"
                           />
                         </svg>
-                      </button>
+                      </Button>
                     </div>
                     {loanConditions ? (
                       <div className="text-right">
@@ -665,12 +665,12 @@ export default function TakeOffer() {
       {!offerState.loading && !offerState.value && !offerState.error && (
         <div className="bg-white rounded-lg shadow p-6">
           <p className="text-gray-600">Offer not found</p>
-          <button
+          <Button
             onClick={() => navigate("/app/offers")}
             className="mt-4 text-indigo-600 hover:text-indigo-800"
           >
             Back to Offers
-          </button>
+          </Button>
         </div>
       )}
     </div>

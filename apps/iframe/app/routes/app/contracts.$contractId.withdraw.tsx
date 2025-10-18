@@ -178,7 +178,7 @@ export default function WithdrawCollateral() {
     <div>
       {/* Header with back button */}
       <div className="mb-6">
-        <button
+        <Button
           onClick={() => navigate(`/app/contracts/${contractId}`)}
           className="flex items-center text-gray-600 hover:text-gray-900 mb-4"
         >
@@ -196,7 +196,7 @@ export default function WithdrawCollateral() {
             />
           </svg>
           Back to Contract Details
-        </button>
+        </Button>
         <h1 className="text-2xl font-bold text-gray-900">
           Withdraw Collateral
         </h1>

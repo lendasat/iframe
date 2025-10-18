@@ -135,7 +135,7 @@ export default function FundContract() {
     <div>
       {/* Header with back button */}
       <div className="mb-6">
-        <button
+        <Button
           onClick={() => navigate(`/app/contracts/${contractId}`)}
           className="flex items-center text-gray-600 hover:text-gray-900 mb-4"
         >
@@ -153,7 +153,7 @@ export default function FundContract() {
             />
           </svg>
           Back to Contract Details
-        </button>
+        </Button>
         <h1 className="text-2xl font-bold text-gray-900">Fund Contract</h1>
       </div>
 
@@ -213,7 +213,7 @@ export default function FundContract() {
                           <p className="text-sm font-mono text-gray-900 break-all flex-1">
                             {displayContract.contractAddress}
                           </p>
-                          <button
+                          <Button
                             onClick={() =>
                               copyToClipboard(
                                 displayContract?.contractAddress || "",
@@ -252,7 +252,7 @@ export default function FundContract() {
                                 />
                               </svg>
                             )}
-                          </button>
+                          </Button>
                         </div>
                         <a
                           href={`https://mempool.space/address/${displayContract.contractAddress}`}
@@ -283,7 +283,7 @@ export default function FundContract() {
                       {displayContract.initialCollateralSats.toLocaleString()}{" "}
                       sats
                     </p>
-                    <button
+                    <Button
                       onClick={() =>
                         copyToClipboard(
                           displayContract?.initialCollateralSats.toString() ||
@@ -323,7 +323,7 @@ export default function FundContract() {
                           />
                         </svg>
                       )}
-                    </button>
+                    </Button>
                   </div>
                   <div className="flex items-center justify-between">
                     <p className="text-sm text-gray-500">
@@ -332,7 +332,7 @@ export default function FundContract() {
                       ).toFixed(8)}{" "}
                       BTC
                     </p>
-                    <button
+                    <Button
                       onClick={() =>
                         copyToClipboard(
                           (
@@ -374,7 +374,7 @@ export default function FundContract() {
                           />
                         </svg>
                       )}
-                    </button>
+                    </Button>
                   </div>
                 </div>
               </div>

@@ -71,12 +71,12 @@ export default function ContractDetails() {
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div className="bg-white rounded-lg shadow p-6">
           <p className="text-red-600">Invalid contract ID</p>
-          <button
+          <Button
             onClick={() => navigate("/app/contracts")}
             className="mt-4 text-indigo-600 hover:text-indigo-800"
           >
             Back to Contracts
-          </button>
+          </Button>
         </div>
       </div>
     );
@@ -92,7 +92,7 @@ export default function ContractDetails() {
     <div>
       {/* Header with back button */}
       <div className="mb-6">
-        <button
+        <Button
           onClick={() => navigate("/app/contracts")}
           className="flex items-center text-gray-600 hover:text-gray-900 mb-4"
         >
@@ -110,7 +110,7 @@ export default function ContractDetails() {
             />
           </svg>
           Back to Contracts
-        </button>
+        </Button>
         <h1 className="text-2xl font-bold text-gray-900">Contract Details</h1>
       </div>
 
@@ -127,12 +127,12 @@ export default function ContractDetails() {
       {displayContract === null && !contractState.loading && (
         <div className="bg-white rounded-lg shadow p-6">
           <p className="text-gray-600">Contract not found.</p>
-          <button
+          <Button
             onClick={() => navigate("/app/contracts")}
             className="mt-4 text-indigo-600 hover:text-indigo-800"
           >
             Back to Contracts
-          </button>
+          </Button>
         </div>
       )}
 
