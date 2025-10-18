@@ -12,6 +12,7 @@
   "dependencies": {
     "@lendasat/lendasat-wallet-bridge": "workspace:*",
     "@radix-ui/react-slot": "^1.2.3",
+    "@radix-ui/react-tabs": "^1.1.13",
     "@rainbow-me/rainbowkit": "^2.2.9",
     "@react-router/node": "^7.9.2",
     "@react-router/serve": "^7.9.2",

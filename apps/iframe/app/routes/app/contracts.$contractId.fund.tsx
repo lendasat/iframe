@@ -137,7 +137,8 @@ export default function FundContract() {
       <div className="mb-6">
         <Button
           onClick={() => navigate(`/app/contracts/${contractId}`)}
-          className="flex items-center text-gray-600 hover:text-gray-900 mb-4"
+          className="mt-4"
+          variant="outline"
         >
           <svg
             className="w-5 h-5 mr-2"
@@ -254,14 +255,17 @@ export default function FundContract() {
                             )}
                           </Button>
                         </div>
-                        <a
-                          href={`https://mempool.space/address/${displayContract.contractAddress}`}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="text-indigo-600 hover:text-indigo-800 text-sm font-medium"
-                        >
-                          View on Mempool →
-                        </a>
+
+                        {displayContract.collateralAsset === "BitcoinBtc" && (
+                          <a
+                            href={`https://mempool.space/address/${displayContract.contractAddress}`}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="text-indigo-600 hover:text-indigo-800 text-sm font-medium"
+                          >
+                            View on Mempool →
+                          </a>
+                        )}
                       </div>
                     </div>
                   </>
@@ -478,14 +482,16 @@ export default function FundContract() {
                         <p className="text-sm text-green-700 mt-1 break-all">
                           Transaction ID: {fundingSuccess}
                         </p>
-                        <a
-                          href={`https://mempool.space/tx/${fundingSuccess}`}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="text-green-600 hover:text-green-800 text-sm font-medium inline-flex items-center mt-2"
-                        >
-                          View on Mempool →
-                        </a>
+                        {displayContract.collateralAsset === "BtcBitcoin" && (
+                          <a
+                            href={`https://mempool.space/tx/${fundingSuccess}`}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="text-green-600 hover:text-green-800 text-sm font-medium inline-flex items-center mt-2"
+                          >
+                            View on Mempool →
+                          </a>
+                        )}
                       </div>
                     </div>
                   </div>

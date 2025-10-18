@@ -94,7 +94,8 @@ export default function ContractDetails() {
       <div className="mb-6">
         <Button
           onClick={() => navigate("/app/contracts")}
-          className="flex items-center text-gray-600 hover:text-gray-900 mb-4"
+          className="mt-4"
+          variant="outline"
         >
           <svg
             className="w-5 h-5 mr-2"
@@ -129,7 +130,8 @@ export default function ContractDetails() {
           <p className="text-gray-600">Contract not found.</p>
           <Button
             onClick={() => navigate("/app/contracts")}
-            className="mt-4 text-indigo-600 hover:text-indigo-800"
+            className="mt-4"
+            variant="outline"
           >
             Back to Contracts
           </Button>
@@ -323,16 +325,17 @@ export default function ContractDetails() {
                     <p className="text-sm font-mono text-gray-900 break-all flex-1">
                       {displayContract.contractAddress || "Not yet created"}
                     </p>
-                    {displayContract.contractAddress && (
-                      <a
-                        href={`https://mempool.space/address/${displayContract.contractAddress}`}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="text-indigo-600 hover:text-indigo-800 text-sm font-medium whitespace-nowrap"
-                      >
-                        View on Mempool →
-                      </a>
-                    )}
+                    {displayContract.collateralAsset === "BtcBitcoin" &&
+                      displayContract.contractAddress && (
+                        <a
+                          href={`https://mempool.space/address/${displayContract.contractAddress}`}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="text-indigo-600 hover:text-indigo-800 text-sm font-medium whitespace-nowrap"
+                        >
+                          View on Mempool →
+                        </a>
+                      )}
                   </div>
                 </div>
               </div>
@@ -384,15 +387,18 @@ export default function ContractDetails() {
                               })}
                             </p>
                           </div>
-                          <a
-                            href={`https://mempool.space/tx/${tx.txid}`}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="text-indigo-600 hover:text-indigo-800 text-sm font-medium whitespace-nowrap ml-4"
-                          >
-                            View TX →
-                          </a>
+                          {displayContract.collateralAsset === "BtcBitcoin" && (
+                            <a
+                              href={`https://mempool.space/tx/${tx.txid}`}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="text-indigo-600 hover:text-indigo-800 text-sm font-medium whitespace-nowrap ml-4"
+                            >
+                              View TX →
+                            </a>
+                          )}
                         </div>
+
                         <p className="text-xs font-mono text-gray-500 mt-1 break-all">
                           {tx.txid}
                         </p>
