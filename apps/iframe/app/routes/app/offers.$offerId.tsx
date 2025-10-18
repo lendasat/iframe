@@ -10,7 +10,7 @@ import {
   getOriginationFeeForDuration,
 } from "@repo/api";
 import { usePriceForCurrency } from "@repo/api/price-context";
-import { LoadingOverlay } from "~/components/ui/spinner";
+import { LoadingOverlay, Spinner } from "~/components/ui/spinner";
 import { Skeleton } from "~/components/ui/skeleton";
 import { calculateCollateralNeeded } from "@repo/api";
 import {
@@ -21,6 +21,7 @@ import {
 import { Input } from "~/components/ui/input";
 import { LoanAddressInputField } from "~/components/loan-address-input-field-shadcn";
 import { Badge } from "~/components/ui/badge";
+import { Button } from "~/components/ui/button";
 
 export function meta({}: Route.MetaArgs) {
   return [
@@ -33,6 +34,7 @@ export default function TakeOffer() {
   const navigate = useNavigate();
   const { offerId } = useParams();
   const [searchParams] = useSearchParams();
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   // Get wallet information from parent wallet
   const {
@@ -172,6 +174,7 @@ export default function TakeOffer() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    setIsSubmitting(true);
     if (!offerId || !collateralAssetAddress || !derivationPath || !publicKey) {
       // todo: show error
       console.error(
@@ -202,6 +205,8 @@ export default function TakeOffer() {
     } catch (error) {
       console.error("Failed to request contract:", error);
       // TODO: Show error message to user
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -622,14 +627,14 @@ export default function TakeOffer() {
             </div>
 
             <div className="mt-6 flex gap-3">
-              <button
+              <Button
                 type="button"
                 onClick={() => navigate("/app/offers")}
                 className="flex-1 bg-gray-200 hover:bg-gray-300 text-gray-800 font-medium py-2 px-4 rounded-md transition-colors"
               >
                 Cancel
-              </button>
-              <button
+              </Button>
+              <Button
                 type="submit"
                 disabled={
                   walletLoading ||
@@ -638,12 +643,20 @@ export default function TakeOffer() {
                   !collateralAssetAddress ||
                   !collateralAssetSupported ||
                   !publicKey ||
-                  !derivationPath
+                  !derivationPath ||
+                  isSubmitting
                 }
                 className="flex-1 bg-indigo-600 hover:bg-indigo-700 text-white font-medium py-2 px-4 rounded-md transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
               >
-                Submit
-              </button>
+                {isSubmitting ? (
+                  <>
+                    {" "}
+                    <Spinner /> Submit
+                  </>
+                ) : (
+                  "Submit"
+                )}
+              </Button>
             </div>
           </form>
         </div>

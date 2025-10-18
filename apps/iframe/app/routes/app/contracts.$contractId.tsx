@@ -10,6 +10,7 @@ import { FundContractAction } from "~/components/contract-actions/FundContractAc
 import { RepayLoanAction } from "~/components/contract-actions/RepayLoanAction";
 import { WithdrawCollateralAction } from "~/components/contract-actions/WithdrawCollateralAction";
 import { RecoverCollateralAction } from "~/components/contract-actions/RecoverCollateralAction";
+import { Button } from "~/components/ui/button";
 
 export function meta({}: Route.MetaArgs) {
   return [
@@ -148,7 +149,7 @@ export default function ContractDetails() {
                   <p className="text-sm font-mono text-gray-600">
                     {displayContract.id}
                   </p>
-                  <button
+                  <Button
                     onClick={() => copyToClipboard(displayContract?.id || "")}
                     className="text-gray-400 hover:text-gray-600 transition-colors"
                     title="Copy to clipboard"
@@ -182,7 +183,7 @@ export default function ContractDetails() {
                         />
                       </svg>
                     )}
-                  </button>
+                  </Button>
                 </div>
               </div>
               <span
