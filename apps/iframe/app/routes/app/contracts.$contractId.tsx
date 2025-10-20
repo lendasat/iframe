@@ -153,7 +153,8 @@ export default function ContractDetails() {
                   </p>
                   <Button
                     onClick={() => copyToClipboard(displayContract?.id || "")}
-                    className="text-gray-400 hover:text-gray-600 transition-colors"
+                    variant={"ghost"}
+                    size={"icon"}
                     title="Copy to clipboard"
                   >
                     {copied ? (

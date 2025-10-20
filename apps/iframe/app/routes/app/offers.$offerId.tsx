@@ -215,10 +215,20 @@ export default function TakeOffer() {
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div className="bg-white rounded-lg shadow p-6">
           <p className="text-red-600">Invalid offer ID</p>
-          <Button
-            onClick={() => navigate("/app/offers")}
-            className="mt-4 text-indigo-600 hover:text-indigo-800"
-          >
+          <Button variant={"ghost"} onClick={() => navigate("/app/offers")}>
+            <svg
+              className="w-5 h-5 mr-2"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M15 19l-7-7 7-7"
+              />
+            </svg>
             Back to Offers
           </Button>
         </div>
@@ -230,10 +240,7 @@ export default function TakeOffer() {
     <div>
       {/* Header with back button */}
       <div className="mb-6">
-        <Button
-          onClick={() => navigate("/app/offers")}
-          className="flex items-center text-gray-600 hover:text-gray-900 mb-4"
-        >
+        <Button onClick={() => navigate("/app/offers")} variant={"ghost"}>
           <svg
             className="w-5 h-5 mr-2"
             fill="none"
@@ -450,22 +457,6 @@ export default function TakeOffer() {
                   <div className="flex justify-between items-center pb-3 border-b border-gray-200">
                     <div className="flex items-center gap-2">
                       <span className="text-gray-700">Liquidation price</span>
-                      <Button
-                        type="button"
-                        className="text-gray-400 hover:text-gray-600"
-                      >
-                        <svg
-                          className="w-4 h-4"
-                          fill="currentColor"
-                          viewBox="0 0 20 20"
-                        >
-                          <path
-                            fillRule="evenodd"
-                            d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z"
-                            clipRule="evenodd"
-                          />
-                        </svg>
-                      </Button>
                     </div>
                     {loanConditions ? (
                       <span className="font-medium text-gray-900">
@@ -480,22 +471,6 @@ export default function TakeOffer() {
                   <div className="flex justify-between items-center pb-3 border-b border-gray-200">
                     <div className="flex items-center gap-2">
                       <span className="text-gray-700">Interest</span>
-                      <Button
-                        type="button"
-                        className="text-gray-400 hover:text-gray-600"
-                      >
-                        <svg
-                          className="w-4 h-4"
-                          fill="currentColor"
-                          viewBox="0 0 20 20"
-                        >
-                          <path
-                            fillRule="evenodd"
-                            d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z"
-                            clipRule="evenodd"
-                          />
-                        </svg>
-                      </Button>
                     </div>
                     {loanConditions ? (
                       <div className="text-right">
@@ -529,22 +504,6 @@ export default function TakeOffer() {
                       ) : (
                         <Skeleton className="h-5 w-16" />
                       )}
-                      <Button
-                        type="button"
-                        className="text-gray-400 hover:text-gray-600"
-                      >
-                        <svg
-                          className="w-4 h-4"
-                          fill="currentColor"
-                          viewBox="0 0 20 20"
-                        >
-                          <path
-                            fillRule="evenodd"
-                            d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z"
-                            clipRule="evenodd"
-                          />
-                        </svg>
-                      </Button>
                     </div>
                     {loanConditions ? (
                       <div className="text-right">
@@ -589,22 +548,6 @@ export default function TakeOffer() {
                       <span className="text-gray-700 font-medium">
                         Total funding amount
                       </span>
-                      <Button
-                        type="button"
-                        className="text-gray-400 hover:text-gray-600"
-                      >
-                        <svg
-                          className="w-4 h-4"
-                          fill="currentColor"
-                          viewBox="0 0 20 20"
-                        >
-                          <path
-                            fillRule="evenodd"
-                            d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z"
-                            clipRule="evenodd"
-                          />
-                        </svg>
-                      </Button>
                     </div>
                     {loanConditions ? (
                       <div className="text-right">
@@ -630,7 +573,7 @@ export default function TakeOffer() {
               <Button
                 type="button"
                 onClick={() => navigate("/app/offers")}
-                className="flex-1 bg-gray-200 hover:bg-gray-300 text-gray-800 font-medium py-2 px-4 rounded-md transition-colors"
+                variant={"outline"}
               >
                 Cancel
               </Button>
@@ -646,7 +589,7 @@ export default function TakeOffer() {
                   !derivationPath ||
                   isSubmitting
                 }
-                className="flex-1 bg-indigo-600 hover:bg-indigo-700 text-white font-medium py-2 px-4 rounded-md transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                variant={"default"}
               >
                 {isSubmitting ? (
                   <>
@@ -665,10 +608,20 @@ export default function TakeOffer() {
       {!offerState.loading && !offerState.value && !offerState.error && (
         <div className="bg-white rounded-lg shadow p-6">
           <p className="text-gray-600">Offer not found</p>
-          <Button
-            onClick={() => navigate("/app/offers")}
-            className="mt-4 text-indigo-600 hover:text-indigo-800"
-          >
+          <Button variant={"ghost"} onClick={() => navigate("/app/offers")}>
+            <svg
+              className="w-5 h-5 mr-2"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M15 19l-7-7 7-7"
+              />
+            </svg>
             Back to Offers
           </Button>
         </div>

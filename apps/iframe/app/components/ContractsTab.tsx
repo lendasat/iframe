@@ -3,6 +3,7 @@ import { useNavigate } from "react-router";
 import { apiClient, type Contract, type ContractStatus } from "@repo/api";
 import { LoadingOverlay } from "~/components/ui/spinner";
 import { useState, useEffect, memo } from "react";
+import { Button } from "~/components/ui/button";
 
 interface ContractsTabProps {
   user: { email: string; username: string } | null;
@@ -161,12 +162,12 @@ const ContractCard = memo(
           </div>
         </div>
         <div className="flex justify-end">
-          <button
+          <Button
             onClick={() => navigate(`/app/contracts/${contract.id}`)}
-            className="px-3 py-1.5 bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-medium rounded-md transition-colors"
+            variant={"default"}
           >
             Details
-          </button>
+          </Button>
         </div>
       </div>
     );
