@@ -735,6 +735,144 @@ export class ApiClient {
   }
 
   /**
+   * Get Ark settle-collateral transactions for recoverable VTXOs
+   *
+   * This method creates PSBTs for settling collateral from a contract that uses Ark
+   * when the VTXOs are in a recoverable state. Unlike `getClaimArkPsbt()` (used for
+   * non-recoverable VTXOs via offchain spend), this method handles VTXOs that need
+   * to be settled on-chain.
+   *
+   * The returned PSBTs (intent_proof and forfeit_psbts) need to be signed by the borrower
+   * before finishing the settlement.
+   *
+   * @param contractId - The UUID of the Ark contract to settle collateral from
+   * @returns A Promise that resolves to an object containing:
+   *   - intent_message: Message to share with Arkade server
+   *   - intent_proof: Base64-encoded PSBT containing all VTXOs to be settled
+   *   - forfeit_psbts: Array of base64-encoded forfeit PSBTs
+   *   - delegate_cosigner_pk: Hub's cosigner public key
+   *   - user_pk: The borrower's key used in the collateral contract
+   *   - derivation_path: The derivation path for user_pk (if available)
+   *
+   * @throws {UnauthorizedError} If no API key is provided
+   * @throws {Error} If the API returns an error
+   *
+   * @example
+   * ```typescript
+   * const settleTxs = await apiClient.getSettleArkPsbt(
+   *   'f47ac10b-58cc-4372-a567-0e02b2c3d479'
+   * );
+   * console.log('Intent proof:', settleTxs.intent_proof);
+   * console.log('Forfeit PSBTs:', settleTxs.forfeit_psbts);
+   * ```
+   *
+   * @remarks
+   * - Use this method when `contract.requiresArkSettlement` is true
+   * - The contract must be in "RepaymentConfirmed" status with recoverable VTXOs
+   * - After signing, use `finishSettleArk()` to complete the settlement
+   */
+  async getSettleArkPsbt(contractId: string): Promise<{
+    intent_message: string;
+    intent_proof: string;
+    forfeit_psbts: string[];
+    delegate_cosigner_pk: string;
+    user_pk: string;
+    derivation_path?: string | null;
+  }> {
+    const { data, error } = await this.client.GET(
+      "/api/contracts/{id}/settle-ark",
+      {
+        headers: this.getAuthHeaders(),
+        params: {
+          path: {
+            id: contractId,
+          },
+        },
+      },
+    );
+
+    if (error) {
+      throw Error(JSON.stringify(error));
+    }
+
+    if (!data) {
+      throw Error("No data returned from API");
+    }
+
+    return {
+      intent_message: data.intent_message,
+      intent_proof: data.intent_proof,
+      forfeit_psbts: data.forfeit_psbts,
+      delegate_cosigner_pk: data.delegate_cosigner_pk,
+      user_pk: data.user_pk,
+      derivation_path: data.derivation_path,
+    };
+  }
+
+  /**
+   * Finish Ark collateral settlement by submitting signed PSBTs
+   *
+   * After obtaining PSBTs from `getSettleArkPsbt()` and signing them with the borrower's
+   * private key, this method submits the signed intent PSBT and forfeit PSBTs to complete
+   * the settlement process.
+   *
+   * @param contractId - The UUID of the Ark contract being settled
+   * @param intentPsbt - The signed intent PSBT in base64 format
+   * @param forfeitPsbts - Array of signed forfeit PSBTs in base64 format
+   * @returns A Promise that resolves to an object containing the commitment TXID
+   *
+   * @throws {UnauthorizedError} If no API key is provided
+   * @throws {Error} If the API returns an error
+   *
+   * @example
+   * ```typescript
+   * const { commitment_txid } = await apiClient.finishSettleArk(
+   *   'f47ac10b-58cc-4372-a567-0e02b2c3d479',
+   *   'signed_intent_psbt...',
+   *   ['signed_forfeit_1...', 'signed_forfeit_2...']
+   * );
+   * console.log('Settlement committed in batch:', commitment_txid);
+   * ```
+   *
+   * @remarks
+   * - All PSBTs must be fully signed before calling this method
+   * - The commitment_txid is the batch transaction where the VTXOs were settled
+   */
+  async finishSettleArk(
+    contractId: string,
+    intentPsbt: string,
+    forfeitPsbts: string[],
+  ): Promise<{ commitment_txid: string }> {
+    const { data, error } = await this.client.POST(
+      "/api/contracts/{id}/finish-settle-ark",
+      {
+        headers: this.getAuthHeaders(),
+        params: {
+          path: {
+            id: contractId,
+          },
+        },
+        body: {
+          intent_psbt: intentPsbt,
+          forfeit_psbts: forfeitPsbts,
+        },
+      },
+    );
+
+    if (error) {
+      throw Error(JSON.stringify(error));
+    }
+
+    if (!data) {
+      throw Error("No data returned from API");
+    }
+
+    return {
+      commitment_txid: data.commitment_txid,
+    };
+  }
+
+  /**
    * Broadcast a signed transaction to recover collateral from an expired contract
    *
    * After obtaining a PSBT from `getRecoverPsbt()` and signing it with the borrower's

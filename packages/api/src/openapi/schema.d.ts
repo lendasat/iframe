@@ -540,6 +540,47 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
+  "/api/contracts/{id}/settle-ark": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * Get Ark settle-collateral transactions, to be completed with your own signatures.
+     * @description The collateral can be settled when the Arkade VTXOs are in recoverable state and the
+     *     borrower has repaid the loan. This is used instead of claim-ark when VTXOs need settlement.
+     */
+    get: operations["get_settle_ark_collateral_txs"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/contracts/{id}/finish-settle-ark": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /**
+     * Finish Ark collateral settlement.
+     * @description Submit signed intent PSBT and forfeit PSBTs to complete the settlement.
+     */
+    post: operations["post_finish_settle_ark_collateral"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
   "/api/contracts/{id}/extend": {
     parameters: {
       query?: never;
@@ -1443,6 +1484,12 @@ export interface components {
       transactions: components["schemas"]["LoanTransaction"][];
       /** Format: date-time */
       updated_at: string;
+      /**
+       * @description Indicates whether the Arkade collateral VTXOs need to be settled on-chain (vs offchain
+       *     spend). This is `true` if any VTXOs are in recoverable state, `false` if none are,
+       *     and `null` for non-Arkade contracts or non-claimable statuses.
+       */
+      requires_ark_settlement?: boolean | null;
     };
     ContractDispute: {
       contract_id: string;
@@ -2256,6 +2303,33 @@ export interface components {
       borrower_pk: string;
       collateral_descriptor: string;
       psbt: string;
+    };
+    /** @description Settlement transactions for Ark collateral VTXOs. */
+    SettleArkCollateralTxs: {
+      /** @description A message that will be shared with the Arkade server as part of registering interest to join a batch to settle some Arkade collateral VTXOs. */
+      intent_message: string;
+      /** @description A base64-encoded PSBT containing all the Arkade collateral VTXOs to be settled in a future batch. */
+      intent_proof: string;
+      /** @description One base64-encoded forfeit transaction per Arkade collateral VTXO. */
+      forfeit_psbts: string[];
+      /** @description The cosigner public key of the hub. */
+      delegate_cosigner_pk: string;
+      /** @description The key that the client used in the 2-of-3 collateral contract. */
+      user_pk: string;
+      /** @description The derivation path that the client allegedly used to generate the user_pk. */
+      derivation_path?: string | null;
+    };
+    /** @description Request for finishing Ark collateral settlement. */
+    FinishSettleArkCollateralRequest: {
+      /** @description Signed intent proof (base64-encoded PSBT). */
+      intent_psbt: string;
+      /** @description Signed forfeit transactions (base64-encoded PSBTs). */
+      forfeit_psbts: string[];
+    };
+    /** @description Response from finishing Ark collateral settlement. */
+    FinishSettleArkCollateralResponse: {
+      /** @description Commitment TXID of the batch where the Arkade collateral VTXOs were settled. */
+      commitment_txid: string;
     };
     String: string;
     /**
@@ -3346,6 +3420,56 @@ export interface operations {
         };
         content: {
           "application/json": components["schemas"]["SpendArkCollateralTxs"];
+        };
+      };
+    };
+  };
+  get_settle_ark_collateral_txs: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        /** @description Contract ID */
+        id: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Ok if successful */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["SettleArkCollateralTxs"];
+        };
+      };
+    };
+  };
+  post_finish_settle_ark_collateral: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        /** @description Contract ID */
+        id: string;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["FinishSettleArkCollateralRequest"];
+      };
+    };
+    responses: {
+      /** @description Ok if successful */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["FinishSettleArkCollateralResponse"];
         };
       };
     };

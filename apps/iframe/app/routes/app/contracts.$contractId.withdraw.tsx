@@ -44,47 +44,110 @@ export default function WithdrawCollateral() {
       setDisableWithdrawButton(false);
 
       if (contract?.collateralAsset === "ArkadeBtc") {
-        // Step 1: Get the PSBT from the API
-        console.log("Getting claim PSBT with fee rate:", feeRateNum);
-        const { ark_psbt, checkpoint_psbts } = await apiClient.getClaimArkPsbt(
-          displayContract.id,
-        );
+        if (contract?.requiresArkSettlement) {
+          // Settlement flow for recoverable VTXOs
+          console.log("Getting settle PSBT (VTXOs are recoverable)...");
+          const settleTxs = await apiClient.getSettleArkPsbt(
+            displayContract.id,
+          );
 
-        console.log("Received PSBT details:", {
-          ark_psbt,
-          checkpoint_psbts,
-        });
+          console.log("Received settle PSBT details:", {
+            intent_message: settleTxs.intent_message,
+            forfeit_count: settleTxs.forfeit_psbts.length,
+          });
 
-        console.log(`unSigned psbt - ${ark_psbt}`);
-        for (let i = 0; i < checkpoint_psbts.length; i++) {
-          console.log(`unSigned psbt cp ${i} - ${checkpoint_psbts[i]}`);
+          // Convert base64 PSBTs to hex (wallet expects hex format)
+          const intentProofHex = bitcoin.Psbt.fromBase64(
+            settleTxs.intent_proof,
+          ).toHex();
+
+          // Sign the intent_proof PSBT
+          console.log("Signing intent proof PSBT with wallet...");
+          const signedIntentPsbtHex = await client.signPsbt(
+            intentProofHex,
+            "",
+            "",
+          );
+          // Convert signed PSBT back to base64 for the API
+          const signedIntentPsbt =
+            bitcoin.Psbt.fromHex(signedIntentPsbtHex).toBase64();
+
+          // Sign each forfeit PSBT
+          console.log(
+            `Signing ${settleTxs.forfeit_psbts.length} forfeit PSBTs...`,
+          );
+          const signedForfeitPsbts: string[] = [];
+          for (let i = 0; i < settleTxs.forfeit_psbts.length; i++) {
+            const forfeitPsbt = settleTxs.forfeit_psbts[i];
+            // Convert base64 to hex for signing
+            const forfeitPsbtHex = bitcoin.Psbt.fromBase64(forfeitPsbt).toHex();
+            const signedForfeitHex = await client.signPsbt(
+              forfeitPsbtHex,
+              "",
+              "",
+            );
+            // Convert back to base64 for the API
+            const signedForfeit =
+              bitcoin.Psbt.fromHex(signedForfeitHex).toBase64();
+            signedForfeitPsbts.push(signedForfeit);
+            console.log(
+              `Signed forfeit PSBT ${i + 1}/${settleTxs.forfeit_psbts.length}`,
+            );
+          }
+
+          // Finish the settlement
+          console.log("Finishing settlement...");
+          const { commitment_txid } = await apiClient.finishSettleArk(
+            displayContract.id,
+            signedIntentPsbt,
+            signedForfeitPsbts,
+          );
+
+          setWithdrawSuccess(commitment_txid);
+          setDisableWithdrawButton(true);
+          console.log("Collateral settlement successful:", commitment_txid);
+        } else {
+          // Offchain spend flow for non-recoverable VTXOs
+          console.log("Getting claim PSBT with fee rate:", feeRateNum);
+          const { ark_psbt, checkpoint_psbts } =
+            await apiClient.getClaimArkPsbt(displayContract.id);
+
+          console.log("Received PSBT details:", {
+            ark_psbt,
+            checkpoint_psbts,
+          });
+
+          console.log(`unSigned psbt - ${ark_psbt}`);
+          for (let i = 0; i < checkpoint_psbts.length; i++) {
+            console.log(`unSigned psbt cp ${i} - ${checkpoint_psbts[i]}`);
+          }
+
+          // Sign the PSBT using the wallet bridge
+          console.log("Signing PSBT with wallet...");
+          const signedArkPsbt = await client.signPsbt(ark_psbt, "", "");
+          const cpPsbtsSigned: string[] = [];
+          for (let i = 0; i < checkpoint_psbts.length; i++) {
+            const cp_psbt = checkpoint_psbts[i];
+            const cpPsbtSigned = await client.signPsbt(cp_psbt, "", "");
+            cpPsbtsSigned.push(cpPsbtSigned);
+          }
+
+          console.log(`Signed psbt - ${signedArkPsbt}`);
+          for (let i = 0; i < cpPsbtsSigned.length; i++) {
+            console.log(`Signed psbt cp ${i} - ${cpPsbtsSigned[i]}`);
+          }
+
+          // Broadcast the signed transaction
+          console.log("Broadcasting signed transaction...");
+          const { txid } = await apiClient.broadcastClaimArkTx(
+            displayContract.id,
+            signedArkPsbt,
+            cpPsbtsSigned,
+          );
+          setWithdrawSuccess(txid);
+          setDisableWithdrawButton(true);
+          console.log("Collateral withdrawal successful:", txid);
         }
-
-        // Step 2: Sign the PSBT using the wallet bridge
-        console.log("Signing PSBT with wallet...");
-        const signedArkPsbt = await client.signPsbt(ark_psbt, "", "");
-        const cpPsbtsSigned: string[] = [];
-        for (let i = 0; i < checkpoint_psbts.length; i++) {
-          const cp_psbt = checkpoint_psbts[i];
-          const cpPsbtSigned = await client.signPsbt(cp_psbt, "", "");
-          cpPsbtsSigned.push(cpPsbtSigned);
-        }
-
-        console.log(`Signed psbt - ${signedArkPsbt}`);
-        for (let i = 0; i < cpPsbtsSigned.length; i++) {
-          console.log(`Signed psbt cp ${i} - ${cpPsbtsSigned[i]}`);
-        }
-
-        // Step 3: Broadcast the signed transaction
-        console.log("Broadcasting signed transaction...");
-        const { txid } = await apiClient.broadcastClaimArkTx(
-          displayContract.id,
-          signedArkPsbt,
-          cpPsbtsSigned,
-        );
-        setWithdrawSuccess(txid);
-        setDisableWithdrawButton(true);
-        console.log("Collateral withdrawal successful:", txid);
       } else {
         // Step 1: Get the PSBT from the API
         console.log("Getting claim PSBT with fee rate:", feeRateNum);

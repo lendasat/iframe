@@ -278,6 +278,7 @@ export interface Contract {
   transactions: LoanTransaction[];
   updatedAt: Date;
   collateralAsset: CollateralAsset;
+  requiresArkSettlement?: boolean | null;
 }
 
 export interface PaginatedContractsResponse {
@@ -331,6 +332,7 @@ export function mapContract(
     transactions: contract.transactions.map(mapLoanTransaction),
     updatedAt: parseISO(contract.updated_at),
     collateralAsset: contract.collateral_asset,
+    requiresArkSettlement: contract.requires_ark_settlement,
   };
 }
 
