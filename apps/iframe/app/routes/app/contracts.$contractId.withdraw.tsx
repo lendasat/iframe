@@ -342,26 +342,28 @@ export default function WithdrawCollateral() {
                   your address.
                 </p>
 
-                {/* Fee Rate Input */}
-                <div className="mb-4">
-                  <label
-                    htmlFor="feeRate"
-                    className="block text-sm font-medium text-gray-700 mb-2"
-                  >
-                    Transaction Fee Rate (sats/vbyte)
-                  </label>
-                  <input
-                    type="number"
-                    id="feeRate"
-                    value={feeRate}
-                    onChange={(e) => setFeeRate(e.target.value)}
-                    placeholder="Enter fee rate..."
-                    min="1"
-                    step="1"
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
-                    disabled={isWithdrawing}
-                  />
-                </div>
+                {/* Fee Rate Input - only for on-chain Bitcoin, not Arkade */}
+                {displayContract.collateralAsset !== "ArkadeBtc" && (
+                  <div className="mb-4">
+                    <label
+                      htmlFor="feeRate"
+                      className="block text-sm font-medium text-gray-700 mb-2"
+                    >
+                      Transaction Fee Rate (sats/vbyte)
+                    </label>
+                    <input
+                      type="number"
+                      id="feeRate"
+                      value={feeRate}
+                      onChange={(e) => setFeeRate(e.target.value)}
+                      placeholder="Enter fee rate..."
+                      min="1"
+                      step="1"
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
+                      disabled={isWithdrawing}
+                    />
+                  </div>
+                )}
 
                 {withdrawSuccess && (
                   <div className="bg-green-50 border border-green-200 rounded-lg p-4 mb-4">
@@ -379,19 +381,22 @@ export default function WithdrawCollateral() {
                       </svg>
                       <div className="flex-1">
                         <h4 className="text-sm font-medium text-green-800">
-                          Withdrawal Transaction Sent Successfully!
+                          Withdrawal Successful!
                         </h4>
                         <p className="text-sm text-green-700 mt-1 break-all">
                           Transaction ID: {withdrawSuccess}
                         </p>
-                        <a
-                          href={`https://mempool.space/tx/${withdrawSuccess}`}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="text-green-600 hover:text-green-800 text-sm font-medium inline-flex items-center mt-2"
-                        >
-                          View on Mempool →
-                        </a>
+                        {/* Only show mempool link for on-chain Bitcoin transactions */}
+                        {displayContract.collateralAsset !== "ArkadeBtc" && (
+                          <a
+                            href={`https://mempool.space/tx/${withdrawSuccess}`}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="text-green-600 hover:text-green-800 text-sm font-medium inline-flex items-center mt-2"
+                          >
+                            View on Mempool →
+                          </a>
+                        )}
                       </div>
                     </div>
                   </div>
@@ -429,8 +434,9 @@ export default function WithdrawCollateral() {
                     disableWithdrawButton ||
                     isWithdrawing ||
                     !displayContract.contractAddress ||
-                    !feeRate ||
-                    parseFloat(feeRate) <= 0
+                    // Fee rate only required for on-chain Bitcoin
+                    (displayContract.collateralAsset !== "ArkadeBtc" &&
+                      (!feeRate || parseFloat(feeRate) <= 0))
                   }
                   className="w-full"
                 >
