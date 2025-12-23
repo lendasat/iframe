@@ -2,7 +2,7 @@ import { useParams, useNavigate } from "react-router";
 import { useAsyncRetry } from "react-use";
 import { useState, useEffect } from "react";
 import type { Route } from "../+types/app.contracts.$contractId.repay";
-import { apiClient, formatLoanAsset, isFiatAsset } from "@repo/api";
+import { apiClient, type Contract, formatLoanAsset } from "@repo/api";
 import { LoadingOverlay } from "~/components/ui/spinner";
 import { Button } from "~/components/ui/button";
 import { QRCodeSVG } from "qrcode.react";
@@ -19,8 +19,7 @@ export function meta({}: Route.MetaArgs) {
 export default function RepayLoan() {
   const { contractId } = useParams();
   const navigate = useNavigate();
-  const { client, isConnected, capabilities, capabilitiesLoading } =
-    useWallet();
+  const { client, isConnected, capabilities } = useWallet();
   const [copiedAddress, setCopiedAddress] = useState(false);
   const [copiedAmountSats, setCopiedAmountSats] = useState(false);
   const [copiedAmountBtc, setCopiedAmountBtc] = useState(false);
@@ -34,7 +33,7 @@ export default function RepayLoan() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
   const [submitSuccess, setSubmitSuccess] = useState(false);
-  const [contract, setContract] = useState<any>(null);
+  const [contract, setContract] = useState<Contract>(null);
 
   const copyToClipboard = async (
     text: string,
@@ -92,6 +91,7 @@ export default function RepayLoan() {
         displayContract.id,
         txid,
         pendingInstallment.id,
+        pendingInstallment.principal + pendingInstallment.interest,
       );
 
       setRepaymentSuccess(txid);
@@ -130,6 +130,7 @@ export default function RepayLoan() {
         displayContract.id,
         txidInput.trim(),
         pendingInstallment.id,
+        pendingInstallment.principal + pendingInstallment.interest,
       );
 
       setSubmitSuccess(true);

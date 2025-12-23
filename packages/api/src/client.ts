@@ -340,6 +340,7 @@ export class ApiClient {
    * @param installment_id - The UUID of the specific installment being paid.
    *                         For bullet repayment (full repayment at end), this is typically a single installment.
    *                         For installment-based loans, this identifies which payment is being made.
+   * @param amount The amount you paid in this installment
    * @returns A Promise that resolves when the repayment is recorded
    *
    * @throws {UnauthorizedError} If no API key is provided
@@ -364,6 +365,7 @@ export class ApiClient {
     id: string,
     txid: string,
     installment_id: string,
+    amount: number,
   ): Promise<void> {
     const { error } = await this.client.PUT(
       "/api/contracts/{id}/installment-paid",
@@ -377,6 +379,7 @@ export class ApiClient {
         body: {
           installment_id,
           payment_id: txid,
+          amount,
         },
       },
     );
